@@ -1,0 +1,78 @@
+/**
+ * CesiumJS Heatbox ライブラリの定数定義
+ */
+
+/**
+ * デフォルト設定値
+ */
+export const DEFAULT_OPTIONS = {
+  voxelSize: 20,
+  opacity: 0.8,
+  emptyOpacity: 0.03,
+  showOutline: true,
+  showEmptyVoxels: false,
+  minColor: [0, 32, 255],
+  maxColor: [255, 64, 0],
+  maxRenderVoxels: 50000,
+  batchMode: 'auto'
+};
+
+/**
+ * パフォーマンス制限値
+ */
+export const PERFORMANCE_LIMITS = {
+  maxEntities: 5000,
+  maxVoxels: 50000,
+  maxEmptyVoxelsRendered: 10000,
+  minVoxelSize: 5,
+  maxVoxelSize: 1000,
+  warningThreshold: 30000
+};
+
+/**
+ * 座標変換定数
+ */
+export const COORDINATE_CONSTANTS = {
+  EARTH_RADIUS: 6378137,
+  DEGREES_TO_METERS_LAT: 111000,
+  DEGREES_TO_RADIANS: Math.PI / 180
+};
+
+/**
+ * エラーメッセージ
+ */
+export const ERROR_MESSAGES = {
+  NO_ENTITIES: '対象エンティティがありません',
+  NO_VIEWER: 'CesiumJS Viewerが初期化されていません',
+  INVALID_VIEWER: 'CesiumJS Viewerが無効です',
+  VOXEL_LIMIT_EXCEEDED: 'ボクセル数が上限を超えています',
+  MEMORY_WARNING: '推定メモリ使用量が警告値を超えています',
+  WEBGL_NOT_SUPPORTED: 'WebGLがサポートされていません',
+  INVALID_VOXEL_SIZE: 'ボクセルサイズが無効です'
+};
+
+/**
+ * 統計情報のデフォルト値
+ */
+export const DEFAULT_STATISTICS = {
+  totalVoxels: 0,
+  renderedVoxels: 0,
+  nonEmptyVoxels: 0,
+  emptyVoxels: 0,
+  totalEntities: 0,
+  minCount: 0,
+  maxCount: 0,
+  averageCount: 0
+};
+
+/**
+ * 色分け関連定数
+ */
+export const COLOR_CONSTANTS = {
+  MIN_HUE: 240, // 青
+  MAX_HUE: 0,   // 赤
+  SATURATION: 0.8,
+  BRIGHTNESS: 0.7,
+  SATURATION_RANGE: 0.2,
+  BRIGHTNESS_RANGE: 0.3
+};

@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags: 
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        registry-url: 'https://registry.npmjs.org'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build all formats
+      run: npm run build
+      
+    - name: Run tests
+      run: npm test
+      
+    # タグに基づいて公開先を決定
+    - name: Determine npm tag
+      id: npm-tag
+      run: |
+        if [[ ${{ github.ref }} == *"alpha"* ]]; then
+          echo "tag=alpha" >> $GITHUB_OUTPUT
+        elif [[ ${{ github.ref }} == *"beta"* ]]; then
+          echo "tag=beta" >> $GITHUB_OUTPUT
+        elif [[ ${{ github.ref }} == *"rc"* ]]; then
+          echo "tag=rc" >> $GITHUB_OUTPUT
+        else
+          echo "tag=latest" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Publish to npm
+      run: npm publish --tag ${{ steps.npm-tag.outputs.tag }}
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

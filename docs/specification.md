@@ -1216,6 +1216,21 @@ const scaleConstraints = {
 - **アニメーション**: 時系列データの再生機能
 - **インタラクション**: ボクセルクリック・ホバーイベント
 
+#### データソース選択機能
+- **データソース指定**: 特定のデータソースのエンティティのみでヒートマップ生成
+  - `createFromDataSource(viewer, dataSource, options)`: 指定したデータソースから生成
+  - `createFromDataSourceByName(viewer, dataSourceName, options)`: 名前指定での生成
+- **データソース切り替え**: 複数のデータソース間でのヒートマップ比較
+  - `switchDataSource(dataSource)`: 動的なデータソース切り替え
+  - `updateFromDataSource(dataSource)`: 指定データソースでの更新
+- **データソース統合**: 複数のデータソースを組み合わせたヒートマップ作成
+  - `createFromMultipleDataSources(viewer, dataSources, options)`: 複数データソース統合
+  - `addDataSource(dataSource)`: 追加データソースの結合
+- **データソース管理**: データソースの一覧表示・名前検索機能
+  - `getAvailableDataSources()`: 利用可能なデータソース一覧取得
+  - `findDataSourceByName(name)`: 名前によるデータソース検索
+  - `getDataSourceInfo(dataSource)`: データソース詳細情報取得
+
 #### カスタマイゼーション
 - **カスタム色スケール**: グラデーション、カテゴリ別色分け
 - **フィルタリング**: 属性による条件絞り込み

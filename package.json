@@ -1,0 +1,95 @@
+{
+  "name": "cesium-heatbox",
+  "version": "0.1.0-alpha.1",
+  "description": "3D voxel-based heatmap visualization library for CesiumJS",
+  "main": "dist/cesium-heatbox.js",
+  "module": "src/index.js",
+  "types": "types/index.d.ts",
+  "browser": "dist/cesium-heatbox.umd.js",
+  "files": [
+    "src/",
+    "dist/",
+    "types/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "dev": "webpack serve --mode development",
+    "build": "npm run build:esm && npm run build:umd && npm run build:types",
+    "build:esm": "webpack --mode production --env target=esm",
+    "build:umd": "webpack --mode production --env target=umd",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir types",
+    "build:watch": "webpack --mode development --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ test/ --ext .js,.ts",
+    "lint:fix": "eslint src/ test/ --ext .js,.ts --fix",
+    "type-check": "tsc --noEmit",
+    "benchmark": "node tools/benchmark.js",
+    "docs": "jsdoc src/ -d docs/api -c jsdoc.config.json",
+    "clean": "rm -rf dist/ types/ coverage/",
+    "prepublishOnly": "npm run clean && npm run build && npm test"
+  },
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "require": "./dist/cesium-heatbox.js",
+      "types": "./types/index.d.ts"
+    }
+  },
+  "keywords": [
+    "cesium",
+    "heatmap",
+    "3d",
+    "voxel",
+    "visualization",
+    "gis",
+    "spatial",
+    "analysis"
+  ],
+  "author": "hiro-nyon",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hiro-nyon/cesium-heatbox.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hiro-nyon/cesium-heatbox/issues"
+  },
+  "homepage": "https://github.com/hiro-nyon/cesium-heatbox#readme",
+  "peerDependencies": {
+    "cesium": "^1.120.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-typescript": "^7.26.0",
+    "@babel/eslint-parser": "^7.25.0",
+    "@types/node": "^22.10.0",
+    "@types/cesium": "^1.130.0",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "babel-jest": "^30.0.0",
+    "babel-loader": "^9.2.0",
+    "eslint": "^9.15.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-jest": "^29.0.0",
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0",
+    "jsdoc": "^4.0.4",
+    "typescript": "^5.7.0",
+    "webpack": "^5.97.0",
+    "webpack-cli": "^6.0.0",
+    "webpack-dev-server": "^5.2.0",
+    "eslint-webpack-plugin": "^4.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  }
+}
