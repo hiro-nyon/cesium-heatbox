@@ -2,7 +2,7 @@
  * CoordinateTransformer クラスのテスト
  */
 
-import { CoordinateTransformer } from '../src/core/CoordinateTransformer.js';
+import { CoordinateTransformer } from '../../src/core/CoordinateTransformer.js';
 
 describe('CoordinateTransformer', () => {
   describe('calculateBounds', () => {

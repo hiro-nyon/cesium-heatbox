@@ -13,17 +13,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Nothing yet
 
-### Deprecated
-- Nothing yet
-
-### Removed
-- Nothing yet
-
 ### Fixed
 - Nothing yet
 
-### Security
-- Nothing yet
+## [0.1.0-alpha.2] - 2025-01-21
+
+### Added
+- Enhanced documentation for developer onboarding
+- Troubleshooting section in getting-started.md
+- Development guide for beginners
+- Quick-start guide for immediate usage
+- Git and npm reference guide
+- Data source selection API (roadmap)
+
+### Changed
+- Updated release workflow to support staged npm tags (alpha, beta, rc, latest)
+- Improved CI/CD pipeline configuration
+- Enhanced specification roadmap with data source selection feature
+
+### Fixed
+- ESLint configuration compatibility issues (downgraded to 8.x)
+- Jest configuration for module name mapping
+- Package dependency conflicts
+- Build system configuration issues
+- Test setup and import paths
+- Removed @types/cesium dependency conflicts
+
+### Technical
+- Cleaned up node_modules and package-lock.json
+- Reinstalled dependencies with proper versions
+- Confirmed successful build and test execution
 
 ## [0.1.0-alpha.1] - 2025-07-09
 

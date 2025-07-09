@@ -218,21 +218,77 @@ GitHub Actions により、タグがプッシュされると自動的に:
 ### よくある問題
 
 #### `npm install` が失敗する
-- Node.js のバージョンを確認
-- `npm cache clean --force` を実行
-- `node_modules` と `package-lock.json` を削除して再インストール
+
+**問題**: 依存関係の競合エラー
+```
+npm ERR! code ERESOLVE
+npm ERR! ERESOLVE unable to resolve dependency tree
+```
+
+**解決方法**:
+```bash
+# 1. キャッシュをクリア
+npm cache clean --force
+
+# 2. node_modulesとpackage-lock.jsonを削除
+rm -rf node_modules package-lock.json
+
+# 3. 再インストール
+npm install
+```
+
+#### ESLint設定の問題
+
+**問題**: ESLintの設定ファイルの形式が古い
+```
+Error: ESLint configuration in eslint.config.js is invalid
+```
+
+**解決方法**:
+- ESLint 8.x系を使用（9.x系は非対応）
+- `.eslintrc.js`形式を使用（フラット設定は未対応）
+
+#### Cesiumの型定義の問題
+
+**問題**: `@types/cesium`パッケージの警告
+```
+warn deprecated @types/cesium@1.70.4: This is a stub types definition. 
+cesium provides its own type definitions, so you don't need this installed.
+```
+
+**解決方法**:
+```bash
+# @types/cesiumを削除（CesiumJS本体が型定義を提供）
+npm uninstall @types/cesium
+```
 
 #### テストが失敗する
-- `npm run lint` でコードスタイルを確認
-- `npm run type-check` で型エラーを確認
-- Jest の設定を確認
 
-#### ビルドが失敗する
-- Webpack の設定を確認
-- 依存関係の更新状況を確認
-- `npm run clean` でクリーンアップ
+**問題**: Jest設定の問題
+```
+Unknown option "moduleNameMapping" with value
+```
 
-### サポート
+**解決方法**:
+- `jest.config.js`で`moduleNameMapping`を`moduleNameMapper`に修正
+
+**問題**: テストファイルのimportパスエラー
+```
+Cannot find module '../src/core/CoordinateTransformer.js'
+```
+
+**解決方法**:
+- 相対パスを正しく設定（`../../src/core/...`）
+
+**問題**: Cesiumオブジェクトの未定義エラー
+```
+TypeError: Cesium.Cartesian3 is not a constructor
+```
+
+**解決方法**:
+- `test/setup.js`でCesiumのモックを適切に設定
+
+## サポート
 
 問題が発生した場合は、以下の方法でサポートを受けられます:
 
