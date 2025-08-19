@@ -34,21 +34,36 @@ const heatbox = new Heatbox(viewer, {
 
 ### メソッド
 
-#### `async createFromEntities(entities)`
+#### `setData(entities)`
 
-エンティティ配列からヒートマップを作成します。
+エンティティ配列からヒートマップデータを作成し、描画します。
 
 **パラメータ:**
 - `entities` (Array<Cesium.Entity>) - 対象エンティティ配列
 
 **戻り値:**
-- `Promise<HeatboxStatistics>` - 統計情報
+- `void`
 
 **例:**
 ```javascript
 const entities = viewer.entities.values;
-const statistics = await heatbox.createFromEntities(entities);
-console.log('作成完了:', statistics);
+heatbox.setData(entities);
+console.log('ヒートマップ作成が実行されました。');
+```
+
+#### `updateOptions(newOptions)`
+
+オプションを更新し、既存のヒートマップを再描画します。
+
+**パラメータ:**
+- `newOptions` (Object) - 新しいオプション
+
+**例:**
+```javascript
+heatbox.updateOptions({
+  voxelSize: 30,
+  opacity: 0.7
+});
 ```
 
 #### `setVisible(show)`
@@ -66,19 +81,28 @@ heatbox.setVisible(true);  // 表示
 
 #### `clear()`
 
-ヒートマップをクリアします。
+ヒートマップをクリアし、関連リソースをリセットします。
 
 **例:**
 ```javascript
 heatbox.clear();
 ```
 
+#### `destroy()`
+
+Heatboxインスタンスを破棄し、確保したリソース（イベントリスナー等）を解放します。
+
+**例:**
+```javascript
+heatbox.destroy();
+```
+
 #### `getStatistics()`
 
-統計情報を取得します。
+現在のヒートマップの統計情報を取得します。
 
 **戻り値:**
-- `HeatboxStatistics|null` - 統計情報、未作成の場合はnull
+- `HeatboxStatistics|null` - 統計情報オブジェクト。データ未作成の場合はnull。
 
 **例:**
 ```javascript
@@ -89,53 +113,19 @@ if (stats) {
 }
 ```
 
-#### `getDetailedReport()`
+#### `getBounds()`
 
-詳細な統計レポートを取得します。
+現在のヒートマップの境界情報（緯度経度）を取得します。
 
 **戻り値:**
-- `Object|null` - 詳細レポート、未作成の場合はnull
+- `Object|null` - 境界情報オブジェクト。データ未作成の場合はnull。
 
 **例:**
 ```javascript
-const report = heatbox.getDetailedReport();
-if (report) {
-  console.log('密度分布:', report.densityDistribution);
-  console.log('分位数:', report.percentiles);
+const bounds = heatbox.getBounds();
+if (bounds) {
+  console.log('最大緯度:', bounds.maxLat);
 }
-```
-
-#### `updateOptions(newOptions)`
-
-オプションを更新します。
-
-**パラメータ:**
-- `newOptions` (Object) - 新しいオプション
-
-**例:**
-```javascript
-heatbox.updateOptions({
-  voxelSize: 30,
-  opacity: 0.7
-});
-```
-
-#### `static filterEntities(entities, filter)`
-
-エンティティをフィルタリングします。
-
-**パラメータ:**
-- `entities` (Array<Cesium.Entity>) - 対象エンティティ配列
-- `filter` (Function) - フィルタ関数
-
-**戻り値:**
-- `Array<Cesium.Entity>` - フィルタリングされたエンティティ配列
-
-**例:**
-```javascript
-const filteredEntities = Heatbox.filterEntities(entities, (entity) => {
-  return entity.position.height > 50; // 高度50m以上
-});
 ```
 
 ## 型定義
@@ -173,6 +163,17 @@ interface HeatboxOptions {
 
 ## ユーティリティ関数
 
+### `createHeatbox(viewer, options)`
+
+Heatboxインスタンスを生成するためのヘルパー関数です。
+
+**パラメータ:**
+- `viewer` (Cesium.Viewer) - CesiumJS Viewer
+- `options` (Object) - 設定オプション
+
+**戻り値:**
+- `Heatbox` - 新しいHeatboxインスタンス
+
 ### `getAllEntities(viewer)`
 
 指定されたviewerの全エンティティを取得します。
@@ -194,6 +195,13 @@ interface HeatboxOptions {
 
 **戻り値:**
 - `Array<Cesium.Entity>` - 生成されたエンティティ配列
+
+### `getEnvironmentInfo()`
+
+ライブラリのバージョンやWebGLサポート状況などの環境情報を取得します。
+
+**戻り値:**
+- `Object` - 環境情報
 
 ## エラーハンドリング
 

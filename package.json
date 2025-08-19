@@ -1,11 +1,11 @@
 {
   "name": "cesium-heatbox",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "3D voxel-based heatmap visualization library for CesiumJS",
-  "main": "dist/cesium-heatbox.js",
-  "module": "src/index.js",
+  "main": "dist/cesium-heatbox.umd.min.js",
+  "module": "dist/cesium-heatbox.min.js",
   "types": "types/index.d.ts",
-  "browser": "dist/cesium-heatbox.umd.js",
+  "browser": "dist/cesium-heatbox.umd.min.js",
   "files": [
     "src/",
     "dist/",
@@ -19,13 +19,13 @@
     "build": "npm run build:esm && npm run build:umd && npm run build:types",
     "build:esm": "webpack --mode production --env target=esm",
     "build:umd": "webpack --mode production --env target=umd",
-    "build:types": "tsc --declaration --emitDeclarationOnly --outDir types",
+    "build:types": "node tools/build-types.js",
     "build:watch": "webpack --mode development --watch",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src/ test/ --ext .js,.ts",
-    "lint:fix": "eslint src/ test/ --ext .js,.ts --fix",
+    "lint": "eslint \"src/**/*.{js,ts}\" \"test/**/*.{js,ts}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts}\" \"test/**/*.{js,ts}\" --fix",
     "type-check": "tsc --noEmit",
     "benchmark": "node tools/benchmark.js",
     "docs": "jsdoc src/ -d docs/api -c jsdoc.config.json",
@@ -34,9 +34,10 @@
   },
   "exports": {
     ".": {
-      "import": "./src/index.js",
-      "require": "./dist/cesium-heatbox.js",
-      "types": "./types/index.d.ts"
+      "types": "./types/index.d.ts",
+      "import": "./dist/cesium-heatbox.min.js",
+      "require": "./dist/cesium-heatbox.umd.min.js",
+      "default": "./dist/cesium-heatbox.umd.min.js"
     }
   },
   "keywords": [

@@ -1,137 +1,62 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CesiumJS Heatbox - 基本例</title>
-    
-    <!-- CesiumJS CSS -->
-    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-    
-    <style>
-        html, body, #cesiumContainer {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-        
-        .toolbar {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            z-index: 1000;
-        }
-        
-        .toolbar button {
-            margin: 5px;
-            padding: 5px 10px;
-            background: #48b;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        
-        .toolbar button:hover {
-            background: #369;
-        }
-        
-        .toolbar button:disabled {
-            background: #666;
-            cursor: not-allowed;
-        }
-        
-        .controls {
-            margin-top: 10px;
-        }
-        
-        .control-group {
-            margin: 5px 0;
-        }
-        
-        .control-group label {
-            display: inline-block;
-            width: 100px;
-            font-size: 11px;
-        }
-        
-        .control-group input {
-            width: 80px;
-        }
-        
-        .statistics {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: Arial, sans-serif;
-            font-size: 11px;
-            z-index: 1000;
-            min-width: 200px;
-        }
-        
-        .statistics h3 {
-            margin: 0 0 10px 0;
-            font-size: 13px;
-        }
-        
-        .stat-item {
-            margin: 3px 0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>CesiumJS Heatbox - Basic Example</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <style>
+    html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; }
+    .control-panel { position: absolute; top: 10px; left: 10px; background: rgba(40, 40, 40, 0.85); padding: 15px; border-radius: 5px; color: white; font-family: sans-serif; max-width: 320px; }
+    .control-panel h3 { margin: 0 0 10px; }
+    .control-group { margin-bottom: 12px; }
+    .control-group label { display: block; margin-bottom: 4px; font-size: 14px; }
+    .control-group input[type="number"], .control-group input[type="range"], .control-group button { width: 100%; box-sizing: border-box; }
+    .control-group button { padding: 8px; margin-top: 5px; }
+    #statistics { margin-top: 10px; padding-top: 10px; border-top: 1px solid #555; }
+    #status { margin-top: 10px; font-weight: bold; }
+  </style>
 </head>
 <body>
-    <div id="cesiumContainer"></div>
-    
-    <div class="toolbar">
-        <h3>CesiumJS Heatbox デモ</h3>
-        <button id="generateBtn">テストエンティティ生成</button>
-        <button id="createHeatmapBtn" disabled>ヒートマップ作成</button>
-        <button id="clearBtn" disabled>クリア</button>
-        <button id="toggleBtn" disabled>表示/非表示</button>
-        
-        <div class="controls">
-            <div class="control-group">
-                <label>エンティティ数:</label>
-                <input type="number" id="entityCount" value="800" min="50" max="3000" step="50">
-            </div>
-            <div class="control-group">
-                <label>ボクセルサイズ:</label>
-                <input type="number" id="voxelSize" value="20" min="10" max="100" step="5">
-            </div>
-            <div class="control-group">
-                <label>透明度:</label>
-                <input type="range" id="opacity" min="0.1" max="1.0" step="0.1" value="0.8">
-                <span id="opacityValue">0.8</span>
-            </div>
-            <div class="control-group">
-                <label>
-                    <input type="checkbox" id="showEmpty"> 空ボクセル表示
-                </label>
-            </div>
-        </div>
+  <div id="cesiumContainer"></div>
+  <div class="control-panel">
+    <h3>Cesium-Heatbox Example</h3>
+    <div class="control-group">
+      <label for="entityCount">Entity Count: <span id="entityCountValue">1000</span></label>
+      <input type="range" id="entityCount" min="100" max="5000" value="1000" step="100">
     </div>
-    
-    <div class="statistics" id="statistics" style="display: none;">
-        <h3>統計情報</h3>
-        <div id="statisticsContent"></div>
+    <div class="control-group">
+      <button id="generateBtn">1. Generate Entities</button>
     </div>
-    
-    <!-- CesiumJS JavaScript -->
-    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
-    
-    <!-- アプリケーションスクリプト -->
-    <script src="app.js"></script>
+    <hr>
+    <div class="control-group">
+      <label for="voxelSize">Voxel Size (meters):</label>
+      <input type="number" id="voxelSize" value="30" min="5" max="200">
+    </div>
+    <div class="control-group">
+      <label for="opacity">Opacity: <span id="opacityValue">0.7</span></label>
+      <input type="range" id="opacity" min="0.1" max="1.0" value="0.7" step="0.05">
+    </div>
+    <div class="control-group">
+      <input type="checkbox" id="showEmpty"> <label for="showEmpty">Show Empty Voxels</label>
+    </div>
+    <div class="control-group">
+      <input type="checkbox" id="showOutline" checked> <label for="showOutline">Show Outline</label>
+    </div>
+    <div class="control-group">
+      <button id="createHeatmapBtn" disabled>2. Create Heatmap</button>
+    </div>
+    <hr>
+    <div class="control-group">
+      <button id="toggleBtn" disabled>Hide</button>
+      <button id="clearBtn" disabled>Clear All</button>
+    </div>
+    <div id="status">Ready</div>
+    <div id="statistics" style="display: none;">
+      <h4>Statistics</h4>
+      <div id="statisticsContent"></div>
+    </div>
+  </div>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

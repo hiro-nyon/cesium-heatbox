@@ -64,11 +64,17 @@ global.Cesium = {
     
     fromRgb: jest.fn((r, g, b) => ({ r: r/255, g: g/255, b: b/255, a: 1 })),
     fromHsl: jest.fn((h, s, l) => ({ h, s, l, a: 1 })),
+    fromBytes: jest.fn((r, g, b, a = 255) => ({ r, g, b, a, withAlpha(alpha) { return { r, g, b, a: alpha }; } })),
     withAlpha: jest.fn(function(alpha) { return { ...this, a: alpha }; })
   },
   
   // ジオメトリ
   BoxGeometry: class MockBoxGeometry {
+    constructor(options) {
+      this.options = options;
+    }
+  },
+  BoxOutlineGeometry: class MockBoxOutlineGeometry {
     constructor(options) {
       this.options = options;
     }
@@ -121,7 +127,30 @@ global.Cesium = {
   // ラベルスタイル
   LabelStyle: {
     FILL_AND_OUTLINE: 'FILL_AND_OUTLINE'
-  }
+  },
+
+  // Entity
+  Entity: class MockEntity {
+    constructor(options) {
+      this.options = options || {};
+    }
+  },
+
+  // Screen space event handling
+  ScreenSpaceEventHandler: class MockScreenSpaceEventHandler {
+    constructor(canvas) {
+      this.canvas = canvas;
+    }
+    setInputAction() { /* noop in tests */ }
+    isDestroyed() { return false; }
+    destroy() { /* noop */ }
+  },
+  ScreenSpaceEventType: {
+    LEFT_CLICK: 'LEFT_CLICK'
+  },
+
+  // Utility
+  defined: (v) => v !== undefined && v !== null
 };
 
 // console.log のモック（テスト時は静かに）

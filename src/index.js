@@ -18,7 +18,7 @@ export { Heatbox as CesiumHeatbox };
 /**
  * ライブラリのメタ情報
  */
-export const VERSION = '0.1.0';
+export const VERSION = '0.1.0-alpha.3';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 
@@ -37,11 +37,23 @@ export function createHeatbox(viewer, options) {
  * @returns {Object} 環境情報
  */
 export function getEnvironmentInfo() {
+  // WebGL サポートの確認
+  let webglSupport = false;
+  try {
+    if (typeof WebGLRenderingContext !== 'undefined') {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      webglSupport = !!gl;
+    }
+  } catch (e) {
+    webglSupport = false;
+  }
+  
   return {
     version: VERSION,
     cesiumVersion: typeof Cesium !== 'undefined' ? Cesium.VERSION : 'N/A',
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A',
-    webglSupport: typeof WebGLRenderingContext !== 'undefined',
+    webglSupport: webglSupport,
     timestamp: new Date().toISOString()
   };
 }

@@ -102,7 +102,7 @@ CesiumJS環境内の既存エンティティを対象とした3Dボクセルベ�
 ```javascript
 // モダンブラウザ・Node.js環境向け
 import Heatbox from 'cesium-heatbox';
-import { generateSampleData } from 'cesium-heatbox';
+import { generateTestEntities } from 'cesium-heatbox';
 ```
 
 ##### UMD（レガシー対応）
@@ -134,6 +134,7 @@ declare module 'cesium-heatbox' {
     minColor?: [number, number, number];
     maxColor?: [number, number, number];
     maxRenderVoxels?: number;
+    batchMode?: 'auto' | 'primitive' | 'entity';
   }
 
   export interface HeatboxStatistics {
@@ -149,16 +150,19 @@ declare module 'cesium-heatbox' {
 
   export default class Heatbox {
     constructor(viewer: any, options?: HeatboxOptions);
-    createFromEntities(entities: any[]): Promise<HeatboxStatistics>;
+    setData(entities: any[]): void;
+    updateOptions(newOptions: HeatboxOptions): void;
     setVisible(show: boolean): void;
     clear(): void;
+    destroy(): void;
     getStatistics(): HeatboxStatistics | null;
-    
-    static filterEntities(entities: any[], filter: any): any[];
+    getBounds(): object | null;
   }
 
+  export function createHeatbox(viewer: any, options: HeatboxOptions): Heatbox;
   export function getAllEntities(viewer: any): any[];
   export function generateTestEntities(viewer: any, bounds: any, count?: number): any[];
+  export function getEnvironmentInfo(): object;
 }
 ```
 
@@ -344,7 +348,7 @@ export default {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   transform: {
-    '^.+\\.(js|ts)': 'babel-jest'
+    '^.+\.(js|ts)': 'babel-jest'
   },
   testMatch: [
     '<rootDir>/test/**/*.{test,spec}.{js,ts}'
@@ -438,23 +442,23 @@ const voxelZ = Math.floor(
 
 #### 処理フロー
 
-1. **Entity範囲計算**: `calculateBounds(entities)`
+1. **Entity範囲計算**: `CoordinateTransformer.calculateBounds(entities)`
    - 全エンティティの3D Bounding Boxを計算
    - 有効な位置情報を持つエンティティのみを対象
    
-2. **ボクセルグリッド生成**: `createVoxelGrid(bounds)`
+2. **ボクセルグリッド生成**: `VoxelGrid.createGrid(bounds, voxelSize)`
    - 範囲を内包する最小のボクセルグリッドを生成
    - ボクセル数 = ceil(範囲_メートル / ボクセルサイズ_メートル)
    
-3. **エンティティ分類**: `classifyPointsIntoVoxels(entities, bounds, grid)`
+3. **エンティティ分類**: `DataProcessor.classifyEntitiesIntoVoxels(entities, bounds, grid)`
    - 各エンティティのボクセルインデックスを計算
    - Map構造でボクセルごとのエンティティリストを管理
    
-4. **統計計算**: `calculateStatistics(voxelData, grid)`
+4. **統計計算**: `DataProcessor.calculateStatistics(voxelData, grid)`
    - 密度の最小値・最大値・平均値を計算
    - 空ボクセル数もカウント
    
-5. **可視化**: `renderVoxels(voxelData, bounds, grid, stats)`
+5. **可視化**: `VoxelRenderer.render(voxelData, bounds, grid, stats)`
    - **描画はCesium.Entity.BoxをGeometryInstance + Primitiveでバッチ化して行う**
    - 密度に応じた色分けを適用
 
@@ -689,16 +693,13 @@ npm run benchmark
 ```javascript
 class Heatbox {
     constructor(viewer, options)
-    async createFromEntities(entities)
-    calculateBounds(entities)
-    createVoxelGrid(bounds)
-    classifyPointsIntoVoxels(entities, bounds, grid)
-    calculateStatistics(voxelData, grid)
-    renderVoxels(voxelData, bounds, grid, stats)
-    interpolateColor(normalizedDensity)
+    setData(entities)
+    updateOptions(newOptions)
     setVisible(show)
     clear()
+    destroy()
     getStatistics()
+    getBounds()
 }
 ```
 
@@ -777,46 +778,29 @@ const options = {
 
 ### 主要メソッド
 
-#### createFromEntities(entities)
+#### setData(entities)
 
 ```javascript
-const stats = await heatbox.createFromEntities(entities);
+heatbox.setData(entities);
 ```
 
 **パラメータ**:
 - `entities` (Array<Cesium.Entity>): 対象エンティティ配列
 
-**戻り値**:
-```javascript
-const statistics = {
-    totalVoxels: number,        // 総ボクセル数（空含む）
-    renderedVoxels: number,     // 描画されるボクセル数
-    nonEmptyVoxels: number,     // データ有りボクセル数
-    emptyVoxels: number,        // 空ボクセル数
-    totalEntities: number,      // 総エンティティ数
-    minCount: number,           // 最小エンティティ数/ボクセル
-    maxCount: number,           // 最大エンティティ数/ボクセル
-    averageCount: number        // 平均エンティティ数/ボクセル
-};
-```
+**説明**:
+エンティティ配列からヒートマップデータを作成し、描画します。このメソッドは非同期ではありません。処理が完了すると、`getStatistics()`で統計情報を取得できます。
 
-#### updateEntities(deltaEntities, options)
+#### updateOptions(newOptions)
 
 ```javascript
-const updatedStats = await heatbox.updateEntities(deltaEntities, {
-    mode: 'append' // 'append' | 'remove' | 'replace'
-});
+heatbox.updateOptions({ voxelSize: 30 });
 ```
 
 **パラメータ**:
-- `deltaEntities` (Array<Cesium.Entity>): 変更対象エンティティ配列
-- `options` (Object): 更新オプション
-  - `mode` (string): 更新モード
-    - `'append'`: エンティティを追加
-    - `'remove'`: エンティティを削除  
-    - `'replace'`: エンティティを置換
+- `newOptions` (Object): 更新したいオプション
 
-**戻り値**: 更新後の統計情報
+**説明**:
+既存のヒートマップのオプションを更新し、再描画します。
 
 #### その他のメソッド
 
@@ -827,25 +811,30 @@ heatbox.setVisible(true/false);
 // 統計情報取得
 const stats = heatbox.getStatistics();
 
+// 境界情報取得
+const bounds = heatbox.getBounds();
+
 // 全クリア
 heatbox.clear();
-```
 
-### 静的メソッド
-
-```javascript
-// エンティティフィルタリング
-const filteredEntities = Heatbox.filterEntities(entities, filter);
+// インスタンス破棄
+heatbox.destroy();
 ```
 
 ### ユーティリティ関数
 
 ```javascript
+// Heatboxインスタンスを生成するヘルパー関数
+const heatbox = createHeatbox(viewer, options);
+
 // 全エンティティ取得
 const allEntities = getAllEntities(viewer);
 
 // テスト用エンティティ生成
 const testEntities = generateTestEntities(viewer, bounds, count);
+
+// 環境情報取得
+const envInfo = getEnvironmentInfo();
 ```
 
 ---

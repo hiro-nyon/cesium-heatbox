@@ -3,7 +3,6 @@
  */
 
 import { Heatbox } from '../src/Heatbox.js';
-import { generateTestEntities } from '../src/utils/sampleData.js';
 
 describe('Heatbox', () => {
   let viewer;

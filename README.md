@@ -64,8 +64,9 @@ const heatbox = new Heatbox(viewer, options);
 ## ドキュメント
 
 - [API リファレンス](docs/API.md)
-- [使用例](docs/examples.md)
-- [コントリビューション](docs/contributing.md)
+- [クイックスタート](docs/quick-start.md)
+- [はじめに](docs/getting-started.md)
+- [開発ガイド](docs/development-guide.md)
 
 ## ライセンス
 

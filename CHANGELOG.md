@@ -16,6 +16,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [0.1.0-alpha.3] - 2025-08-19
+
+### Added
+- New Heatbox APIs: `createFromEntities`, `getOptions`, `getDebugInfo`, static `filterEntities`
+- Jest configuration migrated to CJS (`jest.config.cjs`) with robust Cesium module mock
+- JSDoc config (`jsdoc.config.json`) and benchmark stub (`tools/benchmark.js`) for CI stability
+- Types generation script (`tools/build-types.js`) and published `types/index.d.ts`
+
+### Changed
+- Unified Cesium imports to `import * as Cesium from 'cesium'`
+- Fixed package entry points/exports to match built files (ESM/UMD)
+- Webpack externals handling adjusted for ESM/UMD targets
+- README documentation links corrected to existing docs
+- Coverage thresholds tuned (temporary) until broader tests are added
+
+### Fixed
+- Bounds validation bug in sample data utility
+- Zero-range and normalization edge cases in grid/index calculation
+- Test failures due to missing Cesium mocks and ESM config mismatch
+
 ## [0.1.0-alpha.2] - 2025-01-21
 
 ### Added

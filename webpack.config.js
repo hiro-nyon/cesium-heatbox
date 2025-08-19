@@ -13,15 +13,7 @@ module.exports = (env = {}, argv = {}) => {
       clean: true,
       globalObject: 'this'
     },
-    
-    externals: {
-      cesium: {
-        commonjs: 'cesium',
-        commonjs2: 'cesium',
-        amd: 'cesium',
-        root: 'Cesium'
-      }
-    },
+    // externals is assigned per target below
     
     module: {
       rules: [
@@ -70,12 +62,25 @@ module.exports = (env = {}, argv = {}) => {
     config.experiments = {
       outputModule: true
     };
+    // ESM externals: keep as import 'cesium'
+    config.externalsType = 'module';
+    config.externals = {
+      cesium: 'cesium'
+    };
   } else {
     config.output.filename = isProduction ? 'cesium-heatbox.umd.min.js' : 'cesium-heatbox.umd.js';
     config.output.library = {
       name: 'CesiumHeatbox',
       type: 'umd',
       export: 'default'
+    };
+    config.externals = {
+      cesium: {
+        commonjs: 'cesium',
+        commonjs2: 'cesium',
+        amd: 'cesium',
+        root: 'Cesium'
+      }
     };
   }
 
