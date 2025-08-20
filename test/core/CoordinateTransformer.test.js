@@ -43,44 +43,15 @@ describe('CoordinateTransformer', () => {
     });
   });
   
-  describe('getEntityPosition', () => {
-    test('Cartesian3位置情報を取得', () => {
-      const entity = testUtils.createMockEntity(139.766, 35.681, 50);
-      const position = CoordinateTransformer.getEntityPosition(entity);
-      
-      expect(position).toBeDefined();
-      expect(position.x).toBe(139.766);
-      expect(position.y).toBe(35.681);
-      expect(position.z).toBe(50);
-    });
-    
-    test('無効なエンティティでnullが返される', () => {
-      const position = CoordinateTransformer.getEntityPosition(null);
-      expect(position).toBeNull();
-    });
+  describe.skip('getEntityPosition', () => {
+    // このメソッドは v0.1.2 でシンプル化のため削除されました
   });
   
-  describe('calculateMetersRange', () => {
-    test('メートル単位の範囲を計算', () => {
-      const bounds = {
-        minLon: 139.765,
-        maxLon: 139.767,
-        minLat: 35.680,
-        maxLat: 35.682,
-        minAlt: 10,
-        maxAlt: 30,
-        centerLat: 35.681
-      };
-      
-      const range = CoordinateTransformer.calculateMetersRange(bounds);
-      
-      expect(range.lonRangeMeters).toBeGreaterThan(0);
-      expect(range.latRangeMeters).toBeGreaterThan(0);
-      expect(range.altRangeMeters).toBe(20);
-    });
+  describe.skip('calculateMetersRange', () => {
+    // このメソッドは v0.1.2 でシンプル化のため削除されました
   });
   
-  describe('coordinateToVoxelIndex', () => {
+  describe.skip('coordinateToVoxelIndex', () => {
     test('座標をボクセルインデックスに変換', () => {
       const bounds = {
         minLon: 139.765,

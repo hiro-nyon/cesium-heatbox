@@ -29,24 +29,13 @@ describe('DataProcessor utils', () => {
     expect(stats.averageCount).toBeCloseTo(2);
   });
 
-  test('filterVoxelData が条件でフィルタ', () => {
-    const vd = makeVoxelData([
-      { x: 0, y: 0, z: 0, count: 1 },
-      { x: 1, y: 1, z: 1, count: 3 }
-    ]);
-    const filtered = DataProcessor.filterVoxelData(vd, v => v.count >= 2);
-    expect(filtered.size).toBe(1);
+  // filterVoxelData と sortVoxelsByDensity は v0.1.2 でシンプル化のため削除
+  test.skip('filterVoxelData が条件でフィルタ', () => {
+    // このメソッドは削除されました
   });
 
-  test('sortVoxelsByDensity が昇降順にソート', () => {
-    const vd = makeVoxelData([
-      { x: 0, y: 0, z: 0, count: 1 },
-      { x: 1, y: 1, z: 1, count: 3 }
-    ]);
-    const desc = DataProcessor.sortVoxelsByDensity(vd, false);
-    expect(desc[0].count).toBe(3);
-    const asc = DataProcessor.sortVoxelsByDensity(vd, true);
-    expect(asc[0].count).toBe(1);
+  test.skip('sortVoxelsByDensity が昇降順にソート', () => {
+    // このメソッドは削除されました
   });
 
   test('getTopNVoxels が上位Nを返す', () => {
@@ -59,17 +48,8 @@ describe('DataProcessor utils', () => {
     expect(top2.map(v => v.count)).toEqual([3, 2]);
   });
 
-  test('generateDetailedReport が分布と分位数を返す', () => {
-    const grid = { totalVoxels: 10 };
-    const vd = makeVoxelData([
-      { x: 0, y: 0, z: 0, count: 1 },
-      { x: 1, y: 1, z: 1, count: 3 },
-      { x: 2, y: 2, z: 2, count: 2 }
-    ]);
-    const base = DataProcessor.calculateStatistics(vd, grid);
-    const rep = DataProcessor.generateDetailedReport(base, vd);
-    expect(rep.densityDistribution['1']).toBe(1);
-    expect(rep.percentiles.p50).toBeGreaterThanOrEqual(1);
+  test.skip('generateDetailedReport が分布と分位数を返す', () => {
+    // このメソッドは v0.1.2 でシンプル化のため削除されました
   });
 });
 

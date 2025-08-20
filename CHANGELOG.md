@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
-## [0.1.2] - 2025-10-05
+## [0.1.2] - 2025-08-20
 
 ### Added
 - `wireframeOnly` オプション: 枠線のみ表示で視認性を大幅改善
@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - ESLintエラーとワーニングを修正
 - 未使用変数とconsole.logの適切な処理
+- v0.1.2のシンプル化に伴うテストケースの更新と修正
 
 ## [0.1.1] - 2025-08-20
 

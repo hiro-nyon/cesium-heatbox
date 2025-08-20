@@ -40,12 +40,9 @@ describe('VoxelRenderer', () => {
 
     renderer.render(voxelData, bounds, grid, statistics);
 
-    // 1つの塗りつぶしプリミティブ + 1つのアウトラインプリミティブが追加される
-    expect(viewer.scene.primitives.add).toHaveBeenCalledTimes(2);
-    const fillPrimitive = viewer.scene.primitives.add.mock.calls[0][0];
-    const outlinePrimitive = viewer.scene.primitives.add.mock.calls[1][0];
-    expect(fillPrimitive.options.geometryInstances.length).toBe(1);
-    expect(outlinePrimitive.options.geometryInstances.length).toBe(1);
+    // v0.1.2からEntityベースになったため、entities.addが呼ばれる
+    expect(viewer.entities.add).toHaveBeenCalled();
+    expect(renderer.voxelEntities.length).toBeGreaterThan(0);
   });
 });
 
