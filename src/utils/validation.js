@@ -20,9 +20,9 @@ export function isValidViewer(viewer) {
     return false;
   }
   
-  // WebGL対応チェック
+  // WebGL対応チェック（WebGL2 も許容）
   const canvas = viewer.scene.canvas;
-  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
   if (!gl) {
     return false;
   }
