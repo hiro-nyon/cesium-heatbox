@@ -1,0 +1,69 @@
+# Getting Started
+
+このページでは、ライブラリ利用者向けに最短で使い始めるための手順を説明します。
+
+## インストール
+```
+npm install cesium cesium-heatbox
+```
+
+Peer Dependency として Cesium を別途インストールしてください。
+
+## 使い方（基本）
+```javascript
+import Heatbox from 'cesium-heatbox';
+
+// 1) Cesium Viewer の用意
+const viewer = new Cesium.Viewer('cesiumContainer');
+
+// 2) Heatbox を初期化
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 20,         // ボクセル一辺（m）
+  opacity: 0.8,          // データボクセル不透明度
+  emptyOpacity: 0.03,    // 空ボクセル不透明度
+  showOutline: true,     // 枠線表示
+  showEmptyVoxels: false // 空ボクセル描画
+});
+
+// 3) エンティティからヒートマップ生成（非同期）
+const entities = viewer.entities.values;
+const stats = await heatbox.createFromEntities(entities);
+console.log('統計', stats);
+
+// 4) 表示切替・クリアなど
+heatbox.setVisible(true);
+// heatbox.clear();
+// heatbox.destroy();
+```
+
+## オプション一覧
+- `voxelSize` number（既定: 20）
+- `opacity` number 0–1（既定: 0.8）
+- `emptyOpacity` number 0–1（既定: 0.03）
+- `showOutline` boolean（既定: true）
+- `showEmptyVoxels` boolean（既定: false）
+- `minColor` [r,g,b]（既定: [0,32,255]）
+- `maxColor` [r,g,b]（既定: [255,64,0]）
+- `maxRenderVoxels` number（描画上限）
+- `batchMode` 'auto' | 'primitive' | 'entity'
+
+更新は `heatbox.updateOptions({ ... })` で反映できます。
+
+## 統計情報
+`getStatistics()` で取得できる主な項目:
+- `totalVoxels` 総ボクセル数
+- `nonEmptyVoxels` データ有りボクセル数
+- `emptyVoxels` 空ボクセル数
+- `totalEntities` 総エンティティ数
+- `minCount` / `maxCount` / `averageCount`
+
+## TypeScript
+型定義（`types/index.d.ts`）を同梱しています。ESM 環境でそのまま利用可能です。
+
+## 対応バンドル形式
+- ES Modules: `import Heatbox from 'cesium-heatbox'`
+- UMD: `<script src=".../cesium-heatbox.umd.min.js"></script>` → `window.CesiumHeatbox`
+
+## 次のステップ
+- 基本コードと UI 操作例: [[Examples]]
+- 詳細 API: [[API-Reference]]
