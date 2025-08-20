@@ -81,7 +81,11 @@ export class VoxelRenderer {
 
       // ボクセル本体のインスタンス
       instances.push(new Cesium.GeometryInstance({
-        geometry: new Cesium.BoxGeometry({ dimensions }),
+        geometry: new Cesium.BoxGeometry({
+          dimensions,
+          // Ensure compatibility with PerInstanceColorAppearance
+          vertexFormat: Cesium.PerInstanceColorAppearance.VERTEX_FORMAT
+        }),
         modelMatrix: modelMatrix,
         attributes: {
           color: Cesium.ColorGeometryInstanceAttribute.fromColor(color.withAlpha(opacity))
