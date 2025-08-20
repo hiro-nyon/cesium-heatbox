@@ -1,4 +1,4 @@
-# API リファレンス（概要）
+# API リファレンス（概要） - v0.1.1
 
 詳細な JSDoc は `docs/api/` を参照してください（リポジトリ同梱）。ここでは主な公開 API を概説します。
 
@@ -20,7 +20,8 @@ new Heatbox(viewer, options?)
 - `minColor?: [number,number,number]` デフォルト [0,32,255]
 - `maxColor?: [number,number,number]` デフォルト [255,64,0]
 - `maxRenderVoxels?: number` 描画上限（密度上位 N のみ描画）
-- `batchMode?: 'auto'|'primitive'|'entity'`
+
+> 注: v0.1.1からレンダリング実装がEntityベースに変更されました。`maxRenderVoxels`の適切な値は300前後を推奨します。
 
 ### 主要メソッド
 - `async createFromEntities(entities: Cesium.Entity[]): Promise<HeatboxStatistics>`

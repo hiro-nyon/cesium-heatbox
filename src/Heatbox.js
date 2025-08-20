@@ -49,43 +49,39 @@ export class Heatbox {
     }
     
     try {
+      console.log('Heatbox.setData - 処理開始:', entities.length, '個のエンティティ');
+      
       // 1. 境界計算
+      console.log('Step 1: 境界計算');
       this._bounds = CoordinateTransformer.calculateBounds(entities);
       if (!this._bounds) {
+        console.error('境界計算に失敗');
         this.clear();
         return;
       }
+      console.log('境界計算完了:', this._bounds);
 
-      // 2. グリッド生成（ボクセル上限に合わせて自動スケール）
-      let voxelSize = this.options.voxelSize;
-      let attempts = 0;
-      const MAX_ATTEMPTS = 5;
-      
-      while (attempts <= MAX_ATTEMPTS) {
-        const gridCandidate = VoxelGrid.createGrid(this._bounds, voxelSize);
-        const check = validateVoxelCount(gridCandidate.totalVoxels, voxelSize);
-        if (check.valid) {
-          if (check.warning && typeof console !== 'undefined') {
-            console.warn(check.error);
-          }
-          this._grid = gridCandidate;
-          this.options.voxelSize = voxelSize; // 正規化された値を保持
-          break;
-        }
-        if (!check.recommendedSize || attempts++ >= MAX_ATTEMPTS) {
-          throw new Error(check.error || 'Failed to determine suitable voxel size');
-        }
-        voxelSize = check.recommendedSize;
-      }
+      // 2. グリッド生成（シンプル化したアプローチ）
+      console.log('Step 2: グリッド生成 (サイズ:', this.options.voxelSize, 'm)');
+      this._grid = VoxelGrid.createGrid(this._bounds, this.options.voxelSize);
+      console.log('グリッド生成完了:', this._grid);
       
       // 3. エンティティ分類
+      console.log('Step 3: エンティティ分類');
       this._voxelData = DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid);
+      console.log('エンティティ分類完了:', this._voxelData.size, '個のボクセル');
       
       // 4. 統計計算
+      console.log('Step 4: 統計計算');
       this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid);
+      console.log('統計情報:', this._statistics);
       
       // 5. 描画
+      console.log('Step 5: 描画');
       this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+      console.log('描画完了');
+      
+      console.log('Heatbox.setData - 処理完了');
       
     } catch (error) {
       console.error('ヒートマップ作成エラー:', error);

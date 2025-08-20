@@ -1,29 +1,41 @@
 /**
- * ボクセルグリッドを管理するクラス
+ * ボクセルグリッドを管理するクラス（シンプル実装）
  */
-
-import { CoordinateTransformer } from './CoordinateTransformer.js';
 
 /**
  * 3Dボクセルグリッドを管理するクラス
  */
 export class VoxelGrid {
   /**
-   * 境界情報とボクセルサイズからグリッドを作成
+   * 境界情報とボクセルサイズからグリッドを作成（シンプル版）
    * @param {Object} bounds - 境界情報
    * @param {number} voxelSizeMeters - ボクセルサイズ（メートル）
    * @returns {Object} グリッド情報
    */
   static createGrid(bounds, voxelSizeMeters) {
-    const rangeInfo = CoordinateTransformer.calculateMetersRange(bounds);
-    const { lonRangeMeters, latRangeMeters, altRangeMeters } = rangeInfo;
+    // 緯度・経度をメートルに概算変換（シンプルな公式）
+    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+    const lonRangeMeters = (bounds.maxLon - bounds.minLon) * 111000 * Math.cos(centerLat * Math.PI / 180);
+    const latRangeMeters = (bounds.maxLat - bounds.minLat) * 111000;
+    const altRangeMeters = bounds.maxAlt - bounds.minAlt;
     
-    // 各軸のボクセル数を計算（範囲を内包する最小のボクセル数）
+    // 各軸のボクセル数を計算
     const numVoxelsX = Math.max(1, Math.ceil(lonRangeMeters / voxelSizeMeters));
     const numVoxelsY = Math.max(1, Math.ceil(latRangeMeters / voxelSizeMeters));
     const numVoxelsZ = Math.max(1, Math.ceil(altRangeMeters / voxelSizeMeters));
     
     const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
+    
+    console.log('VoxelGrid created:', {
+      numVoxelsX,
+      numVoxelsY,
+      numVoxelsZ,
+      totalVoxels,
+      voxelSizeMeters,
+      lonRangeMeters,
+      latRangeMeters,
+      altRangeMeters
+    });
     
     return {
       numVoxelsX,
@@ -59,54 +71,6 @@ export class VoxelGrid {
   }
   
   /**
-   * ボクセルインデックスが有効な範囲内かチェック
-   * @param {number} x - X軸インデックス
-   * @param {number} y - Y軸インデックス
-   * @param {number} z - Z軸インデックス
-   * @param {Object} grid - グリッド情報
-   * @returns {boolean} 有効な場合はtrue
-   */
-  static isValidVoxelIndex(x, y, z, grid) {
-    const { numVoxelsX, numVoxelsY, numVoxelsZ } = grid;
-    
-    return (
-      x >= 0 && x < numVoxelsX &&
-      y >= 0 && y < numVoxelsY &&
-      z >= 0 && z < numVoxelsZ
-    );
-  }
-  
-  /**
-   * 指定されたボクセルの隣接ボクセルを取得
-   * @param {number} x - X軸インデックス
-   * @param {number} y - Y軸インデックス
-   * @param {number} z - Z軸インデックス
-   * @param {Object} grid - グリッド情報
-   * @returns {Array} 隣接ボクセルのインデックス配列
-   */
-  static getNeighborVoxels(x, y, z, grid) {
-    const neighbors = [];
-    
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dz = -1; dz <= 1; dz++) {
-          if (dx === 0 && dy === 0 && dz === 0) continue;
-          
-          const nx = x + dx;
-          const ny = y + dy;
-          const nz = z + dz;
-          
-          if (this.isValidVoxelIndex(nx, ny, nz, grid)) {
-            neighbors.push({ x: nx, y: ny, z: nz });
-          }
-        }
-      }
-    }
-    
-    return neighbors;
-  }
-  
-  /**
    * グリッド内の全ボクセルを反復処理
    * @param {Object} grid - グリッド情報
    * @param {Function} callback - 各ボクセルに対するコールバック関数
@@ -122,33 +86,5 @@ export class VoxelGrid {
         }
       }
     }
-  }
-  
-  /**
-   * ボクセルの物理的な境界を計算
-   * @param {number} x - X軸インデックス
-   * @param {number} y - Y軸インデックス
-   * @param {number} z - Z軸インデックス
-   * @param {Object} bounds - 境界情報
-   * @param {Object} grid - グリッド情報
-   * @returns {Object} ボクセルの境界情報
-   */
-  static getVoxelBounds(x, y, z, bounds, grid) {
-    const { minLon, maxLon, minLat, maxLat, minAlt, maxAlt } = bounds;
-    const { numVoxelsX, numVoxelsY, numVoxelsZ } = grid;
-    
-    // ボクセルの境界を計算
-    const lonStep = (maxLon - minLon) / numVoxelsX;
-    const latStep = (maxLat - minLat) / numVoxelsY;
-    const altStep = (maxAlt - minAlt) / numVoxelsZ;
-    
-    return {
-      minLon: minLon + x * lonStep,
-      maxLon: minLon + (x + 1) * lonStep,
-      minLat: minLat + y * latStep,
-      maxLat: minLat + (y + 1) * latStep,
-      minAlt: minAlt + z * altStep,
-      maxAlt: minAlt + (z + 1) * altStep
-    };
   }
 }

@@ -1,9 +1,8 @@
 /**
  * ボクセルの描画を担当するクラス
+ * プロトタイプ実装ベース（シンプル・確実動作重視）
  */
 import * as Cesium from 'cesium';
-import { CoordinateTransformer } from './CoordinateTransformer.js';
-import { VoxelGrid } from './VoxelGrid.js';
 
 /**
  * 3Dボクセルの描画を担当するクラス
@@ -25,11 +24,13 @@ export class VoxelRenderer {
       showEmptyVoxels: false,
       ...options
     };
-    this.primitives = [];
+    this.voxelEntities = [];
+    
+    console.log('VoxelRenderer initialized with options:', this.options);
   }
 
   /**
-   * ボクセルデータを描画
+   * ボクセルデータを描画（シンプル実装）
    * @param {Map} voxelData - ボクセルデータ
    * @param {Object} bounds - 境界情報
    * @param {Object} grid - グリッド情報
@@ -37,102 +38,167 @@ export class VoxelRenderer {
    */
   render(voxelData, bounds, grid, statistics) {
     this.clear();
+    console.log('VoxelRenderer.render - Starting render with simplified approach', {
+      voxelDataSize: voxelData.size,
+      bounds,
+      grid,
+      statistics
+    });
 
-    const instances = [];
-    const outlineInstances = [];
+    // バウンディングボックスのデバッグ表示
+    this._renderBoundingBox(bounds);
 
-    // レンダリング上限: 非空ボクセルが上限を超える場合は高密度から描画
-    let allowedKeys = null;
-    if (voxelData.size > (this.options.maxRenderVoxels || Infinity)) {
-      const sorted = Array.from(voxelData.values()).sort((a, b) => b.count - a.count);
-      const top = sorted.slice(0, this.options.maxRenderVoxels);
-      allowedKeys = new Set(top.map(v => VoxelGrid.getVoxelKey(v.x, v.y, v.z)));
+    // 表示するボクセルのリスト
+    let displayVoxels = [];
+
+    // 空ボクセルのフィルタリング
+    if (this.options.showEmptyVoxels) {
+      // 全ボクセルを生成（これは上限値が大きいとメモリ消費とパフォーマンスに影響する）
+      const maxVoxels = Math.min(grid.totalVoxels, this.options.maxRenderVoxels || 10000);
+      console.log(`Generating grid for up to ${maxVoxels} voxels`);
+      
+      // 空のボクセルも含めて全ボクセルを追加
+      for (let x = 0; x < grid.numVoxelsX; x++) {
+        for (let y = 0; y < grid.numVoxelsY; y++) {
+          for (let z = 0; z < grid.numVoxelsZ; z++) {
+            const voxelKey = `${x},${y},${z}`;
+            const voxelInfo = voxelData.get(voxelKey) || { x, y, z, count: 0 };
+            
+            displayVoxels.push({
+              key: voxelKey,
+              info: voxelInfo
+            });
+            
+            if (displayVoxels.length >= maxVoxels) {
+              console.log(`Reached maximum voxel limit of ${maxVoxels}`);
+              break;
+            }
+          }
+          if (displayVoxels.length >= maxVoxels) break;
+        }
+        if (displayVoxels.length >= maxVoxels) break;
+      }
+    } else {
+      // データがあるボクセルのみ表示
+      displayVoxels = Array.from(voxelData.entries()).map(([key, info]) => {
+        return { key, info };
+      });
+      
+      // 密度でソートして上位を表示
+      if (this.options.maxRenderVoxels && displayVoxels.length > this.options.maxRenderVoxels) {
+        displayVoxels.sort((a, b) => b.info.count - a.info.count);
+        displayVoxels = displayVoxels.slice(0, this.options.maxRenderVoxels);
+        console.log(`Limited to ${displayVoxels.length} highest density voxels`);
+      }
     }
 
-    VoxelGrid.iterateAllVoxels(grid, (x, y, z, key) => {
-      const voxelInfo = voxelData.get(key);
-      const hasData = !!voxelInfo;
+    console.log(`Rendering ${displayVoxels.length} voxels`);
+    
+    // レンダリングカウント
+    let renderedCount = 0;
 
-      if (allowedKeys && (!hasData || !allowedKeys.has(key))) {
-        return; // 上位N以外は描画しない、空ボクセルも描画しない
-      }
-
-      if (!hasData && !this.options.showEmptyVoxels) {
-        return;
-      }
-
-      const centerCoord = CoordinateTransformer.voxelIndexToCoordinate(x, y, z, bounds, grid);
-      const worldPosition = CoordinateTransformer.coordinateToCartesian3(centerCoord.lon, centerCoord.lat, centerCoord.alt);
-      
-      const dimensions = new Cesium.Cartesian3(grid.voxelSizeMeters, grid.voxelSizeMeters, grid.voxelSizeMeters);
-      const modelMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(worldPosition);
-
-      let color, opacity;
-      if (hasData) {
-        const normalizedDensity = statistics.maxCount > statistics.minCount
-          ? (voxelInfo.count - statistics.minCount) / (statistics.maxCount - statistics.minCount)
-          : 0;
-        color = this.interpolateColor(normalizedDensity);
-        opacity = this.options.opacity;
-      } else {
-        color = Cesium.Color.LIGHTGRAY;
-        opacity = this.options.emptyOpacity;
-      }
-
-      // ボクセル本体のインスタンス
-      instances.push(new Cesium.GeometryInstance({
-        geometry: new Cesium.BoxGeometry({
-          dimensions,
-          // Ensure compatibility with PerInstanceColorAppearance
-          vertexFormat: Cesium.PerInstanceColorAppearance.VERTEX_FORMAT
-        }),
-        modelMatrix: modelMatrix,
-        attributes: {
-          color: Cesium.ColorGeometryInstanceAttribute.fromColor(color.withAlpha(opacity))
-        },
-        id: {
-          type: 'voxel',
-          key: key,
-          info: voxelInfo || { x, y, z, count: 0 }
+    // 実際にボクセルを描画
+    displayVoxels.forEach(({ key, info }) => {
+      try {
+        const { x, y, z } = info;
+        
+        // ボクセル中心座標を計算（シンプルな方法）
+        const centerLon = bounds.minLon + (x + 0.5) * (bounds.maxLon - bounds.minLon) / grid.numVoxelsX;
+        const centerLat = bounds.minLat + (y + 0.5) * (bounds.maxLat - bounds.minLat) / grid.numVoxelsY;
+        const centerAlt = bounds.minAlt + (z + 0.5) * (bounds.maxAlt - bounds.minAlt) / grid.numVoxelsZ;
+        
+        // 密度に応じた色を計算
+        let color, opacity;
+        if (info.count === 0) {
+          // 空ボクセルの場合
+          color = Cesium.Color.LIGHTGRAY;
+          opacity = this.options.emptyOpacity;
+        } else {
+          // データありボクセルの場合
+          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
+            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
+          
+          color = this.interpolateColor(normalizedDensity);
+          opacity = this.options.opacity;
         }
-      }));
-
-      // 境界線のインスタンス
-      if (this.options.showOutline) {
-        outlineInstances.push(new Cesium.GeometryInstance({
-          geometry: new Cesium.BoxOutlineGeometry({ dimensions }),
-          modelMatrix: modelMatrix,
-          attributes: {
-            color: Cesium.ColorGeometryInstanceAttribute.fromColor(hasData ? color : Cesium.Color.DARKGRAY)
-          }
-        }));
+        
+        // エンティティを直接作成（シンプルな方法）
+        const entity = this.viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
+          box: {
+            dimensions: new Cesium.Cartesian3(
+              grid.voxelSizeMeters,
+              grid.voxelSizeMeters,
+              grid.voxelSizeMeters
+            ),
+            material: color.withAlpha(opacity),
+            outline: this.options.showOutline,
+            outlineColor: info.count > 0 ? 
+              color.withAlpha(Math.min(opacity + 0.2, 1.0)) : 
+              Cesium.Color.DARKGRAY.withAlpha(0.3)
+          },
+          properties: {
+            type: 'voxel',
+            key: key,
+            count: info.count,
+            x: x,
+            y: y,
+            z: z
+          },
+          description: this.createVoxelDescription(info, key)
+        });
+        
+        this.voxelEntities.push(entity);
+        renderedCount++;
+      } catch (error) {
+        console.warn('Error rendering voxel:', error);
       }
     });
 
-    if (instances.length > 0) {
-      const primitive = new Cesium.Primitive({
-        geometryInstances: instances,
-        appearance: new Cesium.PerInstanceColorAppearance({
-          translucent: true,
-          closed: true
-        }),
-        asynchronous: false
-      });
-      this.viewer.scene.primitives.add(primitive);
-      this.primitives.push(primitive);
-    }
+    console.log(`Successfully rendered ${renderedCount} voxels`);
+  }
 
-    if (outlineInstances.length > 0) {
-      const outlinePrimitive = new Cesium.Primitive({
-        geometryInstances: outlineInstances,
-        appearance: new Cesium.PerInstanceColorAppearance({
-          flat: true,
-          translucent: false
-        }),
-        asynchronous: false
+  /**
+   * バウンディングボックスを描画（デバッグ用）
+   * @param {Object} bounds - 境界情報
+   * @private
+   */
+  _renderBoundingBox(bounds) {
+    if (!bounds) return;
+
+    try {
+      // 中心点
+      const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+      const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+      const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
+      
+      // サイズ計算（概算）
+      const widthMeters = (bounds.maxLon - bounds.minLon) * 111000 * Math.cos(centerLat * Math.PI / 180);
+      const depthMeters = (bounds.maxLat - bounds.minLat) * 111000;
+      const heightMeters = bounds.maxAlt - bounds.minAlt;
+      
+      // 境界ボックスの作成
+      const boundingBox = this.viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
+        box: {
+          dimensions: new Cesium.Cartesian3(widthMeters, depthMeters, heightMeters),
+          material: Cesium.Color.YELLOW.withAlpha(0.1),
+          outline: true,
+          outlineColor: Cesium.Color.YELLOW.withAlpha(0.3),
+          outlineWidth: 2
+        },
+        description: `バウンディングボックス<br>サイズ: ${widthMeters.toFixed(1)} x ${depthMeters.toFixed(1)} x ${heightMeters.toFixed(1)} m`
       });
-      this.viewer.scene.primitives.add(outlinePrimitive);
-      this.primitives.push(outlinePrimitive);
+      
+      this.voxelEntities.push(boundingBox);
+      
+      console.log('Debug bounding box added:', {
+        center: { lon: centerLon, lat: centerLat, alt: centerAlt },
+        size: { width: widthMeters, depth: depthMeters, height: heightMeters }
+      });
+      
+    } catch (error) {
+      console.warn('Failed to render bounding box:', error);
     }
   }
 
@@ -155,23 +221,41 @@ export class VoxelRenderer {
   /**
    * ボクセルの説明文を生成
    * @param {Object} voxelInfo - ボクセル情報
+   * @param {string} voxelKey - ボクセルキー
    * @returns {string} HTML形式の説明文
    */
-  createVoxelDescription(voxelInfo) {
+  createVoxelDescription(voxelInfo, voxelKey) {
     return `
-      <b>Voxel [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</b><br>
-      Entity Count: ${voxelInfo.count}<br>
+      <div style="padding: 10px; font-family: Arial, sans-serif;">
+        <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
+        <table style="width: 100%;">
+          <tr><td><b>エンティティ数:</b></td><td>${voxelInfo.count}</td></tr>
+          <tr><td><b>ID:</b></td><td>${voxelKey}</td></tr>
+        </table>
+      </div>
     `;
   }
 
   /**
-   * 描画されたプリミティブを全てクリア
+   * 描画されたエンティティを全てクリア
    */
   clear() {
-    for (const primitive of this.primitives) {
-      this.viewer.scene.primitives.remove(primitive);
-    }
-    this.primitives = [];
+    console.log('VoxelRenderer.clear - Removing', this.voxelEntities.length, 'entities');
+    
+    this.voxelEntities.forEach(entity => {
+      try {
+        // isDestroyedのチェックを安全に行う
+        const isDestroyed = typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
+        
+        if (entity && !isDestroyed) {
+          this.viewer.entities.remove(entity);
+        }
+      } catch (error) {
+        console.warn('Entity removal error:', error);
+      }
+    });
+    
+    this.voxelEntities = [];
   }
 
   /**
@@ -179,8 +263,19 @@ export class VoxelRenderer {
    * @param {boolean} show - 表示する場合はtrue
    */
   setVisible(show) {
-    for (const primitive of this.primitives) {
-      primitive.show = show;
-    }
+    console.log('VoxelRenderer.setVisible:', show);
+    
+    this.voxelEntities.forEach(entity => {
+      try {
+        // isDestroyedのチェックを安全に行う
+        const isDestroyed = typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
+        
+        if (entity && !isDestroyed) {
+          entity.show = show;
+        }
+      } catch (error) {
+        console.warn('Entity visibility error:', error);
+      }
+    });
   }
 }

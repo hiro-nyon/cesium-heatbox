@@ -16,7 +16,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
-## [0.1.0] - 2025-09-15
+## [0.1.1] - 2025-08-20
+
+### Changed
+- レンダリング実装をPrimitiveベースからEntityベースに変更
+- コンポーネント設計をシンプル化（直接的なアプローチ）
+- 座標変換ロジックの簡素化とパフォーマンス最適化
+- デバッグログ出力の強化
+
+### Fixed
+- Cesium 1.132との互換性問題を解決
+- `entity.isDestroyed` メソッド呼び出しでのエラー対応
+- エンティティの削除と表示/非表示切り替えでのエラー処理強化
+- バウンディングボックス表示によるデバッグ支援機能追加
+
+## [0.1.0] - 2025-08-20
 
 ### Added
 - GitHub Actions CI workflow

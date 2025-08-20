@@ -1,16 +1,15 @@
 /**
- * データ処理を担当するクラス
+ * データ処理を担当するクラス（シンプル実装）
  */
-import { CoordinateTransformer } from './CoordinateTransformer.js';
+import * as Cesium from 'cesium';
 import { VoxelGrid } from './VoxelGrid.js';
-import { hasValidPosition } from '../utils/validation.js';
 
 /**
  * エンティティデータの処理を担当するクラス
  */
 export class DataProcessor {
   /**
-   * エンティティをボクセルに分類
+   * エンティティをボクセルに分類（シンプル実装）
    * @param {Array} entities - エンティティ配列
    * @param {Object} bounds - 境界情報
    * @param {Object} grid - グリッド情報
@@ -19,49 +18,92 @@ export class DataProcessor {
   static classifyEntitiesIntoVoxels(entities, bounds, grid) {
     const voxelData = new Map();
     let processedCount = 0;
+    let skippedCount = 0;
     
-    for (const entity of entities) {
-      if (!hasValidPosition(entity)) {
-        continue;
-      }
-      
-      const position = CoordinateTransformer.getEntityPosition(entity);
-      if (!position) {
-        continue;
-      }
-      
+    console.log(`Processing ${entities.length} entities for classification`);
+    
+    const currentTime = Cesium.JulianDate.now();
+    
+    entities.forEach((entity, index) => {
       try {
-        const voxelIndex = CoordinateTransformer.cartesianToVoxelIndex(position, bounds, grid);
+        // エンティティの位置を取得（シンプルなアプローチ）
+        let position;
+        if (entity.position) {
+          if (typeof entity.position.getValue === 'function') {
+            position = entity.position.getValue(currentTime);
+          } else {
+            position = entity.position;
+          }
+        }
         
-        // 範囲チェック
-        if (voxelIndex.x >= 0 && voxelIndex.x < grid.numVoxelsX &&
-            voxelIndex.y >= 0 && voxelIndex.y < grid.numVoxelsY &&
-            voxelIndex.z >= 0 && voxelIndex.z < grid.numVoxelsZ) {
+        if (!position) {
+          skippedCount++;
+          return; // 位置がない場合はスキップ
+        }
+        
+        // Cartesian3からCartographicに変換
+        const cartographic = Cesium.Cartographic.fromCartesian(position);
+        if (!cartographic) {
+          skippedCount++;
+          return;
+        }
+        
+        // 地理座標に変換
+        const lon = Cesium.Math.toDegrees(cartographic.longitude);
+        const lat = Cesium.Math.toDegrees(cartographic.latitude);
+        const alt = cartographic.height;
+        
+        // 範囲外チェック（少しマージンを持たせる）
+        if (lon < bounds.minLon - 0.001 || lon > bounds.maxLon + 0.001 ||
+            lat < bounds.minLat - 0.001 || lat > bounds.maxLat + 0.001 ||
+            alt < bounds.minAlt - 1 || alt > bounds.maxAlt + 1) {
+          skippedCount++;
+          return;
+        }
+        
+        // ボクセルインデックスを計算（直接的な方法）
+        const voxelX = Math.floor(
+          (lon - bounds.minLon) / (bounds.maxLon - bounds.minLon) * grid.numVoxelsX
+        );
+        const voxelY = Math.floor(
+          (lat - bounds.minLat) / (bounds.maxLat - bounds.minLat) * grid.numVoxelsY
+        );
+        const voxelZ = Math.floor(
+          (alt - bounds.minAlt) / (bounds.maxAlt - bounds.minAlt) * grid.numVoxelsZ
+        );
+        
+        // インデックスが有効範囲内かチェック
+        if (voxelX >= 0 && voxelX < grid.numVoxelsX &&
+            voxelY >= 0 && voxelY < grid.numVoxelsY &&
+            voxelZ >= 0 && voxelZ < grid.numVoxelsZ) {
             
-            const voxelKey = VoxelGrid.getVoxelKey(voxelIndex.x, voxelIndex.y, voxelIndex.z);
-            
-            if (!voxelData.has(voxelKey)) {
-              voxelData.set(voxelKey, {
-                x: voxelIndex.x,
-                y: voxelIndex.y,
-                z: voxelIndex.z,
-                entities: [],
-                count: 0
-              });
-            }
-            
-            const voxelInfo = voxelData.get(voxelKey);
-            voxelInfo.entities.push(entity);
-            voxelInfo.count++;
-            
-            processedCount++;
+          const voxelKey = VoxelGrid.getVoxelKey(voxelX, voxelY, voxelZ);
+          
+          if (!voxelData.has(voxelKey)) {
+            voxelData.set(voxelKey, {
+              x: voxelX,
+              y: voxelY,
+              z: voxelZ,
+              entities: [],
+              count: 0
+            });
+          }
+          
+          const voxelInfo = voxelData.get(voxelKey);
+          voxelInfo.entities.push(entity);
+          voxelInfo.count++;
+          
+          processedCount++;
+        } else {
+          skippedCount++;
         }
       } catch (error) {
-        console.warn('エンティティの処理に失敗:', error);
+        console.warn(`エンティティ ${index} の処理に失敗:`, error);
+        skippedCount++;
       }
-    }
+    });
     
-    console.log(`${processedCount}個のエンティティを${voxelData.size}個のボクセルに分類`);
+    console.log(`${processedCount}個のエンティティを${voxelData.size}個のボクセルに分類（${skippedCount}個はスキップ）`);
     return voxelData;
   }
   
@@ -72,50 +114,33 @@ export class DataProcessor {
    * @returns {Object} 統計情報
    */
   static calculateStatistics(voxelData, grid) {
+    if (voxelData.size === 0) {
+      return {
+        totalVoxels: grid.totalVoxels,
+        nonEmptyVoxels: 0,
+        emptyVoxels: grid.totalVoxels,
+        totalEntities: 0,
+        minCount: 0,
+        maxCount: 0,
+        averageCount: 0
+      };
+    }
+    
     const counts = Array.from(voxelData.values()).map(voxel => voxel.count);
     const totalEntities = counts.reduce((sum, count) => sum + count, 0);
     
-    return {
+    const stats = {
       totalVoxels: grid.totalVoxels,
       nonEmptyVoxels: voxelData.size,
       emptyVoxels: grid.totalVoxels - voxelData.size,
       totalEntities: totalEntities,
-      minCount: counts.length > 0 ? Math.min(...counts) : 0,
-      maxCount: counts.length > 0 ? Math.max(...counts) : 0,
-      averageCount: voxelData.size > 0 ? totalEntities / voxelData.size : 0
+      minCount: Math.min(...counts),
+      maxCount: Math.max(...counts),
+      averageCount: totalEntities / voxelData.size
     };
-  }
-  
-  /**
-   * ボクセルデータをフィルタリング
-   * @param {Map} voxelData - ボクセルデータ
-   * @param {Function} filterFunc - フィルタ関数
-   * @returns {Map} フィルタリングされたボクセルデータ
-   */
-  static filterVoxelData(voxelData, filterFunc) {
-    const filteredData = new Map();
     
-    for (const [key, voxelInfo] of voxelData.entries()) {
-      if (filterFunc(voxelInfo)) {
-        filteredData.set(key, voxelInfo);
-      }
-    }
-    
-    return filteredData;
-  }
-  
-  /**
-   * 密度に基づいてボクセルデータをソート
-   * @param {Map} voxelData - ボクセルデータ
-   * @param {boolean} ascending - 昇順の場合はtrue
-   * @returns {Array} ソートされたボクセル情報配列
-   */
-  static sortVoxelsByDensity(voxelData, ascending = false) {
-    const voxels = Array.from(voxelData.values());
-    
-    return voxels.sort((a, b) => {
-      return ascending ? a.count - b.count : b.count - a.count;
-    });
+    console.log('統計情報計算完了:', stats);
+    return stats;
   }
   
   /**
@@ -125,45 +150,15 @@ export class DataProcessor {
    * @returns {Array} 上位N個のボクセル情報
    */
   static getTopNVoxels(voxelData, topN) {
-    const sortedVoxels = this.sortVoxelsByDensity(voxelData, false);
-    return sortedVoxels.slice(0, topN);
-  }
-  
-  /**
-   * 統計情報の詳細レポートを生成
-   * @param {Object} statistics - 統計情報
-   * @param {Map} voxelData - ボクセルデータ
-   * @returns {Object} 詳細レポート
-   */
-  static generateDetailedReport(statistics, voxelData) {
-    const densityDistribution = {};
-    
-    // 密度分布を計算
-    for (const voxelInfo of voxelData.values()) {
-      const count = voxelInfo.count;
-      densityDistribution[count] = (densityDistribution[count] || 0) + 1;
+    if (voxelData.size === 0 || topN <= 0) {
+      return [];
     }
     
-    // 密度の分位数を計算
-    const sortedCounts = Array.from(voxelData.values())
-      .map(v => v.count)
-      .sort((a, b) => a - b);
+    // ボクセルを密度でソート
+    const sortedVoxels = Array.from(voxelData.values())
+      .sort((a, b) => b.count - a.count);
     
-    const getPercentile = (arr, percentile) => {
-      const index = Math.floor(arr.length * percentile / 100);
-      return arr[index] || 0;
-    };
-    
-    return {
-      ...statistics,
-      densityDistribution,
-      percentiles: {
-        p25: getPercentile(sortedCounts, 25),
-        p50: getPercentile(sortedCounts, 50),
-        p75: getPercentile(sortedCounts, 75),
-        p90: getPercentile(sortedCounts, 90),
-        p95: getPercentile(sortedCounts, 95)
-      }
-    };
+    // 上位N個を返す
+    return sortedVoxels.slice(0, Math.min(topN, sortedVoxels.length));
   }
 }

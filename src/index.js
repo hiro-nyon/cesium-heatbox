@@ -18,7 +18,7 @@ export { Heatbox as CesiumHeatbox };
 /**
  * ライブラリのメタ情報
  */
-export const VERSION = '0.1.0';
+export const VERSION = '0.1.1';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 
@@ -45,7 +45,7 @@ export function getEnvironmentInfo() {
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       webglSupport = !!gl;
     }
-  } catch (_e) {
+  } catch (e) {
     webglSupport = false;
   }
   
@@ -58,7 +58,7 @@ export function getEnvironmentInfo() {
   };
 }
 
-// ライブラリの初期化ログ（開発環境のみ）
-if (typeof console !== 'undefined' && process.env.NODE_ENV !== 'production') {
+// ライブラリの初期化ログ
+if (typeof console !== 'undefined') {
   console.log(`CesiumJS Heatbox v${VERSION} loaded`);
 }
