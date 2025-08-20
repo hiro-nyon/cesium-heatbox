@@ -1,10 +1,24 @@
 # Getting Started
 
+> **⚠️ 重要**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。
+
 このページでは、ライブラリ利用者向けに最短で使い始めるための手順を説明します。
 
 ## インストール
+
+現在npm未登録のため、以下の方法で取得してください：
+
+### GitHubから直接取得
+```bash
+git clone https://github.com/hiro-nyon/cesium-heatbox.git
+cd cesium-heatbox
+npm install
+npm run build:umd
 ```
-npm install cesium cesium-heatbox
+
+### CDN経由
+```html
+<script src="https://raw.githubusercontent.com/hiro-nyon/cesium-heatbox/main/dist/cesium-heatbox.umd.min.js"></script>
 ```
 
 Peer Dependency として Cesium を別途インストールしてください。

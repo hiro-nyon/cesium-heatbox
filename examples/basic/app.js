@@ -70,6 +70,7 @@ async function initializeApp() {
     const uiElementIds = [
       'generateBtn', 'createHeatmapBtn', 'clearBtn', 'toggleBtn',
       'entityCount', 'voxelSize', 'opacity', 'opacityValue', 'showEmpty', 'showOutline',
+      'wireframeOnly', 'heightBased', // v0.1.2 新機能
       'statistics', 'statisticsContent', 'status'
     ];
     uiElementIds.forEach(id => {
@@ -112,26 +113,31 @@ function setupEventListeners() {
     }, 10);
   });
   
-  elements.createHeatmapBtn.addEventListener('click', () => {
+  elements.createHeatmapBtn.addEventListener('click', async () => {
     if (testEntities.length === 0) {
       updateStatus('エンティティを先に生成してください', true);
       return;
     }
     updateStatus('ヒートマップを作成中...');
     
-    setTimeout(() => {
+    try {
       const options = getOptionsFromUI();
-      heatbox.updateOptions(options); // 先にオプションを更新
-      heatbox.setData(testEntities); // データセット
+      // v0.1.2: 新しいヒートボックスインスタンスを作成
+      heatbox = new Heatbox(viewer, options);
       
-      const stats = heatbox.getStatistics();
+      // v0.1.2: createFromEntitiesを使用（非同期）
+      const stats = await heatbox.createFromEntities(testEntities);
+      
       if (stats) {
         displayStatistics(stats);
         updateStatus('ヒートマップを作成しました');
         elements.clearBtn.disabled = false;
         elements.toggleBtn.disabled = false;
       }
-    }, 10);
+    } catch (error) {
+      console.error('ヒートマップ作成エラー:', error);
+      updateStatus('ヒートマップ作成に失敗しました', true);
+    }
   });
   
   elements.clearBtn.addEventListener('click', () => {
@@ -172,7 +178,11 @@ function getOptionsFromUI() {
     voxelSize: parseInt(elements.voxelSize.value, 10),
     opacity: parseFloat(elements.opacity.value),
     showEmptyVoxels: elements.showEmpty.checked,
-    showOutline: elements.showOutline.checked
+    showOutline: elements.showOutline.checked,
+    // v0.1.2 新機能
+    wireframeOnly: elements.wireframeOnly?.checked || false,
+    heightBased: elements.heightBased?.checked || false,
+    outlineWidth: 2
   };
 }
 

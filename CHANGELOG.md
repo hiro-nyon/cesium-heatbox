@@ -23,16 +23,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `heightBased` オプション: 密度に応じた高さベース表現
 - `outlineWidth` オプション: 枠線の太さ調整機能
 - Playgroundに新しい表示オプションのUI追加
+- `examples/advanced/wireframe-height-demo.js`: v0.1.2新機能の包括的デモ
+- `examples/advanced/performance-optimization.js`: 大量データ処理とパフォーマンス最適化例
+- `examples/advanced/README.md`: 高度な使用例の詳細ドキュメント
 
 ### Changed
 - 重なったボクセルの視認性問題を解決
 - デバッグログ出力の最適化（ESLintエラー対応）
 - 全ドキュメントにnpm未登録状況の明記とGitHub取得方法の案内
+- `examples/basic/`: v0.1.2新機能に対応したUI・ロジック更新
+- `examples/advanced/entity-filtering.js`: 削除されたAPIの置き換えと新機能対応
+- `wiki/Examples.md`: v0.1.2新機能の実用例を追加
+- `wiki/Getting-Started.md`: npm未登録対応とインストール手順更新
+- `types/index.d.ts`: 新オプションの型定義追加
 
 ### Fixed
 - ESLintエラーとワーニングを修正
 - 未使用変数とconsole.logの適切な処理
 - v0.1.2のシンプル化に伴うテストケースの更新と修正
+- 削除されたAPI（`CoordinateTransformer.getEntityPosition`等）を使用していたexamplesを修正
 
 ## [0.1.1] - 2025-08-20
 

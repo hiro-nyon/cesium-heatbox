@@ -7,7 +7,13 @@
 import Heatbox from 'cesium-heatbox';
 
 const viewer = new Cesium.Viewer('cesiumContainer', { infoBox: true });
-const heatbox = new Heatbox(viewer, { voxelSize: 30, opacity: 0.7 });
+const heatbox = new Heatbox(viewer, { 
+  voxelSize: 30, 
+  opacity: 0.7,
+  // v0.1.2 新機能
+  wireframeOnly: true,  // 枠線のみ表示で視認性向上
+  heightBased: false    // 高さベース表現
+});
 
 // 任意のエンティティを追加（例: ランダムポイント）
 for (let i = 0; i < 1000; i++) {
@@ -46,6 +52,48 @@ console.log({
 // point エンティティのみ対象にする
 const points = Heatbox.filterEntities(viewer.entities.values, e => !!e.point);
 await heatbox.createFromEntities(points);
+```
+
+## v0.1.2 新機能の活用
+
+### 枠線のみ表示（視認性改善）
+```js
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 25,
+  wireframeOnly: true,    // ボックス本体を透明に
+  showOutline: true,      // 枠線を表示
+  outlineWidth: 2         // 枠線の太さ
+});
+
+// 重なったボクセルでも内部構造が見やすくなります
+await heatbox.createFromEntities(entities);
+```
+
+### 高さベース密度表現
+```js
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 30,
+  heightBased: true,      // 密度に応じて高さを調整
+  wireframeOnly: false,   // 通常の塗りつぶし表示
+  opacity: 0.8
+});
+
+// 密度が高い場所ほど高いボクセルが表示されます
+await heatbox.createFromEntities(entities);
+```
+
+### 組み合わせ使用
+```js
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 20,
+  wireframeOnly: true,    // 枠線のみ
+  heightBased: true,      // 高さベース
+  outlineWidth: 3,        // 太い枠線
+  showEmptyVoxels: false  // 空ボクセル非表示
+});
+
+// 最も視認性が良い設定
+await heatbox.createFromEntities(entities);
 ```
 
 ## リポジトリ内の実行可能サンプル
