@@ -18,7 +18,7 @@ export { Heatbox as CesiumHeatbox };
 /**
  * ライブラリのメタ情報
  */
-export const VERSION = '0.1.1';
+export const VERSION = '0.1.2';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 
@@ -45,7 +45,7 @@ export function getEnvironmentInfo() {
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       webglSupport = !!gl;
     }
-  } catch (e) {
+  } catch (_e) {
     webglSupport = false;
   }
   

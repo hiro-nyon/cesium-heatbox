@@ -20,6 +20,7 @@ export class DataProcessor {
     let processedCount = 0;
     let skippedCount = 0;
     
+    // eslint-disable-next-line no-console
     console.log(`Processing ${entities.length} entities for classification`);
     
     const currentTime = Cesium.JulianDate.now();
@@ -98,11 +99,13 @@ export class DataProcessor {
           skippedCount++;
         }
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.warn(`エンティティ ${index} の処理に失敗:`, error);
         skippedCount++;
       }
     });
     
+    // eslint-disable-next-line no-console
     console.log(`${processedCount}個のエンティティを${voxelData.size}個のボクセルに分類（${skippedCount}個はスキップ）`);
     return voxelData;
   }
@@ -139,6 +142,7 @@ export class DataProcessor {
       averageCount: totalEntities / voxelData.size
     };
     
+    // eslint-disable-next-line no-console
     console.log('統計情報計算完了:', stats);
     return stats;
   }

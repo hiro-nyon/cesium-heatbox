@@ -26,6 +26,7 @@ export class VoxelGrid {
     
     const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
     
+    // eslint-disable-next-line no-console
     console.log('VoxelGrid created:', {
       numVoxelsX,
       numVoxelsY,

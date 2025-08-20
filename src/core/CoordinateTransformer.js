@@ -60,6 +60,7 @@ export class CoordinateTransformer {
         
         validCount++;
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.warn(`エンティティ ${index} の処理に失敗:`, error);
       }
     });
@@ -69,6 +70,7 @@ export class CoordinateTransformer {
     }
     
     // デバッグ出力
+    // eslint-disable-next-line no-console
     console.log('座標範囲計算完了:', {
       validCount,
       bounds: {

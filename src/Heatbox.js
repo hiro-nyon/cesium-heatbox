@@ -3,7 +3,7 @@
  */
 import * as Cesium from 'cesium';
 import { DEFAULT_OPTIONS, ERROR_MESSAGES } from './utils/constants.js';
-import { isValidViewer, isValidEntities, validateAndNormalizeOptions, validateVoxelCount } from './utils/validation.js';
+import { isValidViewer, isValidEntities, validateAndNormalizeOptions } from './utils/validation.js';
 import { CoordinateTransformer } from './core/CoordinateTransformer.js';
 import { VoxelGrid } from './core/VoxelGrid.js';
 import { DataProcessor } from './core/DataProcessor.js';

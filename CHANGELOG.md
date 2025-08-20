@@ -16,6 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [0.1.2] - 2025-10-05
+
+### Added
+- `wireframeOnly` オプション: 枠線のみ表示で視認性を大幅改善
+- `heightBased` オプション: 密度に応じた高さベース表現
+- `outlineWidth` オプション: 枠線の太さ調整機能
+- Playgroundに新しい表示オプションのUI追加
+
+### Changed
+- 重なったボクセルの視認性問題を解決
+- デバッグログ出力の最適化（ESLintエラー対応）
+
+### Fixed
+- ESLintエラーとワーニングを修正
+- 未使用変数とconsole.logの適切な処理
+
 ## [0.1.1] - 2025-08-20
 
 ### Changed
