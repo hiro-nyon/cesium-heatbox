@@ -22,11 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI workflow
 - Contributing guidelines (docs/contributing.md)
 - Tree-shaking support with sideEffects: false
+- Rendering cap via `maxRenderVoxels` (draw top-N dense voxels)
+- Unit tests for core modules (VoxelGrid, DataProcessor, VoxelRenderer)
+- GitHub Wiki pages (`wiki/*`) and publishing script (`tools/wiki/publish-wiki.sh`)
 
 ### Changed
 - Upgraded from alpha to stable release
 - Restricted console output to development environment only
 - Optimized package.json files array (removed src/ from distribution)
+- Heatbox auto-adjusts voxel size to keep total voxels under performance limits
+- Simplified CI workflow and updated Codecov settings
+- API documentation refined and aligned with implementation
 
 ### Fixed
 - Removed duplicate Jest configuration files
