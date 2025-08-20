@@ -1,8 +1,9 @@
 # CesiumJS Heatbox
 
-[![npm version](https://badge.fury.io/js/cesium-heatbox.svg)](https://www.npmjs.com/package/cesium-heatbox)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://github.com/hiro-nyon/cesium-heatbox/workflows/CI/badge.svg)](https://github.com/hiro-nyon/cesium-heatbox/actions)
+
+> **⚠️ 重要**: このライブラリは現在npm未登録です。GitHubから直接ダウンロードしてご利用ください。
 
 CesiumJS環境内の既存エンティティを対象とした3Dボクセルベースヒートマップ可視化ライブラリです。
 
@@ -16,7 +17,30 @@ CesiumJS環境内の既存エンティティを対象とした3Dボクセルベ�
 
 ## インストール
 
+> **注意**: このライブラリは現在npm未登録のため、以下の方法でインストールしてください。
+
+### 方法1: GitHubから直接クローン
+
 ```bash
+git clone https://github.com/hiro-nyon/cesium-heatbox.git
+cd cesium-heatbox
+npm install
+npm run build:umd
+```
+
+### 方法2: CDN経由で直接利用
+
+```html
+<!-- UMDバンドルを直接読み込み -->
+<script src="https://raw.githubusercontent.com/hiro-nyon/cesium-heatbox/main/dist/cesium-heatbox.umd.min.js"></script>
+```
+
+### 将来的なnpm対応
+
+npm登録を検討中です。登録後は以下のコマンドでインストール可能になります：
+
+```bash
+# 将来的に利用可能予定
 npm install cesium-heatbox
 ```
 

@@ -1,5 +1,7 @@
 # API リファレンス（概要） - v0.1.2
 
+> **⚠️ 注意**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。
+
 詳細な JSDoc は `docs/api/` を参照してください（リポジトリ同梱）。ここでは主な公開 API を概説します。
 
 ## クラス: `Heatbox`

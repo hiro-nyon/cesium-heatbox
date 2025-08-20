@@ -1,5 +1,7 @@
 # Examples（サンプルと使い方）
 
+> **⚠️ 注意**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。
+
 ## 最小実装（ESM）
 ```js
 import Heatbox from 'cesium-heatbox';

@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - 重なったボクセルの視認性問題を解決
 - デバッグログ出力の最適化（ESLintエラー対応）
+- 全ドキュメントにnpm未登録状況の明記とGitHub取得方法の案内
 
 ### Fixed
 - ESLintエラーとワーニングを修正
