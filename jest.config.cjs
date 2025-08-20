@@ -7,7 +7,8 @@ module.exports = {
   },
   collectCoverageFrom: [
     'src/**/*.js',
-    '!src/index.js'
+    '!src/index.js',
+    '!src/utils/sampleData.js'
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
@@ -19,10 +20,10 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      branches: 50,
-      functions: 60,
-      lines: 65,
-      statements: 65
+      branches: 65,
+      functions: 80,
+      lines: 80,
+      statements: 80
     }
   }
 };

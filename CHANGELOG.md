@@ -16,6 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [0.1.0] - 2025-09-15
+
+### Added
+- GitHub Actions CI workflow
+- Contributing guidelines (docs/contributing.md)
+- Tree-shaking support with sideEffects: false
+
+### Changed
+- Upgraded from alpha to stable release
+- Restricted console output to development environment only
+- Optimized package.json files array (removed src/ from distribution)
+
+### Fixed
+- Removed duplicate Jest configuration files
+- Updated README links to point to existing files
+
 ## [0.1.0-alpha.3] - 2025-08-19
 
 ### Added

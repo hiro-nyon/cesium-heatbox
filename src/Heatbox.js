@@ -3,7 +3,7 @@
  */
 import * as Cesium from 'cesium';
 import { DEFAULT_OPTIONS, ERROR_MESSAGES } from './utils/constants.js';
-import { isValidViewer, isValidEntities, validateAndNormalizeOptions } from './utils/validation.js';
+import { isValidViewer, isValidEntities, validateAndNormalizeOptions, validateVoxelCount } from './utils/validation.js';
 import { CoordinateTransformer } from './core/CoordinateTransformer.js';
 import { VoxelGrid } from './core/VoxelGrid.js';
 import { DataProcessor } from './core/DataProcessor.js';
@@ -56,8 +56,27 @@ export class Heatbox {
         return;
       }
 
-      // 2. グリッド生成
-      this._grid = VoxelGrid.createGrid(this._bounds, this.options.voxelSize);
+      // 2. グリッド生成（ボクセル上限に合わせて自動スケール）
+      let voxelSize = this.options.voxelSize;
+      let attempts = 0;
+      const MAX_ATTEMPTS = 5;
+      
+      while (attempts <= MAX_ATTEMPTS) {
+        const gridCandidate = VoxelGrid.createGrid(this._bounds, voxelSize);
+        const check = validateVoxelCount(gridCandidate.totalVoxels, voxelSize);
+        if (check.valid) {
+          if (check.warning && typeof console !== 'undefined') {
+            console.warn(check.error);
+          }
+          this._grid = gridCandidate;
+          this.options.voxelSize = voxelSize; // 正規化された値を保持
+          break;
+        }
+        if (!check.recommendedSize || attempts++ >= MAX_ATTEMPTS) {
+          throw new Error(check.error || 'Failed to determine suitable voxel size');
+        }
+        voxelSize = check.recommendedSize;
+      }
       
       // 3. エンティティ分類
       this._voxelData = DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid);

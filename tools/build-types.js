@@ -63,4 +63,3 @@ export const REPOSITORY: string;
 fs.mkdirSync(outDir, { recursive: true });
 fs.writeFileSync(outFile, dts, 'utf8');
 console.log(`Types written to ${outFile}`);
-

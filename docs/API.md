@@ -34,6 +34,18 @@ const heatbox = new Heatbox(viewer, {
 
 ### メソッド
 
+#### `createFromEntities(entities)`
+
+エンティティ配列からヒートマップを非同期に作成します。内部で境界計算・グリッド作成・分類・描画を順に実行します。
+
+処理中に総ボクセル数が上限（パフォーマンス制限）を超える場合、推奨ボクセルサイズに自動調整して再計算を行います。
+
+**パラメータ:**
+- `entities` (Array<Cesium.Entity>)
+
+**戻り値:**
+- `Promise<HeatboxStatistics>`
+
 #### `setData(entities)`
 
 エンティティ配列からヒートマップデータを作成し、描画します。
@@ -128,6 +140,29 @@ if (bounds) {
 }
 ```
 
+#### `getOptions()`
+
+現在のオプション（正規化済み）を取得します。
+
+**戻り値:**
+- `HeatboxOptions`
+
+#### `getDebugInfo()`
+
+内部状態（bounds/grid/statistics を含む）を取得します。デバッグ用途。
+
+**戻り値:**
+- `Object`
+
+### 静的メソッド
+
+#### `Heatbox.filterEntities(entities, predicate)`
+
+任意の条件関数でエンティティ配列をフィルタします。
+
+**戻り値:**
+- `Array<Cesium.Entity>`
+
 ## 型定義
 
 ### HeatboxStatistics
@@ -156,7 +191,7 @@ interface HeatboxOptions {
   showEmptyVoxels?: boolean;
   minColor?: [number, number, number];
   maxColor?: [number, number, number];
-  maxRenderVoxels?: number;
+  maxRenderVoxels?: number; // レンダリング上限（非空ボクセルが上限超過時は高密度トップNのみ描画）
   batchMode?: 'auto' | 'primitive' | 'entity';
 }
 ```

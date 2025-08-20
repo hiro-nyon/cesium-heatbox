@@ -41,9 +41,21 @@ export class VoxelRenderer {
     const instances = [];
     const outlineInstances = [];
 
+    // レンダリング上限: 非空ボクセルが上限を超える場合は高密度から描画
+    let allowedKeys = null;
+    if (voxelData.size > (this.options.maxRenderVoxels || Infinity)) {
+      const sorted = Array.from(voxelData.values()).sort((a, b) => b.count - a.count);
+      const top = sorted.slice(0, this.options.maxRenderVoxels);
+      allowedKeys = new Set(top.map(v => VoxelGrid.getVoxelKey(v.x, v.y, v.z)));
+    }
+
     VoxelGrid.iterateAllVoxels(grid, (x, y, z, key) => {
       const voxelInfo = voxelData.get(key);
       const hasData = !!voxelInfo;
+
+      if (allowedKeys && (!hasData || !allowedKeys.has(key))) {
+        return; // 上位N以外は描画しない、空ボクセルも描画しない
+      }
 
       if (!hasData && !this.options.showEmptyVoxels) {
         return;
