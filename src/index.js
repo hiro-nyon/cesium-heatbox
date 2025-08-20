@@ -45,7 +45,7 @@ export function getEnvironmentInfo() {
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       webglSupport = !!gl;
     }
-  } catch (e) {
+  } catch (_e) {
     webglSupport = false;
   }
   

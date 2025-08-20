@@ -6,8 +6,8 @@ module.exports = {
     jest: true
   },
   extends: [
-    'standard',
-    '@typescript-eslint/recommended'
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended'
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -22,8 +22,19 @@ module.exports = {
     'no-console': 'warn',
     'prefer-const': 'error',
     'no-var': 'error',
-    '@typescript-eslint/no-unused-vars': 'error',
+    // Codebase uses semicolons; align rules accordingly
+    'semi': ['error', 'always'],
+    'space-before-function-paren': 'off',
+    'padded-blocks': 'off',
+    'no-trailing-spaces': 'off',
+    // TypeScript rules (applied when TS files exist)
+    '@typescript-eslint/no-unused-vars': ['error', {
+      argsIgnorePattern: '^_',
+      varsIgnorePattern: '^_',
+      caughtErrorsIgnorePattern: '^_'
+    }],
     '@typescript-eslint/no-explicit-any': 'warn',
+    // Jest
     'jest/no-disabled-tests': 'warn',
     'jest/no-focused-tests': 'error',
     'jest/no-identical-title': 'error',
@@ -33,6 +44,18 @@ module.exports = {
   globals: {
     Cesium: 'readonly'
   },
+  overrides: [
+    {
+      files: ['test/**/*.js'],
+      env: { jest: true, node: true, browser: false },
+      globals: { testUtils: 'readonly' },
+      rules: {
+        'no-new': 'off',
+        'no-console': 'off',
+        'no-multiple-empty-lines': 'off'
+      }
+    }
+  ],
   ignorePatterns: [
     'dist/',
     'types/',
