@@ -30,13 +30,16 @@ import Heatbox from 'cesium-heatbox';
 // 1) Cesium Viewer の用意
 const viewer = new Cesium.Viewer('cesiumContainer');
 
-// 2) Heatbox を初期化
+// 2) Heatbox を初期化（v0.1.2）
 const heatbox = new Heatbox(viewer, {
   voxelSize: 20,         // ボクセル一辺（m）
   opacity: 0.8,          // データボクセル不透明度
   emptyOpacity: 0.03,    // 空ボクセル不透明度
   showOutline: true,     // 枠線表示
-  showEmptyVoxels: false // 空ボクセル描画
+  showEmptyVoxels: false,// 空ボクセル描画
+  wireframeOnly: false,  // 枠線のみ表示（新機能）
+  heightBased: false,    // 高さベース表現（新機能）
+  outlineWidth: 1        // 枠線の太さ（新機能）
 });
 
 // 3) エンティティからヒートマップ生成（非同期）
@@ -50,7 +53,7 @@ heatbox.setVisible(true);
 // heatbox.destroy();
 ```
 
-## オプション一覧
+## オプション一覧（v0.1.2対応）
 - `voxelSize` number（既定: 20）
 - `opacity` number 0–1（既定: 0.8）
 - `emptyOpacity` number 0–1（既定: 0.03）
@@ -59,7 +62,9 @@ heatbox.setVisible(true);
 - `minColor` [r,g,b]（既定: [0,32,255]）
 - `maxColor` [r,g,b]（既定: [255,64,0]）
 - `maxRenderVoxels` number（描画上限）
-- `batchMode` 'auto' | 'primitive' | 'entity'
+- **`wireframeOnly` boolean（v0.1.2新機能）** - 枠線のみ表示
+- **`heightBased` boolean（v0.1.2新機能）** - 密度を高さで表現
+- **`outlineWidth` number（v0.1.2新機能）** - 枠線の太さ
 
 更新は `heatbox.updateOptions({ ... })` で反映できます。
 

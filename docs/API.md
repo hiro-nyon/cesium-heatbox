@@ -1,4 +1,6 @@
-# API リファレンス
+# API リファレンス - v0.1.2
+
+> **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得してください。
 
 ## Heatbox クラス
 
@@ -12,7 +14,7 @@
 - `viewer` (Cesium.Viewer) - CesiumJS Viewerインスタンス
 - `options` (Object, optional) - 設定オプション
 
-**オプション:**
+**オプション（v0.1.2対応）:**
 - `voxelSize` (number, default: 20) - ボクセル一辺の長さ（メートル）
 - `opacity` (number, default: 0.8) - データボクセルの透明度 (0.0-1.0)
 - `emptyOpacity` (number, default: 0.03) - 空ボクセルの透明度 (0.0-1.0)
@@ -21,13 +23,18 @@
 - `minColor` (Array, default: [0, 32, 255]) - 最小密度の色 (RGB)
 - `maxColor` (Array, default: [255, 64, 0]) - 最大密度の色 (RGB)
 - `maxRenderVoxels` (number, default: 50000) - 最大描画ボクセル数
-- `batchMode` (string, default: 'auto') - バッチ描画モード ('auto', 'primitive', 'entity')
+- **`wireframeOnly` (boolean, default: false) - 枠線のみ表示（v0.1.2新機能）**
+- **`heightBased` (boolean, default: false) - 密度を高さで表現（v0.1.2新機能）**
+- **`outlineWidth` (number, default: 1) - 枠線の太さ（v0.1.2新機能）**
 
-**例:**
+**例（v0.1.2）:**
 ```javascript
 const heatbox = new Heatbox(viewer, {
   voxelSize: 25,
   opacity: 0.9,
+  wireframeOnly: true,   // 枠線のみ表示
+  heightBased: true,     // 高さベース表現
+  outlineWidth: 2,       // 枠線太さ
   showEmptyVoxels: true
 });
 ```

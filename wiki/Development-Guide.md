@@ -1,5 +1,7 @@
 # Development Guide（開発向け）
 
+> **⚠️ 注意**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。
+
 初めて開発参加する方向けの要点です。詳細はリポジトリの `docs/development-guide.md` を参照してください。
 
 ## 必要環境

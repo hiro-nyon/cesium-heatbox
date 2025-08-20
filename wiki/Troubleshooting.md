@@ -1,5 +1,7 @@
 # Troubleshooting（よくある問題）
 
+> **⚠️ 注意**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。
+
 ## npm install が失敗する（ERESOLVE）
 ```
 npm ERR! ERESOLVE unable to resolve dependency tree
@@ -49,3 +51,22 @@ TypeError: Cesium.Cartesian3 is not a constructor
 対応:
 - テスト時は Cesium モックを用意（`test/setup.js` を参照）
 - 実ブラウザでは CDN などで Cesium を正しくロード
+
+## v0.1.2 特有の問題
+
+### wireframeOnly で何も表示されない
+対応:
+- `opacity` を 0 以外に設定（wireframeOnly 時は自動で 0.0 になります）
+- `showOutline: true` を確認
+
+### heightBased で高さが反映されない
+対応:
+- データに十分な密度差があることを確認
+- `maxRenderVoxels` を適切に設定（推奨: 300前後）
+
+### Entity の isDestroyed エラー
+```
+TypeError: t.isDestroyed is not a function
+```
+対応:
+- v0.1.2 で修正済み。古いバージョンを使用している場合は更新してください
