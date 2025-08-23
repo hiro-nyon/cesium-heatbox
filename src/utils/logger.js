@@ -45,7 +45,7 @@ export const Logger = {
    */
   error(...args) {
     if (currentLogLevel >= LOG_LEVELS.ERROR) {
-      console.error('[Heatbox ERROR]', ...args);
+      console.error('[Heatbox ERROR]', ...args); // eslint-disable-line no-console
     }
   },
 
@@ -55,7 +55,7 @@ export const Logger = {
    */
   warn(...args) {
     if (currentLogLevel >= LOG_LEVELS.WARN) {
-      console.warn('[Heatbox WARN]', ...args);
+      console.warn('[Heatbox WARN]', ...args); // eslint-disable-line no-console
     }
   },
 
@@ -65,7 +65,7 @@ export const Logger = {
    */
   info(...args) {
     if (currentLogLevel >= LOG_LEVELS.INFO) {
-      console.log('[Heatbox INFO]', ...args);
+      console.log('[Heatbox INFO]', ...args); // eslint-disable-line no-console
     }
   },
 
@@ -75,7 +75,7 @@ export const Logger = {
    */
   debug(...args) {
     if (currentLogLevel >= LOG_LEVELS.DEBUG) {
-      console.log('[Heatbox DEBUG]', ...args);
+      console.log('[Heatbox DEBUG]', ...args); // eslint-disable-line no-console
     }
   },
 
