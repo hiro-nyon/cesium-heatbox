@@ -3,6 +3,7 @@
  */
 
 import { Heatbox } from './Heatbox.js';
+import { Logger } from './utils/logger.js';
 import { getAllEntities, generateTestEntities } from './utils/sampleData.js';
 
 // デフォルトエクスポート
@@ -18,7 +19,7 @@ export { Heatbox as CesiumHeatbox };
 /**
  * ライブラリのメタ情報
  */
-export const VERSION = '0.1.2';
+export const VERSION = '0.1.3';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 
@@ -59,6 +60,4 @@ export function getEnvironmentInfo() {
 }
 
 // ライブラリの初期化ログ
-if (typeof console !== 'undefined') {
-  console.log(`CesiumJS Heatbox v${VERSION} loaded`);
-}
+Logger.info(`CesiumJS Heatbox v${VERSION} loaded`);

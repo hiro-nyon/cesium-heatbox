@@ -4,6 +4,7 @@
 
 import * as Cesium from 'cesium';
 import { PERFORMANCE_LIMITS, ERROR_MESSAGES } from './constants.js';
+import { Logger } from './logger.js';
 
 /**
  * CesiumJS Viewerが有効かチェック
@@ -45,7 +46,7 @@ export function isValidEntities(entities) {
   }
   
   if (entities.length > PERFORMANCE_LIMITS.maxEntities) {
-    console.warn(`エンティティ数が推奨値(${PERFORMANCE_LIMITS.maxEntities})を超えています: ${entities.length}`);
+    Logger.warn(`エンティティ数が推奨値(${PERFORMANCE_LIMITS.maxEntities})を超えています: ${entities.length}`);
   }
   
   return true;

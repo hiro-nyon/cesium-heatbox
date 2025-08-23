@@ -243,7 +243,7 @@
 
 
 <div class="description">
-    描画されたプリミティブを全てクリア
+    描画されたエンティティを全てクリア
 </div>
 
 
@@ -287,7 +287,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line154">line 154</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line270">line 270</a>
     </li></ul></dd>
     
 
@@ -331,7 +331,7 @@
 
 
 <div class="description">
-    描画されたプリミティブを全てクリア
+    描画されたエンティティを全てクリア
 </div>
 
 
@@ -375,7 +375,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line154">line 154</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line270">line 270</a>
     </li></ul></dd>
     
 
@@ -411,7 +411,7 @@
     
 
     
-    <h4 class="name" id="createVoxelDescription"><span class="type-signature"></span>createVoxelDescription<span class="signature">(voxelInfo)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    <h4 class="name" id="createVoxelDescription"><span class="type-signature"></span>createVoxelDescription<span class="signature">(voxelInfo, voxelKey)</span><span class="type-signature"> &rarr; {string}</span></h4>
     
 
     
@@ -475,6 +475,29 @@
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>voxelKey</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">ボクセルキー</td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -512,7 +535,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line144">line 144</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line255">line 255</a>
     </li></ul></dd>
     
 
@@ -570,7 +593,7 @@
     
 
     
-    <h4 class="name" id="createVoxelDescription"><span class="type-signature"></span>createVoxelDescription<span class="signature">(voxelInfo)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    <h4 class="name" id="createVoxelDescription"><span class="type-signature"></span>createVoxelDescription<span class="signature">(voxelInfo, voxelKey)</span><span class="type-signature"> &rarr; {string}</span></h4>
     
 
     
@@ -634,6 +657,29 @@
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>voxelKey</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">ボクセルキー</td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -671,7 +717,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line144">line 144</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line255">line 255</a>
     </li></ul></dd>
     
 
@@ -830,7 +876,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line128">line 128</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line238">line 238</a>
     </li></ul></dd>
     
 
@@ -989,7 +1035,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line128">line 128</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line238">line 238</a>
     </li></ul></dd>
     
 
@@ -1047,7 +1093,7 @@
     
 
     
-    <h4 class="name" id="render"><span class="type-signature"></span>render<span class="signature">(voxelData, bounds, grid, statistics)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="render"><span class="type-signature"></span>render<span class="signature">(voxelData, bounds, grid, statistics)</span><span class="type-signature"> &rarr; {number}</span></h4>
     
 
     
@@ -1055,7 +1101,7 @@
 
 
 <div class="description">
-    ボクセルデータを描画
+    ボクセルデータを描画（シンプル実装）
 </div>
 
 
@@ -1217,7 +1263,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line38">line 38</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line44">line 44</a>
     </li></ul></dd>
     
 
@@ -1242,6 +1288,28 @@
 
 
 
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    実際に描画されたボクセル数
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -1253,7 +1321,7 @@
     
 
     
-    <h4 class="name" id="render"><span class="type-signature"></span>render<span class="signature">(voxelData, bounds, grid, statistics)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="render"><span class="type-signature"></span>render<span class="signature">(voxelData, bounds, grid, statistics)</span><span class="type-signature"> &rarr; {number}</span></h4>
     
 
     
@@ -1261,7 +1329,7 @@
 
 
 <div class="description">
-    ボクセルデータを描画
+    ボクセルデータを描画（シンプル実装）
 </div>
 
 
@@ -1423,7 +1491,166 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line38">line 38</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line44">line 44</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    実際に描画されたボクセル数
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setVisible"><span class="type-signature"></span>setVisible<span class="signature">(show)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    表示/非表示を切り替え
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>show</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">表示する場合はtrue</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line293">line 293</a>
     </li></ul></dd>
     
 
@@ -1560,144 +1787,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line165">line 165</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="setVisible"><span class="type-signature"></span>setVisible<span class="signature">(show)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    表示/非表示を切り替え
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>show</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">表示する場合はtrue</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line165">line 165</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line293">line 293</a>
     </li></ul></dd>
     
 
@@ -1963,7 +2053,7 @@
 
 
 <div class="description">
-    描画されたプリミティブを全てクリア
+    描画されたエンティティを全てクリア
 </div>
 
 
@@ -2007,7 +2097,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line154">line 154</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line270">line 270</a>
     </li></ul></dd>
     
 
@@ -2051,7 +2141,7 @@
 
 
 <div class="description">
-    描画されたプリミティブを全てクリア
+    描画されたエンティティを全てクリア
 </div>
 
 
@@ -2095,7 +2185,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line154">line 154</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line270">line 270</a>
     </li></ul></dd>
     
 
@@ -2131,7 +2221,7 @@
     
 
     
-    <h4 class="name" id="createVoxelDescription"><span class="type-signature"></span>createVoxelDescription<span class="signature">(voxelInfo)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    <h4 class="name" id="createVoxelDescription"><span class="type-signature"></span>createVoxelDescription<span class="signature">(voxelInfo, voxelKey)</span><span class="type-signature"> &rarr; {string}</span></h4>
     
 
     
@@ -2195,6 +2285,29 @@
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>voxelKey</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">ボクセルキー</td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -2232,7 +2345,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line144">line 144</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line255">line 255</a>
     </li></ul></dd>
     
 
@@ -2290,7 +2403,7 @@
     
 
     
-    <h4 class="name" id="createVoxelDescription"><span class="type-signature"></span>createVoxelDescription<span class="signature">(voxelInfo)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    <h4 class="name" id="createVoxelDescription"><span class="type-signature"></span>createVoxelDescription<span class="signature">(voxelInfo, voxelKey)</span><span class="type-signature"> &rarr; {string}</span></h4>
     
 
     
@@ -2354,6 +2467,29 @@
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>voxelKey</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">ボクセルキー</td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -2391,7 +2527,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line144">line 144</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line255">line 255</a>
     </li></ul></dd>
     
 
@@ -2550,7 +2686,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line128">line 128</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line238">line 238</a>
     </li></ul></dd>
     
 
@@ -2709,7 +2845,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line128">line 128</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line238">line 238</a>
     </li></ul></dd>
     
 
@@ -2767,7 +2903,7 @@
     
 
     
-    <h4 class="name" id="render"><span class="type-signature"></span>render<span class="signature">(voxelData, bounds, grid, statistics)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="render"><span class="type-signature"></span>render<span class="signature">(voxelData, bounds, grid, statistics)</span><span class="type-signature"> &rarr; {number}</span></h4>
     
 
     
@@ -2775,7 +2911,7 @@
 
 
 <div class="description">
-    ボクセルデータを描画
+    ボクセルデータを描画（シンプル実装）
 </div>
 
 
@@ -2937,7 +3073,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line38">line 38</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line44">line 44</a>
     </li></ul></dd>
     
 
@@ -2962,6 +3098,28 @@
 
 
 
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    実際に描画されたボクセル数
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -2973,7 +3131,7 @@
     
 
     
-    <h4 class="name" id="render"><span class="type-signature"></span>render<span class="signature">(voxelData, bounds, grid, statistics)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="render"><span class="type-signature"></span>render<span class="signature">(voxelData, bounds, grid, statistics)</span><span class="type-signature"> &rarr; {number}</span></h4>
     
 
     
@@ -2981,7 +3139,7 @@
 
 
 <div class="description">
-    ボクセルデータを描画
+    ボクセルデータを描画（シンプル実装）
 </div>
 
 
@@ -3143,7 +3301,166 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line38">line 38</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line44">line 44</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    実際に描画されたボクセル数
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setVisible"><span class="type-signature"></span>setVisible<span class="signature">(show)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    表示/非表示を切り替え
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>show</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">表示する場合はtrue</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line293">line 293</a>
     </li></ul></dd>
     
 
@@ -3280,144 +3597,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line165">line 165</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="setVisible"><span class="type-signature"></span>setVisible<span class="signature">(show)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    表示/非表示を切り替え
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>show</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">表示する場合はtrue</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line165">line 165</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line293">line 293</a>
     </li></ul></dd>
     
 
@@ -3463,13 +3643,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="Heatbox.html">Heatbox</a></li><li><a href="VoxelGrid.html">VoxelGrid</a></li><li><a href="VoxelRenderer.html">VoxelRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#COLOR_CONSTANTS">COLOR_CONSTANTS</a></li><li><a href="global.html#COORDINATE_CONSTANTS">COORDINATE_CONSTANTS</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_STATISTICS">DEFAULT_STATISTICS</a></li><li><a href="global.html#ERROR_MESSAGES">ERROR_MESSAGES</a></li><li><a href="global.html#PERFORMANCE_LIMITS">PERFORMANCE_LIMITS</a></li><li><a href="global.html#VERSION">VERSION</a></li><li><a href="global.html#createBoundsFromCenter">createBoundsFromCenter</a></li><li><a href="global.html#createHeatbox">createHeatbox</a></li><li><a href="global.html#generateTestEntities">generateTestEntities</a></li><li><a href="global.html#getAllEntities">getAllEntities</a></li><li><a href="global.html#getEnvironmentInfo">getEnvironmentInfo</a></li><li><a href="global.html#getTokyoStationBounds">getTokyoStationBounds</a></li><li><a href="global.html#hasValidPosition">hasValidPosition</a></li><li><a href="global.html#isValidEntities">isValidEntities</a></li><li><a href="global.html#isValidViewer">isValidViewer</a></li><li><a href="global.html#isValidVoxelSize">isValidVoxelSize</a></li><li><a href="global.html#validateAndNormalizeOptions">validateAndNormalizeOptions</a></li><li><a href="global.html#validateVoxelCount">validateVoxelCount</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="Heatbox.html">Heatbox</a></li><li><a href="VoxelGrid.html">VoxelGrid</a></li><li><a href="VoxelRenderer.html">VoxelRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#COLOR_CONSTANTS">COLOR_CONSTANTS</a></li><li><a href="global.html#COORDINATE_CONSTANTS">COORDINATE_CONSTANTS</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_STATISTICS">DEFAULT_STATISTICS</a></li><li><a href="global.html#ERROR_MESSAGES">ERROR_MESSAGES</a></li><li><a href="global.html#LOG_LEVELS">LOG_LEVELS</a></li><li><a href="global.html#Logger">Logger</a></li><li><a href="global.html#PERFORMANCE_LIMITS">PERFORMANCE_LIMITS</a></li><li><a href="global.html#VERSION">VERSION</a></li><li><a href="global.html#createBoundsFromCenter">createBoundsFromCenter</a></li><li><a href="global.html#createHeatbox">createHeatbox</a></li><li><a href="global.html#generateTestEntities">generateTestEntities</a></li><li><a href="global.html#getAllEntities">getAllEntities</a></li><li><a href="global.html#getEnvironmentInfo">getEnvironmentInfo</a></li><li><a href="global.html#getLogLevel">getLogLevel</a></li><li><a href="global.html#getTokyoStationBounds">getTokyoStationBounds</a></li><li><a href="global.html#hasValidPosition">hasValidPosition</a></li><li><a href="global.html#isValidEntities">isValidEntities</a></li><li><a href="global.html#isValidViewer">isValidViewer</a></li><li><a href="global.html#isValidVoxelSize">isValidVoxelSize</a></li><li><a href="global.html#log">log</a></li><li><a href="global.html#validateAndNormalizeOptions">validateAndNormalizeOptions</a></li><li><a href="global.html#validateVoxelCount">validateVoxelCount</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Aug 19 2025 21:48:32 GMT+0900 (日本標準時)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 24 2025 00:52:43 GMT+0900 (Japan Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

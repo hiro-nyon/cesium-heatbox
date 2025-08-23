@@ -369,3 +369,4 @@ console.log('比較デモ統計:', comparisonStats);
 // インタラクティブデモ（キー1-4で切り替え）
 // const interactiveHeatbox = demo.setupInteractiveDemo();
 */
+

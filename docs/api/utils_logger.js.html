@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: core/VoxelGrid.js</title>
+    <title>JSDoc: Source: utils/logger.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: core/VoxelGrid.js</h1>
+    <h1 class="page-title">Source: utils/logger.js</h1>
 
     
 
@@ -27,96 +27,108 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
- * ボクセルグリッドを管理するクラス（シンプル実装）
+ * ログ出力制御ユーティリティ
+ * NODE_ENVやdebugフラグによってログレベルを制御
  */
-import { Logger } from '../utils/logger.js';
 
 /**
- * 3Dボクセルグリッドを管理するクラス
+ * ログレベル定数
  */
-export class VoxelGrid {
-  /**
-   * 境界情報とボクセルサイズからグリッドを作成（シンプル版）
-   * @param {Object} bounds - 境界情報
-   * @param {number} voxelSizeMeters - ボクセルサイズ（メートル）
-   * @returns {Object} グリッド情報
-   */
-  static createGrid(bounds, voxelSizeMeters) {
-    // 緯度・経度をメートルに概算変換（シンプルな公式）
-    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-    const lonRangeMeters = (bounds.maxLon - bounds.minLon) * 111000 * Math.cos(centerLat * Math.PI / 180);
-    const latRangeMeters = (bounds.maxLat - bounds.minLat) * 111000;
-    const altRangeMeters = bounds.maxAlt - bounds.minAlt;
-    
-    // 各軸のボクセル数を計算
-    const numVoxelsX = Math.max(1, Math.ceil(lonRangeMeters / voxelSizeMeters));
-    const numVoxelsY = Math.max(1, Math.ceil(latRangeMeters / voxelSizeMeters));
-    const numVoxelsZ = Math.max(1, Math.ceil(altRangeMeters / voxelSizeMeters));
-    
-    const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
-    
-    Logger.debug('VoxelGrid created:', {
-      numVoxelsX,
-      numVoxelsY,
-      numVoxelsZ,
-      totalVoxels,
-      voxelSizeMeters,
-      lonRangeMeters,
-      latRangeMeters,
-      altRangeMeters
-    });
-    
-    return {
-      numVoxelsX,
-      numVoxelsY,
-      numVoxelsZ,
-      totalVoxels,
-      voxelSizeMeters,
-      lonRangeMeters,
-      latRangeMeters,
-      altRangeMeters
-    };
+const LOG_LEVELS = {
+  ERROR: 0,
+  WARN: 1,
+  INFO: 2,
+  DEBUG: 3
+};
+
+/**
+ * 現在のログレベルを決定
+ * NODE_ENV=production では ERROR と WARN のみ
+ * DEBUG=true または NODE_ENV=development では全レベル出力
+ */
+function getLogLevel() {
+  // 明示的にDEBUG=trueが設定されている場合
+  if (typeof process !== 'undefined' &amp;&amp; process.env &amp;&amp; process.env.DEBUG === 'true') {
+    return LOG_LEVELS.DEBUG;
   }
   
-  /**
-   * ボクセルインデックスからキーを生成
-   * @param {number} x - X軸インデックス
-   * @param {number} y - Y軸インデックス
-   * @param {number} z - Z軸インデックス
-   * @returns {string} ボクセルキー
-   */
-  static getVoxelKey(x, y, z) {
-    return `${x},${y},${z}`;
+  // NODE_ENVをチェック
+  if (typeof process !== 'undefined' &amp;&amp; process.env &amp;&amp; process.env.NODE_ENV === 'production') {
+    return LOG_LEVELS.WARN;
   }
   
+  // デフォルトは開発モード（全ログ出力）
+  return LOG_LEVELS.DEBUG;
+}
+
+let currentLogLevel = getLogLevel();
+
+/**
+ * ログ出力の共通ユーティリティ
+ */
+export const Logger = {
   /**
-   * ボクセルキーからインデックスを解析
-   * @param {string} key - ボクセルキー
-   * @returns {Object} インデックス {x, y, z}
+   * エラーログ（常に出力）
+   * @param {...any} args - ログ引数
    */
-  static parseVoxelKey(key) {
-    const [x, y, z] = key.split(',').map(Number);
-    return { x, y, z };
-  }
-  
-  /**
-   * グリッド内の全ボクセルを反復処理
-   * @param {Object} grid - グリッド情報
-   * @param {Function} callback - 各ボクセルに対するコールバック関数
-   */
-  static iterateAllVoxels(grid, callback) {
-    const { numVoxelsX, numVoxelsY, numVoxelsZ } = grid;
-    
-    for (let x = 0; x &lt; numVoxelsX; x++) {
-      for (let y = 0; y &lt; numVoxelsY; y++) {
-        for (let z = 0; z &lt; numVoxelsZ; z++) {
-          const key = this.getVoxelKey(x, y, z);
-          callback(x, y, z, key);
-        }
-      }
+  error(...args) {
+    if (currentLogLevel >= LOG_LEVELS.ERROR) {
+      console.error('[Heatbox ERROR]', ...args);
     }
+  },
+
+  /**
+   * 警告ログ
+   * @param {...any} args - ログ引数
+   */
+  warn(...args) {
+    if (currentLogLevel >= LOG_LEVELS.WARN) {
+      console.warn('[Heatbox WARN]', ...args);
+    }
+  },
+
+  /**
+   * 情報ログ
+   * @param {...any} args - ログ引数
+   */
+  info(...args) {
+    if (currentLogLevel >= LOG_LEVELS.INFO) {
+      console.log('[Heatbox INFO]', ...args);
+    }
+  },
+
+  /**
+   * デバッグログ
+   * @param {...any} args - ログ引数
+   */
+  debug(...args) {
+    if (currentLogLevel >= LOG_LEVELS.DEBUG) {
+      console.log('[Heatbox DEBUG]', ...args);
+    }
+  },
+
+  /**
+   * オプション設定によるログレベル制御
+   * @param {Object} options - オプション
+   */
+  setLogLevel(options) {
+    if (options &amp;&amp; typeof options.debug === 'boolean') {
+      // debug: true → 詳細ログ、debug: false → 重要ログのみ
+      currentLogLevel = options.debug ? LOG_LEVELS.DEBUG : LOG_LEVELS.WARN;
+    }
+    return currentLogLevel;
   }
-}</code></pre>
+};
+
+/**
+ * 下位互換のためのラッパー関数群
+ * 既存のconsole.log置き換え用
+ */
+export const log = Logger.debug;
+export const warn = Logger.warn;
+export const error = Logger.error;
+export const info = Logger.info;
+</code></pre>
         </article>
     </section>
 

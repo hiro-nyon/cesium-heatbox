@@ -1,4 +1,4 @@
-# API リファレンス（概要） / API Reference (Overview) - v0.1.2
+# API リファレンス（概要） / API Reference (Overview) - v0.1.3
 
 > **⚠️ 注意 / Important**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。  
 > This library is currently not registered on npm. Please refer to [Quick-Start](Quick-Start.md) to get it from GitHub.
@@ -45,6 +45,7 @@ new Heatbox(viewer, options?)
 - `wireframeOnly?: boolean` **v0.1.2新機能** 枠線のみ表示（視認性向上）
 - `heightBased?: boolean` **v0.1.2新機能** 高さベース密度表現
 - `outlineWidth?: number` **v0.1.2新機能** 枠線の太さ（デフォルト 2）
+- `debug?: boolean` **v0.1.3新機能** ログ制御（デフォルト false）
 
 > 注: v0.1.1からレンダリング実装がEntityベースに変更されました。`maxRenderVoxels`の適切な値は300前後を推奨します。  
 > v0.1.2では視認性改善のため`wireframeOnly`オプションを追加しました。重なったボクセルが見やすくなります。
@@ -63,6 +64,7 @@ new Heatbox(viewer, options?)
 - `wireframeOnly?: boolean` **v0.1.2 New Feature** Show only wireframes (improved visibility)
 - `heightBased?: boolean` **v0.1.2 New Feature** Height-based density representation
 - `outlineWidth?: number` **v0.1.2 New Feature** Outline thickness (Default 2)
+- `debug?: boolean` **v0.1.3 New Feature** Log control (Default false)
 
 > Note: Rendering implementation changed to Entity-based from v0.1.1. Recommended `maxRenderVoxels` value is around 300.  
 > v0.1.2 added `wireframeOnly` option for improved visibility of overlapping voxels.
@@ -116,6 +118,7 @@ new Heatbox(viewer, options?)
 ```ts
 interface HeatboxStatistics {
   totalVoxels: number;
+  renderedVoxels: number;      // v0.1.3 追加: 実際に描画されたボクセル数
   nonEmptyVoxels: number;
   emptyVoxels: number;
   totalEntities: number;
@@ -134,6 +137,7 @@ interface HeatboxStatistics {
 ```ts
 interface HeatboxStatistics {
   totalVoxels: number;
+  renderedVoxels: number;      // v0.1.3 added: Actually rendered voxel count
   nonEmptyVoxels: number;
   emptyVoxels: number;
   totalEntities: number;
@@ -168,9 +172,9 @@ import Heatbox, { createHeatbox, getAllEntities, generateTestEntities } from 'ce
 ## 使用上の注意 / Usage Notes
 
 ### 日本語
-- ボクセル総数が多すぎる場合は自動でボクセルサイズを拡大して再試行します。
+- 現在、ボクセルサイズの自動調整は行いません。ボクセル数が多い場合は `voxelSize` を調整するか、`maxRenderVoxels` で描画数を制限してください（自動調整は v0.1.4 で対応予定）。
 - `maxRenderVoxels` を設定すると、密度上位 N のみ描画されます（統計には全体が反映）。
 
 ### English
-- If total voxel count is too large, it automatically retries with enlarged voxel size.
+- Auto-adjusting voxel size is not implemented yet. If the total voxel count is large, please increase `voxelSize` manually or limit rendering via `maxRenderVoxels` (auto-adjust planned for v0.1.4).
 - Setting `maxRenderVoxels` renders only top N by density (statistics reflect the whole dataset).

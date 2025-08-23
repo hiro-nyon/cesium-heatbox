@@ -31,12 +31,13 @@ const tokyoArea = Heatbox.filterEntities(
 );
 ```
 
-### 2. `wireframe-height-demo.js` ⭐ **v0.1.2 新機能**
+### 2. `wireframe-height-demo.js` / `wireframe-height-demo-umd.html` ⭐ **v0.1.2 新機能**
 **wireframeOnly & heightBased 機能のデモ**
 
 - 4つの表示モードの同時比較
 - 密度レベル別最適表示
 - インタラクティブな表示切り替え
+- **NEW**: UMD版でブラウザ直接実行対応
 
 ```javascript
 import { WireframeHeightDemo } from './wireframe-height-demo.js';
@@ -90,14 +91,21 @@ const report = perfDemo.generatePerformanceReport();
 
 ## 🚀 使用方法
 
-### 基本的なセットアップ
+### オプション1: ブラウザ直接実行（簡単！）
+
+**UMD版デモファイル**（`.html`ファイル）を直接ブラウザで開くことができます：
+- `wireframe-height-demo-umd.html` - ブラウザで直接動作
+
+これらのファイルはUMDビルドを使用しているため、開発サーバーやビルドツールなしで動作します。
+
+### オプション2: モジュール形式（高度）
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.132/Build/Cesium/Cesium.js"></script>
-  <link href="https://cesium.com/downloads/cesiumjs/releases/1.132/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 </head>
 <body>
   <div id="cesiumContainer" style="width: 100%; height: 100%;"></div>
@@ -227,3 +235,4 @@ A: `maxRenderVoxels`を小さくし、`wireframeOnly: true`を使用
 ---
 
 **cesium-heatbox v0.1.2** - 視認性とパフォーマンスの両立を実現
+

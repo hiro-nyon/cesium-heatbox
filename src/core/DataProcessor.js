@@ -3,6 +3,7 @@
  */
 import * as Cesium from 'cesium';
 import { VoxelGrid } from './VoxelGrid.js';
+import { Logger } from '../utils/logger.js';
 
 /**
  * エンティティデータの処理を担当するクラス
@@ -20,8 +21,7 @@ export class DataProcessor {
     let processedCount = 0;
     let skippedCount = 0;
     
-    // eslint-disable-next-line no-console
-    console.log(`Processing ${entities.length} entities for classification`);
+    Logger.debug(`Processing ${entities.length} entities for classification`);
     
     const currentTime = Cesium.JulianDate.now();
     
@@ -99,14 +99,12 @@ export class DataProcessor {
           skippedCount++;
         }
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.warn(`エンティティ ${index} の処理に失敗:`, error);
+        Logger.warn(`エンティティ ${index} の処理に失敗:`, error);
         skippedCount++;
       }
     });
     
-    // eslint-disable-next-line no-console
-    console.log(`${processedCount}個のエンティティを${voxelData.size}個のボクセルに分類（${skippedCount}個はスキップ）`);
+    Logger.info(`${processedCount}個のエンティティを${voxelData.size}個のボクセルに分類（${skippedCount}個はスキップ）`);
     return voxelData;
   }
   
@@ -120,6 +118,7 @@ export class DataProcessor {
     if (voxelData.size === 0) {
       return {
         totalVoxels: grid.totalVoxels,
+        renderedVoxels: 0,
         nonEmptyVoxels: 0,
         emptyVoxels: grid.totalVoxels,
         totalEntities: 0,
@@ -134,6 +133,7 @@ export class DataProcessor {
     
     const stats = {
       totalVoxels: grid.totalVoxels,
+      renderedVoxels: 0, // 実際の描画後にVoxelRendererから設定される
       nonEmptyVoxels: voxelData.size,
       emptyVoxels: grid.totalVoxels - voxelData.size,
       totalEntities: totalEntities,
@@ -142,8 +142,7 @@ export class DataProcessor {
       averageCount: totalEntities / voxelData.size
     };
     
-    // eslint-disable-next-line no-console
-    console.log('統計情報計算完了:', stats);
+    Logger.debug('統計情報計算完了:', stats);
     return stats;
   }
   

@@ -32,6 +32,7 @@
 import * as Cesium from 'cesium';
 import { DEFAULT_OPTIONS, ERROR_MESSAGES } from './utils/constants.js';
 import { isValidViewer, isValidEntities, validateAndNormalizeOptions } from './utils/validation.js';
+import { Logger } from './utils/logger.js';
 import { CoordinateTransformer } from './core/CoordinateTransformer.js';
 import { VoxelGrid } from './core/VoxelGrid.js';
 import { DataProcessor } from './core/DataProcessor.js';
@@ -54,6 +55,8 @@ export class Heatbox {
     
     this.viewer = viewer;
     this.options = validateAndNormalizeOptions({ ...DEFAULT_OPTIONS, ...options });
+    // ログレベルをオプションに基づいて設定
+    Logger.setLogLevel(this.options);
     this.renderer = new VoxelRenderer(this.viewer, this.options);
     
     this._bounds = null;
@@ -61,7 +64,6 @@ export class Heatbox {
     this._voxelData = null;
     this._statistics = null;
     this._eventHandler = null;
-    this._selectedEntitySubscription = null;
 
     this._initializeEventListeners();
   }
@@ -77,27 +79,45 @@ export class Heatbox {
     }
     
     try {
+      Logger.debug('Heatbox.setData - 処理開始:', entities.length, '個のエンティティ');
+      
       // 1. 境界計算
+      Logger.debug('Step 1: 境界計算');
       this._bounds = CoordinateTransformer.calculateBounds(entities);
       if (!this._bounds) {
+        Logger.error('境界計算に失敗');
         this.clear();
         return;
       }
+      Logger.debug('境界計算完了:', this._bounds);
 
-      // 2. グリッド生成
+      // 2. グリッド生成（シンプル化したアプローチ）
+      Logger.debug('Step 2: グリッド生成 (サイズ:', this.options.voxelSize, 'm)');
       this._grid = VoxelGrid.createGrid(this._bounds, this.options.voxelSize);
+      Logger.debug('グリッド生成完了:', this._grid);
       
       // 3. エンティティ分類
+      Logger.debug('Step 3: エンティティ分類');
       this._voxelData = DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid);
+      Logger.debug('エンティティ分類完了:', this._voxelData.size, '個のボクセル');
       
       // 4. 統計計算
+      Logger.debug('Step 4: 統計計算');
       this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid);
+      Logger.debug('統計情報:', this._statistics);
       
       // 5. 描画
-      this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+      Logger.debug('Step 5: 描画');
+      const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+      
+      // 統計情報に実際の描画数を反映
+      this._statistics.renderedVoxels = renderedVoxelCount;
+      Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
+      
+      Logger.debug('Heatbox.setData - 処理完了');
       
     } catch (error) {
-      console.error('ヒートマップ作成エラー:', error);
+      Logger.error('ヒートマップ作成エラー:', error);
       this.clear();
       throw error;
     }
@@ -143,11 +163,7 @@ export class Heatbox {
     if (this._eventHandler &amp;&amp; !this._eventHandler.isDestroyed()) {
       this._eventHandler.destroy();
     }
-    if (this._selectedEntitySubscription) {
-      this._selectedEntitySubscription();
-    }
     this._eventHandler = null;
-    this._selectedEntitySubscription = null;
   }
 
   /**
@@ -168,7 +184,9 @@ export class Heatbox {
     
     // 既存のヒートマップがある場合は再描画
     if (this._voxelData) {
-      this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+      const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+      // 統計情報を更新
+      this._statistics.renderedVoxels = renderedVoxelCount;
     }
   }
 
@@ -182,11 +200,22 @@ export class Heatbox {
     // クリックイベントでInfoBoxを更新
     this._eventHandler.setInputAction(movement => {
       const pickedObject = this.viewer.scene.pick(movement.position);
-      if (Cesium.defined(pickedObject) &amp;&amp; pickedObject.id &amp;&amp; pickedObject.id.type === 'voxel') {
+      if (Cesium.defined(pickedObject) &amp;&amp; pickedObject.id &amp;&amp; 
+          pickedObject.id.properties &amp;&amp; 
+          pickedObject.id.properties.type === 'voxel') {
+        // プロパティからキー値を取得
+        const voxelKey = pickedObject.id.properties.key;
+        const voxelInfo = {
+          x: pickedObject.id.properties.x,
+          y: pickedObject.id.properties.y,
+          z: pickedObject.id.properties.z,
+          count: pickedObject.id.properties.count
+        };
+        
         // InfoBoxに表示するためのダミーエンティティを作成
         const dummyEntity = new Cesium.Entity({
-          id: `voxel-${pickedObject.id.key}`,
-          description: this.renderer.createVoxelDescription(pickedObject.id.info)
+          id: `voxel-${voxelKey}`,
+          description: this.renderer.createVoxelDescription(voxelInfo, voxelKey)
         });
         this.viewer.selectedEntity = dummyEntity;
       }
@@ -243,13 +272,13 @@ export class Heatbox {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="Heatbox.html">Heatbox</a></li><li><a href="VoxelGrid.html">VoxelGrid</a></li><li><a href="VoxelRenderer.html">VoxelRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#COLOR_CONSTANTS">COLOR_CONSTANTS</a></li><li><a href="global.html#COORDINATE_CONSTANTS">COORDINATE_CONSTANTS</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_STATISTICS">DEFAULT_STATISTICS</a></li><li><a href="global.html#ERROR_MESSAGES">ERROR_MESSAGES</a></li><li><a href="global.html#PERFORMANCE_LIMITS">PERFORMANCE_LIMITS</a></li><li><a href="global.html#VERSION">VERSION</a></li><li><a href="global.html#createBoundsFromCenter">createBoundsFromCenter</a></li><li><a href="global.html#createHeatbox">createHeatbox</a></li><li><a href="global.html#generateTestEntities">generateTestEntities</a></li><li><a href="global.html#getAllEntities">getAllEntities</a></li><li><a href="global.html#getEnvironmentInfo">getEnvironmentInfo</a></li><li><a href="global.html#getTokyoStationBounds">getTokyoStationBounds</a></li><li><a href="global.html#hasValidPosition">hasValidPosition</a></li><li><a href="global.html#isValidEntities">isValidEntities</a></li><li><a href="global.html#isValidViewer">isValidViewer</a></li><li><a href="global.html#isValidVoxelSize">isValidVoxelSize</a></li><li><a href="global.html#validateAndNormalizeOptions">validateAndNormalizeOptions</a></li><li><a href="global.html#validateVoxelCount">validateVoxelCount</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="Heatbox.html">Heatbox</a></li><li><a href="VoxelGrid.html">VoxelGrid</a></li><li><a href="VoxelRenderer.html">VoxelRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#COLOR_CONSTANTS">COLOR_CONSTANTS</a></li><li><a href="global.html#COORDINATE_CONSTANTS">COORDINATE_CONSTANTS</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_STATISTICS">DEFAULT_STATISTICS</a></li><li><a href="global.html#ERROR_MESSAGES">ERROR_MESSAGES</a></li><li><a href="global.html#LOG_LEVELS">LOG_LEVELS</a></li><li><a href="global.html#Logger">Logger</a></li><li><a href="global.html#PERFORMANCE_LIMITS">PERFORMANCE_LIMITS</a></li><li><a href="global.html#VERSION">VERSION</a></li><li><a href="global.html#createBoundsFromCenter">createBoundsFromCenter</a></li><li><a href="global.html#createHeatbox">createHeatbox</a></li><li><a href="global.html#generateTestEntities">generateTestEntities</a></li><li><a href="global.html#getAllEntities">getAllEntities</a></li><li><a href="global.html#getEnvironmentInfo">getEnvironmentInfo</a></li><li><a href="global.html#getLogLevel">getLogLevel</a></li><li><a href="global.html#getTokyoStationBounds">getTokyoStationBounds</a></li><li><a href="global.html#hasValidPosition">hasValidPosition</a></li><li><a href="global.html#isValidEntities">isValidEntities</a></li><li><a href="global.html#isValidViewer">isValidViewer</a></li><li><a href="global.html#isValidVoxelSize">isValidVoxelSize</a></li><li><a href="global.html#log">log</a></li><li><a href="global.html#validateAndNormalizeOptions">validateAndNormalizeOptions</a></li><li><a href="global.html#validateVoxelCount">validateVoxelCount</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Aug 19 2025 21:48:32 GMT+0900 (日本標準時)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 24 2025 00:52:43 GMT+0900 (Japan Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

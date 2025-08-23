@@ -3,6 +3,7 @@
  * プロトタイプ実装ベース（シンプル・確実動作重視）
  */
 import * as Cesium from 'cesium';
+import { Logger } from '../utils/logger.js';
 
 /**
  * 3Dボクセルの描画を担当するクラス
@@ -29,8 +30,7 @@ export class VoxelRenderer {
     };
     this.voxelEntities = [];
     
-    // eslint-disable-next-line no-console
-    console.log('VoxelRenderer initialized with options:', this.options);
+    Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
 
   /**
@@ -39,19 +39,21 @@ export class VoxelRenderer {
    * @param {Object} bounds - 境界情報
    * @param {Object} grid - グリッド情報
    * @param {Object} statistics - 統計情報
+   * @returns {number} 実際に描画されたボクセル数
    */
   render(voxelData, bounds, grid, statistics) {
     this.clear();
-    // eslint-disable-next-line no-console
-    console.log('VoxelRenderer.render - Starting render with simplified approach', {
+    Logger.debug('VoxelRenderer.render - Starting render with simplified approach', {
       voxelDataSize: voxelData.size,
       bounds,
       grid,
       statistics
     });
 
-    // バウンディングボックスのデバッグ表示
-    this._renderBoundingBox(bounds);
+    // バウンディングボックスのデバッグ表示（debugオプションがtrueの場合のみ）
+    if (this.options.debug) {
+      this._renderBoundingBox(bounds);
+    }
 
     // 表示するボクセルのリスト
     let displayVoxels = [];
@@ -60,8 +62,7 @@ export class VoxelRenderer {
     if (this.options.showEmptyVoxels) {
       // 全ボクセルを生成（これは上限値が大きいとメモリ消費とパフォーマンスに影響する）
       const maxVoxels = Math.min(grid.totalVoxels, this.options.maxRenderVoxels || 10000);
-      // eslint-disable-next-line no-console
-      console.log(`Generating grid for up to ${maxVoxels} voxels`);
+      Logger.debug(`Generating grid for up to ${maxVoxels} voxels`);
       
       // 空のボクセルも含めて全ボクセルを追加
       for (let x = 0; x < grid.numVoxelsX; x++) {
@@ -76,8 +77,7 @@ export class VoxelRenderer {
             });
             
             if (displayVoxels.length >= maxVoxels) {
-              // eslint-disable-next-line no-console
-              console.log(`Reached maximum voxel limit of ${maxVoxels}`);
+              Logger.debug(`Reached maximum voxel limit of ${maxVoxels}`);
               break;
             }
           }
@@ -95,13 +95,11 @@ export class VoxelRenderer {
       if (this.options.maxRenderVoxels && displayVoxels.length > this.options.maxRenderVoxels) {
         displayVoxels.sort((a, b) => b.info.count - a.info.count);
         displayVoxels = displayVoxels.slice(0, this.options.maxRenderVoxels);
-        // eslint-disable-next-line no-console
-        console.log(`Limited to ${displayVoxels.length} highest density voxels`);
+        Logger.debug(`Limited to ${displayVoxels.length} highest density voxels`);
       }
     }
 
-    // eslint-disable-next-line no-console
-    console.log(`Rendering ${displayVoxels.length} voxels`);
+    Logger.debug(`Rendering ${displayVoxels.length} voxels`);
     
     // レンダリングカウント
     let renderedCount = 0;
@@ -178,12 +176,14 @@ export class VoxelRenderer {
         this.voxelEntities.push(entity);
         renderedCount++;
       } catch (error) {
-        console.warn('Error rendering voxel:', error);
+        Logger.warn('Error rendering voxel:', error);
       }
     });
 
-    // eslint-disable-next-line no-console
-    console.log(`Successfully rendered ${renderedCount} voxels`);
+    Logger.info(`Successfully rendered ${renderedCount} voxels`);
+    
+    // 実際に描画されたボクセル数を返す
+    return renderedCount;
   }
 
   /**
@@ -220,14 +220,13 @@ export class VoxelRenderer {
       
       this.voxelEntities.push(boundingBox);
       
-      // eslint-disable-next-line no-console
-      console.log('Debug bounding box added:', {
+      Logger.debug('Debug bounding box added:', {
         center: { lon: centerLon, lat: centerLat, alt: centerAlt },
         size: { width: widthMeters, depth: depthMeters, height: heightMeters }
       });
       
     } catch (error) {
-      console.warn('Failed to render bounding box:', error);
+      Logger.warn('Failed to render bounding box:', error);
     }
   }
 
@@ -269,8 +268,7 @@ export class VoxelRenderer {
    * 描画されたエンティティを全てクリア
    */
   clear() {
-    // eslint-disable-next-line no-console
-    console.log('VoxelRenderer.clear - Removing', this.voxelEntities.length, 'entities');
+    Logger.debug('VoxelRenderer.clear - Removing', this.voxelEntities.length, 'entities');
     
     this.voxelEntities.forEach(entity => {
       try {
@@ -281,7 +279,7 @@ export class VoxelRenderer {
           this.viewer.entities.remove(entity);
         }
       } catch (error) {
-        console.warn('Entity removal error:', error);
+        Logger.warn('Entity removal error:', error);
       }
     });
     
@@ -293,8 +291,7 @@ export class VoxelRenderer {
    * @param {boolean} show - 表示する場合はtrue
    */
   setVisible(show) {
-    // eslint-disable-next-line no-console
-    console.log('VoxelRenderer.setVisible:', show);
+    Logger.debug('VoxelRenderer.setVisible:', show);
     
     this.voxelEntities.forEach(entity => {
       try {
@@ -305,7 +302,7 @@ export class VoxelRenderer {
           entity.show = show;
         }
       } catch (error) {
-        console.warn('Entity visibility error:', error);
+        Logger.warn('Entity visibility error:', error);
       }
     });
   }

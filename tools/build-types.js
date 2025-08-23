@@ -19,6 +19,11 @@ export interface HeatboxOptions {
   maxColor?: [number, number, number];
   maxRenderVoxels?: number;
   batchMode?: 'auto' | 'primitive' | 'entity';
+  debug?: boolean;                   // v0.1.3 追加
+  // v0.1.2 新機能
+  wireframeOnly?: boolean;
+  heightBased?: boolean;
+  outlineWidth?: number;
 }
 
 export interface HeatboxStatistics {

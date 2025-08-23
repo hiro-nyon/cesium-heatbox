@@ -1,6 +1,7 @@
 /**
  * ボクセルグリッドを管理するクラス（シンプル実装）
  */
+import { Logger } from '../utils/logger.js';
 
 /**
  * 3Dボクセルグリッドを管理するクラス
@@ -26,8 +27,7 @@ export class VoxelGrid {
     
     const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
     
-    // eslint-disable-next-line no-console
-    console.log('VoxelGrid created:', {
+    Logger.debug('VoxelGrid created:', {
       numVoxelsX,
       numVoxelsY,
       numVoxelsZ,

@@ -112,7 +112,7 @@ export class PerformanceOptimizationDemo {
         entityCount: size,
         processingTime: endTime - startTime,
         config: adaptiveConfig,
-        renderedVoxels: stats.nonEmptyVoxels,
+        renderedVoxels: stats.renderedVoxels,
         performance: this.calculatePerformanceScore(endTime - startTime, size)
       };
       
@@ -177,7 +177,7 @@ export class PerformanceOptimizationDemo {
       memoryDiff,
       processingTime: endTime - startTime,
       entitiesProcessed: entities.length,
-      voxelsRendered: stats.nonEmptyVoxels
+      voxelsRendered: stats.renderedVoxels
     };
     
     return memoryOptimizedHeatbox;

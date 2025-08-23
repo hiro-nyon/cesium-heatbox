@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Wireframe & Height Demo - UMD版（ブラウザ直接実行対応）</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <style>
+    html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; }
+    .demo-panel { position: absolute; top: 10px; left: 10px; background: rgba(40, 40, 40, 0.9); padding: 20px; border-radius: 8px; color: white; font-family: sans-serif; max-width: 380px; }
+    .demo-panel h2 { margin: 0 0 15px; color: #4fc3f7; }
+    .demo-section { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #555; }
+    .demo-section:last-child { border-bottom: none; }
+    .demo-section h3 { margin: 0 0 10px; font-size: 16px; }
+    .control-group { margin-bottom: 12px; }
+    .control-group button { width: 100%; padding: 10px; margin-bottom: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .control-group button:hover { opacity: 0.8; }
+    .btn-traditional { background: #ff5722; color: white; }
+    .btn-wireframe { background: #2196f3; color: white; }
+    .btn-height { background: #4caf50; color: white; }
+    .btn-combined { background: #9c27b0; color: white; }
+    .btn-clear { background: #f44336; color: white; }
+    .btn-demo { background: #ff9800; color: white; }
+    #status { margin-top: 15px; font-weight: bold; padding: 10px; border-radius: 4px; background: rgba(0,0,0,0.3); }
+    .success { color: #4caf50; }
+    .error { color: #f44336; }
+    .info { color: #2196f3; }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="demo-panel">
+    <h2>🔥 Wireframe & Height デモ</h2>
+    <p style="font-size: 14px; margin-bottom: 20px; color: #ccc;">
+      v0.1.2新機能のwireframeOnly・heightBased表現を体験できます
+    </p>
+    
+    <div class="demo-section">
+      <h3>📊 表示モード比較</h3>
+      <div class="control-group">
+        <button id="traditionalBtn" class="btn-traditional">従来表示 (塗りつぶし)</button>
+        <button id="wireframeBtn" class="btn-wireframe">Wireframe表示 (枠線のみ)</button>
+        <button id="heightBasedBtn" class="btn-height">Height-Based (高さベース)</button>
+        <button id="combinedBtn" class="btn-combined">Combined (枠線+高さ)</button>
+      </div>
+    </div>
+    
+    <div class="demo-section">
+      <h3>🎮 デモ制御</h3>
+      <div class="control-group">
+        <button id="autoCompareBtn" class="btn-demo">自動比較デモ開始</button>
+        <button id="clearAllBtn" class="btn-clear">すべてクリア</button>
+      </div>
+    </div>
+    
+    <div id="status" class="info">Ready - ボタンをクリックしてデモを開始</div>
+  </div>
+
+  <!-- CesiumJS Heatbox UMD Build -->
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
+  <script>
+    // UMDビルドからCesiumHeatboxを取得
+    const Heatbox = window.CesiumHeatbox || window.Heatbox;
+    
+    // アプリケーション状態
+    let viewer;
+    let testEntities = [];
+    let activeHeatboxes = [];
+    
+    // UI要素
+    const elements = {};
+    
+    /**
+     * テストデータ生成（東京駅周辺の密度分布パターン）
+     */
+    function generateTestData() {
+      const entities = [];
+      const bounds = {
+        minLon: 139.760, maxLon: 139.775,
+        minLat: 35.677, maxLat: 35.687,
+        minAlt: 0, maxAlt: 120
+      };
+      
+      // 高密度クラスター3個を生成
+      const clusters = [
+        { centerLon: 139.7665, centerLat: 35.6807, density: 800 }, // 東京駅
+        { centerLon: 139.7700, centerLat: 35.6820, density: 600 }, // 大手町
+        { centerLon: 139.7640, centerLat: 35.6795, density: 400 }  // 有楽町
+      ];
+      
+      clusters.forEach((cluster, clusterIndex) => {
+        for (let i = 0; i < cluster.density; i++) {
+          // ガウス分布っぽい配置
+          const angle = Math.random() * 2 * Math.PI;
+          const distance = Math.sqrt(-2 * Math.log(Math.random())) * 0.001;
+          
+          const lon = Math.max(bounds.minLon, Math.min(bounds.maxLon, 
+            cluster.centerLon + Math.cos(angle) * distance));
+          const lat = Math.max(bounds.minLat, Math.min(bounds.maxLat, 
+            cluster.centerLat + Math.sin(angle) * distance));
+          const alt = Math.random() * bounds.maxAlt;
+          
+          const entity = viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+            point: {
+              pixelSize: 3,
+              color: clusterIndex === 0 ? Cesium.Color.RED.withAlpha(0.7) :
+                     clusterIndex === 1 ? Cesium.Color.BLUE.withAlpha(0.7) :
+                     Cesium.Color.GREEN.withAlpha(0.7),
+              heightReference: Cesium.HeightReference.NONE
+            },
+            properties: {
+              cluster: clusterIndex,
+              value: Math.random() * 100
+            }
+          });
+          entities.push(entity);
+        }
+      });
+      
+      updateStatus(`${entities.length}個のテストエンティティを生成`, 'success');
+      return entities;
+    }
+    
+    /**
+     * 従来表示モード
+     */
+    async function createTraditionalDisplay() {
+      clearAll();
+      if (testEntities.length === 0) testEntities = generateTestData();
+      
+      updateStatus('従来表示（塗りつぶし）を作成中...', 'info');
+      
+      const heatbox = new Heatbox(viewer, {
+        voxelSize: 25,
+        opacity: 0.6,
+        showOutline: true,
+        wireframeOnly: false,
+        heightBased: false,
+        debug: false
+      });
+      
+      await heatbox.createFromEntities(testEntities);
+      activeHeatboxes.push(heatbox);
+      updateStatus('従来表示が完了しました', 'success');
+    }
+    
+    /**
+     * Wireframe表示モード
+     */
+    async function createWireframeDisplay() {
+      clearAll();
+      if (testEntities.length === 0) testEntities = generateTestData();
+      
+      updateStatus('Wireframe表示（枠線のみ）を作成中...', 'info');
+      
+      const heatbox = new Heatbox(viewer, {
+        voxelSize: 25,
+        wireframeOnly: true,
+        showOutline: true,
+        outlineWidth: 2,
+        heightBased: false,
+        debug: false
+      });
+      
+      await heatbox.createFromEntities(testEntities);
+      activeHeatboxes.push(heatbox);
+      updateStatus('Wireframe表示が完了しました', 'success');
+    }
+    
+    /**
+     * Height-Based表示モード
+     */
+    async function createHeightBasedDisplay() {
+      clearAll();
+      if (testEntities.length === 0) testEntities = generateTestData();
+      
+      updateStatus('Height-Based表示（高さベース）を作成中...', 'info');
+      
+      const heatbox = new Heatbox(viewer, {
+        voxelSize: 25,
+        opacity: 0.8,
+        wireframeOnly: false,
+        heightBased: true,
+        showOutline: false,
+        debug: false
+      });
+      
+      await heatbox.createFromEntities(testEntities);
+      activeHeatboxes.push(heatbox);
+      updateStatus('Height-Based表示が完了しました', 'success');
+    }
+    
+    /**
+     * 組み合わせ表示モード
+     */
+    async function createCombinedDisplay() {
+      clearAll();
+      if (testEntities.length === 0) testEntities = generateTestData();
+      
+      updateStatus('Combined表示（枠線+高さ）を作成中...', 'info');
+      
+      const heatbox = new Heatbox(viewer, {
+        voxelSize: 25,
+        opacity: 0.4,
+        wireframeOnly: true,
+        heightBased: true,
+        showOutline: true,
+        outlineWidth: 3,
+        debug: false
+      });
+      
+      await heatbox.createFromEntities(testEntities);
+      activeHeatboxes.push(heatbox);
+      updateStatus('Combined表示が完了しました', 'success');
+    }
+    
+    /**
+     * 自動比較デモ
+     */
+    async function runAutoCompareDemo() {
+      updateStatus('自動比較デモを開始します...', 'info');
+      
+      const modes = [
+        { name: '従来表示', fn: createTraditionalDisplay },
+        { name: 'Wireframe表示', fn: createWireframeDisplay },
+        { name: 'Height-Based表示', fn: createHeightBasedDisplay },
+        { name: 'Combined表示', fn: createCombinedDisplay }
+      ];
+      
+      for (const mode of modes) {
+        updateStatus(`${mode.name}を表示中...`, 'info');
+        await mode.fn();
+        await delay(3000); // 3秒間表示
+      }
+      
+      updateStatus('自動比較デモが完了しました', 'success');
+    }
+    
+    /**
+     * すべてクリア
+     */
+    function clearAll() {
+      activeHeatboxes.forEach(heatbox => heatbox.clear());
+      activeHeatboxes = [];
+      viewer.entities.removeAll();
+      testEntities = [];
+    }
+    
+    /**
+     * ステータス更新
+     */
+    function updateStatus(message, type = 'info') {
+      const statusEl = elements.status;
+      statusEl.textContent = message;
+      statusEl.className = type;
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+    
+    /**
+     * 遅延ヘルパー
+     */
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    /**
+     * アプリケーション初期化
+     */
+    async function initializeApp() {
+      try {
+        // CesiumJS Viewer初期化
+        viewer = new Cesium.Viewer('cesiumContainer', {
+          homeButton: false,
+          sceneModePicker: false,
+          baseLayerPicker: false,
+          navigationHelpButton: false,
+          animation: false,
+          timeline: false,
+          fullscreenButton: false,
+          geocoder: false,
+          infoBox: true,
+          selectionIndicator: true,
+          creditContainer: document.createElement('div')
+        });
+        
+        // カメラを東京駅周辺に設定
+        viewer.camera.setView({
+          destination: Cesium.Cartesian3.fromDegrees(139.7665, 35.6807, 600),
+          orientation: {
+            heading: Cesium.Math.toRadians(0),
+            pitch: Cesium.Math.toRadians(-45),
+            roll: 0
+          }
+        });
+        
+        // UI要素取得
+        const uiIds = ['traditionalBtn', 'wireframeBtn', 'heightBasedBtn', 'combinedBtn', 'autoCompareBtn', 'clearAllBtn', 'status'];
+        uiIds.forEach(id => elements[id] = document.getElementById(id));
+        
+        // イベントリスナー設定
+        elements.traditionalBtn.addEventListener('click', createTraditionalDisplay);
+        elements.wireframeBtn.addEventListener('click', createWireframeDisplay);
+        elements.heightBasedBtn.addEventListener('click', createHeightBasedDisplay);
+        elements.combinedBtn.addEventListener('click', createCombinedDisplay);
+        elements.autoCompareBtn.addEventListener('click', runAutoCompareDemo);
+        elements.clearAllBtn.addEventListener('click', clearAll);
+        
+        updateStatus('アプリケーションが初期化されました', 'success');
+        
+      } catch (error) {
+        console.error('初期化エラー:', error);
+        updateStatus('初期化エラー: ' + error.message, 'error');
+      }
+    }
+    
+    // DOM読み込み完了後に初期化
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  </script>
+</body>
+</html>

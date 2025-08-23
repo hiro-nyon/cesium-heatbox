@@ -932,7 +932,7 @@ if (!viewer.scene.canvas.getContext('webgl')) {
 
 ### エラー回復処理
 
-1. **Graceful Degradation**: 制限超過時は自動でボクセルサイズを調整
+1. **Graceful Degradation**: 制限超過時は描画数を制限（`maxRenderVoxels`）。ボクセルサイズの自動調整は v0.1.4 で検討。
 2. **部分処理継続**: 一部エンティティの処理失敗時も継続
 3. **リソース解放**: エラー時も確実にメモリ・リソースを解放
 

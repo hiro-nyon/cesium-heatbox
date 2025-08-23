@@ -14,7 +14,8 @@ export const DEFAULT_OPTIONS = {
   minColor: [0, 32, 255],
   maxColor: [255, 64, 0],
   maxRenderVoxels: 50000,
-  batchMode: 'auto'
+  batchMode: 'auto',
+  debug: false // ログ制御（false で本番モード、true で開発モード）
 };
 
 /**

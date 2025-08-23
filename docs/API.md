@@ -25,7 +25,7 @@
 - `maxRenderVoxels` (number, default: 50000) - 最大描画ボクセル数
 - **`wireframeOnly` (boolean, default: false) - 枠線のみ表示（v0.1.2新機能）**
 - **`heightBased` (boolean, default: false) - 密度を高さで表現（v0.1.2新機能）**
-- **`outlineWidth` (number, default: 1) - 枠線の太さ（v0.1.2新機能）**
+- **`outlineWidth` (number, default: 2) - 枠線の太さ（v0.1.2新機能）**
 
 **例（v0.1.2）:**
 ```javascript
@@ -45,7 +45,7 @@ const heatbox = new Heatbox(viewer, {
 
 エンティティ配列からヒートマップを非同期に作成します。内部で境界計算・グリッド作成・分類・描画を順に実行します。
 
-処理中に総ボクセル数が上限（パフォーマンス制限）を超える場合、推奨ボクセルサイズに自動調整して再計算を行います。
+現在、ボクセルサイズの自動調整は行いません。ボクセル数が多い場合は `voxelSize` を利用者側で調整するか、`maxRenderVoxels` により描画数を制限してください（自動調整は v0.1.4 で対応予定）。
 
 **パラメータ:**
 - `entities` (Array<Cesium.Entity>)

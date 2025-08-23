@@ -1,7 +1,10 @@
 /**
  * CesiumJS Heatbox 基本例
+ * UMDビルドを使用してブラウザ互換性を向上
  */
-import Heatbox from '../../src/index.js';
+
+// UMDビルドからCesiumHeatboxを取得
+const Heatbox = window.CesiumHeatbox || window.Heatbox;
 
 // アプリケーションの状態
 let viewer;
@@ -70,7 +73,7 @@ async function initializeApp() {
     const uiElementIds = [
       'generateBtn', 'createHeatmapBtn', 'clearBtn', 'toggleBtn',
       'entityCount', 'voxelSize', 'opacity', 'opacityValue', 'showEmpty', 'showOutline',
-      'wireframeOnly', 'heightBased', // v0.1.2 新機能
+      'wireframeOnly', 'heightBased', 'debugLogs', // v0.1.2 新機能 + debug制御
       'statistics', 'statisticsContent', 'status'
     ];
     uiElementIds.forEach(id => {
@@ -171,6 +174,8 @@ function setupEventListeners() {
   elements.opacity.addEventListener('input', e => {
     elements.opacityValue.textContent = e.target.value;
   });
+
+
 }
 
 function getOptionsFromUI() {
@@ -182,7 +187,9 @@ function getOptionsFromUI() {
     // v0.1.2 新機能
     wireframeOnly: elements.wireframeOnly?.checked || false,
     heightBased: elements.heightBased?.checked || false,
-    outlineWidth: 2
+    outlineWidth: 2,
+    // Phase 1 debug制御
+    debug: elements.debugLogs?.checked || false
   };
 }
 
@@ -192,8 +199,13 @@ function clearEntities() {
 }
 
 function displayStatistics(stats) {
+  const trimmedCount = stats.nonEmptyVoxels - stats.renderedVoxels;
+  const trimmedNote = trimmedCount > 0 ? 
+    `<small style="color: #ccc;">(注: ${trimmedCount.toLocaleString()}個の非空ボクセルが描画制限で非表示)</small>` : '';
+  
   elements.statisticsContent.innerHTML = `
     <div>総ボクセル数: ${stats.totalVoxels.toLocaleString()}</div>
+    <div>表示ボクセル数: ${stats.renderedVoxels.toLocaleString()} ${trimmedNote}</div>
     <div>非空ボクセル数: ${stats.nonEmptyVoxels.toLocaleString()}</div>
     <div>総エンティティ数: ${stats.totalEntities.toLocaleString()}</div>
     <div>最大密度: ${stats.maxCount}</div>

@@ -50,11 +50,14 @@
       <input type="checkbox" id="heightBased"> <label for="heightBased">Height-Based (v0.1.2)</label>
     </div>
     <div class="control-group">
+      <input type="checkbox" id="debugLogs"> <label for="debugLogs">Debug Logs (開発用)</label>
+    </div>
+    <div class="control-group">
       <button id="createHeatmapBtn" disabled>2. Create Heatmap</button>
     </div>
     <hr>
     <div class="control-group">
-      <button id="toggleBtn" disabled>Hide</button>
+      <button id="toggleBtn" disabled>非表示</button>
       <button id="clearBtn" disabled>Clear All</button>
     </div>
     <div id="status">Ready</div>
@@ -63,6 +66,8 @@
       <div id="statisticsContent"></div>
     </div>
   </div>
-  <script type="module" src="app.js"></script>
+  <!-- CesiumJS Heatbox UMD Build -->
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

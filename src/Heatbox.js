@@ -4,6 +4,7 @@
 import * as Cesium from 'cesium';
 import { DEFAULT_OPTIONS, ERROR_MESSAGES } from './utils/constants.js';
 import { isValidViewer, isValidEntities, validateAndNormalizeOptions } from './utils/validation.js';
+import { Logger } from './utils/logger.js';
 import { CoordinateTransformer } from './core/CoordinateTransformer.js';
 import { VoxelGrid } from './core/VoxelGrid.js';
 import { DataProcessor } from './core/DataProcessor.js';
@@ -26,6 +27,8 @@ export class Heatbox {
     
     this.viewer = viewer;
     this.options = validateAndNormalizeOptions({ ...DEFAULT_OPTIONS, ...options });
+    // ログレベルをオプションに基づいて設定
+    Logger.setLogLevel(this.options);
     this.renderer = new VoxelRenderer(this.viewer, this.options);
     
     this._bounds = null;
@@ -33,7 +36,6 @@ export class Heatbox {
     this._voxelData = null;
     this._statistics = null;
     this._eventHandler = null;
-    this._selectedEntitySubscription = null;
 
     this._initializeEventListeners();
   }
@@ -49,42 +51,45 @@ export class Heatbox {
     }
     
     try {
-      console.log('Heatbox.setData - 処理開始:', entities.length, '個のエンティティ');
+      Logger.debug('Heatbox.setData - 処理開始:', entities.length, '個のエンティティ');
       
       // 1. 境界計算
-      console.log('Step 1: 境界計算');
+      Logger.debug('Step 1: 境界計算');
       this._bounds = CoordinateTransformer.calculateBounds(entities);
       if (!this._bounds) {
-        console.error('境界計算に失敗');
+        Logger.error('境界計算に失敗');
         this.clear();
         return;
       }
-      console.log('境界計算完了:', this._bounds);
+      Logger.debug('境界計算完了:', this._bounds);
 
       // 2. グリッド生成（シンプル化したアプローチ）
-      console.log('Step 2: グリッド生成 (サイズ:', this.options.voxelSize, 'm)');
+      Logger.debug('Step 2: グリッド生成 (サイズ:', this.options.voxelSize, 'm)');
       this._grid = VoxelGrid.createGrid(this._bounds, this.options.voxelSize);
-      console.log('グリッド生成完了:', this._grid);
+      Logger.debug('グリッド生成完了:', this._grid);
       
       // 3. エンティティ分類
-      console.log('Step 3: エンティティ分類');
+      Logger.debug('Step 3: エンティティ分類');
       this._voxelData = DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid);
-      console.log('エンティティ分類完了:', this._voxelData.size, '個のボクセル');
+      Logger.debug('エンティティ分類完了:', this._voxelData.size, '個のボクセル');
       
       // 4. 統計計算
-      console.log('Step 4: 統計計算');
+      Logger.debug('Step 4: 統計計算');
       this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid);
-      console.log('統計情報:', this._statistics);
+      Logger.debug('統計情報:', this._statistics);
       
       // 5. 描画
-      console.log('Step 5: 描画');
-      this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
-      console.log('描画完了');
+      Logger.debug('Step 5: 描画');
+      const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
       
-      console.log('Heatbox.setData - 処理完了');
+      // 統計情報に実際の描画数を反映
+      this._statistics.renderedVoxels = renderedVoxelCount;
+      Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
+      
+      Logger.debug('Heatbox.setData - 処理完了');
       
     } catch (error) {
-      console.error('ヒートマップ作成エラー:', error);
+      Logger.error('ヒートマップ作成エラー:', error);
       this.clear();
       throw error;
     }
@@ -130,11 +135,7 @@ export class Heatbox {
     if (this._eventHandler && !this._eventHandler.isDestroyed()) {
       this._eventHandler.destroy();
     }
-    if (this._selectedEntitySubscription) {
-      this._selectedEntitySubscription();
-    }
     this._eventHandler = null;
-    this._selectedEntitySubscription = null;
   }
 
   /**
@@ -155,7 +156,9 @@ export class Heatbox {
     
     // 既存のヒートマップがある場合は再描画
     if (this._voxelData) {
-      this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+      const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+      // 統計情報を更新
+      this._statistics.renderedVoxels = renderedVoxelCount;
     }
   }
 
@@ -169,11 +172,22 @@ export class Heatbox {
     // クリックイベントでInfoBoxを更新
     this._eventHandler.setInputAction(movement => {
       const pickedObject = this.viewer.scene.pick(movement.position);
-      if (Cesium.defined(pickedObject) && pickedObject.id && pickedObject.id.type === 'voxel') {
+      if (Cesium.defined(pickedObject) && pickedObject.id && 
+          pickedObject.id.properties && 
+          pickedObject.id.properties.type === 'voxel') {
+        // プロパティからキー値を取得
+        const voxelKey = pickedObject.id.properties.key;
+        const voxelInfo = {
+          x: pickedObject.id.properties.x,
+          y: pickedObject.id.properties.y,
+          z: pickedObject.id.properties.z,
+          count: pickedObject.id.properties.count
+        };
+        
         // InfoBoxに表示するためのダミーエンティティを作成
         const dummyEntity = new Cesium.Entity({
-          id: `voxel-${pickedObject.id.key}`,
-          description: this.renderer.createVoxelDescription(pickedObject.id.info)
+          id: `voxel-${voxelKey}`,
+          description: this.renderer.createVoxelDescription(voxelInfo, voxelKey)
         });
         this.viewer.selectedEntity = dummyEntity;
       }

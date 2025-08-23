@@ -2,6 +2,7 @@
  * 座標変換を担当するクラス（シンプル実装）
  */
 import * as Cesium from 'cesium';
+import { Logger } from '../utils/logger.js';
 
 /**
  * 座標変換機能を提供するクラス
@@ -60,8 +61,7 @@ export class CoordinateTransformer {
         
         validCount++;
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.warn(`エンティティ ${index} の処理に失敗:`, error);
+        Logger.warn(`エンティティ ${index} の処理に失敗:`, error);
       }
     });
     
@@ -70,8 +70,7 @@ export class CoordinateTransformer {
     }
     
     // デバッグ出力
-    // eslint-disable-next-line no-console
-    console.log('座標範囲計算完了:', {
+    Logger.debug('座標範囲計算完了:', {
       validCount,
       bounds: {
         minLon, maxLon, 
