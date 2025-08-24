@@ -38,6 +38,8 @@ import Heatbox from 'cesium-heatbox';
 
 const viewer = new Cesium.Viewer('cesiumContainer');
 const heatbox = new Heatbox(viewer, { voxelSize: 25, opacity: 0.8 });
+// v0.1.4以降は voxelSize を省略し、autoVoxelSize: true で自動決定も可能
+// const heatbox = new Heatbox(viewer, { autoVoxelSize: true, opacity: 0.8 });
 
 const entities = viewer.entities.values; // 既存のエンティティ
 await heatbox.createFromEntities(entities);
@@ -68,6 +70,8 @@ import Heatbox from 'cesium-heatbox';
 
 const viewer = new Cesium.Viewer('cesiumContainer');
 const heatbox = new Heatbox(viewer, { voxelSize: 25, opacity: 0.8 });
+// Since v0.1.4, you can omit voxelSize and enable auto sizing
+// const heatbox = new Heatbox(viewer, { autoVoxelSize: true, opacity: 0.8 });
 
 const entities = viewer.entities.values; // existing entities
 await heatbox.createFromEntities(entities);
