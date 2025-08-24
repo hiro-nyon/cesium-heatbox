@@ -152,3 +152,76 @@ export function validateAndNormalizeOptions(options = {}) {
   
   return normalized;
 }
+
+/**
+ * データ範囲に基づいて初期ボクセルサイズを推定
+ * @param {Object} bounds - 境界情報
+ * @param {number} entityCount - エンティティ数
+ * @returns {number} 推定ボクセルサイズ（メートル）
+ */
+export function estimateInitialVoxelSize(bounds, entityCount) {
+  try {
+    // 1. データ範囲（X/Y/Z軸の物理的範囲）を計算
+    const dataRange = calculateDataRange(bounds);
+    
+    // 2. エンティティ密度を推定
+    const volume = dataRange.x * dataRange.y * Math.max(dataRange.z, 10); // 最小高度差10m
+    const density = entityCount / volume; // エンティティ/立方メートル
+    
+    // 3. 密度に応じて適切なボクセルサイズを推定
+    // - 高密度: 細かいサイズ（10-20m）
+    // - 中密度: 標準サイズ（20-50m）
+    // - 低密度: 粗いサイズ（50-100m）
+    let estimatedSize;
+    
+    if (density > 0.001) {
+      // 高密度：細かいサイズ
+      estimatedSize = Math.max(10, Math.min(20, 20 / Math.sqrt(density * 1000)));
+    } else if (density > 0.0001) {
+      // 中密度：標準サイズ
+      estimatedSize = Math.max(20, Math.min(50, 50 / Math.sqrt(density * 10000)));
+    } else {
+      // 低密度：粗いサイズ
+      estimatedSize = Math.max(50, Math.min(100, 100 / Math.sqrt(density * 100000)));
+    }
+    
+    // 制限値内に収める
+    estimatedSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+                            Math.min(PERFORMANCE_LIMITS.maxVoxelSize, estimatedSize));
+    
+    Logger.debug(`Estimated voxel size: ${estimatedSize}m (density: ${density}, volume: ${volume})`);
+    return Math.round(estimatedSize);
+    
+  } catch (error) {
+    Logger.warn('Initial voxel size estimation failed:', error);
+    return 20; // デフォルトサイズ
+  }
+}
+
+/**
+ * 境界からデータ範囲を計算
+ * @param {Object} bounds - 境界情報
+ * @returns {Object} データ範囲 {x, y, z}（メートル）
+ */
+export function calculateDataRange(bounds) {
+  try {
+    // 緯度経度をメートルに変換（簡易変換）
+    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+    const cosLat = Math.cos(centerLat * Math.PI / 180);
+    
+    const lonRangeMeters = (bounds.maxLon - bounds.minLon) * 111000 * cosLat;
+    const latRangeMeters = (bounds.maxLat - bounds.minLat) * 111000;
+    const altRangeMeters = Math.max(bounds.maxAlt - bounds.minAlt, 1); // 最小1m
+    
+    return {
+      x: Math.max(lonRangeMeters, 1),
+      y: Math.max(latRangeMeters, 1),
+      z: altRangeMeters
+    };
+    
+  } catch (error) {
+    Logger.warn('Data range calculation failed:', error);
+    // フォールバック値
+    return { x: 1000, y: 1000, z: 100 };
+  }
+}

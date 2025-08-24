@@ -74,6 +74,7 @@ async function initializeApp() {
       'generateBtn', 'createHeatmapBtn', 'clearBtn', 'toggleBtn',
       'entityCount', 'voxelSize', 'opacity', 'opacityValue', 'showEmpty', 'showOutline',
       'wireframeOnly', 'heightBased', 'debugLogs', // v0.1.2 新機能 + debug制御
+      'autoVoxelSize', 'manualVoxelSizeGroup', // v0.1.4 新機能
       'statistics', 'statisticsContent', 'status'
     ];
     uiElementIds.forEach(id => {
@@ -175,12 +176,20 @@ function setupEventListeners() {
     elements.opacityValue.textContent = e.target.value;
   });
 
+  // v0.1.4: autoVoxelSizeチェックボックスの処理
+  elements.autoVoxelSize.addEventListener('change', () => {
+    const isAutoMode = elements.autoVoxelSize.checked;
+    elements.manualVoxelSizeGroup.style.display = isAutoMode ? 'none' : 'block';
+    
+    if (heatbox && heatbox.getStatistics()) {
+      elements.createHeatmapBtn.click(); // 再生成
+    }
+  });
 
 }
 
 function getOptionsFromUI() {
-  return {
-    voxelSize: parseInt(elements.voxelSize.value, 10),
+  const options = {
     opacity: parseFloat(elements.opacity.value),
     showEmptyVoxels: elements.showEmpty.checked,
     showOutline: elements.showOutline.checked,
@@ -189,8 +198,17 @@ function getOptionsFromUI() {
     heightBased: elements.heightBased?.checked || false,
     outlineWidth: 2,
     // Phase 1 debug制御
-    debug: elements.debugLogs?.checked || false
+    debug: elements.debugLogs?.checked || false,
+    // v0.1.4 新機能
+    autoVoxelSize: elements.autoVoxelSize?.checked || false
   };
+  
+  // autoVoxelSizeがtrueでない場合のみvoxelSizeを設定
+  if (!options.autoVoxelSize) {
+    options.voxelSize = parseInt(elements.voxelSize.value, 10);
+  }
+  
+  return options;
 }
 
 function clearEntities() {
@@ -203,6 +221,19 @@ function displayStatistics(stats) {
   const trimmedNote = trimmedCount > 0 ? 
     `<small style="color: #ccc;">(注: ${trimmedCount.toLocaleString()}個の非空ボクセルが描画制限で非表示)</small>` : '';
   
+  // v0.1.4: 自動調整情報の表示
+  let autoAdjustInfo = '';
+  if (stats.autoAdjusted !== undefined) {
+    if (stats.autoAdjusted) {
+      autoAdjustInfo = `
+        <div style="color: #4CAF50;">🔧 自動調整: ${stats.originalVoxelSize}m → ${stats.finalVoxelSize}m</div>
+        <div style="color: #ccc; font-size: 12px;">理由: ${stats.adjustmentReason}</div>
+      `;
+    } else if (stats.finalVoxelSize) {
+      autoAdjustInfo = `<div style="color: #2196F3;">⚙️ 自動決定サイズ: ${stats.finalVoxelSize}m</div>`;
+    }
+  }
+  
   elements.statisticsContent.innerHTML = `
     <div>総ボクセル数: ${stats.totalVoxels.toLocaleString()}</div>
     <div>表示ボクセル数: ${stats.renderedVoxels.toLocaleString()} ${trimmedNote}</div>
@@ -210,6 +241,7 @@ function displayStatistics(stats) {
     <div>総エンティティ数: ${stats.totalEntities.toLocaleString()}</div>
     <div>最大密度: ${stats.maxCount}</div>
     <div>平均密度: ${stats.averageCount.toFixed(2)}</div>
+    ${autoAdjustInfo}
   `;
   elements.statistics.style.display = 'block';
 }

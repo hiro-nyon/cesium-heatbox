@@ -1,4 +1,4 @@
-# API リファレンス - v0.1.2
+# API リファレンス - v0.1.4
 
 > **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得してください。
 
@@ -14,8 +14,8 @@
 - `viewer` (Cesium.Viewer) - CesiumJS Viewerインスタンス
 - `options` (Object, optional) - 設定オプション
 
-**オプション（v0.1.2対応）:**
-- `voxelSize` (number, default: 20) - ボクセル一辺の長さ（メートル）
+**オプション（v0.1.4対応）:**
+- `voxelSize` (number, default: 20) - 目標ボクセルサイズ（メートル）。実際の描画寸法はグリッド分割数に基づく各軸の実セルサイズ `cellSizeX/Y/Z` を使用し、`voxelSize` 以下になる場合があります（重なり防止のため）。
 - `opacity` (number, default: 0.8) - データボクセルの透明度 (0.0-1.0)
 - `emptyOpacity` (number, default: 0.03) - 空ボクセルの透明度 (0.0-1.0)
 - `showOutline` (boolean, default: true) - アウトライン表示の有無
@@ -26,11 +26,16 @@
 - **`wireframeOnly` (boolean, default: false) - 枠線のみ表示（v0.1.2新機能）**
 - **`heightBased` (boolean, default: false) - 密度を高さで表現（v0.1.2新機能）**
 - **`outlineWidth` (number, default: 2) - 枠線の太さ（v0.1.2新機能）**
+- **`debug` (boolean, default: false) - ログ制御（v0.1.3）**
+- **`autoVoxelSize` (boolean, default: false) - v0.1.4: ボクセルサイズを自動決定。`voxelSize` 未指定時に有効**
 
-**例（v0.1.2）:**
+> 寸法について: 描画されるボックスの幅・奥行・高さは、グリッドの実セルサイズ `cellSizeX`, `cellSizeY`, `cellSizeZ` を使用します。`heightBased: true` の場合は `cellSizeZ` を基準に密度で高さをスケーリングします。
+
+**例（v0.1.4）:**
 ```javascript
 const heatbox = new Heatbox(viewer, {
-  voxelSize: 25,
+  // voxelSize を省略すると autoVoxelSize が有効時に自動決定
+  autoVoxelSize: true,
   opacity: 0.9,
   wireframeOnly: true,   // 枠線のみ表示
   heightBased: true,     // 高さベース表現
@@ -45,7 +50,7 @@ const heatbox = new Heatbox(viewer, {
 
 エンティティ配列からヒートマップを非同期に作成します。内部で境界計算・グリッド作成・分類・描画を順に実行します。
 
-現在、ボクセルサイズの自動調整は行いません。ボクセル数が多い場合は `voxelSize` を利用者側で調整するか、`maxRenderVoxels` により描画数を制限してください（自動調整は v0.1.4 で対応予定）。
+v0.1.4 から `autoVoxelSize: true` の場合、`voxelSize` を省略するとエンティティ密度とデータ範囲からボクセルサイズを推定し、上限（`maxRenderVoxels`/内部制限）を超えないように自動調整します。統計情報に自動調整の有無と最終サイズが含まれます。
 
 **パラメータ:**
 - `entities` (Array<Cesium.Entity>)
@@ -184,6 +189,11 @@ interface HeatboxStatistics {
   minCount: number;           // 最小エンティティ数/ボクセル
   maxCount: number;           // 最大エンティティ数/ボクセル
   averageCount: number;       // 平均エンティティ数/ボクセル
+  // v0.1.4 自動ボクセルサイズ調整情報
+  autoAdjusted?: boolean;
+  originalVoxelSize?: number | null;
+  finalVoxelSize?: number | null;
+  adjustmentReason?: string | null;
 }
 ```
 

@@ -10,8 +10,8 @@ export class VoxelGrid {
   /**
    * 境界情報とボクセルサイズからグリッドを作成（シンプル版）
    * @param {Object} bounds - 境界情報
-   * @param {number} voxelSizeMeters - ボクセルサイズ（メートル）
-   * @returns {Object} グリッド情報
+   * @param {number} voxelSizeMeters - 目標ボクセルサイズ（メートル）。実セルサイズは各軸で範囲/分割数。
+   * @returns {Object} グリッド情報 { numVoxelsX, numVoxelsY, numVoxelsZ, totalVoxels, voxelSizeMeters, cellSizeX, cellSizeY, cellSizeZ, lonRangeMeters, latRangeMeters, altRangeMeters }
    */
   static createGrid(bounds, voxelSizeMeters) {
     // 緯度・経度をメートルに概算変換（シンプルな公式）
@@ -24,6 +24,13 @@ export class VoxelGrid {
     const numVoxelsX = Math.max(1, Math.ceil(lonRangeMeters / voxelSizeMeters));
     const numVoxelsY = Math.max(1, Math.ceil(latRangeMeters / voxelSizeMeters));
     const numVoxelsZ = Math.max(1, Math.ceil(altRangeMeters / voxelSizeMeters));
+
+    // 実際の各軸セルサイズ（メートル）
+    // ceil により分割数が増える場合があるため、実セルサイズは指定サイズ以下になる。
+    const cellSizeX = numVoxelsX > 0 ? (lonRangeMeters / numVoxelsX) : voxelSizeMeters;
+    const cellSizeY = numVoxelsY > 0 ? (latRangeMeters / numVoxelsY) : voxelSizeMeters;
+    // 高度差が極小の場合に0にならないよう最低1mを確保
+    const cellSizeZ = numVoxelsZ > 0 ? Math.max(altRangeMeters / numVoxelsZ, 1) : Math.max(voxelSizeMeters, 1);
     
     const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
     
@@ -33,6 +40,9 @@ export class VoxelGrid {
       numVoxelsZ,
       totalVoxels,
       voxelSizeMeters,
+      cellSizeX,
+      cellSizeY,
+      cellSizeZ,
       lonRangeMeters,
       latRangeMeters,
       altRangeMeters
@@ -44,6 +54,9 @@ export class VoxelGrid {
       numVoxelsZ,
       totalVoxels,
       voxelSizeMeters,
+      cellSizeX,
+      cellSizeY,
+      cellSizeZ,
       lonRangeMeters,
       latRangeMeters,
       altRangeMeters

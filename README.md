@@ -18,17 +18,57 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 
 ### 日本語
 - **Entityベース**: 既存のCesium Entityから自動でデータを取得
-- **自動範囲設定**: エンティティ分布から最適な立方体範囲を自動計算
+- **自動範囲設定**: エンティティ分布から最適な直方体（AABB）範囲を自動計算
 - **最小ボクセル数**: 指定された範囲を内包する最小限のボクセル数で効率的に処理
 - **相対的色分け**: データ内の最小値・最大値に基づく動的色分け
 - **パフォーマンス最適化**: バッチ描画によるスムーズな3D表示
 
 ### English
 - **Entity-based**: Automatically retrieves data from existing Cesium Entities
-- **Automatic Range Setting**: Automatically calculates optimal cubic ranges from entity distribution
+- **Automatic Range Setting**: Automatically calculates optimal axis-aligned box ranges from entity distribution
 - **Minimal Voxel Count**: Efficient processing with minimum voxel count covering specified ranges
 - **Relative Color Mapping**: Dynamic color mapping based on min/max values within data
 - **Performance Optimization**: Smooth 3D display through batch rendering
+
+## 既存手法との比較 / Comparison with Existing Approaches
+
+### 日本語
+
+**よくある代替手法**
+- 2Dヒートマップ画像の貼り付け（例: heatmap.js を `ImageryLayer` として投影）
+- 点群のクラスタリングやサマリ表示（Cesium の Entity クラスタリング）
+- 他可視化フレームワークのレイヤー（例: deck.gl の HeatmapLayer など）
+
+**Heatbox の強み**
+- **真の3Dボクセル表現**: Z方向（高度）の分布を体積として可視化でき、2Dの塗りつぶしでは失われる高さ情報を保持
+- **Entityベースのワークフロー**: 既存 `Cesium.Entity` から直接生成。事前のタイル化やサーバー処理が不要
+- **自動ボクセルサイズ決定 (v0.1.4)**: `autoVoxelSize` によりデータ範囲と件数から最適サイズを自動計算。パフォーマンスと解像度のバランスを自動化
+- **パフォーマンス制御**: `maxRenderVoxels` と内部検証（例: `validateVoxelCount`）で安定動作を担保
+- **デバッグ/統計の取得**: `getStatistics()` と `getDebugInfo()` でレンダリング状態や調整内容を把握可能
+- **表現の柔軟性**: `wireframeOnly`、`heightBased`、カラーマップ設定などで見やすさを調整
+
+**適していないケース（指針）**
+- 数十万〜数百万スケールの体積格子を恒常的に描画する用途 → 専用GPUベースのボリュームレンダリングや3D Tiles等を検討
+- 連続体の科学可視化（例: 医用CT/流体のボリュームレンダリング） → 専用のボリュームレンダリング手法が適合
+
+### English
+
+**Common Alternatives**
+- Draped 2D heatmap textures (e.g., heatmap.js projected as an `ImageryLayer`)
+- Point clustering/aggregation using Cesium Entity clustering
+- Layers from other visualization frameworks (e.g., deck.gl HeatmapLayer)
+
+**Strengths of Heatbox**
+- **True 3D voxel representation**: Preserves vertical distribution (Z) as volumetric voxels, unlike 2D color fills
+- **Entity-based workflow**: Builds directly from existing `Cesium.Entity` objects; no pre-tiling or server-side processing required
+- **Automatic voxel sizing (v0.1.4)**: `autoVoxelSize` estimates optimal size from data extent and counts for balanced quality/performance
+- **Performance guard rails**: `maxRenderVoxels` and internal checks (e.g., `validateVoxelCount`) for stable rendering
+- **Debugging and statistics**: Introspection via `getStatistics()` and `getDebugInfo()`
+- **Flexible presentation**: `wireframeOnly`, `heightBased`, and color map presets for readability
+
+**When this may not fit**
+- Persistent rendering of hundreds of thousands to millions of voxels → consider GPU volume rendering or 3D Tiles-based approaches
+- Scientific continuous volumes (e.g., CT/CFD) → dedicated volume rendering techniques are more suitable
 
 ## インストール / Installation
 

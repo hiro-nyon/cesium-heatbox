@@ -15,7 +15,8 @@ export const DEFAULT_OPTIONS = {
   maxColor: [255, 64, 0],
   maxRenderVoxels: 50000,
   batchMode: 'auto',
-  debug: false // ログ制御（false で本番モード、true で開発モード）
+  debug: false, // ログ制御（false で本番モード、true で開発モード）
+  autoVoxelSize: false // v0.1.4: 自動ボクセルサイズ決定（既存互換性のためfalse）
 };
 
 /**

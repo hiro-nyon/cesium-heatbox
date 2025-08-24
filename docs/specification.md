@@ -31,7 +31,7 @@ CesiumJS環境内の既存エンティティを対象とした3Dボクセルベ�
 ### 基本方針
 
 - **Entityベース**: 既存のCesium Entityから自動でデータを取得
-- **自動範囲設定**: エンティティ分布から最適な立方体範囲を自動計算
+- **自動範囲設定**: エンティティ分布から最適な直方体（AABB）範囲を自動計算
 - **最小ボクセル数**: 指定された範囲を内包する最小限のボクセル数で効率的に処理
 - **相対的色分け**: データ内の最小値・最大値に基づく動的色分け
 - **段階的開発**: v0.1.0では基本機能に集中し、将来的に拡張
@@ -511,14 +511,14 @@ class VoxelRenderer {
         geometry: new Cesium.BoxGeometry({
           vertexFormat: Cesium.PerInstanceColorAppearance.VERTEX_FORMAT,
           dimensions: new Cesium.Cartesian3(
-            this.options.voxelSize,
-            this.options.voxelSize, 
-            this.options.voxelSize
+            grid.cellSizeX,
+            grid.cellSizeY,
+            grid.cellSizeZ
           )
         }),
         modelMatrix: Cesium.Matrix4.multiplyByTranslation(
           Cesium.Transforms.eastNorthUpToFixedFrame(voxel.worldPosition),
-          new Cesium.Cartesian3(0, 0, this.options.voxelSize / 2),
+          new Cesium.Cartesian3(0, 0, grid.cellSizeZ / 2),
           new Cesium.Matrix4()
         ),
         attributes: {
@@ -766,7 +766,7 @@ new Heatbox(viewer, options)
 **オプション**:
 ```javascript
 const options = {
-    voxelSize: 20,                    // ボクセル一辺の長さ（メートル）
+    voxelSize: 20,                    // 目標ボクセルサイズ（メートル）（実寸は cellSizeX/Y/Z）
     opacity: 0.8,                     // データボクセルの透明度
     emptyOpacity: 0.03,               // 空ボクセルの透明度
     showOutline: true,                // アウトライン表示
@@ -932,7 +932,7 @@ if (!viewer.scene.canvas.getContext('webgl')) {
 
 ### エラー回復処理
 
-1. **Graceful Degradation**: 制限超過時は描画数を制限（`maxRenderVoxels`）。ボクセルサイズの自動調整は v0.1.4 で検討。
+1. **Graceful Degradation**: 制限超過時は描画数を制限（`maxRenderVoxels`）。v0.1.4 からは `autoVoxelSize` によりボクセルサイズの自動調整に対応。
 2. **部分処理継続**: 一部エンティティの処理失敗時も継続
 3. **リソース解放**: エラー時も確実にメモリ・リソースを解放
 

@@ -5,24 +5,24 @@
 
 **日本語** | [English](#english)
 
-CesiumJS Heatbox は、CesiumJS 上の既存 Entity を対象に、3D ボクセルで密度を可視化するヒートマップライブラリです。エンティティ分布から自動で範囲を推定し、設定した `voxelSize` と描画上限（`maxRenderVoxels`）で効率よく描画します（ボクセルサイズの自動調整は v0.1.4 で対応予定）。
+CesiumJS Heatbox は、CesiumJS 上の既存 Entity を対象に、3D ボクセルで密度を可視化するヒートマップライブラリです。エンティティ分布から自動で範囲を推定し、設定した `voxelSize` と描画上限（`maxRenderVoxels`）で効率よく描画します。v0.1.4 からは `autoVoxelSize: true` でボクセルサイズの自動決定に対応しています。
 
 ## English
 
-CesiumJS Heatbox is a heatmap library that visualizes density using 3D voxels for existing entities on CesiumJS. It automatically estimates ranges from entity distribution and renders efficiently using the configured `voxelSize` and draw limits (`maxRenderVoxels`). Auto voxel-size adjustment is planned for v0.1.4.
+CesiumJS Heatbox is a heatmap library that visualizes density using 3D voxels for existing entities on CesiumJS. It automatically estimates ranges from entity distribution and renders efficiently using the configured `voxelSize` and draw limits (`maxRenderVoxels`). From v0.1.4, auto voxel-size determination is available via `autoVoxelSize: true` when `voxelSize` is omitted.
 
 ## 主要機能 / Key Features
 
 ### 日本語
 - エンティティ連携: `viewer.entities` から自動集計
-- 自動範囲設定: 分布に基づく立方体範囲の推定
+- 自動範囲設定: 分布に基づく直方体（AABB）範囲の推定
 - ボクセル最適化: 範囲を内包する最少ボクセル数で生成
 - 相対色分け: データ内 min/max に応じた動的カラー
 - パフォーマンス配慮: バッチ描画と描画上限制御
 
 ### English
 - Entity Integration: Automatic aggregation from `viewer.entities`
-- Automatic Range Setting: Cubic range estimation based on distribution
+- Automatic Range Setting: Axis-aligned box range estimation based on distribution
 - Voxel Optimization: Generate minimal voxel count covering the range
 - Relative Color Mapping: Dynamic colors based on data min/max
 - Performance Consideration: Batch rendering and draw limit control

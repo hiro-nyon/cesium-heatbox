@@ -30,9 +30,11 @@ import Heatbox from 'cesium-heatbox';
 // 1) Cesium Viewer の用意
 const viewer = new Cesium.Viewer('cesiumContainer');
 
-// 2) Heatbox を初期化（v0.1.3）
+// 2) Heatbox を初期化（v0.1.4）
 const heatbox = new Heatbox(viewer, {
-  voxelSize: 20,         // ボクセル一辺（m）
+  // v0.1.4: voxelSize を省略して autoVoxelSize で自動決定も可能
+  // voxelSize: 20,      // 明示指定する場合はコメント解除
+  autoVoxelSize: true,   // 自動ボクセルサイズ決定
   opacity: 0.8,          // データボクセル不透明度
   emptyOpacity: 0.03,    // 空ボクセル不透明度
   showOutline: true,     // 枠線表示
@@ -54,7 +56,7 @@ heatbox.setVisible(true);
 // heatbox.destroy();
 ```
 
-## オプション一覧（v0.1.3対応）
+## オプション一覧（v0.1.4対応）
 - `voxelSize` number（既定: 20）
 - `opacity` number 0–1（既定: 0.8）
 - `emptyOpacity` number 0–1（既定: 0.03）
@@ -67,6 +69,7 @@ heatbox.setVisible(true);
 - **`heightBased` boolean（v0.1.2新機能）** - 密度を高さで表現
 - **`outlineWidth` number（v0.1.2新機能）** - 枠線の太さ（既定: 2）
 - **`debug` boolean（v0.1.3新機能）** - ログ制御（既定: false）
+- **`autoVoxelSize` boolean（v0.1.4新機能）** - `voxelSize` 未指定時に自動決定
 
 更新は `heatbox.updateOptions({ ... })` で反映できます。
 

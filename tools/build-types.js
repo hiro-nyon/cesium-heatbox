@@ -24,6 +24,8 @@ export interface HeatboxOptions {
   wireframeOnly?: boolean;
   heightBased?: boolean;
   outlineWidth?: number;
+  // v0.1.4 新機能
+  autoVoxelSize?: boolean;           // 自動ボクセルサイズ決定
 }
 
 export interface HeatboxStatistics {
@@ -35,6 +37,11 @@ export interface HeatboxStatistics {
   minCount: number;
   maxCount: number;
   averageCount: number;
+  // v0.1.4 自動調整情報
+  autoAdjusted?: boolean;
+  originalVoxelSize?: number;
+  finalVoxelSize?: number;
+  adjustmentReason?: string;
 }
 
 export default class Heatbox {

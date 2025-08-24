@@ -62,15 +62,19 @@ export class DataProcessor {
           return;
         }
         
-        // ボクセルインデックスを計算（直接的な方法）
-        const voxelX = Math.floor(
-          (lon - bounds.minLon) / (bounds.maxLon - bounds.minLon) * grid.numVoxelsX
+        // ボクセルインデックスを計算（範囲0の安全対策）
+        const lonDen = (bounds.maxLon - bounds.minLon);
+        const latDen = (bounds.maxLat - bounds.minLat);
+        const altDen = (bounds.maxAlt - bounds.minAlt);
+
+        const voxelX = lonDen === 0 ? 0 : Math.floor(
+          (lon - bounds.minLon) / lonDen * grid.numVoxelsX
         );
-        const voxelY = Math.floor(
-          (lat - bounds.minLat) / (bounds.maxLat - bounds.minLat) * grid.numVoxelsY
+        const voxelY = latDen === 0 ? 0 : Math.floor(
+          (lat - bounds.minLat) / latDen * grid.numVoxelsY
         );
-        const voxelZ = Math.floor(
-          (alt - bounds.minAlt) / (bounds.maxAlt - bounds.minAlt) * grid.numVoxelsZ
+        const voxelZ = altDen === 0 ? 0 : Math.floor(
+          (alt - bounds.minAlt) / altDen * grid.numVoxelsZ
         );
         
         // インデックスが有効範囲内かチェック
@@ -124,7 +128,12 @@ export class DataProcessor {
         totalEntities: 0,
         minCount: 0,
         maxCount: 0,
-        averageCount: 0
+        averageCount: 0,
+        // v0.1.4: 自動調整情報の初期化
+        autoAdjusted: false,
+        originalVoxelSize: null,
+        finalVoxelSize: null,
+        adjustmentReason: null
       };
     }
     
@@ -139,7 +148,12 @@ export class DataProcessor {
       totalEntities: totalEntities,
       minCount: Math.min(...counts),
       maxCount: Math.max(...counts),
-      averageCount: totalEntities / voxelData.size
+      averageCount: totalEntities / voxelData.size,
+      // v0.1.4: 自動調整情報の初期化
+      autoAdjusted: false,
+      originalVoxelSize: null,
+      finalVoxelSize: null,
+      adjustmentReason: null
     };
     
     Logger.debug('統計情報計算完了:', stats);

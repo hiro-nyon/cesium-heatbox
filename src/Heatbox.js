@@ -2,8 +2,8 @@
  * CesiumJS Heatbox - メインクラス
  */
 import * as Cesium from 'cesium';
-import { DEFAULT_OPTIONS, ERROR_MESSAGES } from './utils/constants.js';
-import { isValidViewer, isValidEntities, validateAndNormalizeOptions } from './utils/validation.js';
+import { DEFAULT_OPTIONS, ERROR_MESSAGES, PERFORMANCE_LIMITS } from './utils/constants.js';
+import { isValidViewer, isValidEntities, validateAndNormalizeOptions, validateVoxelCount, estimateInitialVoxelSize, calculateDataRange } from './utils/validation.js';
 import { Logger } from './utils/logger.js';
 import { CoordinateTransformer } from './core/CoordinateTransformer.js';
 import { VoxelGrid } from './core/VoxelGrid.js';
@@ -63,9 +63,54 @@ export class Heatbox {
       }
       Logger.debug('境界計算完了:', this._bounds);
 
-      // 2. グリッド生成（シンプル化したアプローチ）
-      Logger.debug('Step 2: グリッド生成 (サイズ:', this.options.voxelSize, 'm)');
-      this._grid = VoxelGrid.createGrid(this._bounds, this.options.voxelSize);
+      // v0.1.4: 自動ボクセルサイズ調整
+      let finalVoxelSize = this.options.voxelSize || DEFAULT_OPTIONS.voxelSize;
+      let autoAdjustmentInfo = null;
+      
+      if (this.options.autoVoxelSize && !this.options.voxelSize) {
+        try {
+          Logger.debug('自動ボクセルサイズ調整開始');
+          const estimatedSize = estimateInitialVoxelSize(this._bounds, entities.length);
+          const tempGrid = VoxelGrid.createGrid(this._bounds, estimatedSize);
+          const validation = validateVoxelCount(tempGrid.totalVoxels, estimatedSize);
+          
+          if (!validation.valid && validation.recommendedSize) {
+            finalVoxelSize = validation.recommendedSize;
+            autoAdjustmentInfo = {
+              enabled: true,
+              originalSize: estimatedSize,
+              finalSize: finalVoxelSize,
+              adjusted: true,
+              reason: `Performance limit exceeded: ${tempGrid.totalVoxels} > ${PERFORMANCE_LIMITS.maxVoxels}`
+            };
+            Logger.info(`Auto-adjusted voxelSize: ${estimatedSize}m → ${finalVoxelSize}m (${tempGrid.totalVoxels} voxels)`);
+          } else {
+            finalVoxelSize = estimatedSize;
+            autoAdjustmentInfo = {
+              enabled: true,
+              originalSize: estimatedSize,
+              finalSize: finalVoxelSize,
+              adjusted: false,
+              reason: null
+            };
+            Logger.info(`Auto-determined voxelSize: ${finalVoxelSize}m`);
+          }
+        } catch (error) {
+          Logger.warn('Auto voxel size adjustment failed, using default:', error);
+          finalVoxelSize = DEFAULT_OPTIONS.voxelSize;
+          autoAdjustmentInfo = {
+            enabled: true,
+            adjusted: false,
+            reason: 'Estimation failed, using default size',
+            originalSize: null,
+            finalSize: finalVoxelSize
+          };
+        }
+      }
+
+      // 2. グリッド生成（最終的なボクセルサイズを使用）
+      Logger.debug('Step 2: グリッド生成 (サイズ:', finalVoxelSize, 'm)');
+      this._grid = VoxelGrid.createGrid(this._bounds, finalVoxelSize);
       Logger.debug('グリッド生成完了:', this._grid);
       
       // 3. エンティティ分類
@@ -77,6 +122,14 @@ export class Heatbox {
       Logger.debug('Step 4: 統計計算');
       this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid);
       Logger.debug('統計情報:', this._statistics);
+      
+      // 統計情報に自動調整情報を追加
+      if (autoAdjustmentInfo) {
+        this._statistics.autoAdjusted = autoAdjustmentInfo.adjusted;
+        this._statistics.originalVoxelSize = autoAdjustmentInfo.originalSize;
+        this._statistics.finalVoxelSize = autoAdjustmentInfo.finalSize;
+        this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
+      }
       
       // 5. 描画
       Logger.debug('Step 5: 描画');
@@ -215,12 +268,28 @@ export class Heatbox {
    * @returns {Object} デバッグ情報
    */
   getDebugInfo() {
-    return {
+    const baseInfo = {
       options: { ...this.options },
       bounds: this._bounds,
       grid: this._grid,
       statistics: this._statistics
     };
+    
+    // v0.1.4: 自動調整情報を追加
+    if (this.options.autoVoxelSize) {
+      baseInfo.autoVoxelSizeInfo = {
+        enabled: this.options.autoVoxelSize,
+        originalSize: this._statistics?.originalVoxelSize,
+        finalSize: this._statistics?.finalVoxelSize,
+        adjusted: this._statistics?.autoAdjusted || false,
+        reason: this._statistics?.adjustmentReason,
+        dataRange: this._bounds ? calculateDataRange(this._bounds) : null,
+        estimatedDensity: this._bounds && this._statistics ? 
+          this._statistics.totalEntities / (calculateDataRange(this._bounds).x * calculateDataRange(this._bounds).y * calculateDataRange(this._bounds).z) : null
+      };
+    }
+    
+    return baseInfo;
   }
 
   /**

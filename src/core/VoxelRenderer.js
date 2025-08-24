@@ -130,11 +130,16 @@ export class VoxelRenderer {
         }
         
         // 高さベース表現の場合、ボクセルの高さを密度に応じて調整
-        let boxHeight = grid.voxelSizeMeters;
+        // 各軸のセルサイズ（グリッドが持つ実セルサイズを優先、なければvoxelSizeMetersにフォールバック）
+        const cellSizeX = grid.cellSizeX || (grid.lonRangeMeters ? (grid.lonRangeMeters / grid.numVoxelsX) : grid.voxelSizeMeters);
+        const cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
+        const baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
+
+        let boxHeight = baseCellSizeZ;
         if (this.options.heightBased && info.count > 0) {
           const normalizedDensity = statistics.maxCount > statistics.minCount ? 
             (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          boxHeight = grid.voxelSizeMeters * (0.1 + normalizedDensity * 0.9); // 10%から100%の高さ
+          boxHeight = baseCellSizeZ * (0.1 + normalizedDensity * 0.9); // 10%から100%の高さ
         }
         
         // エンティティの設定
@@ -142,8 +147,8 @@ export class VoxelRenderer {
           position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
           box: {
             dimensions: new Cesium.Cartesian3(
-              grid.voxelSizeMeters,
-              grid.voxelSizeMeters,
+              cellSizeX,
+              cellSizeY,
               boxHeight
             ),
             outline: this.options.showOutline,
