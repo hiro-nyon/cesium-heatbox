@@ -654,17 +654,16 @@ npm run benchmark
 
 ### 配布仕様
 
-#### NPMパッケージ構成
+#### NPMパッケージ構成（現行）
 ```json
 {
   "name": "cesium-heatbox",
-  "version": "0.1.0",
-  "main": "dist/cesium-heatbox.js",
-  "module": "src/index.js",
+  "version": "0.1.4",
+  "main": "dist/cesium-heatbox.umd.min.js",
+  "module": "dist/cesium-heatbox.min.js",
   "types": "types/index.d.ts",
-  "browser": "dist/cesium-heatbox.umd.js",
+  "browser": "dist/cesium-heatbox.umd.min.js",
   "files": [
-    "src/",
     "dist/",
     "types/",
     "README.md",
@@ -673,9 +672,10 @@ npm run benchmark
   ],
   "exports": {
     ".": {
-      "import": "./src/index.js",
-      "require": "./dist/cesium-heatbox.js",
-      "types": "./types/index.d.ts"
+      "types": "./types/index.d.ts",
+      "import": "./dist/cesium-heatbox.min.js",
+      "require": "./dist/cesium-heatbox.umd.min.js",
+      "default": "./dist/cesium-heatbox.umd.min.js"
     }
   }
 }

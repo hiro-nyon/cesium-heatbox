@@ -1,5 +1,38 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 0.1.4 - 自動ボクセルサイズとドキュメント整備（2025-08-24）
+
+### 主要変更
+- 新機能: `autoVoxelSize` によるボクセルサイズ自動決定（`voxelSize` 未指定時）
+- 統計/デバッグ拡充: `HeatboxStatistics` と `getDebugInfo()` に自動調整の詳細（`autoAdjusted`, `originalVoxelSize`, `finalVoxelSize`, `adjustmentReason`, `autoVoxelSizeInfo`）を追加
+- 仕様明確化: 実描画寸法に各軸の実セルサイズ `cellSizeX/Y/Z` を使用する旨を明記
+- ドキュメント: API/Getting Started/Examples/Wiki を v0.1.4 内容に同期
+
+### 技術ノート
+- ゼロ除算安全化とグリッド実セル寸法の導入により、隣接ボクセルの重なりを解消
+- `validation.js` に `estimateInitialVoxelSize()` と `calculateDataRange()` を実装
+
+---
+
+## バージョン 0.1.3 - 安定化とUX改善（2025-08-23）
+
+### 主要変更
+- Fixed: 選択イベント情報の不一致修正、統計値の整合性、ピック判定のキー取得、未使用コード削除
+- Changed: 型定義生成の整合、デバッグログ抑制（`debug`/`NODE_ENV`）、`DEFAULT_OPTIONS.debug = false`、Debug境界ボックス制御
+- Added: 基本例のUX改善（UMD対応、日本語UI、Debug切替）、高度な例のUMD対応、Wiki API更新
+- Technical: JSDoc HTML再生成、バージョン更新、Lint 0件
+
+---
+
+## バージョン 0.1.2 - 表現機能の追加（2025-08-20）
+
+### 主要変更
+- Added: `wireframeOnly`・`heightBased`・`outlineWidth` の導入と対応UI/サンプル
+- Changed: 重なったボクセルの視認性改善、ドキュメント整備（npm未登録の明記）
+- Fixed: ESLintエラー修正、削除APIの置換、テスト更新
+
+---
+
 ## バージョン 0.1.1 - エンティティベース実装への移行
 
 ### 主な変更点
@@ -39,4 +72,3 @@ const options = {
 - WebGL シェーダーベースのレンダリング実装の検討
 - データのリアルタイム更新のサポート
 - ボクセルの時間変化アニメーション機能
-

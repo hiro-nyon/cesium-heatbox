@@ -344,5 +344,5 @@ npm run build -- --verbose
 
 **更新情報**
 - 作成日: 2025年7月9日
-- 対象バージョン: cesium-heatbox v0.1.0-alpha.1
+- 対象バージョン: cesium-heatbox v0.1.0-alpha.1（歴史的メモ。最新版はREADMEおよび docs/API.md を参照）
 - 次回更新: ユーザーフィードバック後
