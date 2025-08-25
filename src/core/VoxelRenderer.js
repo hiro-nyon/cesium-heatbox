@@ -83,7 +83,7 @@ export class VoxelRenderer {
 
     // 表示するボクセルのリスト
     let displayVoxels = [];
-    let topNVoxels = new Set(); // v0.1.5: TopN強調表示用
+    const topNVoxels = new Set(); // v0.1.5: TopN強調表示用
 
     // 空ボクセルのフィルタリング
     if (this.options.showEmptyVoxels) {
@@ -346,8 +346,6 @@ export class VoxelRenderer {
    */
   _interpolateDivergingColor(rawValue) {
     const pivot = this.options.divergingPivot || 0;
-    const colorMap = COLOR_MAPS.diverging;
-    const midIndex = Math.floor(colorMap.length / 2);
     
     // ピボットからの偏差を正規化
     let normalizedValue;
