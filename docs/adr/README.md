@@ -31,6 +31,7 @@ Accepted / Deprecated / Superseded by ADR-YYYY
 | ADR | タイトル | ステータス | 日付 |
 |-----|----------|------------|------|
 | [ADR-0001](ADR-0001-auto-voxel-size-implementation.md) | ボクセルサイズ自動決定機能の実装方針 | Accepted | 2025-01-24 |
+| [ADR-0002](ADR-0002-v0.1.5-basics-enhancements.md) | v0.1.5 基本機能強化（デバッグ・カラーマップ・TopN・整合） | Proposed | 2025-08-25 |
 
 ## 参考資料
 
