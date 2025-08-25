@@ -22,8 +22,11 @@ Priority: High | Target: 2025-09
 - ドキュメント
   - [ ] Wiki公開スクリプト/手順の整備（`docs/api`→Wiki 反映の一次自動化）
   - [ ] Legend（凡例）の「サンプル実装」ドキュメント（ライブラリ外の実装例として提示）
-- 互換性: 変更なし（非破壊）。API追加なし。
-- 受け入れ基準: Lint 0 errors、テスト緑、README/Wiki/Examples が v0.1.6 内容に同期。
+- 新機能（軽微）
+  - [ ] 枠線太さ調整オプション拡張: `outlineWidth` をより柔軟に設定可能（個別ボクセル・全体・TopN強調の太さ個別制御）
+  - [ ] Examples基本・高度デモで枠線太さ調整UI追加
+- 互換性: 変更なし（非破壊）。軽微なAPI追加（後方互換性維持）。
+- 受け入れ基準: Lint 0 errors、テスト緑、README/Wiki/Examples が v0.1.6 内容に同期、枠線調整機能の動作確認。
 
 ### v0.1.7（任意・UX磨き）- 軽量改善（必要なら実施）
 Priority: Medium | Target: 2025-10
