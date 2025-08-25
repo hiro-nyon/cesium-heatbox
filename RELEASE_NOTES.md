@@ -1,5 +1,19 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 0.1.5 - デバッグ/カラーマップ/TopN 強化（2025-08-25）
+
+### 主要変更
+- 新機能: `debug.showBounds` による境界ボックス表示の明示的制御（`debug` は boolean | object を許容）
+- 新機能: 知覚均等カラーマップ `colorMap: 'viridis' | 'inferno'`、発散配色 `diverging`/`divergingPivot`
+- 新機能: `highlightTopN` と `highlightStyle` による上位Nボクセルの強調表示
+- 非推奨: `batchMode` をDeprecated（互換性のため受理するが無視、v1.0.0で削除予定）
+- ドキュメント: README / API / Wiki を v0.1.5 内容に同期
+
+### 技術ノート
+- `VoxelRenderer` の色補間ロジックを拡張（カラーマップ/発散配色対応）
+- バリデーションに `colorMap`/`highlightTopN` チェックを追加
+- 型定義（types/index.d.ts）を v0.1.5 のオプションに更新
+
 ## バージョン 0.1.4 - 自動ボクセルサイズとドキュメント整備（2025-08-24）
 
 ### 主要変更

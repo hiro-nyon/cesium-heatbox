@@ -2,6 +2,13 @@
 
 最新の変更はリポジトリの `CHANGELOG.md` を参照してください。ここでは主要トピックを抜粋します。
 
+## 0.1.5 (2025-08-25)
+- デバッグ: `debug.showBounds` で境界ボックス表示を明示的に制御（`debug` は boolean | object）
+- カラーマップ: `colorMap: 'viridis' | 'inferno'`、発散配色 `diverging`/`divergingPivot`
+- 強調表示: `highlightTopN` と `highlightStyle` で上位Nボクセルを強調
+- 非推奨: `batchMode` はDeprecated（互換性のため受理するが無視。将来削除）
+- ドキュメント: README / API / Wiki を v0.1.5 に同期
+
 ## 0.1.4 (2025-08-24)
 - 新機能: `autoVoxelSize` によるボクセルサイズ自動決定（`voxelSize` 未指定時）
 - 統計/デバッグ拡充: `HeatboxStatistics` と `getDebugInfo()` に自動調整の詳細を追加

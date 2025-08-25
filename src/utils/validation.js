@@ -121,11 +121,17 @@ export function validateVoxelCount(totalVoxels, voxelSize) {
 
 /**
  * オプションを検証して正規化
+ * v0.1.5: batchMode非推奨化と新機能バリデーションを追加
  * @param {Object} options - ユーザー指定のオプション
  * @returns {Object} 正規化されたオプション
  */
 export function validateAndNormalizeOptions(options = {}) {
   const normalized = { ...options };
+  
+  // v0.1.5: batchMode非推奨化警告（debug時のみ）
+  if (normalized.batchMode && normalized.debug) {
+    Logger.warn('batchMode option is deprecated and will be removed in v1.0.0. It is currently ignored.');
+  }
   
   // ボクセルサイズのバリデーション
   if (normalized.voxelSize !== undefined && !isValidVoxelSize(normalized.voxelSize)) {
@@ -148,6 +154,22 @@ export function validateAndNormalizeOptions(options = {}) {
   
   if (normalized.maxColor && Array.isArray(normalized.maxColor) && normalized.maxColor.length === 3) {
     normalized.maxColor = normalized.maxColor.map(c => Math.max(0, Math.min(255, Math.floor(c))));
+  }
+  
+  // v0.1.5: 新機能のバリデーション
+  if (normalized.colorMap !== undefined) {
+    const validColorMaps = ['custom', 'viridis', 'inferno'];
+    if (!validColorMaps.includes(normalized.colorMap)) {
+      Logger.warn(`Invalid colorMap: ${normalized.colorMap}. Using 'custom'.`);
+      normalized.colorMap = 'custom';
+    }
+  }
+  
+  if (normalized.highlightTopN !== undefined && normalized.highlightTopN !== null) {
+    if (typeof normalized.highlightTopN !== 'number' || normalized.highlightTopN <= 0) {
+      Logger.warn(`Invalid highlightTopN: ${normalized.highlightTopN}. Must be a positive number.`);
+      normalized.highlightTopN = null;
+    }
   }
   
   return normalized;

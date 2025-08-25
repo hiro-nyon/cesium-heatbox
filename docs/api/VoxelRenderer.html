@@ -169,7 +169,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line11">line 11</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line36">line 36</a>
     </li></ul></dd>
     
 
@@ -287,7 +287,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line275">line 275</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line388">line 388</a>
     </li></ul></dd>
     
 
@@ -375,7 +375,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line275">line 275</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line388">line 388</a>
     </li></ul></dd>
     
 
@@ -535,7 +535,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line260">line 260</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line373">line 373</a>
     </li></ul></dd>
     
 
@@ -717,7 +717,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line260">line 260</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line373">line 373</a>
     </li></ul></dd>
     
 
@@ -775,7 +775,7 @@
     
 
     
-    <h4 class="name" id="interpolateColor"><span class="type-signature"></span>interpolateColor<span class="signature">(normalizedDensity)</span><span class="type-signature"> &rarr; {Cesium.Color}</span></h4>
+    <h4 class="name" id="interpolateColor"><span class="type-signature"></span>interpolateColor<span class="signature">(normalizedDensity, rawValue<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Cesium.Color}</span></h4>
     
 
     
@@ -783,7 +783,7 @@
 
 
 <div class="description">
-    密度に基づいて色を補間
+    密度に基づいて色を補間（v0.1.5: カラーマップ対応）
 </div>
 
 
@@ -807,7 +807,11 @@
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -832,10 +836,61 @@
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">正規化された密度 (0-1)</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>rawValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">生値（二極性配色用）</td>
         </tr>
 
     
@@ -876,7 +931,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line243">line 243</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line288">line 288</a>
     </li></ul></dd>
     
 
@@ -934,7 +989,7 @@
     
 
     
-    <h4 class="name" id="interpolateColor"><span class="type-signature"></span>interpolateColor<span class="signature">(normalizedDensity)</span><span class="type-signature"> &rarr; {Cesium.Color}</span></h4>
+    <h4 class="name" id="interpolateColor"><span class="type-signature"></span>interpolateColor<span class="signature">(normalizedDensity, rawValue<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Cesium.Color}</span></h4>
     
 
     
@@ -942,7 +997,7 @@
 
 
 <div class="description">
-    密度に基づいて色を補間
+    密度に基づいて色を補間（v0.1.5: カラーマップ対応）
 </div>
 
 
@@ -966,7 +1021,11 @@
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -991,10 +1050,61 @@
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">正規化された密度 (0-1)</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>rawValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">生値（二極性配色用）</td>
         </tr>
 
     
@@ -1035,7 +1145,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line243">line 243</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line288">line 288</a>
     </li></ul></dd>
     
 
@@ -1263,7 +1373,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line44">line 44</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line69">line 69</a>
     </li></ul></dd>
     
 
@@ -1491,7 +1601,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line44">line 44</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line69">line 69</a>
     </li></ul></dd>
     
 
@@ -1650,7 +1760,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line298">line 298</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line434">line 434</a>
     </li></ul></dd>
     
 
@@ -1787,7 +1897,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line298">line 298</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line434">line 434</a>
     </li></ul></dd>
     
 
@@ -1979,7 +2089,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line11">line 11</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line36">line 36</a>
     </li></ul></dd>
     
 
@@ -2097,7 +2207,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line275">line 275</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line388">line 388</a>
     </li></ul></dd>
     
 
@@ -2185,7 +2295,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line275">line 275</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line388">line 388</a>
     </li></ul></dd>
     
 
@@ -2345,7 +2455,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line260">line 260</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line373">line 373</a>
     </li></ul></dd>
     
 
@@ -2527,7 +2637,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line260">line 260</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line373">line 373</a>
     </li></ul></dd>
     
 
@@ -2585,7 +2695,7 @@
     
 
     
-    <h4 class="name" id="interpolateColor"><span class="type-signature"></span>interpolateColor<span class="signature">(normalizedDensity)</span><span class="type-signature"> &rarr; {Cesium.Color}</span></h4>
+    <h4 class="name" id="interpolateColor"><span class="type-signature"></span>interpolateColor<span class="signature">(normalizedDensity, rawValue<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Cesium.Color}</span></h4>
     
 
     
@@ -2593,7 +2703,7 @@
 
 
 <div class="description">
-    密度に基づいて色を補間
+    密度に基づいて色を補間（v0.1.5: カラーマップ対応）
 </div>
 
 
@@ -2617,7 +2727,11 @@
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -2642,10 +2756,61 @@
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">正規化された密度 (0-1)</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>rawValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">生値（二極性配色用）</td>
         </tr>
 
     
@@ -2686,7 +2851,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line243">line 243</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line288">line 288</a>
     </li></ul></dd>
     
 
@@ -2744,7 +2909,7 @@
     
 
     
-    <h4 class="name" id="interpolateColor"><span class="type-signature"></span>interpolateColor<span class="signature">(normalizedDensity)</span><span class="type-signature"> &rarr; {Cesium.Color}</span></h4>
+    <h4 class="name" id="interpolateColor"><span class="type-signature"></span>interpolateColor<span class="signature">(normalizedDensity, rawValue<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Cesium.Color}</span></h4>
     
 
     
@@ -2752,7 +2917,7 @@
 
 
 <div class="description">
-    密度に基づいて色を補間
+    密度に基づいて色を補間（v0.1.5: カラーマップ対応）
 </div>
 
 
@@ -2776,7 +2941,11 @@
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -2801,10 +2970,61 @@
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">正規化された密度 (0-1)</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>rawValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">生値（二極性配色用）</td>
         </tr>
 
     
@@ -2845,7 +3065,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line243">line 243</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line288">line 288</a>
     </li></ul></dd>
     
 
@@ -3073,7 +3293,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line44">line 44</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line69">line 69</a>
     </li></ul></dd>
     
 
@@ -3301,7 +3521,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line44">line 44</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line69">line 69</a>
     </li></ul></dd>
     
 
@@ -3460,7 +3680,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line298">line 298</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line434">line 434</a>
     </li></ul></dd>
     
 
@@ -3597,7 +3817,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line298">line 298</a>
+        <a href="core_VoxelRenderer.js.html">core/VoxelRenderer.js</a>, <a href="core_VoxelRenderer.js.html#line434">line 434</a>
     </li></ul></dd>
     
 
@@ -3649,7 +3869,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 24 2025 18:09:51 GMT+0900 (Japan Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Aug 25 2025 13:55:03 GMT+0900 (Japan Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

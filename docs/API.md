@@ -1,4 +1,4 @@
-# API リファレンス - v0.1.4
+# API リファレンス - v0.1.5
 
 > **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得してください。
 
@@ -14,7 +14,7 @@
 - `viewer` (Cesium.Viewer) - CesiumJS Viewerインスタンス
 - `options` (Object, optional) - 設定オプション
 
-**オプション（v0.1.4対応）:**
+**オプション（v0.1.5対応）:**
 - `voxelSize` (number, default: 20) - 目標ボクセルサイズ（メートル）。実際の描画寸法はグリッド分割数に基づく各軸の実セルサイズ `cellSizeX/Y/Z` を使用し、`voxelSize` 以下になる場合があります（重なり防止のため）。
 - `opacity` (number, default: 0.8) - データボクセルの透明度 (0.0-1.0)
 - `emptyOpacity` (number, default: 0.03) - 空ボクセルの透明度 (0.0-1.0)
@@ -26,21 +26,31 @@
 - **`wireframeOnly` (boolean, default: false) - 枠線のみ表示（v0.1.2新機能）**
 - **`heightBased` (boolean, default: false) - 密度を高さで表現（v0.1.2新機能）**
 - **`outlineWidth` (number, default: 2) - 枠線の太さ（v0.1.2新機能）**
-- **`debug` (boolean, default: false) - ログ制御（v0.1.3）**
+- **`debug` (boolean | { showBounds?: boolean }, default: false) - ログ制御と境界表示（v0.1.5でオブジェクト形式に拡張）**
 - **`autoVoxelSize` (boolean, default: false) - v0.1.4: ボクセルサイズを自動決定。`voxelSize` 未指定時に有効**
+- **`colorMap` ('custom'|'viridis'|'inferno', default: 'custom') - v0.1.5: 知覚均等カラーマップ**
+- **`diverging` (boolean, default: false) / `divergingPivot` (number, default: 0) - v0.1.5: 二極性データ向け発散配色**
+- **`highlightTopN` (number|null, default: null) / `highlightStyle` ({ outlineWidth?: number; boostOpacity?: number }) - v0.1.5: 上位Nボクセルの強調表示**
+- `batchMode` は v0.1.5 で非推奨（無視されます。将来削除予定）
 
 > 寸法について: 描画されるボックスの幅・奥行・高さは、グリッドの実セルサイズ `cellSizeX`, `cellSizeY`, `cellSizeZ` を使用します。`heightBased: true` の場合は `cellSizeZ` を基準に密度で高さをスケーリングします。
 
-**例（v0.1.4）:**
+**例（v0.1.5）:**
 ```javascript
 const heatbox = new Heatbox(viewer, {
-  // voxelSize を省略すると autoVoxelSize が有効時に自動決定
+  // 自動ボクセルサイズ（v0.1.4）
   autoVoxelSize: true,
-  opacity: 0.9,
-  wireframeOnly: true,   // 枠線のみ表示
-  heightBased: true,     // 高さベース表現
-  outlineWidth: 2,       // 枠線太さ
-  showEmptyVoxels: true
+  // デバッグ境界表示（v0.1.5）
+  debug: { showBounds: true },
+  // 視認性（v0.1.2）
+  wireframeOnly: true,
+  heightBased: true,
+  outlineWidth: 2,
+  // カラーマップ（v0.1.5）
+  colorMap: 'viridis',
+  // TopN強調（v0.1.5）
+  highlightTopN: 50,
+  highlightStyle: { outlineWidth: 4, boostOpacity: 0.2 }
 });
 ```
 

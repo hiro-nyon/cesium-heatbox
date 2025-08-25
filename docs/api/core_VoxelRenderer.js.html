@@ -33,6 +33,31 @@
 import * as Cesium from 'cesium';
 import { Logger } from '../utils/logger.js';
 
+// v0.1.5: カラーマップ定義（256段階のLUTテーブル）
+const COLOR_MAPS = {
+  // Viridisカラーマップ（簡略化した16段階）
+  viridis: [
+    [68, 1, 84], [71, 44, 122], [59, 81, 139], [44, 113, 142],
+    [33, 144, 141], [39, 173, 129], [92, 200, 99], [170, 220, 50],
+    [253, 231, 37], [255, 255, 255], [255, 255, 255], [255, 255, 255],
+    [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]
+  ],
+  // Infernoカラーマップ（簡略化した16段階）
+  inferno: [
+    [0, 0, 4], [31, 12, 72], [85, 15, 109], [136, 34, 106],
+    [186, 54, 85], [227, 89, 51], [249, 142, 8], [252, 187, 17],
+    [245, 219, 76], [252, 255, 164], [255, 255, 255], [255, 255, 255],
+    [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]
+  ],
+  // 二極性配色（blue-white-red）
+  diverging: [
+    [0, 0, 255], [32, 64, 255], [64, 128, 255], [96, 160, 255],
+    [128, 192, 255], [160, 224, 255], [192, 240, 255], [224, 248, 255],
+    [255, 255, 255], [255, 248, 224], [255, 240, 192], [255, 224, 160],
+    [255, 192, 128], [255, 160, 96], [255, 128, 64], [255, 64, 32], [255, 0, 0]
+  ]
+};
+
 /**
  * 3Dボクセルの描画を担当するクラス
  */
@@ -78,13 +103,15 @@ export class VoxelRenderer {
       statistics
     });
 
-    // バウンディングボックスのデバッグ表示（debugオプションがtrueの場合のみ）
-    if (this.options.debug) {
+    // バウンディングボックスのデバッグ表示制御（v0.1.5: debug.showBounds対応）
+    const shouldShowBounds = this._shouldShowBounds();
+    if (shouldShowBounds) {
       this._renderBoundingBox(bounds);
     }
 
     // 表示するボクセルのリスト
     let displayVoxels = [];
+    let topNVoxels = new Set(); // v0.1.5: TopN強調表示用
 
     // 空ボクセルのフィルタリング
     if (this.options.showEmptyVoxels) {
@@ -127,6 +154,14 @@ export class VoxelRenderer {
       }
     }
 
+    // v0.1.5: TopN強調表示の前処理
+    if (this.options.highlightTopN &amp;&amp; this.options.highlightTopN > 0) {
+      const sortedForTopN = [...displayVoxels].sort((a, b) => b.info.count - a.info.count);
+      const topN = sortedForTopN.slice(0, this.options.highlightTopN);
+      topN.forEach(voxel => topNVoxels.add(voxel.key));
+      Logger.debug(`TopN highlight enabled: ${topNVoxels.size} voxels will be highlighted`);
+    }
+    
     Logger.debug(`Rendering ${displayVoxels.length} voxels`);
     
     // レンダリングカウント
@@ -144,6 +179,8 @@ export class VoxelRenderer {
         
         // 密度に応じた色を計算
         let color, opacity;
+        const isTopN = topNVoxels.has(key); // v0.1.5: TopNハイライト判定
+        
         if (info.count === 0) {
           // 空ボクセルの場合
           color = Cesium.Color.LIGHTGRAY;
@@ -153,8 +190,13 @@ export class VoxelRenderer {
           const normalizedDensity = statistics.maxCount > statistics.minCount ? 
             (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
           
-          color = this.interpolateColor(normalizedDensity);
+          color = this.interpolateColor(normalizedDensity, info.count);
           opacity = this.options.opacity;
+          
+          // v0.1.5: TopN強調表示で非TopNボクセルを淡色化
+          if (this.options.highlightTopN &amp;&amp; !isTopN) {
+            opacity *= (1 - (this.options.highlightStyle?.boostOpacity || 0.2));
+          }
         }
         
         // 高さベース表現の場合、ボクセルの高さを密度に応じて調整
@@ -181,7 +223,9 @@ export class VoxelRenderer {
             ),
             outline: this.options.showOutline,
             outlineColor: color.withAlpha(1.0),
-            outlineWidth: this.options.outlineWidth
+            outlineWidth: isTopN &amp;&amp; this.options.highlightTopN ? 
+              (this.options.highlightStyle?.outlineWidth || this.options.outlineWidth) : 
+              this.options.outlineWidth
           },
           properties: {
             type: 'voxel',
@@ -264,11 +308,23 @@ export class VoxelRenderer {
   }
 
   /**
-   * 密度に基づいて色を補間
+   * 密度に基づいて色を補間（v0.1.5: カラーマップ対応）
    * @param {number} normalizedDensity - 正規化された密度 (0-1)
+   * @param {number} [rawValue] - 生値（二極性配色用）
    * @returns {Cesium.Color} 計算された色
    */
-  interpolateColor(normalizedDensity) {
+  interpolateColor(normalizedDensity, rawValue = null) {
+    // v0.1.5: 二極性配色対応
+    if (this.options.diverging &amp;&amp; rawValue !== null) {
+      return this._interpolateDivergingColor(rawValue);
+    }
+    
+    // v0.1.5: カラーマップ対応
+    if (this.options.colorMap &amp;&amp; this.options.colorMap !== 'custom') {
+      return this._interpolateFromColorMap(normalizedDensity, this.options.colorMap);
+    }
+    
+    // 従来のmin/max色補間（後方互換）
     const [minR, minG, minB] = this.options.minColor;
     const [maxR, maxG, maxB] = this.options.maxColor;
     
@@ -277,6 +333,63 @@ export class VoxelRenderer {
     const b = Math.round(minB + (maxB - minB) * normalizedDensity);
     
     return Cesium.Color.fromBytes(r, g, b);
+  }
+  
+  /**
+   * カラーマップから色を補間
+   * @param {number} normalizedValue - 正規化された値 (0-1)
+   * @param {string} colorMapName - カラーマップ名
+   * @returns {Cesium.Color} 計算された色
+   * @private
+   */
+  _interpolateFromColorMap(normalizedValue, colorMapName) {
+    const colorMap = COLOR_MAPS[colorMapName];
+    if (!colorMap) {
+      Logger.warn(`Unknown color map: ${colorMapName}. Falling back to custom.`);
+      return this.interpolateColor(normalizedValue);
+    }
+    
+    // マップインデックスを計算
+    const scaledValue = normalizedValue * (colorMap.length - 1);
+    const lowerIndex = Math.floor(scaledValue);
+    const upperIndex = Math.min(lowerIndex + 1, colorMap.length - 1);
+    const fraction = scaledValue - lowerIndex;
+    
+    // 線形補間
+    const [r1, g1, b1] = colorMap[lowerIndex];
+    const [r2, g2, b2] = colorMap[upperIndex];
+    
+    const r = Math.round(r1 + (r2 - r1) * fraction);
+    const g = Math.round(g1 + (g2 - g1) * fraction);
+    const b = Math.round(b1 + (b2 - b1) * fraction);
+    
+    return Cesium.Color.fromBytes(r, g, b);
+  }
+  
+  /**
+   * 二極性配色（blue-white-red）で色を補間
+   * @param {number} rawValue - 生値
+   * @returns {Cesium.Color} 計算された色
+   * @private
+   */
+  _interpolateDivergingColor(rawValue) {
+    const pivot = this.options.divergingPivot || 0;
+    const colorMap = COLOR_MAPS.diverging;
+    const midIndex = Math.floor(colorMap.length / 2);
+    
+    // ピボットからの偏差を正規化
+    let normalizedValue;
+    if (rawValue &lt;= pivot) {
+      // 青い側 (0 to 0.5)
+      normalizedValue = 0.5 * (rawValue / pivot);
+      normalizedValue = Math.max(0, Math.min(0.5, normalizedValue));
+    } else {
+      // 赤い側 (0.5 to 1)
+      normalizedValue = 0.5 + 0.5 * ((rawValue - pivot) / pivot);
+      normalizedValue = Math.max(0.5, Math.min(1, normalizedValue));
+    }
+    
+    return this._interpolateFromColorMap(normalizedValue, 'diverging');
   }
 
   /**
@@ -320,6 +433,29 @@ export class VoxelRenderer {
   }
 
   /**
+   * デバッグ境界ボックス表示の判定（v0.1.5: debug.showBounds対応）
+   * @returns {boolean} 境界ボックスを表示する場合はtrue
+   * @private
+   */
+  _shouldShowBounds() {
+    if (!this.options.debug) {
+      return false;
+    }
+    
+    if (typeof this.options.debug === 'boolean') {
+      // 従来の動作：debugがtrueの場合はバウンディングボックス表示
+      return this.options.debug;
+    }
+    
+    if (typeof this.options.debug === 'object' &amp;&amp; this.options.debug !== null) {
+      // 新しい動作：debug.showBoundsで明示的に制御
+      return this.options.debug.showBounds === true;
+    }
+    
+    return false;
+  }
+
+  /**
    * 表示/非表示を切り替え
    * @param {boolean} show - 表示する場合はtrue
    */
@@ -356,7 +492,7 @@ export class VoxelRenderer {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 24 2025 18:09:51 GMT+0900 (Japan Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Aug 25 2025 13:55:03 GMT+0900 (Japan Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

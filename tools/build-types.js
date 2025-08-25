@@ -18,14 +18,22 @@ export interface HeatboxOptions {
   minColor?: [number, number, number];
   maxColor?: [number, number, number];
   maxRenderVoxels?: number;
+  /** @deprecated v0.1.5: ignored and scheduled for removal */
   batchMode?: 'auto' | 'primitive' | 'entity';
-  debug?: boolean;                   // v0.1.3 追加
+  // v0.1.3 追加 / v0.1.5: object form supported
+  debug?: boolean | { showBounds?: boolean };
   // v0.1.2 新機能
   wireframeOnly?: boolean;
   heightBased?: boolean;
   outlineWidth?: number;
   // v0.1.4 新機能
   autoVoxelSize?: boolean;           // 自動ボクセルサイズ決定
+  // v0.1.5 新機能
+  colorMap?: 'custom' | 'viridis' | 'inferno';
+  diverging?: boolean;
+  divergingPivot?: number;
+  highlightTopN?: number | null;
+  highlightStyle?: { outlineWidth?: number; boostOpacity?: number };
 }
 
 export interface HeatboxStatistics {

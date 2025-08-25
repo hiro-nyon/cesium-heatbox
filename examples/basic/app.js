@@ -75,6 +75,7 @@ async function initializeApp() {
       'entityCount', 'voxelSize', 'opacity', 'opacityValue', 'showEmpty', 'showOutline',
       'wireframeOnly', 'heightBased', 'debugLogs', // v0.1.2 新機能 + debug制御
       'autoVoxelSize', 'manualVoxelSizeGroup', // v0.1.4 新機能
+      'showBounds', 'colorMap', 'diverging', 'highlightTopN', // v0.1.5 新機能
       'statistics', 'statisticsContent', 'status'
     ];
     uiElementIds.forEach(id => {
@@ -189,6 +190,18 @@ function setupEventListeners() {
 }
 
 function getOptionsFromUI() {
+  // v0.1.5: debugオプションの拡張対応
+  let debugOption;
+  if (elements.debugLogs?.checked && elements.showBounds?.checked) {
+    debugOption = { showBounds: true };
+  } else if (elements.debugLogs?.checked) {
+    debugOption = true; // 従来の動作
+  } else if (elements.showBounds?.checked) {
+    debugOption = { showBounds: true };
+  } else {
+    debugOption = false;
+  }
+  
   const options = {
     opacity: parseFloat(elements.opacity.value),
     showEmptyVoxels: elements.showEmpty.checked,
@@ -197,10 +210,13 @@ function getOptionsFromUI() {
     wireframeOnly: elements.wireframeOnly?.checked || false,
     heightBased: elements.heightBased?.checked || false,
     outlineWidth: 2,
-    // Phase 1 debug制御
-    debug: elements.debugLogs?.checked || false,
     // v0.1.4 新機能
-    autoVoxelSize: elements.autoVoxelSize?.checked || false
+    autoVoxelSize: elements.autoVoxelSize?.checked || false,
+    // v0.1.5 新機能
+    debug: debugOption,
+    colorMap: elements.colorMap?.value || 'custom',
+    diverging: elements.diverging?.checked || false,
+    highlightTopN: elements.highlightTopN?.value ? parseInt(elements.highlightTopN.value) : null
   };
   
   // autoVoxelSizeがtrueでない場合のみvoxelSizeを設定

@@ -15,8 +15,17 @@ export const DEFAULT_OPTIONS = {
   maxColor: [255, 64, 0],
   maxRenderVoxels: 50000,
   batchMode: 'auto',
-  debug: false, // ログ制御（false で本番モード、true で開発モード）
-  autoVoxelSize: false // v0.1.4: 自動ボクセルサイズ決定（既存互換性のためfalse）
+  debug: false, // ログ制御（false で本番モード、true で開発モード、またはオブジェクト）
+  autoVoxelSize: false, // v0.1.4: 自動ボクセルサイズ決定（既存互換性のためfalse）
+  // v0.1.5: 新機能
+  colorMap: 'custom', // 'custom', 'viridis', 'inferno'
+  diverging: false, // 二極性データ対応
+  divergingPivot: 0, // 二極性配色のピボット値
+  highlightTopN: null, // トップN強調表示（null: 無効）
+  highlightStyle: {
+    outlineWidth: 4,
+    boostOpacity: 0.2
+  }
 };
 
 /**

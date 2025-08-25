@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
+## [0.1.5] - 2025-08-25
+
+### Added
+- **デバッグ境界制御**: `debug.showBounds` オプションでバウンディングボックス表示のON/OFF制御。`debug: true` (従来)と `debug: { showBounds: true }` (新規)をサポート。
+- **知覚均等カラーマップ**: `colorMap: 'viridis'` / `'inferno'` オプションで科学的定番のカラーマップをサポート。既存の `minColor`/`maxColor` は、`colorMap: 'custom'` で継続使用可能。
+- **二極性データ対応**: `diverging: true` と `divergingPivot` オプションでblue-white-red発散配色を実装。正負値のデータに適合。
+- **TopN強調表示**: `highlightTopN` オプションで密度上位Nボクセルのみを強調表示。`highlightStyle` でアウトライン幅や不透明度の調整が可能。
+
+### Deprecated
+- **batchMode非推奨化**: `batchMode: 'auto'` オプションは非推奨化され、`debug` 時に警告を表示。v1.0.0で削除予定。
+
+### Changed
+- **Logger拡張**: `Logger.setLogLevel()` が `debug` オプションのオブジェクト形式に対応。互換性を保ちつつ拡張。
+- **VoxelRenderer機能拡張**: カラーマップ対応とTopN強調表示で `interpolateColor()` 関数を大幅強化。
+- **ドキュメント更新**: README.md でv0.1.5の新機能を記載。
+
+### Fixed
+- **バージョン整合性**: package.json の peerDependencies `cesium: "^1.120.0"` とサンプルファイルのCDN参照(1.120)が一致であることを確認。
+
+### Technical
+- **バージョン更新**: package.json を v0.1.5 に更新
+- **constants.js拡張**: DEFAULT_OPTIONS にv0.1.5新機能のデフォルト値を追加
+- **validation.js強化**: 新オプションのバリデーションとbatchMode非推奨警告を実装
+- **カラーマップLUT**: VoxelRendererに16段階のviridis/inferno/divergingカラーテーブルを実装
+
 ## [0.1.4] - 2025-08-24
 
 ### Added

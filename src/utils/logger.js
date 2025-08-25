@@ -81,12 +81,18 @@ export const Logger = {
 
   /**
    * オプション設定によるログレベル制御
+   * v0.1.5: debugオプションがオブジェクトの場合に対応
    * @param {Object} options - オプション
    */
   setLogLevel(options) {
-    if (options && typeof options.debug === 'boolean') {
-      // debug: true → 詳細ログ、debug: false → 重要ログのみ
-      currentLogLevel = options.debug ? LOG_LEVELS.DEBUG : LOG_LEVELS.WARN;
+    if (options && options.debug !== undefined) {
+      if (typeof options.debug === 'boolean') {
+        // debug: true → 詳細ログ、debug: false → 重要ログのみ
+        currentLogLevel = options.debug ? LOG_LEVELS.DEBUG : LOG_LEVELS.WARN;
+      } else if (typeof options.debug === 'object' && options.debug !== null) {
+        // オブジェクトの場合はログレベルをDEBUGに設定（境界表示制御は別途処理）
+        currentLogLevel = LOG_LEVELS.DEBUG;
+      }
     }
     return currentLogLevel;
   }

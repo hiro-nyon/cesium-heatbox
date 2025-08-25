@@ -56,6 +56,24 @@
       <input type="checkbox" id="debugLogs"> <label for="debugLogs">Debug Logs (開発用)</label>
     </div>
     <div class="control-group">
+      <input type="checkbox" id="showBounds"> <label for="showBounds">Show Bounds (v0.1.5)</label>
+    </div>
+    <div class="control-group">
+      <label for="colorMap">Color Map (v0.1.5):</label>
+      <select id="colorMap">
+        <option value="custom">カスタム (min/max色)</option>
+        <option value="viridis">Viridis (知覚均等)</option>
+        <option value="inferno">Inferno (知覚均等)</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <input type="checkbox" id="diverging"> <label for="diverging">Diverging Colors (v0.1.5)</label>
+    </div>
+    <div class="control-group">
+      <label for="highlightTopN">Highlight Top N (v0.1.5):</label>
+      <input type="number" id="highlightTopN" min="0" max="100" placeholder="空白=無効">
+    </div>
+    <div class="control-group">
       <button id="createHeatmapBtn" disabled>2. Create Heatmap</button>
     </div>
     <hr>
