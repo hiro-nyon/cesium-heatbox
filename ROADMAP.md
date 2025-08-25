@@ -29,13 +29,29 @@
 ### 計画中の機能
 - [ ] 時間依存データ対応: `viewer.clock.currentTime` を用いた動的時刻での位置評価
 - [ ] エンティティ範囲拡張: polygon、polyline、billboard、model等の代表点推定ユーティリティ
-- [ ] 分位・対数スケール: 外れ値対策として分位（等頻度）・対数スケール選択
+- [ ] 分類スキーム（カラースケール）拡張: 主要な分類方式を幅広くサポート（既存ライブラリを優先利用）
+  - 連続スケール: linear（既定）、log（log10/log2 等）
+  - 離散ビニング: equal-interval（等幅）、quantize（等幅ビン）、threshold（任意境界）、custom thresholds（手動配列）
+  - 分位ベース: quantile（等頻度）、percentile（同義）
+  - 自然分類: Jenks/Fisher-Jenks（ckmeans）
+  - 統計ベース: standard deviation（平均±nσ）
+  - その他候補: geometric breaks（幾何級数）、head/tail breaks（長尾分布向け）、k-means（一般化）
+  - 実装指針（ライブラリ）: 
+    - simple-statistics（ckmeans/quantile等）
+    - d3-array（quantile/threshold）, d3-scale（quantize/quantile/threshold）, d3-scale-chromatic（カラーパレット）
+    - 代替: chroma.js（スケール生成・クラス分割）
+  - API想定: `classification: 'linear'|'log'|'equal-interval'|'quantize'|'threshold'|'quantile'|'jenks'|'stddev'|'geometric'|'headtail'|'kmeans'|'custom'`, `classes?: number`, `thresholds?: number[]`, `palette?: 'viridis'|'inferno'|...`, `discrete?: boolean`
+  - 連続/離散の切替と凡例更新（境界値/パーセンタイル/平均±σの表示）
 - [ ] 凡例・分布表示: 最小・最大・中央値・分位を併記した読み取り支援
 - [ ] OIT有効化: `viewer.scene.orderIndependentTranslucency = true` での半透明重ね順問題緩和
 - [ ] シルエット・エッジ強調: アウトライン・選択時シルエットによる輪郭強調
 
 ### 変更予定
 - [ ] メモリ削減最適化: エンティティ配列保持方法の最適化（カウントのみ保持、必要フィールド限定等）
+
+### フェーズ分割（目安）
+- Phase A（v0.2.0）: linear/log/quantile/equal-interval/quantize/threshold/custom + jenks（ckmeans） + stddev、凡例対応、基本パレット（d3-scale-chromatic）
+- Phase B（v0.3.0以降）: geometric/headtail/k-meansの追加、高度なパレット編集、分類毎の自動推奨クラス数、UI連動
 
 **実装工数: 中 | 互換性影響: 軽微（新オプション追加のみ）**
 
