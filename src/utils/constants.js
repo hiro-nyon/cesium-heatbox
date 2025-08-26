@@ -25,7 +25,11 @@ export const DEFAULT_OPTIONS = {
   highlightStyle: {
     outlineWidth: 4,
     boostOpacity: 0.2
-  }
+  },
+  // v0.1.6: 枠線重なり対策・柔軟化
+  voxelGap: 0, // ボクセル間ギャップ（メートル）
+  outlineOpacity: 1.0, // 枠線透明度（0-1）
+  outlineWidthResolver: null // 関数: (params) => number で動的太さ制御
 };
 
 /**

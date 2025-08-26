@@ -89,12 +89,23 @@ await perfDemo.demonstrateRealTimeUpdates();
 const report = perfDemo.generatePerformanceReport();
 ```
 
+### 4. `outline-overlap-demo-umd.html` ⭐ **v0.1.6 新機能**
+**枠線重なり対策と動的枠線制御のデモ（ブラウザ直接実行対応）**
+
+- `voxelGap` によるボクセル寸法の縮小（重なり軽減）
+- `outlineOpacity` による枠線透明度制御
+- `outlineWidthResolver` による密度連動の枠線太さ調整（TopN強調対応）
+
+UMDビルドを参照するため、ファイルをそのままブラウザで開けます。
+Baseline（対策なし）と Mitigated（対策あり）をワンクリックで比較できます。
+
 ## 🚀 使用方法
 
 ### オプション1: ブラウザ直接実行（簡単！）
 
 **UMD版デモファイル**（`.html`ファイル）を直接ブラウザで開くことができます：
 - `wireframe-height-demo-umd.html` - ブラウザで直接動作
+- `outline-overlap-demo-umd.html` - 0.1.6の枠線対策を体験
 
 これらのファイルはUMDビルドを使用しているため、開発サーバーやビルドツールなしで動作します。
 

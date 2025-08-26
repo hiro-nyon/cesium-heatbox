@@ -29,14 +29,7 @@ describe('DataProcessor utils', () => {
     expect(stats.averageCount).toBeCloseTo(2);
   });
 
-  // filterVoxelData と sortVoxelsByDensity は v0.1.2 でシンプル化のため削除
-  test.skip('filterVoxelData が条件でフィルタ', () => {
-    // このメソッドは削除されました
-  });
-
-  test.skip('sortVoxelsByDensity が昇降順にソート', () => {
-    // このメソッドは削除されました
-  });
+  
 
   test('getTopNVoxels が上位Nを返す', () => {
     const vd = makeVoxelData([
@@ -48,8 +41,6 @@ describe('DataProcessor utils', () => {
     expect(top2.map(v => v.count)).toEqual([3, 2]);
   });
 
-  test.skip('generateDetailedReport が分布と分位数を返す', () => {
-    // このメソッドは v0.1.2 でシンプル化のため削除されました
-  });
+  
 });
 

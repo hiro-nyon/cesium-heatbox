@@ -172,6 +172,22 @@ export function validateAndNormalizeOptions(options = {}) {
     }
   }
   
+  // v0.1.6: 枠線重なり対策のバリデーション
+  if (normalized.voxelGap !== undefined) {
+    normalized.voxelGap = Math.max(0, Math.min(100, parseFloat(normalized.voxelGap) || 0));
+  }
+  
+  if (normalized.outlineOpacity !== undefined) {
+    normalized.outlineOpacity = Math.max(0, Math.min(1, parseFloat(normalized.outlineOpacity) || 1));
+  }
+  
+  if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
+    if (typeof normalized.outlineWidthResolver !== 'function') {
+      Logger.warn('outlineWidthResolver must be a function. Ignoring.');
+      normalized.outlineWidthResolver = null;
+    }
+  }
+  
   return normalized;
 }
 

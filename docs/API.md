@@ -1,4 +1,4 @@
-# API リファレンス - v0.1.5
+# API リファレンス - v0.1.6
 
 > **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得してください。
 
@@ -14,7 +14,7 @@
 - `viewer` (Cesium.Viewer) - CesiumJS Viewerインスタンス
 - `options` (Object, optional) - 設定オプション
 
-**オプション（v0.1.5対応）:**
+**オプション（v0.1.6対応）:**
 - `voxelSize` (number, default: 20) - 目標ボクセルサイズ（メートル）。実際の描画寸法はグリッド分割数に基づく各軸の実セルサイズ `cellSizeX/Y/Z` を使用し、`voxelSize` 以下になる場合があります（重なり防止のため）。
 - `opacity` (number, default: 0.8) - データボクセルの透明度 (0.0-1.0)
 - `emptyOpacity` (number, default: 0.03) - 空ボクセルの透明度 (0.0-1.0)
@@ -31,6 +31,10 @@
 - **`colorMap` ('custom'|'viridis'|'inferno', default: 'custom') - v0.1.5: 知覚均等カラーマップ**
 - **`diverging` (boolean, default: false) / `divergingPivot` (number, default: 0) - v0.1.5: 二極性データ向け発散配色**
 - **`highlightTopN` (number|null, default: null) / `highlightStyle` ({ outlineWidth?: number; boostOpacity?: number }) - v0.1.5: 上位Nボクセルの強調表示**
+// v0.1.6 追加
+- **`voxelGap` (number, default: 0) - v0.1.6: ボクセル間にギャップ（メートル）を設けて枠線重なりを軽減**
+- **`outlineOpacity` (number, default: 1.0) - v0.1.6: 枠線の透明度（0-1）を制御**
+- **`outlineWidthResolver` ((params) => number|null, default: null) - v0.1.6: ボクセル毎の枠線太さを動的決定**
 - `batchMode` は v0.1.5 で非推奨（無視されます。将来削除予定）
 
 > 寸法について: 描画されるボックスの幅・奥行・高さは、グリッドの実セルサイズ `cellSizeX`, `cellSizeY`, `cellSizeZ` を使用します。`heightBased: true` の場合は `cellSizeZ` を基準に密度で高さをスケーリングします。
@@ -53,6 +57,33 @@ const heatbox = new Heatbox(viewer, {
   highlightStyle: { outlineWidth: 4, boostOpacity: 0.2 }
 });
 ```
+
+**例（v0.1.6: 枠線重なり対策・動的枠線）:**
+```javascript
+const heatbox = new Heatbox(viewer, {
+  colorMap: 'viridis',
+  // 枠線重なり対策
+  voxelGap: 1.0,          // 1m分のギャップを確保
+  outlineOpacity: 0.6,    // 枠線を半透明に
+  // 動的枠線制御（密度で太さを変える）
+  outlineWidth: 2,        // 既定値
+  highlightTopN: 10,
+  outlineWidthResolver: ({ normalizedDensity, isTopN }) => {
+    if (isTopN) return 4;           // 上位は太く
+    return normalizedDensity > 0.7 ? 1 : 2; // 高密度は細く
+  }
+});
+```
+
+#### v0.1.6: 枠線制御の優先順位（重要）
+- 優先度1: `outlineWidthResolver` を定義した場合、その戻り値が最優先（TopN設定より優先）。
+- 優先度2: Resolver未使用時は、`highlightTopN` が有効なら TopN に `highlightStyle.outlineWidth` を適用、その他は `outlineWidth`。
+- 優先度3: いずれも未設定なら、既定の `outlineWidth` が全ボクセルに適用。
+
+補助オプション:
+- `outlineOpacity` は枠線色のアルファ値に適用され、重なり時の視覚ノイズを低減。
+- `voxelGap` はボクセル寸法を縮め、隣接枠線の重なり自体を軽減。
+
 
 ### メソッド
 

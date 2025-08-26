@@ -171,11 +171,18 @@ export class VoxelRenderer {
           }
         }
         
-        // 高さベース表現の場合、ボクセルの高さを密度に応じて調整
+        // v0.1.6: ボクセル寸法計算（voxelGap対応）
         // 各軸のセルサイズ（グリッドが持つ実セルサイズを優先、なければvoxelSizeMetersにフォールバック）
-        const cellSizeX = grid.cellSizeX || (grid.lonRangeMeters ? (grid.lonRangeMeters / grid.numVoxelsX) : grid.voxelSizeMeters);
-        const cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
-        const baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
+        let cellSizeX = grid.cellSizeX || (grid.lonRangeMeters ? (grid.lonRangeMeters / grid.numVoxelsX) : grid.voxelSizeMeters);
+        let cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
+        let baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
+
+        // v0.1.6: voxelGap による寸法縮小（枠線重なり対策）
+        if (this.options.voxelGap > 0) {
+          cellSizeX = Math.max(cellSizeX - this.options.voxelGap, cellSizeX * 0.1);
+          cellSizeY = Math.max(cellSizeY - this.options.voxelGap, cellSizeY * 0.1);
+          baseCellSizeZ = Math.max(baseCellSizeZ - this.options.voxelGap, baseCellSizeZ * 0.1);
+        }
 
         let boxHeight = baseCellSizeZ;
         if (this.options.heightBased && info.count > 0) {
@@ -184,6 +191,29 @@ export class VoxelRenderer {
           boxHeight = baseCellSizeZ * (0.1 + normalizedDensity * 0.9); // 10%から100%の高さ
         }
         
+        // v0.1.6: 動的枠線太さ制御
+        let finalOutlineWidth;
+        if (this.options.outlineWidthResolver && typeof this.options.outlineWidthResolver === 'function') {
+          // outlineWidthResolver による動的制御
+          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
+            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
+          const resolverParams = {
+            voxel: { x, y, z, count: info.count },
+            isTopN: isTopN,
+            normalizedDensity: normalizedDensity
+          };
+          finalOutlineWidth = this.options.outlineWidthResolver(resolverParams);
+        } else {
+          // 従来の静的制御
+          finalOutlineWidth = isTopN && this.options.highlightTopN ? 
+            (this.options.highlightStyle?.outlineWidth || this.options.outlineWidth) : 
+            this.options.outlineWidth;
+        }
+
+        // v0.1.6: 枠線透明度制御
+        const finalOutlineOpacity = this.options.outlineOpacity ?? 1.0;
+        const outlineColorWithOpacity = color.withAlpha(finalOutlineOpacity);
+
         // エンティティの設定
         const entityConfig = {
           position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
@@ -194,10 +224,8 @@ export class VoxelRenderer {
               boxHeight
             ),
             outline: this.options.showOutline,
-            outlineColor: color.withAlpha(1.0),
-            outlineWidth: isTopN && this.options.highlightTopN ? 
-              (this.options.highlightStyle?.outlineWidth || this.options.outlineWidth) : 
-              this.options.outlineWidth
+            outlineColor: outlineColorWithOpacity,
+            outlineWidth: Math.max(finalOutlineWidth || 1, 0) // 負値防止
           },
           properties: {
             type: 'voxel',
@@ -286,9 +314,13 @@ export class VoxelRenderer {
    * @returns {Cesium.Color} 計算された色
    */
   interpolateColor(normalizedDensity, rawValue = null) {
-    // v0.1.5: 二極性配色対応
+    // v0.1.5: 二極性配色対応（pivot<=0 の場合は安全にフォールバック）
     if (this.options.diverging && rawValue !== null) {
-      return this._interpolateDivergingColor(rawValue);
+      const pivot = typeof this.options.divergingPivot === 'number' ? this.options.divergingPivot : 0;
+      if (pivot > 0) {
+        return this._interpolateDivergingColor(rawValue);
+      }
+      // pivot が 0 以下の場合は従来の補間にフォールバック
     }
     
     // v0.1.5: カラーマップ対応

@@ -35,6 +35,12 @@ Priority: Medium | Target: 2025-10
   - [ ] 空間的近接度解析: 指定半径内のボクセル密度を算出し、密集時は枠線を細く、疎な時は太く自動調整
   - [ ] プリセット提供: `outlineWidthPreset: 'adaptive-density'|'topn-focus'|'uniform'` でよくある使用パターンを簡単設定
   - [ ] Examples UI: 「適応的制御」チェックボックスと効果確認用の密度パターン生成機能
+- インセット枠線の導入（ADR-0004）
+  - [ ] `outlineInset`（m）オプションで枠線を内側へオフセット
+  - [ ] 実装: セカンダリ Box（fill: false, outline: true）で一回り小さい寸法を描画
+  - [ ] 優先順位: resolver > TopN > outlineWidth（0.1.6の既定）との整合
+  - [ ] 受け入れ基準: 1000 ボクセルで描画時間 +50% 以内、TopN/opacity/gap 併用で破綻なし
+  - [ ] Docs: API/Wiki/Advanced デモ更新（outline-overlap デモに toggle 追加）
 - UX改善（継続）
   - [ ] Diverging ピボットのUI反映（Examples）
   - [ ] 凡例オーバレイの標準テンプレ（Examples / Snippet）
@@ -134,4 +140,3 @@ Priority: Future | Target: TBD
 ## コントリビューション
 
 議論や提案は Discussions / Issues / Projects へ。状況に応じて調整します。
-

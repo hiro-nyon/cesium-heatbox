@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
+## [0.1.6] - 2024-12-28
+
+### Added
+- **枠線重なり対策**: `voxelGap` オプションによるボクセル間ギャップ設定で視認性向上
+- **枠線透明度制御**: `outlineOpacity` オプションで重なり部分の視覚ノイズ軽減
+- **動的枠線太さ制御**: `outlineWidthResolver` 関数により個別ボクセルの枠線太さを動的調整
+- **Legend実装ガイド**: `docs/legend-implementation-guide.md` でカスタム凡例の実装方法を詳細解説
+- **Wiki自動同期**: `tools/wiki-sync.js` によるJSDoc HTML→Markdown変換自動化
+- **GitHub Actions**: Wiki更新の完全自動化ワークフロー (`.github/workflows/wiki-sync.yml`)
+- **パフォーマンステスト**: `outlineWidthResolver` 使用時のパフォーマンス影響測定
+- **Examples UI強化**: v0.1.6新機能のリアルタイム調整UI（voxelGap, outlineOpacity, adaptiveOutline）
+
+### Enhanced
+- **VoxelRenderer**: 枠線重なり対策とパフォーマンス最適化
+- **Examples**: 適応的枠線制御のデモ実装（密度に応じた動的太さ調整）
+- **Test Coverage**: 色補間・発散配色・TopN強調の主要分岐テスト追加
+- **Documentation**: Wiki保守手順書 (`docs/wiki-maintenance.md`) 追加
+
+### Technical
+- **Dependencies**: `jsdom` 追加（Wiki同期用）
+- **Validation**: `voxelGap`/`outlineOpacity`/`outlineWidthResolver` の新オプション検証
+- **Performance**: 動的枠線制御のパフォーマンス影響<5%を達成（ADR-0003受け入れ基準準拠）
+
+### Compatibility
+- **Non-breaking**: 全ての変更は後方互換性を維持
+- **CesiumJS**: 1.120.0+ サポート継続
+- **Browser**: モダンブラウザ (ES6+) 対応
+
 ## [0.1.5] - 2025-08-25
 
 ### Added

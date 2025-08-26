@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Outline Overlap Mitigation Demo (v0.1.6)</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <style>
+    html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; }
+    .panel { position: absolute; top: 10px; left: 10px; background: rgba(40, 40, 40, 0.9); padding: 14px; border-radius: 6px; color: #fff; font-family: sans-serif; width: 320px; }
+    .panel h3 { margin: 0 0 10px; font-size: 16px; color: #4fc3f7; }
+    .group { margin-bottom: 10px; }
+    .group label { display: block; font-size: 13px; margin-bottom: 4px; }
+    .row { display: flex; gap: 8px; margin-bottom: 6px; }
+    .row input[type="range"], .row input[type="number"], .row select, .row button { flex: 1; }
+    .btn { padding: 8px; border: 0; border-radius: 4px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: #1976d2; color: #fff; }
+    .btn-secondary { background: #455a64; color: #fff; }
+    .btn-danger { background: #c62828; color: #fff; }
+    #status { margin-top: 8px; font-weight: bold; }
+    small.hint { color: #bbb; }
+  </style>
+  <!-- UMD build of cesium-heatbox -->
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
+  <script>
+    const Heatbox = window.CesiumHeatbox || window.Heatbox;
+    let viewer;
+    let heatbox;
+    let entities = [];
+
+    function initViewer() {
+      viewer = new Cesium.Viewer('cesiumContainer', {
+        homeButton: false, sceneModePicker: false, baseLayerPicker: false,
+        navigationHelpButton: false, animation: false, timeline: false,
+        fullscreenButton: false, geocoder: false, infoBox: true,
+        selectionIndicator: true, creditContainer: document.createElement('div')
+      });
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(139.7665, 35.6807, 700),
+        orientation: { heading: Cesium.Math.toRadians(0), pitch: Cesium.Math.toRadians(-35), roll: 0 }
+      });
+    }
+
+    function updateStatus(msg, color = 'white') {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.style.color = color;
+      console.log(msg);
+    }
+
+    function genClusteredEntities() {
+      // 近接配置のクラスターを複数作り、枠線重なりが起きやすい条件を作る
+      const list = [];
+      const bounds = { minLon: 139.7640, maxLon: 139.7690, minLat: 35.6790, maxLat: 35.6830, minAlt: 0, maxAlt: 120 };
+      const clusters = [
+        { lon: 139.7662, lat: 35.6810, n: 600 },
+        { lon: 139.7670, lat: 35.6805, n: 500 },
+        { lon: 139.7655, lat: 35.6815, n: 400 }
+      ];
+      clusters.forEach(c => {
+        for (let i = 0; i < c.n; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const r = Math.sqrt(Math.random()) * 0.0012; // 密なクラスター
+          const lon = Math.max(bounds.minLon, Math.min(bounds.maxLon, c.lon + Math.cos(angle) * r));
+          const lat = Math.max(bounds.minLat, Math.min(bounds.maxLat, c.lat + Math.sin(angle) * r));
+          const alt = Math.random() * bounds.maxAlt;
+          list.push(viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+            point: { pixelSize: 3, color: Cesium.Color.YELLOW.withAlpha(0.7) }
+          }));
+        }
+      });
+      return list;
+    }
+
+    function getOptionsFromUI(withMitigation) {
+      const voxelGap = parseFloat(document.getElementById('voxelGap').value);
+      const outlineOpacity = parseFloat(document.getElementById('outlineOpacity').value);
+      const adaptive = document.getElementById('adaptiveOutline').checked;
+      const colorMap = document.getElementById('colorMap').value;
+
+      let outlineWidthResolver = null;
+      if (adaptive && withMitigation) {
+        outlineWidthResolver = ({ normalizedDensity, isTopN }) => {
+          if (isTopN) return 4;
+          return normalizedDensity > 0.7 ? 1 : (normalizedDensity > 0.3 ? 2 : 3);
+        };
+      }
+
+      if (!withMitigation) {
+        return {
+          voxelSize: 25,
+          opacity: 0.7,
+          showOutline: true,
+          outlineWidth: 2,
+          colorMap,
+          highlightTopN: null
+        };
+      }
+
+      return {
+        voxelSize: 25,
+        opacity: 0.7,
+        showOutline: true,
+        outlineWidth: 2,
+        colorMap,
+        highlightTopN: 10,
+        voxelGap,
+        outlineOpacity,
+        outlineWidthResolver
+      };
+    }
+
+    async function renderBaseline() {
+      clearAll();
+      if (entities.length === 0) entities = genClusteredEntities();
+      heatbox = new Heatbox(viewer, getOptionsFromUI(false));
+      const stats = await heatbox.createFromEntities(entities);
+      updateStatus(`Baseline rendered: voxels=${stats.renderedVoxels}`);
+    }
+
+    async function renderMitigated() {
+      clearAll();
+      if (entities.length === 0) entities = genClusteredEntities();
+      heatbox = new Heatbox(viewer, getOptionsFromUI(true));
+      const stats = await heatbox.createFromEntities(entities);
+      updateStatus(`Mitigation rendered: voxels=${stats.renderedVoxels}`);
+    }
+
+    function clearAll() {
+      if (heatbox) heatbox.clear();
+      viewer.entities.removeAll();
+      entities = [];
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initViewer();
+      // UI wiring
+      document.getElementById('voxelGap').addEventListener('input', (e) => {
+        document.getElementById('voxelGapVal').textContent = parseFloat(e.target.value).toFixed(1);
+      });
+      document.getElementById('outlineOpacity').addEventListener('input', (e) => {
+        document.getElementById('outlineOpacityVal').textContent = parseFloat(e.target.value).toFixed(1);
+      });
+      document.getElementById('btnBaseline').addEventListener('click', renderBaseline);
+      document.getElementById('btnMitigated').addEventListener('click', renderMitigated);
+      document.getElementById('btnClear').addEventListener('click', () => { clearAll(); updateStatus('Cleared'); });
+      updateStatus('Ready - 0.1.6 overlap mitigation demo');
+    });
+  </script>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="panel">
+    <h3>v0.1.6 枠線重なり対策デモ</h3>
+    <div class="group">
+      <label>Color Map</label>
+      <div class="row">
+        <select id="colorMap">
+          <option value="custom">custom (min/max)</option>
+          <option value="viridis" selected>viridis</option>
+          <option value="inferno">inferno</option>
+        </select>
+      </div>
+    </div>
+    <div class="group">
+      <label>Voxel Gap (m): <span id="voxelGapVal">0.0</span></label>
+      <div class="row"><input type="range" id="voxelGap" min="0" max="5" step="0.5" value="0"></div>
+      <small class="hint">ボクセル寸法を縮めて枠線の重なりを軽減</small>
+    </div>
+    <div class="group">
+      <label>Outline Opacity: <span id="outlineOpacityVal">1.0</span></label>
+      <div class="row"><input type="range" id="outlineOpacity" min="0.1" max="1.0" step="0.1" value="1.0"></div>
+      <small class="hint">重なった枠線の視覚ノイズを低減</small>
+    </div>
+    <div class="group">
+      <label><input type="checkbox" id="adaptiveOutline"> Adaptive Outline</label>
+      <small class="hint">密度に応じて枠線太さを調整（TopNは太く）</small>
+    </div>
+    <div class="group row">
+      <button class="btn btn-secondary" id="btnBaseline">Baseline</button>
+      <button class="btn btn-primary" id="btnMitigated">Mitigated</button>
+    </div>
+    <div class="group row">
+      <button class="btn btn-danger" id="btnClear">Clear</button>
+    </div>
+    <div id="status">Ready</div>
+  </div>
+</body>
+</html>
+

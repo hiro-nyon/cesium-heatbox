@@ -76,6 +76,7 @@ async function initializeApp() {
       'wireframeOnly', 'heightBased', 'debugLogs', // v0.1.2 新機能 + debug制御
       'autoVoxelSize', 'manualVoxelSizeGroup', // v0.1.4 新機能
       'showBounds', 'colorMap', 'diverging', 'highlightTopN', // v0.1.5 新機能
+      'voxelGap', 'voxelGapValue', 'outlineOpacity', 'outlineOpacityValue', 'adaptiveOutline', // v0.1.6 新機能
       'statistics', 'statisticsContent', 'status'
     ];
     uiElementIds.forEach(id => {
@@ -187,6 +188,19 @@ function setupEventListeners() {
     }
   });
 
+  // v0.1.6: 新機能のリアルタイム値表示
+  if (elements.voxelGap && elements.voxelGapValue) {
+    elements.voxelGap.addEventListener('input', () => {
+      elements.voxelGapValue.textContent = parseFloat(elements.voxelGap.value).toFixed(1);
+    });
+  }
+  
+  if (elements.outlineOpacity && elements.outlineOpacityValue) {
+    elements.outlineOpacity.addEventListener('input', () => {
+      elements.outlineOpacityValue.textContent = parseFloat(elements.outlineOpacity.value).toFixed(1);
+    });
+  }
+
 }
 
 function getOptionsFromUI() {
@@ -202,6 +216,18 @@ function getOptionsFromUI() {
     debugOption = false;
   }
   
+  // v0.1.6: 適応的枠線制御の実装
+  let outlineWidthResolver = null;
+  if (elements.adaptiveOutline?.checked) {
+    outlineWidthResolver = ({ voxel, isTopN, normalizedDensity }) => {
+      // 密度に応じた適応的制御（デモ用）
+      if (isTopN) return 6; // TopN は常に太く
+      if (normalizedDensity > 0.7) return 1; // 高密度は細く
+      if (normalizedDensity > 0.3) return 2; // 中密度は標準
+      return 3; // 低密度は太く
+    };
+  }
+
   const options = {
     opacity: parseFloat(elements.opacity.value),
     showEmptyVoxels: elements.showEmpty.checked,
@@ -216,7 +242,11 @@ function getOptionsFromUI() {
     debug: debugOption,
     colorMap: elements.colorMap?.value || 'custom',
     diverging: elements.diverging?.checked || false,
-    highlightTopN: elements.highlightTopN?.value ? parseInt(elements.highlightTopN.value) : null
+    highlightTopN: elements.highlightTopN?.value ? parseInt(elements.highlightTopN.value) : null,
+    // v0.1.6 新機能
+    voxelGap: parseFloat(elements.voxelGap?.value) || 0,
+    outlineOpacity: parseFloat(elements.outlineOpacity?.value) || 1.0,
+    outlineWidthResolver: outlineWidthResolver
   };
   
   // autoVoxelSizeがtrueでない場合のみvoxelSizeを設定

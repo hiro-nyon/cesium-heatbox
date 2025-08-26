@@ -1,0 +1,126 @@
+# GitHub Wiki 自動同期 Workflow
+# トリガー: docs/ 変更時、または手動実行
+
+name: Wiki Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'wiki/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Force sync even without changes'
+        required: false
+        default: 'false'
+
+jobs:
+  wiki-sync:
+    runs-on: ubuntu-latest
+    if: github.repository == 'hiro-nyon/cesium-heatbox'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Generate docs if needed
+      run: |
+        if [ -f "jsdoc.config.json" ]; then
+          npm run docs
+        fi
+    
+    - name: Sync docs/api to wiki/
+      run: |
+        # Phase 1: JSDoc HTML → Markdown変換
+        if [ -f "tools/wiki-sync.js" ]; then
+          node tools/wiki-sync.js
+        fi
+        
+        # Phase 2: 基本コンテンツ同期
+        cp README.md wiki/Home.md
+        cp CHANGELOG.md wiki/Release-Notes.md
+        
+        # 差分チェック
+        if git diff --quiet wiki/; then
+          echo "No wiki changes detected"
+          if [ "${{ github.event.inputs.force_sync }}" != "true" ]; then
+            exit 0
+          fi
+        fi
+    
+    - name: Configure Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Clone Wiki repository
+      env:
+        WIKI_TOKEN: ${{ secrets.WIKI_TOKEN || secrets.GITHUB_TOKEN }}
+      run: |
+        git clone https://x-access-token:${WIKI_TOKEN}@github.com/hiro-nyon/cesium-heatbox.wiki.git .wiki-tmp
+        
+    - name: Update Wiki content
+      run: |
+        # 安全確認：重要ページのバックアップ
+        if [ -f ".wiki-tmp/Home.md" ]; then
+          cp .wiki-tmp/Home.md .wiki-tmp/Home.md.backup
+        fi
+        
+        # コンテンツ同期
+        cp -f wiki/*.md .wiki-tmp/
+        
+        cd .wiki-tmp
+        
+        # 変更確認
+        if git diff --quiet; then
+          echo "No changes to commit to wiki"
+          exit 0
+        fi
+        
+        # 変更内容表示（セキュリティ確認）
+        echo "Wiki changes to be committed:"
+        git diff --name-only
+        git diff --stat
+        
+        # コミット・プッシュ
+        git add .
+        git commit -m "docs: auto-sync from main branch ($(date -u '+%Y-%m-%d %H:%M:%S UTC'))
+
+        Source commit: ${{ github.sha }}
+        Triggered by: ${{ github.event_name }}
+        Actor: ${{ github.actor }}"
+        
+        git push origin master
+    
+    - name: Cleanup
+      if: always()
+      run: |
+        rm -rf .wiki-tmp
+        
+    - name: Notify success
+      if: success()
+      run: |
+        echo "✅ Wiki sync completed successfully"
+        echo "Check: https://github.com/hiro-nyon/cesium-heatbox/wiki"
+        
+    - name: Notify failure
+      if: failure()
+      run: |
+        echo "❌ Wiki sync failed"
+        echo "Manual intervention may be required"
+        echo "Fallback: run 'npm run wiki:publish' locally"

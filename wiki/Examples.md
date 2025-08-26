@@ -101,8 +101,49 @@ const heatbox = new Heatbox(viewer, {
 await heatbox.createFromEntities(entities);
 ```
 
+### v0.1.6 枠線制御（一律/TopN/可変）
+
+#### 一律で太く（視認性重視）
+```js
+const heatbox = new Heatbox(viewer, {
+  showOutline: true,
+  outlineWidth: 3,        // 全て同じ太さ
+  outlineOpacity: 0.7     // 重なりのノイズを抑える
+});
+```
+
+#### TopNだけを太く（簡易強調）
+```js
+const heatbox = new Heatbox(viewer, {
+  outlineWidth: 2,        // 非TopNの既定値
+  highlightTopN: 10,
+  highlightStyle: { outlineWidth: 6 } // TopNのみ太く
+});
+```
+
+#### 密度に応じて可変（動的制御）
+```js
+const heatbox = new Heatbox(viewer, {
+  outlineWidth: 2, // 既定（resolver未適用時）
+  outlineWidthResolver: ({ normalizedDensity, isTopN }) => {
+    if (isTopN) return 4;              // TopNは太く
+    return normalizedDensity > 0.7 ? 1 // 高密度は細く
+         : normalizedDensity > 0.3 ? 2 // 中密度は標準
+         : 3;                          // 低密度は太く
+  },
+  voxelGap: 1.0,        // 重なり軽減（寸法縮小）
+  outlineOpacity: 0.6   // 重なりノイズ低減
+});
+```
+
+優先順位:
+- 1) `outlineWidthResolver` が定義されていれば最優先
+- 2) なければ `highlightTopN` の TopN に `highlightStyle.outlineWidth`、以外は `outlineWidth`
+- 3) いずれも未設定なら `outlineWidth` を全ボクセルに適用
+
 ### リポジトリ内の実行可能サンプル
 - `examples/basic/` ブラウザ UI 付きの基本例（エンティティ生成→ヒートマップ作成）
+ - `examples/advanced/outline-overlap-demo-umd.html` 0.1.6 の枠線重なり対策デモ（ブラウザで直接開けます）
 
 実行方法:
 ```

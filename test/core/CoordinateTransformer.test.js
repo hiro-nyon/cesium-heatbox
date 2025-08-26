@@ -43,78 +43,7 @@ describe('CoordinateTransformer', () => {
     });
   });
   
-  describe.skip('getEntityPosition', () => {
-    // このメソッドは v0.1.2 でシンプル化のため削除されました
-  });
   
-  describe.skip('calculateMetersRange', () => {
-    // このメソッドは v0.1.2 でシンプル化のため削除されました
-  });
-  
-  describe.skip('coordinateToVoxelIndex', () => {
-    test('座標をボクセルインデックスに変換', () => {
-      const bounds = {
-        minLon: 139.765,
-        maxLon: 139.767,
-        minLat: 35.680,
-        maxLat: 35.682,
-        minAlt: 10,
-        maxAlt: 30
-      };
-      
-      const grid = {
-        numVoxelsX: 10,
-        numVoxelsY: 10,
-        numVoxelsZ: 10
-      };
-      
-      const index = CoordinateTransformer.coordinateToVoxelIndex(
-        139.766, 35.681, 20, bounds, grid
-      );
-      
-      expect(index.x).toBeGreaterThanOrEqual(0);
-      expect(index.x).toBeLessThan(10);
-      expect(index.y).toBeGreaterThanOrEqual(0);
-      expect(index.y).toBeLessThan(10);
-      expect(index.z).toBeGreaterThanOrEqual(0);
-      expect(index.z).toBeLessThan(10);
-    });
-    
-    test('境界値の処理', () => {
-      const bounds = {
-        minLon: 139.765,
-        maxLon: 139.767,
-        minLat: 35.680,
-        maxLat: 35.682,
-        minAlt: 10,
-        maxAlt: 30
-      };
-      
-      const grid = {
-        numVoxelsX: 10,
-        numVoxelsY: 10,
-        numVoxelsZ: 10
-      };
-      
-      // 最小値
-      const minIndex = CoordinateTransformer.coordinateToVoxelIndex(
-        bounds.minLon, bounds.minLat, bounds.minAlt, bounds, grid
-      );
-      
-      expect(minIndex.x).toBe(0);
-      expect(minIndex.y).toBe(0);
-      expect(minIndex.z).toBe(0);
-      
-      // 最大値
-      const maxIndex = CoordinateTransformer.coordinateToVoxelIndex(
-        bounds.maxLon, bounds.maxLat, bounds.maxAlt, bounds, grid
-      );
-      
-      expect(maxIndex.x).toBe(9);
-      expect(maxIndex.y).toBe(9);
-      expect(maxIndex.z).toBe(9);
-    });
-  });
   
   describe('voxelIndexToCoordinate', () => {
     test('ボクセルインデックスを座標に変換', () => {

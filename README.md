@@ -46,6 +46,9 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **デバッグ境界制御 (v0.1.5)**: `debug.showBounds` でバウンディングボックス表示をON/OFF制御
 - **知覚均等カラーマップ (v0.1.5)**: `viridis`、`inferno` カラーマップと二極性配色（blue-white-red）をサポート
 - **TopN強調表示 (v0.1.5)**: 密度上位N個のボクセルを強調、他を淡色表示する `highlightTopN` オプション
+- **枠線重なり対策 (v0.1.6)**: `voxelGap` による間隔調整と `outlineOpacity` による透明度制御で視認性向上
+- **動的枠線制御 (v0.1.6)**: `outlineWidthResolver` 関数でボクセル毎の枠線太さを密度に応じて動的調整
+- **Wiki自動同期 (v0.1.6)**: JSDoc → Markdown 変換による GitHub Wiki の自動更新
 - **パフォーマンス制御**: `maxRenderVoxels` と内部検証（例: `validateVoxelCount`）で安定動作を担保
 - **デバッグ/統計の取得**: `getStatistics()` と `getDebugInfo()` でレンダリング状態や調整内容を把握可能
 - **表現の柔軟性**: `wireframeOnly`、`heightBased`、カラーマップ設定などで見やすさを調整
@@ -65,6 +68,12 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **True 3D voxel representation**: Preserves vertical distribution (Z) as volumetric voxels, unlike 2D color fills
 - **Entity-based workflow**: Builds directly from existing `Cesium.Entity` objects; no pre-tiling or server-side processing required
 - **Automatic voxel sizing (v0.1.4)**: `autoVoxelSize` estimates optimal size from data extent and counts for balanced quality/performance
+- **Debug boundary control (v0.1.5)**: `debug.showBounds` for bounding box display ON/OFF control
+- **Perceptually uniform color maps (v0.1.5)**: `viridis`, `inferno` color maps and diverging color scheme (blue-white-red)
+- **TopN highlighting (v0.1.5)**: `highlightTopN` option to emphasize top N density voxels
+- **Outline overlap mitigation (v0.1.6)**: `voxelGap` for spacing and `outlineOpacity` for transparency control
+- **Dynamic outline control (v0.1.6)**: `outlineWidthResolver` function for density-adaptive outline thickness
+- **Wiki auto-sync (v0.1.6)**: JSDoc → Markdown conversion for automated GitHub Wiki updates
 - **Performance guard rails**: `maxRenderVoxels` and internal checks (e.g., `validateVoxelCount`) for stable rendering
 - **Debugging and statistics**: Introspection via `getStatistics()` and `getDebugInfo()`
 - **Flexible presentation**: `wireframeOnly`, `heightBased`, and color map presets for readability
