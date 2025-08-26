@@ -4,11 +4,11 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 ## Classes
 
-- [Heatbox](Heatbox.md)
-- [VoxelRenderer](VoxelRenderer.md)
-- [VoxelGrid](VoxelGrid.md)
-- [DataProcessor](DataProcessor.md)
-- [CoordinateTransformer](CoordinateTransformer.md)
+- [Heatbox](Heatbox)
+- [VoxelRenderer](VoxelRenderer)
+- [VoxelGrid](VoxelGrid)
+- [DataProcessor](DataProcessor)
+- [CoordinateTransformer](CoordinateTransformer)
 
 ## Version Information
 
@@ -18,6 +18,6 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 ## Quick Links
 
-- [Home](Home.md)
-- [Getting Started](Getting-Started.md)
-- [Examples](Examples.md)
+- [Home](Home)
+- [Getting Started](Getting-Started)
+- [Examples](Examples)

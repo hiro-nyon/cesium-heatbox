@@ -239,8 +239,8 @@ This documentation is auto-generated from JSDoc comments in the source code.
   classes.forEach(className => {
     const file = htmlFiles.find(f => f.includes(className));
     if (file) {
-      const mdFile = file.replace('.html', '.md');
-      indexContent += `- [${className}](${mdFile})\n`;
+      // GitHub Wikiはページ名でリンクされるため拡張子は不要
+      indexContent += `- [${className}](${className})\n`;
     }
   });
 
@@ -253,9 +253,9 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 ## Quick Links
 
-- [Home](Home.md)
-- [Getting Started](Getting-Started.md)
-- [Examples](Examples.md)
+- [Home](Home)
+- [Getting Started](Getting-Started)
+- [Examples](Examples)
 `;
 
   fs.writeFileSync(path.join(WIKI_DIR, 'API-Reference.md'), indexContent);
