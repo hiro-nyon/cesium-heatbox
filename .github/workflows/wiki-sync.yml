@@ -70,13 +70,7 @@ jobs:
         # Wiki保守手順
         if [ -f "docs/wiki-maintenance.md" ]; then cp docs/wiki-maintenance.md wiki/Publishing-to-GitHub-Wiki.md; fi
         
-        # 差分チェック
-        if git diff --quiet wiki/; then
-          echo "No wiki changes detected"
-          if [ "${{ github.event.inputs.force_sync }}" != "true" ]; then
-            exit 0
-          fi
-        fi
+        # ここでは早期終了しない。実際の変更有無はWikiリポジトリ側で判定する。
     
     - name: Configure Git
       run: |
@@ -85,7 +79,7 @@ jobs:
     
     - name: Clone Wiki repository
       env:
-        WIKI_TOKEN: ${{ secrets.WIKI_TOKEN || secrets.GITHUB_TOKEN }}
+        WIKI_TOKEN: ${{ secrets.WIKI_TOKEN != '' && secrets.WIKI_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
         git clone https://x-access-token:${WIKI_TOKEN}@github.com/hiro-nyon/cesium-heatbox.wiki.git .wiki-tmp
         
