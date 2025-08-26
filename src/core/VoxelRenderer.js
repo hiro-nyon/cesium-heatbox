@@ -673,7 +673,6 @@ export class VoxelRenderer {
     const frameThickZ = (outerZ - innerZ) / 2;
     
     // 基準位置（ボクセル中心）
-    const centerPos = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt);
     
     // 12個のフレームボックスを配置
     const frames = [
