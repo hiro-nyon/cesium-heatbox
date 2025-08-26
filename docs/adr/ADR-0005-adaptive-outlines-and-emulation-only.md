@@ -26,7 +26,10 @@ Proposed (for v0.1.7)
   - 重なりリスク（隣接線の接触しやすさ）
 - 自動調整の対象：
   - 枠線の太さ（outlineWidthResolver）
-  - 透明度（outlineOpacity）
+  - 透明度：
+    - ボックス塗り用 `boxOpacityResolver: (ctx) => number(0–1)`
+    - 枠線用 `outlineOpacityResolver: (ctx) => number(0–1)`（標準枠線/インセット/エミュに適用）
+    - 既存 `outlineOpacity` はフォールバック固定値（resolverが優先）
   - インセット量（outlineInset の微調整）
   - 太枠エミュレーションのON/OFF（および太さ）
 - ユーザーが簡易に選べるプリセット：
@@ -36,6 +39,7 @@ Proposed (for v0.1.7)
 - 優先度1: ユーザーが `outlineWidthResolver` を与えた場合はそれを尊重（適応ロジックは係数/クランプで補助）
 - 優先度2: プリセット指定時はプリセット→適応ヒューリスティクスの順
 - 優先度3: いずれも指定なしの場合、既定の適応ヒューリスティクスを適用
+- 透明度は `boxOpacityResolver` / `outlineOpacityResolver` があればそれを優先、なければ固定 `opacity` / `outlineOpacity` を使用
 - いかなる場合も、性能・視認性の安全域（太さ/インセット/透明度のクランプ）は保持
 
 ## Alternatives Considered
@@ -44,7 +48,7 @@ Proposed (for v0.1.7)
 
 ## Interactions
 - `voxelGap`: 重なり/ちらつき軽減に有効。適応的にギャップを増やすのは0.1系では見送り、チューニングガイドで案内。
-- `outlineOpacity`: 密集時にうっすら抑えるなど、適応の調整対象。
+- `outlineOpacity`: 密集時にうっすら抑えるなど、適応の調整対象。resolverが指定されていればresolver優先。
 - `outlineInset`: 重なりリスクが高いときに少し増やす。上限は片側20%（両側40%）。
 - `outlineEmulation`: 0.1.6.2 の中間位置ポリラインを用い、適応的にON/OFF。emulation-onlyでは常時ON。
 - `highlightTopN`: 優先表示（太く）を適応ロジックで尊重。
@@ -55,6 +59,7 @@ Proposed (for v0.1.7)
 - 太枠エミュは「外縁とインセットの中間位置」で描画し、隣接線の重なりを軽減。
 - 適応ロジックのオーバーヘッドは <5% を目標（事前計算/キャッシュを活用）。
 - 透明度/インセット/太さは安全域でクランプ（透明度0–1、インセット0–100mかつ片側20%以内、太さは0.5–N）。
+- 透明度resolverは NaN/無効値を許容せず、フォールバック固定値に切り替える。
 
 ## Acceptance Criteria
 - 視認性：密集/疎/混在のサンプルで、一律表示よりも読みやすくなる（TopN/選択が埋もれない）。
@@ -62,6 +67,7 @@ Proposed (for v0.1.7)
 - 安定性：複数回の描画/再設定でエンティティリークなし。ちらつき/重なり発生が減少。
 - 使い勝手：Examplesに「適応的表示」UIと「エミュレーション専用」トグルを追加。プリセットで即時試せる。
 - ドキュメント：API（新オプションと優先順位）、ガイド（チューニング手順）、FAQ（重なり/ちらつき対策）を整備。
+ - 透明度：fill/outline/inset/エミュの全対象で resolver の効果が期待どおり反映し、0–1 クランプが保証される。
 
 ## Rollout Plan
 - 0.1.7 で導入。デフォルトは互換（standard）。
