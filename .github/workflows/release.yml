@@ -11,10 +11,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '18'
         registry-url: 'https://registry.npmjs.org'
@@ -43,6 +43,12 @@ jobs:
         fi
     
     - name: Publish to npm
+      if: ${{ secrets.NPM_TOKEN }}
       run: npm publish --tag ${{ steps.npm-tag.outputs.tag }}
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: Skip publish (no NPM_TOKEN)
+      if: ${{ !secrets.NPM_TOKEN }}
+      run: |
+        echo "NPM_TOKEN is not set. Skipping npm publish."
