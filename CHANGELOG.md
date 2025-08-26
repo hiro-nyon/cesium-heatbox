@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.6.2] - 2025-08-26
 
+### Fixed
+- Wiki API-Reference のクラスリンクが生の.mdとして表示される問題を修正（拡張子なしのWikiページリンクに変更）。
+- Lintエラー（未使用変数）を修正。
+
+### Docs
+- API（docs/API.md）に太線エミュレーションの中間位置配置と inset 連携を明記。
+- docs/api を再生成、Wikiのクラスページを再生成・同期。
+
+## [0.1.6.2] - 2025-08-26
+
 ### Added
 - **「すべて太線」モード**: `outlineEmulation: 'all'` で全ボクセルに太線エミュレーションを適用
 - **厚い枠線表示機能**: `enableThickFrames` オプションで WebGL 1px 制限を完全回避
