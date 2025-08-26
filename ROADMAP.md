@@ -41,21 +41,42 @@ Priority: High | Target: 2025-09
   - [ ] outlineWidthResolver/TopN/outlineOpacity/voxelGap と併用時に破綻なし。
   - [ ] 単体/結合テスト（寸法/優先順位/alpha反映）と目視チェックを通過。
 
-### v0.1.7（推奨・適応的制御）- 枠線重なり対策の高度化とUX改善
+### v0.1.7（適応的表示の核）- 太枠エミュレーションを中心とした視認性最適化
 Priority: Medium | Target: 2025-10
-- 適応的枠線制御の実装
-  - [ ] 隣接ボクセル密度を考慮した動的太さ調整（`outlineWidthResolver` の高度化）
-  - [ ] 空間的近接度解析: 指定半径内のボクセル密度を算出し、密集時は枠線を細く、疎な時は太く自動調整
-  - [ ] プリセット提供: `outlineWidthPreset: 'adaptive-density'|'topn-focus'|'uniform'` でよくある使用パターンを簡単設定
-  - [ ] Examples UI: 「適応的制御」チェックボックスと効果確認用の密度パターン生成機能
-- インセット枠線（フォローアップ）
-  - [ ] 0.1.6.1 のフィードバック反映、パラメータの上限・UIチューニング、モードの最適化
-- UX改善（継続）
-  - [ ] Diverging ピボットのUI反映（Examples）
-  - [ ] 凡例オーバレイの標準テンプレ（Examples / Snippet）
-  - [ ] OIT有効化のガイド（`viewer.scene.orderIndependentTranslucency`）
-- 互換性: 変更なし（非破壊）。新オプション・プリセット追加のみ。
-- 受け入れ基準: 密集・疎・混在パターンでの適応的制御の視認性向上確認、パフォーマンス影響<5%。
+
+- コア機能（Adaptive Outlines）
+  - [ ] 適応的枠線制御の実装（核）：
+    - 近傍密度・TopN・ズーム・重なりリスクに基づき、枠線太さ・透明度・インセット/エミュ有無を自動調整
+    - 0.1.6.2 の「太線エミュレーション（中間位置ポリライン）」を適応的にON/OFF/太さ調整
+  - [ ] 適応的透明度（Adaptive Opacity）：点（エンティティ）数や近傍密度に応じて透明度を自動調整
+    - 対象: ボックス塗り（fill）、標準枠線（outline）、インセット枠線（二重Box）、中間位置の太枠エミュ（ポリライン）
+    - API（案）: `boxOpacityResolver`, `outlineOpacityResolver`（0–1にクランプ、既存 `outlineOpacity` との優先順位整理）
+  - [ ] エミュレーション専用表示モード（要求）:
+    - [ ] 「枠線（box.outline）とインセット（二重Box）を出さず、太枠エミュレーションのみ表示」モードの追加
+    - [ ] オプション案: `outlineRenderMode: 'standard' | 'inset' | 'emulation-only'`（後方互換デフォルトは'standard'）
+  - [ ] ヒューリスティクス/プリセット:
+    - [ ] `outlineWidthPreset: 'adaptive-density' | 'topn-focus' | 'uniform'`
+    - [ ] 近傍密度（指定半径/近傍数）・カメラ距離・TopN/選択フラグ・重なりリスクを入力とする参照実装
+
+- UI/Examples
+  - [ ] Basic/Advanced: 「適応的表示」トグル + しきい値/半径/TopN優先度のスライダー
+  - [ ] 「エミュレーション専用」トグルを追加（'standard'/'inset'/'emulation-only' の切替）
+  - [ ] 密度パターン生成（格子/群集/疎）で効果を可視化
+
+- Docs/Wiki
+  - [ ] API: `outlineRenderMode` と適応的制御の説明（入力シグナル・優先順位・相互作用）
+  - [ ] API: `boxOpacityResolver` / `outlineOpacityResolver` の仕様（適用対象・優先順位・クランプ）
+  - [ ] ガイド: チューニング手順（密集/疎/遠景の推奨値、TopN併用の勘所）
+  - [ ] FAQ: 重なり/ちらつき時の対処（voxelGap/outlineOpacity/inset/エミュの使い分け）
+
+- パフォーマンス/品質
+  - [ ] 1000〜5000ボクセル規模でのオーバーヘッド<5%（高頻度フレームでも安定）
+  - [ ] メモリ安定（複数回描画/再設定でリークなし）
+  - [ ] 受け入れ基準：密集・疎・混在パターンで視認性が一律太さ/固定透明度より改善、TopN/選択が埋もれない
+  - [ ] 透明度は0–1にクランプされ、fill/outline/inset/エミュすべてで期待どおりに反映される
+
+- 互換性
+  - 変更なし（非破壊）。モード追加とプリセット追加のみ。デフォルトは従来表示。
 
 > 注: 0.1系では「コアのデータモデル変更や新レイヤー」は行わず、安定化と利用性向上に限定します。
 
