@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Outline Overlap Mitigation Demo (v0.1.6)</title>
+  <title>Outline Overlap Mitigation Demo (v0.1.6.1)</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
@@ -78,6 +78,9 @@
       const outlineOpacity = parseFloat(document.getElementById('outlineOpacity').value);
       const adaptive = document.getElementById('adaptiveOutline').checked;
       const colorMap = document.getElementById('colorMap').value;
+      // v0.1.6.1: インセット枠線
+      const insetDistance = parseFloat(document.getElementById('insetDistance').value);
+      const insetMode = document.getElementById('insetMode').value;
 
       let outlineWidthResolver = null;
       if (adaptive && withMitigation) {
@@ -94,7 +97,10 @@
           showOutline: true,
           outlineWidth: 2,
           colorMap,
-          highlightTopN: null
+          highlightTopN: null,
+          // v0.1.6.1: ベースラインでもインセット枠線を適用可能
+          outlineInset: insetMode === 'off' ? 0 : insetDistance,
+          outlineInsetMode: insetMode === 'off' ? 'all' : insetMode
         };
       }
 
@@ -107,7 +113,10 @@
         highlightTopN: 10,
         voxelGap,
         outlineOpacity,
-        outlineWidthResolver
+        outlineWidthResolver,
+        // v0.1.6.1: インセット枠線
+        outlineInset: insetMode === 'off' ? 0 : insetDistance,
+        outlineInsetMode: insetMode === 'off' ? 'all' : insetMode
       };
     }
 
@@ -142,17 +151,33 @@
       document.getElementById('outlineOpacity').addEventListener('input', (e) => {
         document.getElementById('outlineOpacityVal').textContent = parseFloat(e.target.value).toFixed(1);
       });
+      // v0.1.6.1: インセット枠線のイベントリスナー
+      document.getElementById('insetDistance').addEventListener('input', (e) => {
+        document.getElementById('insetDistVal').textContent = parseFloat(e.target.value).toFixed(1);
+      });
+      document.getElementById('insetMode').addEventListener('change', (e) => {
+        const isOff = e.target.value === 'off';
+        document.getElementById('insetDistance').disabled = isOff;
+        if (isOff) {
+          document.getElementById('insetDistVal').textContent = '0.0';
+        } else {
+          document.getElementById('insetDistVal').textContent = parseFloat(document.getElementById('insetDistance').value).toFixed(1);
+        }
+      });
+      // 初期状態設定
+      document.getElementById('insetDistance').disabled = (document.getElementById('insetMode').value === 'off');
+      
       document.getElementById('btnBaseline').addEventListener('click', renderBaseline);
       document.getElementById('btnMitigated').addEventListener('click', renderMitigated);
       document.getElementById('btnClear').addEventListener('click', () => { clearAll(); updateStatus('Cleared'); });
-      updateStatus('Ready - 0.1.6 overlap mitigation demo');
+      updateStatus('Ready - v0.1.6.1 overlap mitigation + inset outline demo');
     });
   </script>
 </head>
 <body>
   <div id="cesiumContainer"></div>
   <div class="panel">
-    <h3>v0.1.6 枠線重なり対策デモ</h3>
+    <h3>v0.1.6.1 枠線重なり対策 + インセット枠線デモ</h3>
     <div class="group">
       <label>Color Map</label>
       <div class="row">
@@ -176,6 +201,25 @@
     <div class="group">
       <label><input type="checkbox" id="adaptiveOutline"> Adaptive Outline</label>
       <small class="hint">密度に応じて枠線太さを調整（TopNは太く）</small>
+    </div>
+    <!-- v0.1.6.1: インセット枠線 -->
+    <div class="group" style="border-top: 1px solid #666; padding-top: 8px; margin-top: 12px;">
+      <label style="color: #81c784; font-weight: 600;">v0.1.6.1 Inset Outline</label>
+      <div style="margin: 6px 0;">
+        <label>Inset Distance (m): <span id="insetDistVal">0.0</span></label>
+        <div class="row"><input type="range" id="insetDistance" min="0" max="8" step="0.5" value="0"></div>
+      </div>
+      <div style="margin: 6px 0;">
+        <label>Inset Mode</label>
+        <div class="row">
+          <select id="insetMode">
+            <option value="off">OFF</option>
+            <option value="topn">TopN のみ</option>
+            <option value="all">全体</option>
+          </select>
+        </div>
+      </div>
+      <small class="hint">枠線を内側にオフセット。不透明塗りでは効果限定的</small>
     </div>
     <div class="group row">
       <button class="btn btn-secondary" id="btnBaseline">Baseline</button>

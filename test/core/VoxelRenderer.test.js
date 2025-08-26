@@ -222,4 +222,127 @@ describe('VoxelRenderer', () => {
         expect(otherVoxelCall[0].box.outlineWidth).toBe(2);
     });
   });
+
+  // v0.1.6.1: インセット枠線機能のテスト（ADR-0004）
+  describe('インセット枠線機能', () => {
+    let viewer, renderer, mockAdd;
+
+    beforeEach(() => {
+      viewer = testUtils.createMockViewer();
+      mockAdd = viewer.entities.add;
+    });
+
+    const voxelData = new Map([
+      ['0,0,0', { x: 0, y: 0, z: 0, count: 10 }], // TopN
+      ['1,1,1', { x: 1, y: 1, z: 1, count: 5 }]  // Not TopN
+    ]);
+    const bounds = { minLon: 0, maxLon: 2, minLat: 0, maxLat: 2, minAlt: 0, maxAlt: 2 };
+    const grid = { numVoxelsX: 2, numVoxelsY: 2, numVoxelsZ: 2, voxelSizeMeters: 20 };
+    const statistics = { minCount: 5, maxCount: 10 };
+
+    test('outlineInset > 0 でインセット枠線エンティティが追加される', () => {
+      renderer = new VoxelRenderer(viewer, {
+        outlineInset: 2, // 2mインセット
+        outlineInsetMode: 'all'
+      });
+      renderer.render(voxelData, bounds, grid, statistics);
+
+      // 通常のボクセル2個 + インセット枠線2個 = 4個のエンティティ
+      expect(mockAdd).toHaveBeenCalledTimes(4);
+
+      // インセット枠線エンティティの検証
+      const insetCalls = mockAdd.mock.calls.filter(call => 
+        call[0].properties && call[0].properties.type === 'voxel-inset-outline'
+      );
+      expect(insetCalls).toHaveLength(2);
+
+      // インセット枠線の設定検証
+      const insetEntity = insetCalls[0][0];
+      expect(insetEntity.box.fill).toBe(false);
+      expect(insetEntity.box.outline).toBe(true);
+      expect(insetEntity.box.dimensions.x).toBeLessThan(20); // 元のサイズより小さい
+    });
+
+    test('outlineInsetMode: "topn" でTopNのみにインセット枠線が適用される', () => {
+      renderer = new VoxelRenderer(viewer, {
+        outlineInset: 2,
+        outlineInsetMode: 'topn',
+        highlightTopN: 1
+      });
+      renderer.render(voxelData, bounds, grid, statistics);
+
+      // 通常のボクセル2個 + TopN用インセット枠線1個 = 3個のエンティティ
+      expect(mockAdd).toHaveBeenCalledTimes(3);
+
+      const insetCalls = mockAdd.mock.calls.filter(call => 
+        call[0].properties && call[0].properties.type === 'voxel-inset-outline'
+      );
+      expect(insetCalls).toHaveLength(1);
+    });
+
+    test('インセット距離が各軸寸法の40%制限内に収まる', () => {
+      const largeInset = 100; // 20mボクセルの40%（8m）を超える値
+      renderer = new VoxelRenderer(viewer, {
+        outlineInset: largeInset,
+        outlineInsetMode: 'all'
+      });
+      renderer.render(voxelData, bounds, grid, statistics);
+
+      const insetCall = mockAdd.mock.calls.find(call => 
+        call[0].properties && call[0].properties.type === 'voxel-inset-outline'
+      );
+      const insetEntity = insetCall[0];
+      
+      // インセット後のサイズは元のサイズの60%以上であること（40%制限）
+      const expectedMinSize = grid.voxelSizeMeters * 0.6;
+      expect(insetEntity.box.dimensions.x).toBeGreaterThanOrEqual(expectedMinSize);
+      expect(insetEntity.box.dimensions.y).toBeGreaterThanOrEqual(expectedMinSize);
+      expect(insetEntity.box.dimensions.z).toBeGreaterThanOrEqual(expectedMinSize);
+    });
+
+    test('outlineInset = 0 でインセット枠線が作成されない', () => {
+      renderer = new VoxelRenderer(viewer, {
+        outlineInset: 0
+      });
+      renderer.render(voxelData, bounds, grid, statistics);
+
+      // 通常のボクセル2個のみ
+      expect(mockAdd).toHaveBeenCalledTimes(2);
+
+      const insetCalls = mockAdd.mock.calls.filter(call => 
+        call[0].properties && call[0].properties.type === 'voxel-inset-outline'
+      );
+      expect(insetCalls).toHaveLength(0);
+    });
+
+    test('インセット枠線エンティティのプロパティが正しく設定される', () => {
+      renderer = new VoxelRenderer(viewer, {
+        outlineInset: 3,
+        outlineInsetMode: 'all'
+      });
+      renderer.render(voxelData, bounds, grid, statistics);
+
+      const insetCall = mockAdd.mock.calls.find(call => 
+        call[0].properties && call[0].properties.type === 'voxel-inset-outline'
+      );
+      const insetEntity = insetCall[0];
+      
+      expect(insetEntity.properties.type).toBe('voxel-inset-outline');
+      expect(insetEntity.properties.parentKey).toBeDefined();
+      expect(insetEntity.properties.insetSize).toBeDefined();
+      expect(insetEntity.properties.insetSize.x).toBeGreaterThan(0);
+      expect(insetEntity.properties.insetSize.y).toBeGreaterThan(0);
+      expect(insetEntity.properties.insetSize.z).toBeGreaterThan(0);
+    });
+
+    test('_shouldApplyInsetOutline メソッドが正しく動作する', () => {
+      renderer = new VoxelRenderer(viewer, { outlineInsetMode: 'all' });
+      expect(renderer._shouldApplyInsetOutline(true)).toBe(true);
+      expect(renderer._shouldApplyInsetOutline(false)).toBe(true);
+
+      renderer = new VoxelRenderer(viewer, { outlineInsetMode: 'topn' });
+      expect(renderer._shouldApplyInsetOutline(true)).toBe(true);
+      expect(renderer._shouldApplyInsetOutline(false)).toBe(false);
+    });
+  });
 });

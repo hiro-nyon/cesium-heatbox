@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://github.com/hiro-nyon/cesium-heatbox/workflows/CI/badge.svg)](https://github.com/hiro-nyon/cesium-heatbox/actions)
+[![Version](https://img.shields.io/github/package-json/v/hiro-nyon/cesium-heatbox?label=version)](https://github.com/hiro-nyon/cesium-heatbox/blob/main/package.json)
 
 > **⚠️ 重要 / Important**: このライブラリは現在npm未登録です。GitHubから直接ダウンロードしてご利用ください。  
 > This library is currently not registered on npm. Please download directly from GitHub.
@@ -48,6 +49,7 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **TopN強調表示 (v0.1.5)**: 密度上位N個のボクセルを強調、他を淡色表示する `highlightTopN` オプション
 - **枠線重なり対策 (v0.1.6)**: `voxelGap` による間隔調整と `outlineOpacity` による透明度制御で視認性向上
 - **動的枠線制御 (v0.1.6)**: `outlineWidthResolver` 関数でボクセル毎の枠線太さを密度に応じて動的調整
+- **インセット枠線 (v0.1.6.1)**: `outlineInset` で枠線をボックス内側にオフセット（`outlineInsetMode` で TopN 限定も可）
 - **Wiki自動同期 (v0.1.6)**: JSDoc → Markdown 変換による GitHub Wiki の自動更新
 - **パフォーマンス制御**: `maxRenderVoxels` と内部検証（例: `validateVoxelCount`）で安定動作を担保
 - **デバッグ/統計の取得**: `getStatistics()` と `getDebugInfo()` でレンダリング状態や調整内容を把握可能
@@ -73,6 +75,7 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **TopN highlighting (v0.1.5)**: `highlightTopN` option to emphasize top N density voxels
 - **Outline overlap mitigation (v0.1.6)**: `voxelGap` for spacing and `outlineOpacity` for transparency control
 - **Dynamic outline control (v0.1.6)**: `outlineWidthResolver` function for density-adaptive outline thickness
+- **Inset outline (v0.1.6.1)**: `outlineInset` to draw outlines inset from faces (`outlineInsetMode` to limit to TopN)
 - **Wiki auto-sync (v0.1.6)**: JSDoc → Markdown conversion for automated GitHub Wiki updates
 - **Performance guard rails**: `maxRenderVoxels` and internal checks (e.g., `validateVoxelCount`) for stable rendering
 - **Debugging and statistics**: Introspection via `getStatistics()` and `getDebugInfo()`

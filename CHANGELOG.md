@@ -9,7 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
-## [0.1.6] - 2024-12-28
+## [0.1.6.1] - 2025-08-26
+
+### Added
+- **インセット枠線機能 (ADR-0004)**: 枠線を内側にオフセット表示する機能を追加
+  - `outlineInset` オプション: インセット距離（メートル、デフォルト: 0）
+  - `outlineInsetMode` オプション: 適用範囲（'all' | 'topn'、デフォルト: 'all'）
+  - 二重Box方式で実装（fill用 + outline専用エンティティ）
+  - 片側20%（両側合計40%）まで制限（過度な縮小を防止、最終寸法は元の60%以上を保証）
+- **Examples更新**: Basic/Advanced例にインセット枠線UI追加
+  - スライダー（メートル単位）とモード選択（OFF/TopN/全体）
+  - outline-overlap-demo にインセット枠線機能統合
+
+### Technical
+- インセット枠線のユニットテスト・結合テスト追加
+- バリデーション機能で `outlineInset` を 0〜100m にクランプ（NaNは0に）
+- Wiki API-Reference のバージョン表記を `src/index.js` の `VERSION` から動的生成
+- パフォーマンス影響: エンティティ数最大2倍（制限値内で管理）
+
+### Changed
+- 太線エミュレーション（outlineEmulation）を改善:
+  - ポリラインは外縁ではなく「外縁とインセットの中間位置」に配置し、隣接ボクセルの枠線重なりを軽減。
+  - `outlineInset` 指定時はその値を優先（片側20%上限でクランプ）。未指定時は各軸5%の自動インセットを使用。
+  - 太線対象ボクセルでは標準アウトラインを無効化し二重描画を回避。
+
+## [0.1.6] - 2025-8-26
 
 ### Added
 - **枠線重なり対策**: `voxelGap` オプションによるボクセル間ギャップ設定で視認性向上

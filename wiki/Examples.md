@@ -141,6 +141,41 @@ const heatbox = new Heatbox(viewer, {
 - 2) なければ `highlightTopN` の TopN に `highlightStyle.outlineWidth`、以外は `outlineWidth`
 - 3) いずれも未設定なら `outlineWidth` を全ボクセルに適用
 
+### v0.1.6.1 インセット枠線（内側オフセット）
+```js
+const heatbox = new Heatbox(viewer, {
+  outlineInset: 2.0,         // 枠線を内側に 2m オフセット
+  outlineInsetMode: 'topn',  // TopN のみに適用（'all' で全体）
+  highlightTopN: 20,
+  outlineOpacity: 0.8,
+  voxelGap: 1.0              // わずかなギャップで視認性を補助
+});
+
+await heatbox.createFromEntities(viewer.entities.values);
+```
+注意:
+- インセットは片側最大 20%（両側合計 40%）にクランプされ、最終寸法は元の 60%以上が保証されます。
+- 塗り (`opacity`) が 1.0 だと内側線は見えにくくなるため、0.6〜0.9 程度を推奨。`wireframeOnly: true` なら最も視認性が高いです。
+ - 塗り (`opacity`) が 1.0 だと内側線は見えにくくなるため、0.6〜0.9 程度を推奨。`wireframeOnly: true` なら最も視認性が高いです。
+
+### v0.1.6+ 太線エミュレーション（重なりに強い強調表示）
+```js
+const heatbox = new Heatbox(viewer, {
+  // TopNのみ太線をポリラインで描画（WebGL線幅制限の回避）
+  outlineEmulation: 'topn',
+  highlightTopN: 20,
+  outlineWidth: 4,
+  // 併用: インセットがあれば中間位置に太線を描いて隣接との重なりを軽減
+  outlineInset: 2.0,
+  outlineInsetMode: 'all',
+  outlineOpacity: 0.8,
+  voxelGap: 0.5
+});
+```
+注:
+- 太線は外縁とインセットの“中間位置”に配置され、隣接枠線と被りにくい設計です。
+- `outlineInset` 未指定時は各軸5%の自動インセット、指定時は片側20%上限でクランプされます。
+
 ### リポジトリ内の実行可能サンプル
 - `examples/basic/` ブラウザ UI 付きの基本例（エンティティ生成→ヒートマップ作成）
  - `examples/advanced/outline-overlap-demo-umd.html` 0.1.6 の枠線重なり対策デモ（ブラウザで直接開けます）

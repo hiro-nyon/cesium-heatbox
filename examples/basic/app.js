@@ -77,6 +77,7 @@ async function initializeApp() {
       'autoVoxelSize', 'manualVoxelSizeGroup', // v0.1.4 新機能
       'showBounds', 'colorMap', 'diverging', 'highlightTopN', // v0.1.5 新機能
       'voxelGap', 'voxelGapValue', 'outlineOpacity', 'outlineOpacityValue', 'adaptiveOutline', // v0.1.6 新機能
+      'outlineInset', 'outlineInsetValue', 'outlineInsetMode', // v0.1.6.1 新機能
       'statistics', 'statisticsContent', 'status'
     ];
     uiElementIds.forEach(id => {
@@ -201,6 +202,37 @@ function setupEventListeners() {
     });
   }
 
+  // v0.1.6.1: インセット枠線の制御
+  if (elements.outlineInset) {
+    elements.outlineInset.addEventListener('input', () => {
+      const value = parseFloat(elements.outlineInset.value);
+      elements.outlineInsetValue.textContent = value.toFixed(1);
+      
+      // OFF モードでない場合のみスライダー値を有効にする
+      if (elements.outlineInsetMode.value !== 'off') {
+        // リアルタイム更新は負荷が高いので、ここでは値の表示のみ
+        console.log(`Inset distance: ${value}m (mode: ${elements.outlineInsetMode.value})`);
+      }
+    });
+    
+    elements.outlineInsetMode.addEventListener('change', () => {
+      const mode = elements.outlineInsetMode.value;
+      console.log(`Inset mode changed to: ${mode}`);
+      
+      // OFF モードの場合はスライダーを無効化
+      elements.outlineInset.disabled = (mode === 'off');
+      
+      if (mode === 'off') {
+        elements.outlineInsetValue.textContent = '0';
+      } else {
+        elements.outlineInsetValue.textContent = parseFloat(elements.outlineInset.value).toFixed(1);
+      }
+    });
+    
+    // 初期状態の設定
+    elements.outlineInset.disabled = (elements.outlineInsetMode.value === 'off');
+  }
+
 }
 
 function getOptionsFromUI() {
@@ -246,6 +278,9 @@ function getOptionsFromUI() {
     // v0.1.6 新機能
     voxelGap: parseFloat(elements.voxelGap?.value) || 0,
     outlineOpacity: parseFloat(elements.outlineOpacity?.value) || 1.0,
+    // v0.1.6.1 新機能: インセット枠線
+    outlineInset: elements.outlineInsetMode?.value === 'off' ? 0 : (parseFloat(elements.outlineInset?.value) || 0),
+    outlineInsetMode: elements.outlineInsetMode?.value === 'off' ? 'all' : (elements.outlineInsetMode?.value || 'all'),
     outlineWidthResolver: outlineWidthResolver
   };
   

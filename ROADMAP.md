@@ -28,6 +28,19 @@ Priority: High | Target: 2025-09
 - 互換性: 変更なし（非破壊）。軽微なAPI追加（後方互換性維持）。
 - 受け入れ基準: Lint 0 errors、テスト緑、README/Wiki/Examples が v0.1.6 内容に同期、枠線調整機能の動作確認。
 
+### v0.1.6.1（パッチ）- インセット枠線の導入（ADR-0004）
+Priority: High | Target: 2025-09
+- 機能
+  - [ ] `outlineInset`（m）をデフォルトOFFで追加（二重Box方式）。
+  - [ ] 必要に応じ `outlineInsetMode: 'all'|'topn'` を検討（TopN限定でコスト抑制）。
+- 相互作用/運用
+  - [ ] Docs: 不透明塗りでは効果が限定的で、`opacity<1` もしくは `wireframeOnly:true`、`voxelGap` 併用推奨を明記。
+  - [ ] Examples: basic/advanced にスライダー（m）とトグル追加（OFF→TopN→ALLの3段階）。
+- 受け入れ基準（ADR準拠）
+  - [ ] 1000ボクセル規模で描画時間 +30〜50% 以内（上限 +50%）。
+  - [ ] outlineWidthResolver/TopN/outlineOpacity/voxelGap と併用時に破綻なし。
+  - [ ] 単体/結合テスト（寸法/優先順位/alpha反映）と目視チェックを通過。
+
 ### v0.1.7（推奨・適応的制御）- 枠線重なり対策の高度化とUX改善
 Priority: Medium | Target: 2025-10
 - 適応的枠線制御の実装
@@ -35,12 +48,8 @@ Priority: Medium | Target: 2025-10
   - [ ] 空間的近接度解析: 指定半径内のボクセル密度を算出し、密集時は枠線を細く、疎な時は太く自動調整
   - [ ] プリセット提供: `outlineWidthPreset: 'adaptive-density'|'topn-focus'|'uniform'` でよくある使用パターンを簡単設定
   - [ ] Examples UI: 「適応的制御」チェックボックスと効果確認用の密度パターン生成機能
-- インセット枠線の導入（ADR-0004）
-  - [ ] `outlineInset`（m）オプションで枠線を内側へオフセット
-  - [ ] 実装: セカンダリ Box（fill: false, outline: true）で一回り小さい寸法を描画
-  - [ ] 優先順位: resolver > TopN > outlineWidth（0.1.6の既定）との整合
-  - [ ] 受け入れ基準: 1000 ボクセルで描画時間 +50% 以内、TopN/opacity/gap 併用で破綻なし
-  - [ ] Docs: API/Wiki/Advanced デモ更新（outline-overlap デモに toggle 追加）
+- インセット枠線（フォローアップ）
+  - [ ] 0.1.6.1 のフィードバック反映、パラメータの上限・UIチューニング、モードの最適化
 - UX改善（継続）
   - [ ] Diverging ピボットのUI反映（Examples）
   - [ ] 凡例オーバレイの標準テンプレ（Examples / Snippet）

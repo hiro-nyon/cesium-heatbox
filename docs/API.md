@@ -1,4 +1,4 @@
-# API リファレンス - v0.1.6
+# API リファレンス - v0.1.6.1
 
 > **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得してください。
 
@@ -14,7 +14,7 @@
 - `viewer` (Cesium.Viewer) - CesiumJS Viewerインスタンス
 - `options` (Object, optional) - 設定オプション
 
-**オプション（v0.1.6対応）:**
+**オプション（v0.1.6.1対応）:**
 - `voxelSize` (number, default: 20) - 目標ボクセルサイズ（メートル）。実際の描画寸法はグリッド分割数に基づく各軸の実セルサイズ `cellSizeX/Y/Z` を使用し、`voxelSize` 以下になる場合があります（重なり防止のため）。
 - `opacity` (number, default: 0.8) - データボクセルの透明度 (0.0-1.0)
 - `emptyOpacity` (number, default: 0.03) - 空ボクセルの透明度 (0.0-1.0)
@@ -35,11 +35,20 @@
 - **`voxelGap` (number, default: 0) - v0.1.6: ボクセル間にギャップ（メートル）を設けて枠線重なりを軽減**
 - **`outlineOpacity` (number, default: 1.0) - v0.1.6: 枠線の透明度（0-1）を制御**
 - **`outlineWidthResolver` ((params) => number|null, default: null) - v0.1.6: ボクセル毎の枠線太さを動的決定**
+// v0.1.6.1 追加
+- **`outlineInset` (number, default: 0) - v0.1.6.1: インセット枠線のオフセット距離（メートル）**
+- **`outlineInsetMode` ('all'|'topn', default: 'all') - v0.1.6.1: インセット枠線の適用範囲**
+  - 制約: 各軸のインセットは片側最大20%（両側合計40%）にクランプされ、最終寸法は元の60%以上を保証します。
+// v0.1.6+ 追加（強調表示向け）
+- **`outlineEmulation` ('off'|'topn', default: 'off') - v0.1.6+: 太線エミュレーション（WebGL線幅制限の回避）**
+  - 太線はエッジのポリラインで描画。隣接ボクセルの重なりを避けるため、外縁とインセットの“中間位置”に配置します。
+  - `outlineInset` が指定されていればそれを優先（片側20%上限でクランプ）、未指定の場合は各軸5%の自動インセットを使用します。
+  - 太線対象ボクセルでは、標準の `box.outline` は無効化し二重描画を回避します。
 - `batchMode` は v0.1.5 で非推奨（無視されます。将来削除予定）
 
 > 寸法について: 描画されるボックスの幅・奥行・高さは、グリッドの実セルサイズ `cellSizeX`, `cellSizeY`, `cellSizeZ` を使用します。`heightBased: true` の場合は `cellSizeZ` を基準に密度で高さをスケーリングします。
 
-**例（v0.1.5）:**
+**例（v0.1.6.1）:**
 ```javascript
 const heatbox = new Heatbox(viewer, {
   // 自動ボクセルサイズ（v0.1.4）
@@ -48,6 +57,11 @@ const heatbox = new Heatbox(viewer, {
   debug: { showBounds: true },
   // 視認性（v0.1.2）
   wireframeOnly: true,
+  // インセット枠線（v0.1.6.1）
+  outlineInset: 2.5,        // 2.5m内側にオフセット
+  outlineInsetMode: 'topn', // TopNのみ適用
+  // 太線エミュレーション（v0.1.6+）
+  outlineEmulation: 'topn', // TopNのみ太線。線は外縁とインセットの中間位置で描画
   heightBased: true,
   outlineWidth: 2,
   // カラーマップ（v0.1.5）

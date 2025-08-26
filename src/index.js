@@ -19,7 +19,7 @@ export { Heatbox as CesiumHeatbox };
 /**
  * ライブラリのメタ情報
  */
-export const VERSION = '0.1.6';
+export const VERSION = '0.1.6.1';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 

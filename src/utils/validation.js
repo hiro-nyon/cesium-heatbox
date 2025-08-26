@@ -187,6 +187,48 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.outlineWidthResolver = null;
     }
   }
+
+  // v0.1.6+: 太線エミュレーションモード
+  if (normalized.outlineEmulation !== undefined) {
+    const validModes = ['off', 'topn', 'non-topn', 'all'];
+    if (!validModes.includes(normalized.outlineEmulation)) {
+      Logger.warn(`Invalid outlineEmulation: ${normalized.outlineEmulation}. Using 'off'.`);
+      normalized.outlineEmulation = 'off';
+    }
+  }
+
+  // v0.1.6.1 (ADR-0004): インセット枠線
+  if (normalized.outlineInset !== undefined) {
+    const v = parseFloat(normalized.outlineInset);
+    normalized.outlineInset = isNaN(v) || v < 0 ? 0 : v;
+  }
+  if (normalized.outlineInsetMode !== undefined) {
+    const validModes = ['all', 'topn'];
+    if (!validModes.includes(normalized.outlineInsetMode)) {
+      Logger.warn(`Invalid outlineInsetMode: ${normalized.outlineInsetMode}. Using 'all'.`);
+      normalized.outlineInsetMode = 'all';
+    }
+  }
+
+  // v0.1.6.1: インセット枠線（ADR-0004）
+  if (normalized.outlineInset !== undefined) {
+    // 0〜100mの範囲にクランプ（安全上限）
+    const inset = parseFloat(normalized.outlineInset);
+    normalized.outlineInset = Math.max(0, Math.min(100, isNaN(inset) ? 0 : inset));
+  }
+  
+  if (normalized.outlineInsetMode !== undefined) {
+    const validInsetModes = ['all', 'topn'];
+    if (!validInsetModes.includes(normalized.outlineInsetMode)) {
+      Logger.warn(`Invalid outlineInsetMode: ${normalized.outlineInsetMode}. Using 'all'.`);
+      normalized.outlineInsetMode = 'all';
+    }
+  }
+  
+  // 厚い枠線表示
+  if (normalized.enableThickFrames !== undefined) {
+    normalized.enableThickFrames = Boolean(normalized.enableThickFrames);
+  }
   
   return normalized;
 }

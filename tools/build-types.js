@@ -38,6 +38,11 @@ export interface HeatboxOptions {
   voxelGap?: number; // ボクセル間ギャップ（メートル）
   outlineOpacity?: number; // 枠線透明度（0-1）
   outlineWidthResolver?: (params: { voxel: { x: number; y: number; z: number; count: number }; isTopN: boolean; normalizedDensity: number; }) => number | null;
+  // v0.1.6+: Emulated thick outline for WebGL line width limits
+  outlineEmulation?: 'off' | 'topn';
+  // v0.1.6.1: Inset outline
+  outlineInset?: number;
+  outlineInsetMode?: 'all' | 'topn';
 }
 
 export interface HeatboxStatistics {

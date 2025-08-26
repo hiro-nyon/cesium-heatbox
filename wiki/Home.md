@@ -1,5 +1,7 @@
 # CesiumJS Heatbox Wiki
 
+[![Version](https://img.shields.io/github/package-json/v/hiro-nyon/cesium-heatbox?label=version)](https://github.com/hiro-nyon/cesium-heatbox/blob/main/package.json)
+
 > **⚠️ 重要な注意 / Important Notice**: このライブラリは現在npm未登録です。GitHubから直接ダウンロードしてご利用ください。  
 > This library is currently not registered on npm. Please download directly from GitHub.
 

@@ -51,6 +51,9 @@ export class VoxelRenderer {
       wireframeOnly: false,    // 枠線のみ表示
       heightBased: false,      // 高さベース表現
       outlineWidth: 2,         // 枠線の太さ
+      // v0.1.6.1: インセット枠線のデフォルト値
+      outlineInset: 0,         // インセット枠線オフセット（メートル）
+      outlineInsetMode: 'all', // インセット枠線適用範囲
       ...options
     };
     this.voxelEntities = [];
@@ -238,6 +241,20 @@ export class VoxelRenderer {
           description: this.createVoxelDescription(info, key)
         };
         
+        // v0.1.6+: WebGLの1px制限を回避する太線エミュレーション
+        let emulateThickForThis = false;
+        if (this.options.outlineEmulation === 'topn') {
+          emulateThickForThis = isTopN && (finalOutlineWidth || 1) > 1;
+        } else if (this.options.outlineEmulation === 'non-topn') {
+          emulateThickForThis = !isTopN && (finalOutlineWidth || 1) > 1;
+        } else if (this.options.outlineEmulation === 'all') {
+          emulateThickForThis = (finalOutlineWidth || 1) > 1;
+        }
+        if (emulateThickForThis) {
+          // 標準アウトラインは無効化（重複・チラつき回避）
+          entityConfig.box.outline = false;
+        }
+
         // wireframeOnlyモードの場合は透明、そうでなければ通常の材質
         if (this.options.wireframeOnly) {
           entityConfig.box.material = Cesium.Color.TRANSPARENT;
@@ -251,6 +268,55 @@ export class VoxelRenderer {
         const entity = this.viewer.entities.add(entityConfig);
         
         this.voxelEntities.push(entity);
+
+        // v0.1.6.1: インセット枠線の実装（ADR-0004: 二重Box方式）
+        if (this.options.outlineInset > 0 && this._shouldApplyInsetOutline(isTopN)) {
+          try {
+            this._createInsetOutline(
+              centerLon, centerLat, centerAlt,
+              cellSizeX, cellSizeY, boxHeight,
+              outlineColorWithOpacity, Math.max(finalOutlineWidth || 1, 1),
+              key
+            );
+          } catch (e) {
+            Logger.warn('Failed to create inset outline:', e);
+          }
+        }
+        
+        // 太線エミュレーション（条件に応じてポリラインでエッジを追加）
+        // 隣接枠線の被りを避けるため、外縁ではなく“インセット後”の寸法でエッジを描く
+        if (emulateThickForThis) {
+          try {
+            const centerCart = entity.position.getValue(Cesium.JulianDate.now());
+
+            const maxInsetX = cellSizeX * 0.2;
+            const maxInsetY = cellSizeY * 0.2;
+            const maxInsetZ = boxHeight * 0.2;
+            const baseInset = (this.options.outlineInset && this.options.outlineInset > 0) ? this.options.outlineInset : 0;
+            const autoInsetX = cellSizeX * 0.05;
+            const autoInsetY = cellSizeY * 0.05;
+            const autoInsetZ = boxHeight * 0.05;
+            const effInsetX = Math.min(baseInset > 0 ? baseInset : autoInsetX, maxInsetX);
+            const effInsetY = Math.min(baseInset > 0 ? baseInset : autoInsetY, maxInsetY);
+            const effInsetZ = Math.min(baseInset > 0 ? baseInset : autoInsetZ, maxInsetZ);
+
+            // 外縁とインセットの“中間”に相当する寸法（片側ぶんだけ縮める）
+            const midSizeX = Math.max(cellSizeX - effInsetX, cellSizeX * 0.1);
+            const midSizeY = Math.max(cellSizeY - effInsetY, cellSizeY * 0.1);
+            const midSizeZ = Math.max(boxHeight - effInsetZ, boxHeight * 0.1);
+
+            this._addEdgePolylines(
+              centerCart,
+              midSizeX,
+              midSizeY,
+              midSizeZ,
+              outlineColorWithOpacity,
+              Math.max(finalOutlineWidth, 1)
+            );
+          } catch (e) {
+            Logger.warn('Failed to add emulated thick outline polylines:', e);
+          }
+        }
         renderedCount++;
       } catch (error) {
         Logger.warn('Error rendering voxel:', error);
@@ -304,6 +370,51 @@ export class VoxelRenderer {
       
     } catch (error) {
       Logger.warn('Failed to render bounding box:', error);
+    }
+  }
+
+  /**
+   * ボックスのエッジをポリラインで描画（太線エミュレーション）
+   * @param {Cesium.Cartesian3} centerCart - ボックス中心
+   * @param {number} sx - X寸法（m）
+   * @param {number} sy - Y寸法（m）
+   * @param {number} sz - Z寸法（m）
+   * @param {Cesium.Color} color - 線色
+   * @param {number} width - 線幅（px）
+   * @private
+   */
+  _addEdgePolylines(centerCart, sx, sy, sz, color, width) {
+    try {
+      const halfX = sx / 2, halfY = sy / 2, halfZ = sz / 2;
+      const enu = Cesium.Transforms.eastNorthUpToFixedFrame(centerCart);
+      const toWorld = (dx, dy, dz) => {
+        const local = new Cesium.Cartesian3(dx, dy, dz);
+        return Cesium.Matrix4.multiplyByPoint(enu, local, new Cesium.Cartesian3());
+      };
+      const C = [
+        toWorld(-halfX, -halfY, -halfZ),
+        toWorld( halfX, -halfY, -halfZ),
+        toWorld( halfX,  halfY, -halfZ),
+        toWorld(-halfX,  halfY, -halfZ),
+        toWorld(-halfX, -halfY,  halfZ),
+        toWorld( halfX, -halfY,  halfZ),
+        toWorld( halfX,  halfY,  halfZ),
+        toWorld(-halfX,  halfY,  halfZ)
+      ];
+      const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+      edges.forEach(([i, j]) => {
+        const poly = this.viewer.entities.add({
+          polyline: {
+            positions: [C[i], C[j]],
+            width: width,
+            material: color,
+            arcType: Cesium.ArcType.NONE
+          }
+        });
+        this.voxelEntities.push(poly);
+      });
+    } catch (error) {
+      Logger.warn('Edge polyline creation failed:', error);
     }
   }
 
@@ -455,6 +566,171 @@ export class VoxelRenderer {
     }
     
     return false;
+  }
+
+  /**
+   * インセット枠線を適用すべきかどうかを判定（ADR-0004）
+   * @param {boolean} isTopN - TopNボクセルかどうか
+   * @returns {boolean} インセット枠線を適用する場合はtrue
+   * @private
+   */
+  _shouldApplyInsetOutline(isTopN) {
+    const mode = this.options.outlineInsetMode || 'all';
+    switch (mode) {
+      case 'topn':
+        return isTopN;
+      case 'all':
+      default:
+        return true;
+    }
+  }
+
+  /**
+   * インセット枠線用のセカンダリBoxエンティティを作成（ADR-0004）
+   * @param {number} centerLon - 中心経度
+   * @param {number} centerLat - 中心緯度  
+   * @param {number} centerAlt - 中心高度
+   * @param {number} baseSizeX - 基本サイズX
+   * @param {number} baseSizeY - 基本サイズY
+   * @param {number} baseSizeZ - 基本サイズZ
+   * @param {Cesium.Color} outlineColor - 枠線色
+   * @param {number} outlineWidth - 枠線太さ
+   * @param {string} voxelKey - ボクセルキー
+   * @private
+   */
+  _createInsetOutline(centerLon, centerLat, centerAlt, baseSizeX, baseSizeY, baseSizeZ, outlineColor, outlineWidth, voxelKey) {
+    // インセット距離の適用（ADR-0004の境界条件：両側合計で各軸寸法の最大40%まで＝片側20%）
+    // 片側20%までに制限することで、最終寸法は元の60%以上を保証する
+    const maxInsetX = baseSizeX * 0.2;
+    const maxInsetY = baseSizeY * 0.2;
+    const maxInsetZ = baseSizeZ * 0.2;
+    
+    const effectiveInsetX = Math.min(this.options.outlineInset, maxInsetX);
+    const effectiveInsetY = Math.min(this.options.outlineInset, maxInsetY);  
+    const effectiveInsetZ = Math.min(this.options.outlineInset, maxInsetZ);
+    
+    // インセット後の寸法計算（各軸から2倍のインセットを引く）
+    const insetSizeX = Math.max(baseSizeX - (effectiveInsetX * 2), baseSizeX * 0.1);
+    const insetSizeY = Math.max(baseSizeY - (effectiveInsetY * 2), baseSizeY * 0.1);
+    const insetSizeZ = Math.max(baseSizeZ - (effectiveInsetZ * 2), baseSizeZ * 0.1);
+    
+    // セカンダリBoxエンティティの設定（枠線のみ、塗りなし）
+    const insetEntity = this.viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
+      box: {
+        dimensions: new Cesium.Cartesian3(insetSizeX, insetSizeY, insetSizeZ),
+        fill: false,
+        outline: true,
+        outlineColor: outlineColor,
+        outlineWidth: Math.max(outlineWidth || 1, 0)
+      },
+      properties: {
+        type: 'voxel-inset-outline',
+        parentKey: voxelKey,
+        insetSize: { x: insetSizeX, y: insetSizeY, z: insetSizeZ }
+      }
+    });
+    
+    this.voxelEntities.push(insetEntity);
+    
+    // 枠線の厚み部分を視覚化（WebGL 1px制限の回避）
+    if (this.options.enableThickFrames && (effectiveInsetX > 0.1 || effectiveInsetY > 0.1 || effectiveInsetZ > 0.1)) {
+      this._createThickOutlineFrames(
+        centerLon, centerLat, centerAlt,
+        baseSizeX, baseSizeY, baseSizeZ,
+        insetSizeX, insetSizeY, insetSizeZ,
+        outlineColor, voxelKey
+      );
+    }
+    
+    Logger.debug(`Inset outline created for voxel ${voxelKey}:`, {
+      originalSize: { x: baseSizeX, y: baseSizeY, z: baseSizeZ },
+      insetSize: { x: insetSizeX, y: insetSizeY, z: insetSizeZ },
+      effectiveInset: { x: effectiveInsetX, y: effectiveInsetY, z: effectiveInsetZ }
+    });
+  }
+
+  /**
+   * 枠線の厚み部分を視覚化するフレーム構造を作成
+   * メインボックスとインセットボックスの間を12個のボックスで埋める
+   * @param {number} centerLon - 中心経度
+   * @param {number} centerLat - 中心緯度
+   * @param {number} centerAlt - 中心高度
+   * @param {number} outerX - 外側サイズX
+   * @param {number} outerY - 外側サイズY
+   * @param {number} outerZ - 外側サイズZ
+   * @param {number} innerX - 内側サイズX
+   * @param {number} innerY - 内側サイズY
+   * @param {number} innerZ - 内側サイズZ
+   * @param {Cesium.Color} frameColor - フレーム色
+   * @param {string} voxelKey - ボクセルキー
+   * @private
+   */
+  _createThickOutlineFrames(centerLon, centerLat, centerAlt, outerX, outerY, outerZ, innerX, innerY, innerZ, frameColor, voxelKey) {
+    // フレーム厚み計算（各軸方向の差の半分）
+    const frameThickX = (outerX - innerX) / 2;
+    const frameThickY = (outerY - innerY) / 2;
+    const frameThickZ = (outerZ - innerZ) / 2;
+    
+    // 基準位置（ボクセル中心）
+    const centerPos = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt);
+    
+    // 12個のフレームボックスを配置
+    const frames = [
+      // 上面の枠線（4つ）
+      { pos: [0, frameThickY + innerY/2, outerZ/2], size: [innerX, frameThickY, frameThickZ], name: 'top-back' },
+      { pos: [0, -frameThickY - innerY/2, outerZ/2], size: [innerX, frameThickY, frameThickZ], name: 'top-front' },
+      { pos: [frameThickX + innerX/2, 0, outerZ/2], size: [frameThickX, outerY, frameThickZ], name: 'top-right' },
+      { pos: [-frameThickX - innerX/2, 0, outerZ/2], size: [frameThickX, outerY, frameThickZ], name: 'top-left' },
+      
+      // 下面の枠線（4つ）
+      { pos: [0, frameThickY + innerY/2, -outerZ/2], size: [innerX, frameThickY, frameThickZ], name: 'bottom-back' },
+      { pos: [0, -frameThickY - innerY/2, -outerZ/2], size: [innerX, frameThickY, frameThickZ], name: 'bottom-front' },
+      { pos: [frameThickX + innerX/2, 0, -outerZ/2], size: [frameThickX, outerY, frameThickZ], name: 'bottom-right' },
+      { pos: [-frameThickX - innerX/2, 0, -outerZ/2], size: [frameThickX, outerY, frameThickZ], name: 'bottom-left' },
+      
+      // 縦の枠線（4つ）
+      { pos: [frameThickX + innerX/2, frameThickY + innerY/2, 0], size: [frameThickX, frameThickY, innerZ], name: 'vertical-back-right' },
+      { pos: [frameThickX + innerX/2, -frameThickY - innerY/2, 0], size: [frameThickX, frameThickY, innerZ], name: 'vertical-front-right' },
+      { pos: [-frameThickX - innerX/2, frameThickY + innerY/2, 0], size: [frameThickX, frameThickY, innerZ], name: 'vertical-back-left' },
+      { pos: [-frameThickX - innerX/2, -frameThickY - innerY/2, 0], size: [frameThickX, frameThickY, innerZ], name: 'vertical-front-left' }
+    ];
+    
+    // 各フレームボックスを作成
+    frames.forEach(frame => {
+      if (frame.size[0] > 0.1 && frame.size[1] > 0.1 && frame.size[2] > 0.1) {
+        try {
+          // より正確な座標計算：経度・緯度・高度で直接オフセット
+          const DEG_PER_METER_LON = 1 / (111000 * Math.cos(centerLat * Math.PI / 180));
+          const DEG_PER_METER_LAT = 1 / 111000;
+          
+          const frameLon = centerLon + frame.pos[0] * DEG_PER_METER_LON;
+          const frameLat = centerLat + frame.pos[1] * DEG_PER_METER_LAT;
+          const frameAlt = centerAlt + frame.pos[2];
+          
+          const frameEntity = this.viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(frameLon, frameLat, frameAlt),
+            box: {
+              dimensions: new Cesium.Cartesian3(frame.size[0], frame.size[1], frame.size[2]),
+              material: frameColor.withAlpha(0.8), // 少し透明度を下げて重なりを考慮
+              outline: false, // 内部フレームには枠線なし
+              fill: true
+            },
+            properties: {
+              type: 'voxel-outline-frame',
+              parentKey: voxelKey,
+              frameName: frame.name
+            }
+          });
+          
+          this.voxelEntities.push(frameEntity);
+        } catch (e) {
+          Logger.warn(`Failed to create outline frame ${frame.name}:`, e);
+        }
+      }
+    });
+    
+    Logger.debug(`Thick outline frames created for voxel ${voxelKey}: ${frames.length} frames`);
   }
 
   /**

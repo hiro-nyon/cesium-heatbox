@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * JSDoc HTML → Markdown 変換ツール (v0.1.6)
+ * JSDoc HTML → Markdown 変換ツール (v0.1.6.1)
  * docs/api/ の HTML ファイルを wiki/ の Markdown に変換する
  */
 
@@ -212,7 +212,21 @@ async function main() {
  * API Reference インデックスファイルを生成
  * @param {string[]} htmlFiles - 変換したHTMLファイル一覧
  */
+function getVersion() {
+  try {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.js'), 'utf8');
+    const m = src.match(/export const VERSION\s*=\s*['\"]([^'\"]+)['\"]/);
+    if (m) return m[1];
+  } catch (_) {}
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+    return pkg.version || '0.1.6.1';
+  } catch (_) {}
+  return '0.1.6.1';
+}
+
 function generateApiIndex(htmlFiles) {
+  const version = getVersion();
   let indexContent = `# API Reference
 
 This documentation is auto-generated from JSDoc comments in the source code.
@@ -233,7 +247,7 @@ This documentation is auto-generated from JSDoc comments in the source code.
   indexContent += `
 ## Version Information
 
-- **Current Version**: 0.1.6
+- **Current Version**: ${version}
 - **Last Updated**: ${new Date().toISOString().split('T')[0]}
 - **Generated From**: JSDoc → Markdown conversion
 
