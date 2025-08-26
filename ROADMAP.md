@@ -89,14 +89,23 @@ Priority: High | Target: 2025-11
 - 分類スキーム（最小セット）
   - [ ] linear（既定）、log（log10/2）、equal-interval、quantize、threshold（custom thresholds）
   - [ ] quantile、jenks（ckmeans）
-  - [ ] API例: `classification: 'linear'|'log'|'equal-interval'|'quantize'|'threshold'|'quantile'|'jenks'`, `classes?: number`, `thresholds?: number[]`, `discrete?: boolean`
-- 凡例
-  - [ ] 連続/離散に応じたラベル・境界値表示
-  - [ ] TopN・diverging との整合
+  - [ ] 適用対象: 色（color）に加えて、透明度（opacity）にも適用（fill と outline の双方）
+  - [ ] API例: 
+    - `classification: 'linear'|'log'|'equal-interval'|'quantize'|'threshold'|'quantile'|'jenks'`
+    - `classes?: number`, `thresholds?: number[]`, `discrete?: boolean`
+    - `classificationTargets?: { color?: boolean; opacity?: boolean }`（既定: color=true, opacity=false）
+    - `opacityStops?`/`opacityRange?` など連続/離散の指定（0–1にクランプ）
+- 凡例/ガイド
+  - [ ] 連続/離散に応じたラベル・境界値表示（必要に応じて透明度の示唆も表現）
+  - [ ] TopN・diverging との整合（分類と強調の優先順位）
+  - [ ] ドキュメントに「色のみ/色+透明度」両パターンの例とベストプラクティスを追記
 - 実装方針
   - 既存ライブラリの活用（d3-array/d3-scale/simple-statistics 等）を優先。バンドルサイズ配慮のためユーティリティ部品のみ導入。
 - 互換性: 低（新オプション追加のみ、既存デフォルト維持）。
-- 受け入れ基準: 代表データで各分類が視覚的に区別でき、凡例が同期表示される。
+- 受け入れ基準:
+  - [ ] 代表データで各分類が視覚的に区別でき、凡例/ガイドが同期表示される。
+  - [ ] 透明度分類を有効化した場合、fill/outline（標準/インセット/エミュ）に0–1で正しく反映される。
+  - [ ] 適応的透明度（resolver）と併用時の優先順位（分類→resolver もしくは resolver→分類）を明示し、挙動が一貫。
 
 ### v0.2.1 - 時間依存データ（PoC）
 Priority: Medium | Target: 2026-01
