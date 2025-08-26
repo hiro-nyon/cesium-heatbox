@@ -301,18 +301,17 @@ function getOptionsFromUI() {
   let boxOpacityResolver = null;
   let outlineOpacityResolver = null;
   if (elements.useOpacityResolvers?.checked) {
-    boxOpacityResolver = ({ voxel, isTopN, normalizedDensity }) => {
-      // デモ用のカスタム透明度制御
-      if (isTopN) return 0.9; // TopNは不透明に近く
-      if (normalizedDensity > 0.5) return 0.6; // 高密度はやや透明
-      return 0.8; // 通常の透明度
+    // 順相関（密度が高いほど不透明、低いほど薄い）
+    boxOpacityResolver = ({ isTopN, normalizedDensity }) => {
+      if (isTopN) return 1.0; // TopNは最も不透明に
+      const v = 0.3 + 0.7 * (normalizedDensity || 0);
+      return Math.max(0, Math.min(1, v));
     };
-    
-    outlineOpacityResolver = ({ voxel, isTopN, normalizedDensity }) => {
-      // デモ用の枠線透明度制御
-      if (isTopN) return 1.0; // TopNは完全不透明
-      if (normalizedDensity > 0.7) return 0.4; // 高密度は薄く
-      return 0.8; // 通常の透明度
+
+    outlineOpacityResolver = ({ isTopN, normalizedDensity }) => {
+      if (isTopN) return 1.0; // TopNは最も不透明に
+      const v = 0.3 + 0.7 * (normalizedDensity || 0);
+      return Math.max(0, Math.min(1, v));
     };
   }
 

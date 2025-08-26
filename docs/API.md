@@ -62,8 +62,9 @@ const heatbox = new Heatbox(viewer, {
   adaptiveOutlines: true,
   outlineWidthPreset: 'adaptive-density',
   // 透明度の適応制御（v0.1.7）
-  boxOpacityResolver: ({ normalizedDensity }) => normalizedDensity > 0.8 ? 0.5 : 0.8,
-  outlineOpacityResolver: ({ isTopN }) => isTopN ? 1.0 : 0.7,
+  // 順相関（密度が高いほど不透明、低いほど薄い）
+  boxOpacityResolver: ({ isTopN, normalizedDensity }) => isTopN ? 1.0 : Math.max(0, Math.min(1, 0.3 + 0.7 * (normalizedDensity || 0))),
+  outlineOpacityResolver: ({ isTopN, normalizedDensity }) => isTopN ? 1.0 : Math.max(0, Math.min(1, 0.3 + 0.7 * (normalizedDensity || 0))),
   // インセット（v0.1.6.1）
   outlineInset: 2.0,
   outlineInsetMode: 'all',
