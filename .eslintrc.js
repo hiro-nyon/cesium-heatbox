@@ -52,7 +52,9 @@ module.exports = {
       rules: {
         'no-new': 'off',
         'no-console': 'off',
-        'no-multiple-empty-lines': 'off'
+        'no-multiple-empty-lines': 'off',
+        // Allow CommonJS requires in test setup/utilities
+        '@typescript-eslint/no-require-imports': 'off'
       }
     }
   ],
