@@ -14,68 +14,80 @@ const API_DOCS_DIR = path.join(__dirname, '../docs/api');
 const WIKI_DIR = path.join(__dirname, '../wiki');
 
 /**
- * HTML文書をMarkdownに変換
- * @param {string} htmlContent - HTML内容
- * @param {string} filename - ファイル名
- * @returns {string} Markdown内容
+ * HTML文書（JSDoc）をMarkdown（クラス中心）に変換
+ * - タイトル、クラス説明、コンストラクタ、メソッド（重複除去）を整形
  */
 function convertHtmlToMarkdown(htmlContent, filename) {
   const dom = new JSDOM(htmlContent);
   const document = dom.window.document;
 
-  let markdown = '';
+  const main = document.querySelector('#main') || document.body;
+  const pageTitle = main.querySelector('.page-title')?.textContent?.trim() || 'API Reference';
 
-  // タイトル抽出
-  const titleElement = document.querySelector('h1, .page-title, title');
-  if (titleElement) {
-    const title = titleElement.textContent.trim().replace(' - Documentation', '');
-    markdown += `# ${title}\n\n`;
+  let md = `# ${pageTitle}\n\n`;
+
+  // クラス説明
+  const classDesc = main.querySelector('.class-description');
+  if (classDesc) {
+    md += `${classDesc.textContent.trim()}\n\n`;
   }
 
-  // メイン内容の抽出
-  const mainContent = document.querySelector('.main-content, .content, #main, main, body');
-  if (mainContent) {
-    // h1-h6 見出し
-    const headings = mainContent.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    headings.forEach(h => {
-      const level = parseInt(h.tagName[1]);
-      const text = h.textContent.trim();
-      if (text && !text.includes('Documentation')) {
-        markdown += `${'#'.repeat(level)} ${text}\n\n`;
-      }
-    });
-
-    // 段落・説明文
-    const paragraphs = mainContent.querySelectorAll('p, .description');
-    paragraphs.forEach(p => {
-      const text = p.textContent.trim();
-      if (text && text.length > 10) {
-        markdown += `${text}\n\n`;
-      }
-    });
-
-    // コードブロック
-    const codeBlocks = mainContent.querySelectorAll('pre, .prettyprint');
-    codeBlocks.forEach(code => {
-      const text = code.textContent.trim();
-      if (text) {
-        markdown += `\`\`\`javascript\n${text}\n\`\`\`\n\n`;
-      }
-    });
-
-    // テーブル（パラメータなど）
-    const tables = mainContent.querySelectorAll('table');
-    tables.forEach(table => {
-      markdown += convertTableToMarkdown(table);
-    });
+  // コンストラクタ
+  const ctor = main.querySelector('h4.name#' + (pageTitle.split(':').pop()?.trim().replace('Class', '').trim() || ''));
+  const ctorHeader = main.querySelector('h2 + h4.name') || main.querySelector('h4.name');
+  const ctorParamsTable = ctorHeader?.nextElementSibling?.tagName === 'TABLE' ? ctorHeader.nextElementSibling : null;
+  if (ctorHeader) {
+    md += `## Constructor\n\n`;
+    md += `### ${ctorHeader.textContent.trim()}\n\n`;
+    if (ctorParamsTable) {
+      md += convertTableToMarkdown(ctorParamsTable);
+    }
   }
 
-  // ファイル固有の後処理
-  if (filename.includes('Heatbox')) {
-    markdown += generateHeatboxUsageExample();
+  // メソッド一覧（重複除去）
+  const seen = new Set();
+  const methodHeaders = main.querySelectorAll('h4.name[id]');
+  if (methodHeaders.length) {
+    md += `## Methods\n\n`;
+  }
+  methodHeaders.forEach(h4 => {
+    const id = h4.getAttribute('id');
+    const title = h4.textContent.trim();
+    if (!id || seen.has(id)) return;
+    // クラス名と同名の見出しはコンストラクタなのでスキップ
+    if (title.toLowerCase().includes('new ') || title.includes('VoxelRenderer(') || title.includes('Heatbox(')) {
+      return;
+    }
+    seen.add(id);
+    md += `### ${title}\n\n`;
+
+    // 説明（直後の .description を拾う）
+    let descNode = h4.nextElementSibling;
+    while (descNode && !(descNode.classList?.contains('description'))) {
+      if (descNode.tagName === 'H4') break;
+      descNode = descNode.nextElementSibling;
+    }
+    if (descNode && descNode.classList.contains('description')) {
+      md += `${descNode.textContent.trim()}\n\n`;
+    }
+
+    // パラメータ表（直後の table.params を拾う）
+    let tableNode = h4.nextElementSibling;
+    while (tableNode && !(tableNode.tagName === 'TABLE' && tableNode.classList.contains('params'))) {
+      if (tableNode.tagName === 'H4') break;
+      tableNode = tableNode.nextElementSibling;
+    }
+    if (tableNode) {
+      md += convertTableToMarkdown(tableNode);
+    }
+  });
+
+  // 追加: Heatboxの使用例（実APIベース）
+  if (/Heatbox\.html$/.test(filename)) {
+    md += generateHeatboxUsageExample();
   }
 
-  return markdown.trim() + '\n';
+  return md.trim() + '\n';
 }
 
 /**
@@ -121,20 +133,14 @@ function generateHeatboxUsageExample() {
 \`\`\`javascript
 // 1. Initialize Heatbox
 const viewer = new Cesium.Viewer('cesiumContainer');
-const heatbox = new Heatbox(viewer);
+const heatbox = new Heatbox(viewer, { voxelSize: 30, opacity: 0.8 });
 
-// 2. Add sample data
-heatbox.addEntityDataArray([
-  { position: Cesium.Cartesian3.fromDegrees(139.7, 35.7, 100), userData: { value: 10 } },
-  { position: Cesium.Cartesian3.fromDegrees(139.8, 35.8, 100), userData: { value: 20 } }
-]);
+// 2. Collect entities (example)
+const entities = viewer.entities.values; // or build your own array
 
-// 3. Generate heatmap
-await heatbox.generateHeatmap({
-  voxelSize: 50,
-  colorMap: 'viridis',
-  highlightTopN: 5
-});
+// 3. Create heatmap from entities
+const stats = await heatbox.createFromEntities(entities);
+console.log('rendered voxels:', stats.renderedVoxels);
 \`\`\`
 
 ## v0.1.6 New Features
