@@ -1,361 +1,73 @@
-# JSDoc: Class: Heatbox
-
 # Class: Heatbox
 
-## Heatbox(viewer, options)
+CesiumJS Heatbox メインクラス
+3Dボクセルベースのヒートマップ可視化を提供
 
 ## Constructor
 
-#### new Heatbox(viewer, options)
+### new Heatbox(viewer, options)
 
-##### Parameters:
+## Methods
 
-### Classes
+### clear()
 
-### Methods
+ヒートマップをクリア
 
-#### clear()
-
-#### clear()
-
-#### (async) createFromEntities(entities) → {Promise.<Object>}
-
-##### Parameters:
-
-##### Returns:
-
-#### (async) createFromEntities(entities) → {Promise.<Object>}
-
-##### Parameters:
-
-##### Returns:
-
-#### destroy()
-
-#### destroy()
-
-#### getBounds() → {Object|null}
-
-##### Returns:
-
-#### getBounds() → {Object|null}
-
-##### Returns:
-
-#### getDebugInfo() → {Object}
-
-##### Returns:
-
-#### getDebugInfo() → {Object}
-
-##### Returns:
-
-#### getOptions() → {Object}
-
-##### Returns:
-
-#### getOptions() → {Object}
-
-##### Returns:
-
-#### getStatistics() → {Object|null}
-
-##### Returns:
-
-#### getStatistics() → {Object|null}
-
-##### Returns:
-
-#### setData(entities)
-
-##### Parameters:
-
-#### setData(entities)
-
-##### Parameters:
-
-#### setVisible(show)
-
-##### Parameters:
-
-#### setVisible(show)
-
-##### Parameters:
-
-#### updateOptions(newOptions)
-
-##### Parameters:
-
-#### updateOptions(newOptions)
-
-##### Parameters:
-
-#### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
-
-##### Parameters:
-
-##### Returns:
-
-#### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
-
-##### Parameters:
-
-##### Returns:
-
-## HeatboxHeatbox(viewer, options)
-
-## Constructor
-
-#### new Heatbox(viewer, options)
-
-##### Parameters:
-
-### Classes
-
-### Methods
-
-#### clear()
-
-#### clear()
-
-#### (async) createFromEntities(entities) → {Promise.<Object>}
-
-##### Parameters:
-
-##### Returns:
-
-#### (async) createFromEntities(entities) → {Promise.<Object>}
-
-##### Parameters:
-
-##### Returns:
-
-#### destroy()
-
-#### destroy()
-
-#### getBounds() → {Object|null}
-
-##### Returns:
-
-#### getBounds() → {Object|null}
-
-##### Returns:
-
-#### getDebugInfo() → {Object}
-
-##### Returns:
-
-#### getDebugInfo() → {Object}
-
-##### Returns:
-
-#### getOptions() → {Object}
-
-##### Returns:
-
-#### getOptions() → {Object}
-
-##### Returns:
-
-#### getStatistics() → {Object|null}
-
-##### Returns:
-
-#### getStatistics() → {Object|null}
-
-##### Returns:
-
-#### setData(entities)
-
-##### Parameters:
-
-#### setData(entities)
-
-##### Parameters:
-
-#### setVisible(show)
-
-##### Parameters:
-
-#### setVisible(show)
-
-##### Parameters:
-
-#### updateOptions(newOptions)
-
-##### Parameters:
-
-#### updateOptions(newOptions)
-
-##### Parameters:
-
-#### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
-
-##### Parameters:
-
-##### Returns:
-
-#### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
-
-##### Parameters:
-
-##### Returns:
-
-## Home
-
-### Classes
-
-### Global
-
-CesiumJS Viewer インスタンス
+### (async) createFromEntities(entities) → {Promise.<Object>}
 
 エンティティからヒートマップを作成（非同期API）
-
-エンティティからヒートマップを作成（非同期API）
-
-インスタンスを破棄し、イベントリスナーを解放
-
-インスタンスを破棄し、イベントリスナーを解放
-
-現在のオプションを取得
-
-現在のオプションを取得
-
-ヒートマップデータを設定し、描画を実行
-
-ヒートマップデータを設定し、描画を実行
-
-表示/非表示を切り替え
-
-表示する場合はtrue
-
-表示/非表示を切り替え
-
-表示する場合はtrue
-
-エンティティ配列をフィルタ（ユーティリティ, 静的メソッド）
-
-エンティティ配列をフィルタ（ユーティリティ, 静的メソッド）
-
-CesiumJS Viewer インスタンス
-
-エンティティからヒートマップを作成（非同期API）
-
-エンティティからヒートマップを作成（非同期API）
-
-インスタンスを破棄し、イベントリスナーを解放
-
-インスタンスを破棄し、イベントリスナーを解放
-
-現在のオプションを取得
-
-現在のオプションを取得
-
-ヒートマップデータを設定し、描画を実行
-
-ヒートマップデータを設定し、描画を実行
-
-表示/非表示を切り替え
-
-表示する場合はtrue
-
-表示/非表示を切り替え
-
-表示する場合はtrue
-
-エンティティ配列をフィルタ（ユーティリティ, 静的メソッド）
-
-エンティティ配列をフィルタ（ユーティリティ, 静的メソッド）
-
-| Name | Type | Description |
-|---|---|---|
-| viewer | Cesium.Viewer | CesiumJS Viewer インスタンス |
-| options | Object | 設定オプション |
 
 | Name | Type | Description |
 |---|---|---|
 | entities | Array.<Cesium.Entity> | 対象エンティティ配列 |
 
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | 対象エンティティ配列 |
+### destroy()
+
+インスタンスを破棄し、イベントリスナーを解放
+
+### getBounds() → {Object|null}
+
+境界情報を取得
+
+### getDebugInfo() → {Object}
+
+デバッグ情報を取得
+
+### getOptions() → {Object}
+
+現在のオプションを取得
+
+### getStatistics() → {Object|null}
+
+統計情報を取得
+
+### setData(entities)
+
+ヒートマップデータを設定し、描画を実行
 
 | Name | Type | Description |
 |---|---|---|
 | entities | Array.<Cesium.Entity> | 対象エンティティ配列 |
 
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | 対象エンティティ配列 |
+### setVisible(show)
+
+表示/非表示を切り替え
 
 | Name | Type | Description |
 |---|---|---|
 | show | boolean | 表示する場合はtrue |
 
-| Name | Type | Description |
-|---|---|---|
-| show | boolean | 表示する場合はtrue |
+### updateOptions(newOptions)
+
+オプションを更新
 
 | Name | Type | Description |
 |---|---|---|
 | newOptions | Object | 新しいオプション |
 
-| Name | Type | Description |
-|---|---|---|
-| newOptions | Object | 新しいオプション |
+### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
 
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | エンティティ配列 |
-| predicate | function | フィルタ関数 |
-
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | エンティティ配列 |
-| predicate | function | フィルタ関数 |
-
-| Name | Type | Description |
-|---|---|---|
-| viewer | Cesium.Viewer | CesiumJS Viewer インスタンス |
-| options | Object | 設定オプション |
-
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | 対象エンティティ配列 |
-
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | 対象エンティティ配列 |
-
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | 対象エンティティ配列 |
-
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | 対象エンティティ配列 |
-
-| Name | Type | Description |
-|---|---|---|
-| show | boolean | 表示する場合はtrue |
-
-| Name | Type | Description |
-|---|---|---|
-| show | boolean | 表示する場合はtrue |
-
-| Name | Type | Description |
-|---|---|---|
-| newOptions | Object | 新しいオプション |
-
-| Name | Type | Description |
-|---|---|---|
-| newOptions | Object | 新しいオプション |
-
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | エンティティ配列 |
-| predicate | function | フィルタ関数 |
+エンティティ配列をフィルタ（ユーティリティ, 静的メソッド）
 
 | Name | Type | Description |
 |---|---|---|
@@ -368,20 +80,14 @@ CesiumJS Viewer インスタンス
 ```javascript
 // 1. Initialize Heatbox
 const viewer = new Cesium.Viewer('cesiumContainer');
-const heatbox = new Heatbox(viewer);
+const heatbox = new Heatbox(viewer, { voxelSize: 30, opacity: 0.8 });
 
-// 2. Add sample data
-heatbox.addEntityDataArray([
-  { position: Cesium.Cartesian3.fromDegrees(139.7, 35.7, 100), userData: { value: 10 } },
-  { position: Cesium.Cartesian3.fromDegrees(139.8, 35.8, 100), userData: { value: 20 } }
-]);
+// 2. Collect entities (example)
+const entities = viewer.entities.values; // or build your own array
 
-// 3. Generate heatmap
-await heatbox.generateHeatmap({
-  voxelSize: 50,
-  colorMap: 'viridis',
-  highlightTopN: 5
-});
+// 3. Create heatmap from entities
+const stats = await heatbox.createFromEntities(entities);
+console.log('rendered voxels:', stats.renderedVoxels);
 ```
 
 ## v0.1.6 New Features
