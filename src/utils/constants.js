@@ -35,7 +35,24 @@ export const DEFAULT_OPTIONS = {
   // v0.1.6.1: インセット枠線（ADR-0004）
   outlineInset: 0, // インセット枠線のオフセット距離（メートル、0で無効）
   outlineInsetMode: 'all', // インセット枠線の適用範囲：'all'（全体） | 'topn'（TopNのみ）
-  enableThickFrames: false // 厚い枠線表示（インセット枠線とメイン枠線の間をフレームで埋める）
+  enableThickFrames: false, // 厚い枠線表示（インセット枠線とメイン枠線の間をフレームで埋める）
+  
+  // v0.1.7: 適応的枠線制御とエミュレーション専用表示モード（ADR-0005）
+  outlineRenderMode: 'standard', // 'standard' | 'inset' | 'emulation-only' 表示モード
+  adaptiveOutlines: false, // 適応的枠線制御を有効化（オプトイン）
+  outlineWidthPreset: 'uniform', // 'adaptive-density' | 'topn-focus' | 'uniform' プリセット
+  
+  // v0.1.7: 透明度resolver
+  boxOpacityResolver: null, // 関数: (ctx) => number(0-1) でボックス透明度制御
+  outlineOpacityResolver: null, // 関数: (ctx) => number(0-1) で枠線透明度制御
+  
+  // v0.1.7: 適応的制御パラメータ
+  adaptiveParams: {
+    neighborhoodRadius: 50, // 近傍密度計算の半径（メートル）
+    densityThreshold: 5, // 密度しきい値（エンティティ数/ボクセル）
+    cameraDistanceFactor: 1.0, // カメラ距離補正係数
+    overlapRiskFactor: 0.3 // 重なりリスク補正係数
+  }
 };
 
 /**

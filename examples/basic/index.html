@@ -101,6 +101,31 @@
         <option value="all">全体</option>
       </select>
     </div>
+    <!-- v0.1.7: 適応的枠線制御とエミュレーション専用表示モード -->
+    <hr>
+    <h4 style="margin: 10px 0 5px; font-size: 14px; color: #ccc;">v0.1.7 適応的表示</h4>
+    <div class="control-group">
+      <label for="outlineRenderMode">Render Mode:</label>
+      <select id="outlineRenderMode">
+        <option value="standard">Standard (標準)</option>
+        <option value="inset">Inset (インセット主体)</option>
+        <option value="emulation-only">Emulation Only (エミュ専用)</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <input type="checkbox" id="adaptiveOutlines"> <label for="adaptiveOutlines">Adaptive Outlines (適応的制御)</label>
+    </div>
+    <div class="control-group" id="adaptiveSettings" style="display: none;">
+      <label for="outlineWidthPreset">Width Preset:</label>
+      <select id="outlineWidthPreset">
+        <option value="uniform">Uniform (均一)</option>
+        <option value="adaptive-density">Adaptive Density (密度対応)</option>
+        <option value="topn-focus">TopN Focus (TopN強調)</option>
+      </select>
+    </div>
+    <div class="control-group" id="resolverDemo" style="display: none;">
+      <input type="checkbox" id="useOpacityResolvers"> <label for="useOpacityResolvers">Demo: Custom Opacity Resolvers</label>
+    </div>
     <div class="control-group">
       <button id="createHeatmapBtn" disabled>2. Create Heatmap</button>
     </div>

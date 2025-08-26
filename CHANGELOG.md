@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
+## [0.1.7] - 2025-01-09
+
+### Added
+- **適応的枠線制御**: 近傍密度、TopN/選択、カメラ距離、重なりリスクに応じた自動調整
+  - `adaptiveOutlines: true` で適応的制御を有効化（オプトイン）
+  - `outlineWidthPreset` でプリセット選択（'uniform', 'adaptive-density', 'topn-focus'）
+  - 近傍密度計算、カメラ距離補正、重なりリスク考慮の自動パラメータ調整
+- **表示モード拡張**: `outlineRenderMode` で描画方式を制御
+  - 'standard': 既存の標準モード（デフォルト）
+  - 'inset': インセット枠線主体の表示
+  - 'emulation-only': エミュレーション専用（標準枠線・インセットなし）
+- **透明度resolver**: カスタム透明度制御機能
+  - `boxOpacityResolver: (ctx) => number(0-1)` でボックス透明度制御
+  - `outlineOpacityResolver: (ctx) => number(0-1)` で枠線透明度制御
+  - 優先順位: resolver > 適応的パラメータ > 固定値
+
+### Enhanced
+- **優先順位システム**: ユーザーresolverが指定された場合は適応ロジックは補助的に動作
+- **安全域クランプ**: 透明度（0-1）、インセット量、線太さの範囲を安全域でクランプ
+- **エラーハンドリング**: resolver実行時の例外を適切にキャッチしフォールバック値を使用
+- **Examples更新**: basic/index.htmlに適応的表示UIとエミュレーション専用トグルを追加
+
+### Technical
+- **適応的制御パラメータ**: neighborhoodRadius, densityThreshold, cameraDistanceFactor, overlapRiskFactor
+- **性能最適化**: 適応ロジックのオーバーヘッドを<5%に抑制（事前計算・キャッシュ活用）
+- **インセット制御拡張**: _createInsetOutline でインセット量のオーバーライド対応
+- **テスト追加**: v0.1.7新機能の包括的テストケース追加
+
+### API Changes
+- `DEFAULT_OPTIONS` に v0.1.7 の新オプションを追加
+- `VoxelRenderer._calculateAdaptiveParams()` メソッド追加
+- Examples UI に v0.1.7 制御パネル追加
+
 ## [0.1.6.2] - 2025-08-26
 
 ### Fixed

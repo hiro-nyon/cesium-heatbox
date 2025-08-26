@@ -1,4 +1,4 @@
-# API リファレンス - v0.1.6.2
+# API リファレンス - v0.1.7
 
 > **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得してください。
 
@@ -14,7 +14,7 @@
 - `viewer` (Cesium.Viewer) - CesiumJS Viewerインスタンス
 - `options` (Object, optional) - 設定オプション
 
-**オプション（v0.1.6.1対応）:**
+**オプション（v0.1.7対応）:**
 - `voxelSize` (number, default: 20) - 目標ボクセルサイズ（メートル）。実際の描画寸法はグリッド分割数に基づく各軸の実セルサイズ `cellSizeX/Y/Z` を使用し、`voxelSize` 以下になる場合があります（重なり防止のため）。
 - `opacity` (number, default: 0.8) - データボクセルの透明度 (0.0-1.0)
 - `emptyOpacity` (number, default: 0.03) - 空ボクセルの透明度 (0.0-1.0)
@@ -39,6 +39,12 @@
 - **`outlineInset` (number, default: 0) - v0.1.6.1: インセット枠線のオフセット距離（メートル）**
 - **`outlineInsetMode` ('all'|'topn', default: 'all') - v0.1.6.1: インセット枠線の適用範囲**
   - 制約: 各軸のインセットは片側最大20%（両側合計40%）にクランプされ、最終寸法は元の60%以上を保証します。
+// v0.1.7 追加
+- **`outlineRenderMode` ('standard'|'inset'|'emulation-only', default: 'standard') - v0.1.7: 表示モード切替**
+- **`adaptiveOutlines` (boolean, default: false) - v0.1.7: 適応的枠線制御を有効化（オプトイン）**
+- **`outlineWidthPreset` ('uniform'|'adaptive-density'|'topn-focus') - v0.1.7: よくある制御パターンのプリセット**
+- **`boxOpacityResolver` ((ctx) => number 0–1) - v0.1.7: ボックス塗り透明度の適応制御**
+- **`outlineOpacityResolver` ((ctx) => number 0–1) - v0.1.7: 枠線透明度の適応制御（標準/インセット/エミュ）**
 // v0.1.6+ 追加（強調表示向け）
 - **`outlineEmulation` ('off'|'topn', default: 'off') - v0.1.6+: 太線エミュレーション（WebGL線幅制限の回避）**
   - 太線はエッジのポリラインで描画。隣接ボクセルの重なりを避けるため、外縁とインセットの“中間位置”に配置します。
@@ -48,27 +54,23 @@
 
 > 寸法について: 描画されるボックスの幅・奥行・高さは、グリッドの実セルサイズ `cellSizeX`, `cellSizeY`, `cellSizeZ` を使用します。`heightBased: true` の場合は `cellSizeZ` を基準に密度で高さをスケーリングします。
 
-**例（v0.1.6.1）:**
+**例（v0.1.7）:**
 ```javascript
 const heatbox = new Heatbox(viewer, {
-  // 自動ボクセルサイズ（v0.1.4）
-  autoVoxelSize: true,
-  // デバッグ境界表示（v0.1.5）
-  debug: { showBounds: true },
-  // 視認性（v0.1.2）
-  wireframeOnly: true,
-  // インセット枠線（v0.1.6.1）
-  outlineInset: 2.5,        // 2.5m内側にオフセット
-  outlineInsetMode: 'topn', // TopNのみ適用
-  // 太線エミュレーション（v0.1.6+）
-  outlineEmulation: 'topn', // TopNのみ太線。線は外縁とインセットの中間位置で描画
-  heightBased: true,
+  // 表示モード（v0.1.7）
+  outlineRenderMode: 'emulation-only',
+  adaptiveOutlines: true,
+  outlineWidthPreset: 'adaptive-density',
+  // 透明度の適応制御（v0.1.7）
+  boxOpacityResolver: ({ normalizedDensity }) => normalizedDensity > 0.8 ? 0.5 : 0.8,
+  outlineOpacityResolver: ({ isTopN }) => isTopN ? 1.0 : 0.7,
+  // インセット（v0.1.6.1）
+  outlineInset: 2.0,
+  outlineInsetMode: 'all',
+  // 従来オプション
   outlineWidth: 2,
-  // カラーマップ（v0.1.5）
-  colorMap: 'viridis',
-  // TopN強調（v0.1.5）
   highlightTopN: 50,
-  highlightStyle: { outlineWidth: 4, boostOpacity: 0.2 }
+  colorMap: 'viridis'
 });
 ```
 

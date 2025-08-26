@@ -78,6 +78,7 @@ async function initializeApp() {
       'showBounds', 'colorMap', 'diverging', 'highlightTopN', // v0.1.5 新機能
       'voxelGap', 'voxelGapValue', 'outlineOpacity', 'outlineOpacityValue', 'adaptiveOutline', // v0.1.6 新機能
       'outlineInset', 'outlineInsetValue', 'outlineInsetMode', // v0.1.6.1 新機能
+      'outlineRenderMode', 'adaptiveOutlines', 'outlineWidthPreset', 'useOpacityResolvers', 'adaptiveSettings', 'resolverDemo', // v0.1.7 新機能
       'statistics', 'statisticsContent', 'status'
     ];
     uiElementIds.forEach(id => {
@@ -233,6 +234,42 @@ function setupEventListeners() {
     elements.outlineInset.disabled = (elements.outlineInsetMode.value === 'off');
   }
 
+  // v0.1.7: 適応的枠線制御の制御
+  if (elements.adaptiveOutlines) {
+    elements.adaptiveOutlines.addEventListener('change', () => {
+      const isEnabled = elements.adaptiveOutlines.checked;
+      elements.adaptiveSettings.style.display = isEnabled ? 'block' : 'none';
+      elements.resolverDemo.style.display = isEnabled ? 'block' : 'none';
+      console.log(`Adaptive outlines: ${isEnabled}`);
+    });
+  }
+
+  if (elements.outlineRenderMode) {
+    elements.outlineRenderMode.addEventListener('change', () => {
+      const mode = elements.outlineRenderMode.value;
+      console.log(`Render mode changed to: ${mode}`);
+      
+      // emulation-onlyモードでは適応的制御を推奨
+      if (mode === 'emulation-only' && !elements.adaptiveOutlines.checked) {
+        console.info('emulation-onlyモードでは適応的制御の使用を推奨します');
+      }
+    });
+  }
+
+  if (elements.outlineWidthPreset) {
+    elements.outlineWidthPreset.addEventListener('change', () => {
+      const preset = elements.outlineWidthPreset.value;
+      console.log(`Width preset changed to: ${preset}`);
+    });
+  }
+
+  if (elements.useOpacityResolvers) {
+    elements.useOpacityResolvers.addEventListener('change', () => {
+      const useResolvers = elements.useOpacityResolvers.checked;
+      console.log(`Use opacity resolvers: ${useResolvers}`);
+    });
+  }
+
 }
 
 function getOptionsFromUI() {
@@ -248,7 +285,7 @@ function getOptionsFromUI() {
     debugOption = false;
   }
   
-  // v0.1.6: 適応的枠線制御の実装
+  // v0.1.6: 適応的枠線制御の実装（旧版との互換性維持）
   let outlineWidthResolver = null;
   if (elements.adaptiveOutline?.checked) {
     outlineWidthResolver = ({ voxel, isTopN, normalizedDensity }) => {
@@ -257,6 +294,25 @@ function getOptionsFromUI() {
       if (normalizedDensity > 0.7) return 1; // 高密度は細く
       if (normalizedDensity > 0.3) return 2; // 中密度は標準
       return 3; // 低密度は太く
+    };
+  }
+
+  // v0.1.7: 透明度resolverのデモ実装
+  let boxOpacityResolver = null;
+  let outlineOpacityResolver = null;
+  if (elements.useOpacityResolvers?.checked) {
+    boxOpacityResolver = ({ voxel, isTopN, normalizedDensity }) => {
+      // デモ用のカスタム透明度制御
+      if (isTopN) return 0.9; // TopNは不透明に近く
+      if (normalizedDensity > 0.5) return 0.6; // 高密度はやや透明
+      return 0.8; // 通常の透明度
+    };
+    
+    outlineOpacityResolver = ({ voxel, isTopN, normalizedDensity }) => {
+      // デモ用の枠線透明度制御
+      if (isTopN) return 1.0; // TopNは完全不透明
+      if (normalizedDensity > 0.7) return 0.4; // 高密度は薄く
+      return 0.8; // 通常の透明度
     };
   }
 
@@ -281,7 +337,13 @@ function getOptionsFromUI() {
     // v0.1.6.1 新機能: インセット枠線
     outlineInset: elements.outlineInsetMode?.value === 'off' ? 0 : (parseFloat(elements.outlineInset?.value) || 0),
     outlineInsetMode: elements.outlineInsetMode?.value === 'off' ? 'all' : (elements.outlineInsetMode?.value || 'all'),
-    outlineWidthResolver: outlineWidthResolver
+    outlineWidthResolver: outlineWidthResolver,
+    // v0.1.7 新機能: 適応的枠線制御とエミュレーション専用表示モード
+    outlineRenderMode: elements.outlineRenderMode?.value || 'standard',
+    adaptiveOutlines: elements.adaptiveOutlines?.checked || false,
+    outlineWidthPreset: elements.outlineWidthPreset?.value || 'uniform',
+    boxOpacityResolver: boxOpacityResolver,
+    outlineOpacityResolver: outlineOpacityResolver
   };
   
   // autoVoxelSizeがtrueでない場合のみvoxelSizeを設定
