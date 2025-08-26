@@ -54,9 +54,21 @@ jobs:
           node tools/wiki-sync.js
         fi
         
-        # Phase 2: 基本コンテンツ同期
+        # Phase 2: 基本コンテンツ同期（README/CHANGELOG）
         cp README.md wiki/Home.md
         cp CHANGELOG.md wiki/Release-Notes.md
+
+        # Phase 3: 主要Markdownの同期（docs/ → wiki/）
+        # ガイド/チュートリアル類をWikiに反映して、重複更新のリスクを低減
+        if [ -f "docs/getting-started.md" ]; then cp docs/getting-started.md wiki/Getting-Started.md; fi
+        if [ -f "docs/quick-start.md" ]; then cp docs/quick-start.md wiki/Quick-Start.md; fi
+        if [ -f "docs/development-guide.md" ]; then cp docs/development-guide.md wiki/Development-Guide.md; fi
+        if [ -f "docs/contributing.md" ]; then cp docs/contributing.md wiki/Contributing.md; fi
+        if [ -f "docs/specification.md" ]; then cp docs/specification.md wiki/Architecture.md; fi
+        # APIの概説（JSDocリファレンスとは別に）
+        if [ -f "docs/API.md" ]; then cp docs/API.md wiki/API.md; fi
+        # Wiki保守手順
+        if [ -f "docs/wiki-maintenance.md" ]; then cp docs/wiki-maintenance.md wiki/Publishing-to-GitHub-Wiki.md; fi
         
         # 差分チェック
         if git diff --quiet wiki/; then
