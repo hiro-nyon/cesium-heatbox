@@ -667,32 +667,92 @@ export class VoxelRenderer {
    * @private
    */
   _createThickOutlineFrames(centerLon, centerLat, centerAlt, outerX, outerY, outerZ, innerX, innerY, innerZ, frameColor, voxelKey) {
-    // フレーム厚み計算（各軸方向の差の半分）
+    // フレーム厚み計算（外側と内側の差を2で割ったもの）
     const frameThickX = (outerX - innerX) / 2;
     const frameThickY = (outerY - innerY) / 2;
     const frameThickZ = (outerZ - innerZ) / 2;
     
-    // 基準位置（ボクセル中心）
+    // 境界計算：各軸での内側・外側の境界
+    const outerBoundX = outerX / 2;    // 外側境界（中心からの距離）
+    const outerBoundY = outerY / 2;
+    const outerBoundZ = outerZ / 2;
+    const innerBoundX = innerX / 2;    // 内側境界（中心からの距離）
+    const innerBoundY = innerY / 2;
+    const innerBoundZ = innerZ / 2;
     
-    // 12個のフレームボックスを配置
+    Logger.debug(`Frame bounds for ${voxelKey}:`, {
+      frameThick: { x: frameThickX, y: frameThickY, z: frameThickZ },
+      outerBound: { x: outerBoundX, y: outerBoundY, z: outerBoundZ },
+      innerBound: { x: innerBoundX, y: innerBoundY, z: innerBoundZ }
+    });
+    
+    // 12個のフレームボックスを配置（外側と内側の境界間に正確にフィット）
     const frames = [
-      // 上面の枠線（4つ）
-      { pos: [0, frameThickY + innerY/2, outerZ/2], size: [innerX, frameThickY, frameThickZ], name: 'top-back' },
-      { pos: [0, -frameThickY - innerY/2, outerZ/2], size: [innerX, frameThickY, frameThickZ], name: 'top-front' },
-      { pos: [frameThickX + innerX/2, 0, outerZ/2], size: [frameThickX, outerY, frameThickZ], name: 'top-right' },
-      { pos: [-frameThickX - innerX/2, 0, outerZ/2], size: [frameThickX, outerY, frameThickZ], name: 'top-left' },
+      // 上面の枠線（4つ）- Z軸上側
+      { 
+        pos: [0, (outerBoundY + innerBoundY) / 2, outerBoundZ - frameThickZ / 2], 
+        size: [innerX, frameThickY, frameThickZ], 
+        name: 'top-back' 
+      },
+      { 
+        pos: [0, -(outerBoundY + innerBoundY) / 2, outerBoundZ - frameThickZ / 2], 
+        size: [innerX, frameThickY, frameThickZ], 
+        name: 'top-front' 
+      },
+      { 
+        pos: [(outerBoundX + innerBoundX) / 2, 0, outerBoundZ - frameThickZ / 2], 
+        size: [frameThickX, outerY, frameThickZ], 
+        name: 'top-right' 
+      },
+      { 
+        pos: [-(outerBoundX + innerBoundX) / 2, 0, outerBoundZ - frameThickZ / 2], 
+        size: [frameThickX, outerY, frameThickZ], 
+        name: 'top-left' 
+      },
       
-      // 下面の枠線（4つ）
-      { pos: [0, frameThickY + innerY/2, -outerZ/2], size: [innerX, frameThickY, frameThickZ], name: 'bottom-back' },
-      { pos: [0, -frameThickY - innerY/2, -outerZ/2], size: [innerX, frameThickY, frameThickZ], name: 'bottom-front' },
-      { pos: [frameThickX + innerX/2, 0, -outerZ/2], size: [frameThickX, outerY, frameThickZ], name: 'bottom-right' },
-      { pos: [-frameThickX - innerX/2, 0, -outerZ/2], size: [frameThickX, outerY, frameThickZ], name: 'bottom-left' },
+      // 下面の枠線（4つ）- Z軸下側
+      { 
+        pos: [0, (outerBoundY + innerBoundY) / 2, -outerBoundZ + frameThickZ / 2], 
+        size: [innerX, frameThickY, frameThickZ], 
+        name: 'bottom-back' 
+      },
+      { 
+        pos: [0, -(outerBoundY + innerBoundY) / 2, -outerBoundZ + frameThickZ / 2], 
+        size: [innerX, frameThickY, frameThickZ], 
+        name: 'bottom-front' 
+      },
+      { 
+        pos: [(outerBoundX + innerBoundX) / 2, 0, -outerBoundZ + frameThickZ / 2], 
+        size: [frameThickX, outerY, frameThickZ], 
+        name: 'bottom-right' 
+      },
+      { 
+        pos: [-(outerBoundX + innerBoundX) / 2, 0, -outerBoundZ + frameThickZ / 2], 
+        size: [frameThickX, outerY, frameThickZ], 
+        name: 'bottom-left' 
+      },
       
-      // 縦の枠線（4つ）
-      { pos: [frameThickX + innerX/2, frameThickY + innerY/2, 0], size: [frameThickX, frameThickY, innerZ], name: 'vertical-back-right' },
-      { pos: [frameThickX + innerX/2, -frameThickY - innerY/2, 0], size: [frameThickX, frameThickY, innerZ], name: 'vertical-front-right' },
-      { pos: [-frameThickX - innerX/2, frameThickY + innerY/2, 0], size: [frameThickX, frameThickY, innerZ], name: 'vertical-back-left' },
-      { pos: [-frameThickX - innerX/2, -frameThickY - innerY/2, 0], size: [frameThickX, frameThickY, innerZ], name: 'vertical-front-left' }
+      // 縦の枠線（4つ）- 角の柱
+      { 
+        pos: [(outerBoundX + innerBoundX) / 2, (outerBoundY + innerBoundY) / 2, 0], 
+        size: [frameThickX, frameThickY, innerZ], 
+        name: 'vertical-back-right' 
+      },
+      { 
+        pos: [(outerBoundX + innerBoundX) / 2, -(outerBoundY + innerBoundY) / 2, 0], 
+        size: [frameThickX, frameThickY, innerZ], 
+        name: 'vertical-front-right' 
+      },
+      { 
+        pos: [-(outerBoundX + innerBoundX) / 2, (outerBoundY + innerBoundY) / 2, 0], 
+        size: [frameThickX, frameThickY, innerZ], 
+        name: 'vertical-back-left' 
+      },
+      { 
+        pos: [-(outerBoundX + innerBoundX) / 2, -(outerBoundY + innerBoundY) / 2, 0], 
+        size: [frameThickX, frameThickY, innerZ], 
+        name: 'vertical-front-left' 
+      }
     ];
     
     // 各フレームボックスを作成

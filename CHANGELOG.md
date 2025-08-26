@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
+## [0.1.6.2] - 2025-08-26
+
+### Added
+- **「すべて太線」モード**: `outlineEmulation: 'all'` で全ボクセルに太線エミュレーションを適用
+- **厚い枠線表示機能**: `enableThickFrames` オプションで WebGL 1px 制限を完全回避
+  - インセット枠線とメインボックス間を12個のフレームボックスで埋める
+  - 視覚的に厚い枠線を実現（WebGL制限に関係なし）
+  - 手動制御または「すべて太線」選択時の自動有効化
+- **自動最適化機能**: 「すべて太線」選択時に最適設定を自動適用
+  - インセット枠線: 2メートルの自動適用
+  - 厚い枠線表示: 自動有効化
+  - コンソールログ: 自動適用の確認メッセージ
+
+### Enhanced
+- **太線エミュレーション拡張**: `outlineEmulation` に 'non-topn' と 'all' モード追加
+- **フレーム配置の精密化**: 外側・内側境界の中心に正確フィット（隣接重なり防止）
+- **Playground UI改善**: 太線エミュレーション選択肢を4つに拡張
+  - 無効 / TopNのみ / TopN以外のみ / すべて太線（自動インセット適用）
+- **adaptiveモード最適化**: 「すべて太線」時の太さ調整（TopN: 6px, その他: 4px）
+
+### Fixed
+- **隣接ボクセル重なり**: 正確な境界計算により隣接ボクセルとの重なりを解決
+- **地形表示安定化**: EllipsoidTerrainProvider の明示的設定
+
+### Technical
+- **フレーム位置計算**: 外側・内側境界の中心への精密配置アルゴリズム
+- **デバッグ機能強化**: 境界情報の詳細ログ出力で検証可能
+- **バリデーション**: `enableThickFrames` オプションの検証機能追加
+
 ## [0.1.6.1] - 2025-08-26
 
 ### Added
@@ -16,24 +45,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `outlineInset` オプション: インセット距離（メートル、デフォルト: 0）
   - `outlineInsetMode` オプション: 適用範囲（'all' | 'topn'、デフォルト: 'all'）
   - 二重Box方式で実装（fill用 + outline専用エンティティ）
-  - 片側20%（両側合計40%）まで制限（過度な縮小を防止、最終寸法は元の60%以上を保証）
+  - 各軸寸法の最大40%まで制限（過度な縮小を防止）
 - **Examples更新**: Basic/Advanced例にインセット枠線UI追加
   - スライダー（メートル単位）とモード選択（OFF/TopN/全体）
   - outline-overlap-demo にインセット枠線機能統合
 
 ### Technical
 - インセット枠線のユニットテスト・結合テスト追加
-- バリデーション機能で `outlineInset` を 0〜100m にクランプ（NaNは0に）
-- Wiki API-Reference のバージョン表記を `src/index.js` の `VERSION` から動的生成
+- バリデーション機能でインセット枠線パラメータ検証
 - パフォーマンス影響: エンティティ数最大2倍（制限値内で管理）
 
-### Changed
-- 太線エミュレーション（outlineEmulation）を改善:
-  - ポリラインは外縁ではなく「外縁とインセットの中間位置」に配置し、隣接ボクセルの枠線重なりを軽減。
-  - `outlineInset` 指定時はその値を優先（片側20%上限でクランプ）。未指定時は各軸5%の自動インセットを使用。
-  - 太線対象ボクセルでは標準アウトラインを無効化し二重描画を回避。
-
-## [0.1.6] - 2025-8-26
+## [0.1.6] - 2025-08-26
 
 ### Added
 - **枠線重なり対策**: `voxelGap` オプションによるボクセル間ギャップ設定で視認性向上

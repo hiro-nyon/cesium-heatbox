@@ -49,6 +49,8 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **TopN強調表示 (v0.1.5)**: 密度上位N個のボクセルを強調、他を淡色表示する `highlightTopN` オプション
 - **枠線重なり対策 (v0.1.6)**: `voxelGap` による間隔調整と `outlineOpacity` による透明度制御で視認性向上
 - **動的枠線制御 (v0.1.6)**: `outlineWidthResolver` 関数でボクセル毎の枠線太さを密度に応じて動的調整
+- **太線エミュレーション拡張 (v0.1.6.2)**: `outlineEmulation` に 'all', 'non-topn' モード追加で WebGL 1px 制限を回避
+- **厚い枠線表示 (v0.1.6.2)**: `enableThickFrames` で12個のフレームボックスによる視覚的に厚い枠線を実現
 - **インセット枠線 (v0.1.6.1)**: `outlineInset` で枠線をボックス内側にオフセット（`outlineInsetMode` で TopN 限定も可）
 - **Wiki自動同期 (v0.1.6)**: JSDoc → Markdown 変換による GitHub Wiki の自動更新
 - **パフォーマンス制御**: `maxRenderVoxels` と内部検証（例: `validateVoxelCount`）で安定動作を担保
@@ -75,6 +77,8 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **TopN highlighting (v0.1.5)**: `highlightTopN` option to emphasize top N density voxels
 - **Outline overlap mitigation (v0.1.6)**: `voxelGap` for spacing and `outlineOpacity` for transparency control
 - **Dynamic outline control (v0.1.6)**: `outlineWidthResolver` function for density-adaptive outline thickness
+- **Extended outline emulation (v0.1.6.2)**: `outlineEmulation` 'all', 'non-topn' modes to bypass WebGL 1px limitation
+- **Thick outline frames (v0.1.6.2)**: `enableThickFrames` creates visually thick outlines using 12 frame boxes
 - **Inset outline (v0.1.6.1)**: `outlineInset` to draw outlines inset from faces (`outlineInsetMode` to limit to TopN)
 - **Wiki auto-sync (v0.1.6)**: JSDoc → Markdown conversion for automated GitHub Wiki updates
 - **Performance guard rails**: `maxRenderVoxels` and internal checks (e.g., `validateVoxelCount`) for stable rendering
