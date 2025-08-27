@@ -15,6 +15,8 @@ class HeatboxPlayground {
     this.isVisible = true;
     // v0.1.6: outlineWidthResolver の統計
     this._outlineStats = null;
+    // i18n 状態
+    this._lang = (typeof localStorage !== 'undefined' && localStorage.getItem('hb_lang')) || 'ja';
     
     console.log('Cesium available:', typeof Cesium !== 'undefined');
     console.log('CesiumHeatbox available:', typeof CesiumHeatbox !== 'undefined');
@@ -42,8 +44,167 @@ class HeatboxPlayground {
     this.initializeControlStates();
     this.updateEnvironmentInfo();
     this._resetOutlineStats();
+    this._setupLanguageControls();
+    this._applyTranslations();
     
     console.log('=== HeatboxPlayground 初期化完了 ===');
+  }
+  
+  /**
+   * 言語コントロールの初期化
+   */
+  _setupLanguageControls() {
+    try {
+      const sel = document.getElementById('langSelect');
+      if (!sel) return;
+      // 初期値を反映
+      sel.value = this._lang;
+      sel.addEventListener('change', () => {
+        const val = sel.value;
+        this.setLanguage(val);
+      });
+    } catch (_) {}
+  }
+
+  /**
+   * 言語を設定
+   */
+  setLanguage(lang) {
+    this._lang = lang || 'ja';
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem('hb_lang', this._lang); } catch (_) {}
+    this._applyTranslations();
+  }
+
+  /**
+   * 翻訳適用（主要テキストのみ）
+   */
+  _applyTranslations() {
+    const t = this._getTranslations();
+    const L = t[this._lang] || t.ja;
+    const map = {
+      'i18n-title': 'title_main',
+      'i18n-sum-data': 'sum_data',
+      'i18n-sum-display': 'sum_display',
+      'i18n-sum-color': 'sum_color',
+      'i18n-sum-outline': 'sum_outline',
+      'i18n-sum-adaptive': 'sum_adaptive',
+      'i18n-sum-highlight': 'sum_highlight',
+      'i18n-sum-advanced': 'sum_advanced',
+      'i18n-ops-title': 'ops_title',
+      'i18n-stats-title': 'stats_title',
+      'i18n-label-dataCount': 'label_dataCount',
+      'i18n-label-voxelCount': 'label_voxelCount',
+      'i18n-label-emptyVoxel': 'label_emptyVoxel',
+      'i18n-label-max': 'label_max',
+      'i18n-label-min': 'label_min',
+      'i18n-label-avg': 'label_avg',
+      'i18n-autosize-adjusted': 'autosize_adjusted',
+      'i18n-autosize-size': 'autosize_size',
+      'i18n-env-title': 'env_title',
+      'i18n-label-cesium': 'label_cesium',
+      'i18n-label-heatbox': 'label_heatbox',
+      'i18n-label-webgl': 'label_webgl',
+      'i18n-or-title': 'or_title',
+      'i18n-label-or-calls': 'or_calls',
+      'i18n-label-or-avg': 'or_avg',
+      'i18n-label-or-minmax': 'or_minmax',
+      'i18n-label-or-dminmax': 'or_dminmax',
+      'i18n-label-or-topn': 'or_topn',
+      'i18n-lang-label': 'lang_label'
+    };
+    Object.entries(map).forEach(([id, key]) => {
+      const el = document.getElementById(id);
+      if (el && L[key]) el.textContent = L[key];
+    });
+    // ボタン
+    const btns = [
+      ['i18n-btn-create', 'btn_create'],
+      ['i18n-btn-clear', 'btn_clear'],
+      ['i18n-btn-toggle', 'btn_toggle'],
+      ['i18n-btn-export', 'btn_export']
+    ];
+    btns.forEach(([id, key]) => {
+      const el = document.querySelector(`[data-i18n-id="${id}"]`);
+      if (el && L[key]) el.textContent = L[key];
+    });
+  }
+
+  /**
+   * 翻訳辞書
+   */
+  _getTranslations() {
+    return {
+      ja: {
+        title_main: '🎛️ Cesium Heatbox Playground',
+        sum_data: '📁 データ読み込み',
+        sum_display: '🔧 表示設定',
+        sum_color: '🎨 色設定',
+        sum_outline: '✏️ 枠線・見た目',
+        sum_adaptive: '⚙️ 適応表示',
+        sum_highlight: '⭐ 強調表示',
+        sum_advanced: '🛠️ 詳細設定',
+        ops_title: '🎮 操作',
+        btn_create: 'ヒートマップ作成',
+        btn_clear: 'クリア',
+        btn_toggle: '表示/非表示',
+        btn_export: 'データ出力',
+        stats_title: '📊 統計情報',
+        label_dataCount: 'データ点数:',
+        label_voxelCount: 'ボクセル数:',
+        label_emptyVoxel: '空ボクセル:',
+        label_max: '最大値:',
+        label_min: '最小値:',
+        label_avg: '平均値:',
+        autosize_adjusted: '自動調整:',
+        autosize_size: 'サイズ:',
+        env_title: '🔍 環境情報',
+        label_cesium: 'Cesium:',
+        label_heatbox: 'Heatbox:',
+        label_webgl: 'WebGL:',
+        or_title: '🧪 Outline Resolver 統計',
+        or_calls: '呼び出し回数:',
+        or_avg: '平均太さ:',
+        or_minmax: '太さ min/max:',
+        or_dminmax: '密度 min/max:',
+        or_topn: 'TopN対象:',
+        lang_label: '言語'
+      },
+      en: {
+        title_main: '🎛️ Cesium Heatbox Playground',
+        sum_data: '📁 Data',
+        sum_display: '🔧 Display',
+        sum_color: '🎨 Colors',
+        sum_outline: '✏️ Outlines & Look',
+        sum_adaptive: '⚙️ Adaptive',
+        sum_highlight: '⭐ Highlight',
+        sum_advanced: '🛠️ Advanced',
+        ops_title: '🎮 Actions',
+        btn_create: 'Create Heatmap',
+        btn_clear: 'Clear',
+        btn_toggle: 'Show/Hide',
+        btn_export: 'Export Data',
+        stats_title: '📊 Statistics',
+        label_dataCount: 'Points:',
+        label_voxelCount: 'Voxels:',
+        label_emptyVoxel: 'Empty voxels:',
+        label_max: 'Max:',
+        label_min: 'Min:',
+        label_avg: 'Avg:',
+        autosize_adjusted: 'Auto-adjust:',
+        autosize_size: 'Size:',
+        env_title: '🔍 Environment',
+        label_cesium: 'Cesium:',
+        label_heatbox: 'Heatbox:',
+        label_webgl: 'WebGL:',
+        or_title: '🧪 Outline Resolver Stats',
+        or_calls: 'Calls:',
+        or_avg: 'Average width:',
+        or_minmax: 'Width min/max:',
+        or_dminmax: 'Density min/max:',
+        or_topn: 'TopN count:',
+        lang_label: 'Language'
+      }
+    };
   }
   
   /**

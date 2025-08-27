@@ -162,12 +162,19 @@
   
   <div id="toolbar">
     <div class="section">
-      <h3>🎛️ Cesium Heatbox Playground</h3>
+      <h3 id="i18n-title">🎛️ Cesium Heatbox Playground</h3>
       <p style="font-size: 11px; margin: 5px 0;">v0.1.7 対応・UI整理版</p>
+      <div class="control-group">
+        <label id="i18n-lang-label" for="langSelect">言語</label>
+        <select id="langSelect">
+          <option value="ja">日本語</option>
+          <option value="en">English</option>
+        </select>
+      </div>
     </div>
     
     <details class="section" open>
-      <summary>📁 データ読み込み</summary>
+      <summary id="i18n-sum-data">📁 データ読み込み</summary>
       <div class="section-content">
         <input type="file" id="fileInput" accept=".json,.geojson,.czml" />
         <button id="loadSampleData">サンプルデータを読み込み</button>
@@ -176,7 +183,7 @@
     </details>
     
     <details class="section" open>
-      <summary>🔧 表示設定</summary>
+      <summary id="i18n-sum-display">🔧 表示設定</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>背景地図:</label>
@@ -225,7 +232,7 @@
     </details>
 
     <details class="section">
-      <summary>🎨 色設定</summary>
+      <summary id="i18n-sum-color">🎨 色設定</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>カラーマップ:</label>
@@ -257,7 +264,7 @@
     </details>
 
     <details class="section">
-      <summary>✏️ 枠線・見た目</summary>
+      <summary id="i18n-sum-outline">✏️ 枠線・見た目</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>描画モード:</label>
@@ -325,7 +332,7 @@
     </details>
 
     <details class="section">
-      <summary>⚙️ 適応表示</summary>
+      <summary id="i18n-sum-adaptive">⚙️ 適応表示</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>
@@ -361,7 +368,7 @@
     </details>
 
     <details class="section">
-      <summary>⭐ 強調表示</summary>
+      <summary id="i18n-sum-highlight">⭐ 強調表示</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>TopN強調表示:</label>
@@ -376,7 +383,7 @@
     </details>
 
     <details class="section">
-      <summary>🛠️ 詳細設定</summary>
+      <summary id="i18n-sum-advanced">🛠️ 詳細設定</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>
@@ -395,48 +402,48 @@
     </details>
     
     <div class="section">
-      <h3>🎮 操作</h3>
-      <button id="createHeatmap">ヒートマップ作成</button>
-      <button id="clearHeatmap">クリア</button>
-      <button id="toggleVisibility">表示/非表示</button>
-      <button id="exportData">データ出力</button>
+      <h3 id="i18n-ops-title">🎮 操作</h3>
+      <button id="createHeatmap" data-i18n-id="i18n-btn-create">ヒートマップ作成</button>
+      <button id="clearHeatmap" data-i18n-id="i18n-btn-clear">クリア</button>
+      <button id="toggleVisibility" data-i18n-id="i18n-btn-toggle">表示/非表示</button>
+      <button id="exportData" data-i18n-id="i18n-btn-export">データ出力</button>
     </div>
   </div>
   
   <div id="info">
     <div class="section">
-      <h3>📊 統計情報</h3>
+      <h3 id="i18n-stats-title">📊 統計情報</h3>
       <div id="statistics">
-        <p>データ点数: <span id="dataCount">0</span></p>
-        <p>ボクセル数: <span id="voxelCount">0</span></p>
-        <p>空ボクセル: <span id="emptyVoxelCount">0</span></p>
-        <p>最大値: <span id="maxValue">-</span></p>
-        <p>最小値: <span id="minValue">-</span></p>
-        <p>平均値: <span id="avgValue">-</span></p>
+        <p><span id="i18n-label-dataCount">データ点数:</span> <span id="dataCount">0</span></p>
+        <p><span id="i18n-label-voxelCount">ボクセル数:</span> <span id="voxelCount">0</span></p>
+        <p><span id="i18n-label-emptyVoxel">空ボクセル:</span> <span id="emptyVoxelCount">0</span></p>
+        <p><span id="i18n-label-max">最大値:</span> <span id="maxValue">-</span></p>
+        <p><span id="i18n-label-min">最小値:</span> <span id="minValue">-</span></p>
+        <p><span id="i18n-label-avg">平均値:</span> <span id="avgValue">-</span></p>
         <div id="autoSizeInfo" style="font-size: 10px; color: #aaa; margin-top: 5px; display: none;">
-          <p>自動調整: <span id="autoAdjusted">-</span></p>
-          <p>サイズ: <span id="sizeInfo">-</span></p>
+          <p><span id="i18n-autosize-adjusted">自動調整:</span> <span id="autoAdjusted">-</span></p>
+          <p><span id="i18n-autosize-size">サイズ:</span> <span id="sizeInfo">-</span></p>
         </div>
       </div>
     </div>
     
     <div class="section">
-      <h3>🔍 環境情報</h3>
+      <h3 id="i18n-env-title">🔍 環境情報</h3>
       <div id="environmentInfo">
-        <p>Cesium: <span id="cesiumVersion">-</span></p>
-        <p>Heatbox: <span id="heatboxVersion">-</span></p>
-        <p>WebGL: <span id="webglSupport">-</span></p>
+        <p><span id="i18n-label-cesium">Cesium:</span> <span id="cesiumVersion">-</span></p>
+        <p><span id="i18n-label-heatbox">Heatbox:</span> <span id="heatboxVersion">-</span></p>
+        <p><span id="i18n-label-webgl">WebGL:</span> <span id="webglSupport">-</span></p>
       </div>
     </div>
 
     <div class="section">
-      <h3>🧪 Outline Resolver 統計</h3>
+      <h3 id="i18n-or-title">🧪 Outline Resolver 統計</h3>
       <div id="outlineStats" style="font-size: 12px;">
-        <p>呼び出し回数: <span id="or_calls">0</span></p>
-        <p>平均太さ: <span id="or_avg">-</span> px</p>
-        <p>太さ min/max: <span id="or_min">-</span> / <span id="or_max">-</span> px</p>
-        <p>密度 min/max: <span id="or_dmin">-</span> / <span id="or_dmax">-</span></p>
-        <p>TopN対象: <span id="or_topn">0</span></p>
+        <p><span id="i18n-label-or-calls">呼び出し回数:</span> <span id="or_calls">0</span></p>
+        <p><span id="i18n-label-or-avg">平均太さ:</span> <span id="or_avg">-</span> px</p>
+        <p><span id="i18n-label-or-minmax">太さ min/max:</span> <span id="or_min">-</span> / <span id="or_max">-</span> px</p>
+        <p><span id="i18n-label-or-dminmax">密度 min/max:</span> <span id="or_dmin">-</span> / <span id="or_dmax">-</span></p>
+        <p><span id="i18n-label-or-topn">TopN対象:</span> <span id="or_topn">0</span></p>
       </div>
     </div>
   </div>
