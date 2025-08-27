@@ -177,8 +177,8 @@
       <summary id="i18n-sum-data">📁 データ読み込み</summary>
       <div class="section-content">
         <input type="file" id="fileInput" accept=".json,.geojson,.czml" />
-        <button id="loadSampleData">サンプルデータを読み込み</button>
-        <button id="generateTestData">テストデータを生成</button>
+        <button id="loadSampleData" data-i18n="btn_load_sample">サンプルデータを読み込み</button>
+        <button id="generateTestData" data-i18n="btn_generate_test">テストデータを生成</button>
       </div>
     </details>
     
@@ -186,7 +186,7 @@
       <summary id="i18n-sum-display">🔧 表示設定</summary>
       <div class="controls section-content">
         <div class="control-group">
-          <label>背景地図:</label>
+          <label data-i18n="label_baseMap">背景地図:</label>
           <select id="baseMap">
             <option value="carto-light" selected>CartoDB Light (Positron)</option>
             <option value="carto-dark">CartoDB Dark Matter</option>
@@ -197,35 +197,35 @@
         <div class="control-group">
           <label>
             <input type="checkbox" id="autoVoxelSize" />
-            自動サイズ決定（v0.1.4新機能）
+            <span data-i18n="chk_autoVoxel">自動サイズ決定（v0.1.4新機能）</span>
           </label>
         </div>
         <div class="control-group" id="manualSizeGroup">
-          <label>グリッドサイズ（手動）:</label>
+          <label data-i18n="label_gridSize">グリッドサイズ（手動）:</label>
           <input type="range" id="gridSize" min="10" max="100" value="20" />
           <span id="gridSizeValue">20</span>
         </div>
         <div class="control-group">
           <label>
             <input type="checkbox" id="heightBased" />
-            高さベース表現
+            <span data-i18n="chk_heightBased">高さベース表現</span>
           </label>
         </div>
         <div class="control-group">
           <label>
             <input type="checkbox" id="showEmptyVoxels" />
-            空のボクセルを表示
+            <span data-i18n="chk_showEmpty">空のボクセルを表示</span>
           </label>
         </div>
         <div class="control-group" id="emptyOpacityGroup" style="opacity: 0.5; pointer-events: none;">
-          <label>空ボクセル透明度:</label>
+          <label data-i18n="label_emptyOpacity">空ボクセル透明度:</label>
           <input type="range" id="emptyOpacity" min="0" max="1" step="0.05" value="0.1" disabled />
           <span id="emptyOpacityValue">0.1</span>
         </div>
         <div class="control-group">
           <label>
             <input type="checkbox" id="wireframeOnly" />
-            枠線のみ表示
+            <span data-i18n="chk_wireframeOnly">枠線のみ表示</span>
           </label>
         </div>
       </div>
@@ -235,29 +235,29 @@
       <summary id="i18n-sum-color">🎨 色設定</summary>
       <div class="controls section-content">
         <div class="control-group">
-          <label>カラーマップ:</label>
+          <label data-i18n="label_colorMap">カラーマップ:</label>
           <select id="colorMap">
-            <option value="custom">カスタム（従来）</option>
-            <option value="viridis" selected>Viridis（科学的）</option>
-            <option value="inferno">Inferno（科学的）</option>
+            <option value="custom" data-i18n="opt_color_custom">カスタム（従来）</option>
+            <option value="viridis" selected data-i18n="opt_color_viridis">Viridis（科学的）</option>
+            <option value="inferno" data-i18n="opt_color_inferno">Inferno（科学的）</option>
           </select>
         </div>
         <div class="control-group" id="customColorGroup">
-          <label>カスタム色:</label>
+          <label data-i18n="label_customColor">カスタム色:</label>
           <select id="customColorTheme">
-            <option value="heat">ヒート（青→赤）</option>
-            <option value="cool">クール（青→マゼンタ）</option>
-            <option value="rainbow">レインボー</option>
+            <option value="heat" data-i18n="opt_theme_heat">ヒート（青→赤）</option>
+            <option value="cool" data-i18n="opt_theme_cool">クール（青→マゼンタ）</option>
+            <option value="rainbow" data-i18n="opt_theme_rainbow">レインボー</option>
           </select>
         </div>
         <div class="control-group">
           <label>
             <input type="checkbox" id="diverging" />
-            二極性データ（blue-white-red）
+            <span data-i18n="chk_diverging">二極性データ（blue-white-red）</span>
           </label>
         </div>
         <div class="control-group" id="divergingPivotGroup" style="opacity: 0.5; pointer-events: none;">
-          <label>二極性中心値:</label>
+          <label data-i18n="label_divergingPivot">二極性中心値:</label>
           <input type="number" id="divergingPivot" value="0" step="0.1" disabled />
         </div>
       </div>
@@ -267,65 +267,65 @@
       <summary id="i18n-sum-outline">✏️ 枠線・見た目</summary>
       <div class="controls section-content">
         <div class="control-group">
-          <label>描画モード:</label>
+          <label data-i18n="label_outlineRenderMode">描画モード:</label>
           <select id="outlineRenderMode">
-            <option value="standard" selected>標準</option>
-            <option value="inset">インセット主体</option>
-            <option value="emulation-only">エミュレーションのみ</option>
+            <option value="standard" selected data-i18n="opt_render_standard">標準</option>
+            <option value="inset" data-i18n="opt_render_inset">インセット主体</option>
+            <option value="emulation-only" data-i18n="opt_render_emulation">エミュレーションのみ</option>
           </select>
         </div>
         <!-- v0.1.6.1: インセット枠線（ADR-0004） -->
         <div class="control-group">
-          <label>インセット枠線 (m):</label>
+          <label data-i18n="label_outlineInset">インセット枠線 (m):</label>
           <input type="range" id="outlineInset" min="0" max="20" step="0.5" value="0" />
           <span id="outlineInsetValue">0.0</span>
         </div>
         <div class="control-group">
-          <label>インセット適用範囲:</label>
+          <label data-i18n="label_outlineInsetMode">インセット適用範囲:</label>
           <select id="outlineInsetMode">
-            <option value="off">OFF（無効）</option>
-            <option value="topn">TopN のみ</option>
-            <option value="all" selected>全体</option>
+            <option value="off" data-i18n="opt_inset_off">OFF（無効）</option>
+            <option value="topn" data-i18n="opt_inset_topn">TopN のみ</option>
+            <option value="all" selected data-i18n="opt_inset_all">全体</option>
           </select>
         </div>
         <div class="control-group">
           <label>
             <input type="checkbox" id="enableThickFrames" />
-            厚い枠線表示（フレーム埋め込み）
+            <span data-i18n="chk_thickFrames">厚い枠線表示（フレーム埋め込み）</span>
           </label>
         </div>
         <!-- v0.1.6: 枠線重なり対策（ボクセル間ギャップ） -->
         <div class="control-group">
-          <label>ボクセル間ギャップ (m):</label>
+          <label data-i18n="label_voxelGap">ボクセル間ギャップ (m):</label>
           <input type="range" id="voxelGap" min="0" max="20" step="0.5" value="0" />
           <span id="voxelGapValue">0.0</span>
         </div>
         <!-- v0.1.6: 枠線透明度制御 -->
         <div class="control-group">
-          <label>枠線透明度:</label>
+          <label data-i18n="label_outlineOpacity">枠線透明度:</label>
           <input type="range" id="outlineOpacity" min="0" max="1" step="0.1" value="1" />
           <span id="outlineOpacityValue">1.0</span>
         </div>
         <!-- v0.1.6: 枠線太さモード -->
         <div class="control-group">
-          <label>枠線太さモード:</label>
+          <label data-i18n="label_outlineMode">枠線太さモード:</label>
           <select id="outlineMode">
-            <option value="adaptive" selected>自動（密度に応じて調整）</option>
-            <option value="manual">手動（固定太さ）</option>
+            <option value="adaptive" selected data-i18n="opt_outline_adaptive">自動（密度に応じて調整）</option>
+            <option value="manual" data-i18n="opt_outline_manual">手動（固定太さ）</option>
           </select>
         </div>
         <div class="control-group" id="manualOutlineWidthGroup" style="opacity: 0.5; pointer-events: none;">
-          <label>枠線太さ (px):</label>
+          <label data-i18n="label_outlineWidth">枠線太さ (px):</label>
           <input type="range" id="outlineWidth" min="0" max="8" step="1" value="2" disabled />
           <span id="outlineWidthValue">2</span>
         </div>
         <div class="control-group">
-          <label>太線エミュレーション:</label>
+          <label data-i18n="label_outlineEmulation">太線エミュレーション:</label>
           <select id="outlineEmulationMode">
-            <option value="off">無効</option>
-            <option value="topn">TopNのみ</option>
-            <option value="non-topn">TopN以外のみ</option>
-            <option value="all">すべて太線（自動インセット適用）</option>
+            <option value="off" data-i18n="opt_emul_off">無効</option>
+            <option value="topn" data-i18n="opt_emul_topn">TopNのみ</option>
+            <option value="non-topn" data-i18n="opt_emul_non_topn">TopN以外のみ</option>
+            <option value="all" data-i18n="opt_emul_all">すべて太線（自動インセット適用）</option>
           </select>
         </div>
       </div>
@@ -337,31 +337,31 @@
         <div class="control-group">
           <label>
             <input type="checkbox" id="adaptiveOutlines" />
-            適応的枠線制御を有効化
+            <span data-i18n="chk_adaptiveOutlines">適応的枠線制御を有効化</span>
           </label>
         </div>
         <div class="control-group">
-          <label>枠線プリセット:</label>
+          <label data-i18n="label_outlinePreset">枠線プリセット:</label>
           <select id="outlineWidthPreset">
-            <option value="uniform" selected>均一</option>
-            <option value="adaptive-density">密度適応</option>
-            <option value="topn-focus">TopN重視</option>
+            <option value="uniform" selected data-i18n="opt_preset_uniform">均一</option>
+            <option value="adaptive-density" data-i18n="opt_preset_density">密度適応</option>
+            <option value="topn-focus" data-i18n="opt_preset_topn">TopN重視</option>
           </select>
         </div>
         <div class="control-group">
-          <label>ボックス透明度:</label>
+          <label data-i18n="label_boxOpacityMode">ボックス透明度:</label>
           <select id="boxOpacityMode">
-            <option value="off" selected>固定（従来）</option>
-            <option value="density">密度ベース</option>
-            <option value="topn">TopNベース</option>
+            <option value="off" selected data-i18n="opt_opacity_off">固定（従来）</option>
+            <option value="density" data-i18n="opt_opacity_density">密度ベース</option>
+            <option value="topn" data-i18n="opt_opacity_topn">TopNベース</option>
           </select>
         </div>
         <div class="control-group">
-          <label>枠線透明度:</label>
+          <label data-i18n="label_outlineOpacityMode">枠線透明度:</label>
           <select id="outlineOpacityMode">
-            <option value="off" selected>固定（従来）</option>
-            <option value="density">密度ベース</option>
-            <option value="topn">TopNベース</option>
+            <option value="off" selected data-i18n="opt_opacity_off">固定（従来）</option>
+            <option value="density" data-i18n="opt_opacity_density">密度ベース</option>
+            <option value="topn" data-i18n="opt_opacity_topn">TopNベース</option>
           </select>
         </div>
       </div>
@@ -371,11 +371,11 @@
       <summary id="i18n-sum-highlight">⭐ 強調表示</summary>
       <div class="controls section-content">
         <div class="control-group">
-          <label>TopN強調表示:</label>
-          <input type="number" id="highlightTopN" min="0" max="50" value="0" placeholder="0=無効" />
+          <label data-i18n="label_highlightTopN">TopN強調表示:</label>
+          <input type="number" id="highlightTopN" min="0" max="50" value="0" placeholder="0=無効" data-i18n-placeholder="ph_highlightTopN" />
         </div>
         <div class="control-group" id="highlightStyleGroup" style="opacity: 0.5; pointer-events: none;">
-          <label>非TopNの減衰量:</label>
+          <label data-i18n="label_highlightOpacity">非TopNの減衰量:</label>
           <input type="range" id="highlightOpacity" min="0.1" max="1" step="0.1" value="0.9" disabled />
           <span id="highlightOpacityValue">0.9</span>
         </div>
@@ -388,16 +388,16 @@
         <div class="control-group">
           <label>
             <input type="checkbox" id="debugMode" />
-            デバッグモード（ログ出力）
+            <span data-i18n="chk_debugMode">デバッグモード（ログ出力）</span>
           </label>
         </div>
         <div class="control-group">
           <label>
             <input type="checkbox" id="showBounds" />
-            境界ボックス表示
+            <span data-i18n="chk_showBounds">境界ボックス表示</span>
           </label>
         </div>
-        <button id="testHeatbox" style="background-color: orange;">Heatboxテスト</button>
+        <button id="testHeatbox" style="background-color: orange;" data-i18n="btn_testHeatbox">Heatboxテスト</button>
       </div>
     </details>
     
@@ -449,7 +449,7 @@
   </div>
   
   <div id="loading">
-    <p>処理中...</p>
+    <p data-i18n="loading">処理中...</p>
   </div>
   
   <!-- Heatbox ライブラリ -->

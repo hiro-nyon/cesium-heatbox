@@ -61,7 +61,6 @@ class HeatboxPlayground {
       sel.value = this._lang;
       sel.addEventListener('change', () => {
         const val = sel.value;
-        console.log('Language selector changed to:', val);
         this.setLanguage(val);
       });
     } catch (_) {}
@@ -71,10 +70,8 @@ class HeatboxPlayground {
    * 言語を設定
    */
   setLanguage(lang) {
-    console.log('=== setLanguage called ===', 'from:', this._lang, 'to:', lang);
     this._lang = lang || 'ja';
     try { if (typeof localStorage !== 'undefined') localStorage.setItem('hb_lang', this._lang); } catch (_) {}
-    console.log('Language set to:', this._lang);
     this._applyTranslations();
   }
 
@@ -82,10 +79,8 @@ class HeatboxPlayground {
    * 翻訳適用（主要テキストのみ）
    */
   _applyTranslations() {
-    console.log('=== _applyTranslations called ===', 'lang:', this._lang);
     const t = this._getTranslations();
     const L = t[this._lang] || t.ja;
-    console.log('Translation object L for', this._lang, ':', L);
     const map = {
       'i18n-title': 'title_main',
       'i18n-sum-data': 'sum_data',
@@ -117,35 +112,23 @@ class HeatboxPlayground {
       'i18n-label-or-topn': 'or_topn',
       'i18n-lang-label': 'lang_label'
     };
-    let updated = 0;
     Object.entries(map).forEach(([id, key]) => {
       const el = document.getElementById(id);
-      if (el && L[key]) {
-        console.log('Updating element:', id, 'from', el.textContent, 'to', L[key]);
-        el.textContent = L[key];
-        updated++;
-      } else {
-        console.warn('Element not found or no translation:', id, 'element:', !!el, 'translation:', !!L[key]);
-      }
+      if (el && L[key]) el.textContent = L[key];
     });
-    // ボタン
-    const btns = [
-      ['i18n-btn-create', 'btn_create'],
-      ['i18n-btn-clear', 'btn_clear'],
-      ['i18n-btn-toggle', 'btn_toggle'],
-      ['i18n-btn-export', 'btn_export']
-    ];
-    btns.forEach(([id, key]) => {
-      const el = document.querySelector(`[data-i18n-id="${id}"]`);
-      if (el && L[key]) {
-        console.log('Updating button:', id, 'from', el.textContent, 'to', L[key]);
-        el.textContent = L[key];
-        updated++;
-      } else {
-        console.warn('Button not found or no translation:', id, 'element:', !!el, 'translation:', !!L[key]);
-      }
+    // data-i18n 汎用適用（ラベル・オプションなど）
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (key && L[key]) el.textContent = L[key];
     });
-    console.log('Translation update complete. Elements updated:', updated);
+    // プレースホルダー
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (key && L[key]) el.setAttribute('placeholder', L[key]);
+    });
+    // ローディング
+    const loadingP = document.querySelector('#loading [data-i18n="loading"]');
+    if (loadingP && L.loading) loadingP.textContent = L.loading;
   }
 
   /**
@@ -186,7 +169,77 @@ class HeatboxPlayground {
         or_minmax: '太さ min/max:',
         or_dminmax: '密度 min/max:',
         or_topn: 'TopN対象:',
-        lang_label: '言語'
+        lang_label: '言語',
+        // Data section
+        btn_load_sample: 'サンプルデータを読み込み',
+        btn_generate_test: 'テストデータを生成',
+        // Display section
+        label_baseMap: '背景地図:',
+        chk_autoVoxel: '自動サイズ決定（v0.1.4新機能）',
+        label_gridSize: 'グリッドサイズ（手動）:',
+        chk_heightBased: '高さベース表現',
+        chk_showEmpty: '空のボクセルを表示',
+        label_emptyOpacity: '空ボクセル透明度:',
+        chk_wireframeOnly: '枠線のみ表示',
+        // Color section
+        label_colorMap: 'カラーマップ:',
+        opt_color_custom: 'カスタム（従来）',
+        opt_color_viridis: 'Viridis（科学的）',
+        opt_color_inferno: 'Inferno（科学的）',
+        label_customColor: 'カスタム色:',
+        opt_theme_heat: 'ヒート（青→赤）',
+        opt_theme_cool: 'クール（青→マゼンタ）',
+        opt_theme_rainbow: 'レインボー',
+        chk_diverging: '二極性データ（blue-white-red）',
+        label_divergingPivot: '二極性中心値:',
+        // Outline section
+        label_outlineRenderMode: '描画モード:',
+        opt_render_standard: '標準',
+        opt_render_inset: 'インセット主体',
+        opt_render_emulation: 'エミュレーションのみ',
+        label_outlineInset: 'インセット枠線 (m):',
+        label_outlineInsetMode: 'インセット適用範囲:',
+        opt_inset_off: 'OFF（無効）',
+        opt_inset_topn: 'TopN のみ',
+        opt_inset_all: '全体',
+        chk_thickFrames: '厚い枠線表示（フレーム埋め込み）',
+        label_voxelGap: 'ボクセル間ギャップ (m):',
+        label_outlineOpacity: '枠線透明度:',
+        label_outlineMode: '枠線太さモード:',
+        opt_outline_adaptive: '自動（密度に応じて調整）',
+        opt_outline_manual: '手動（固定太さ）',
+        label_outlineWidth: '枠線太さ (px):',
+        label_outlineEmulation: '太線エミュレーション:',
+        opt_emul_off: '無効',
+        opt_emul_topn: 'TopNのみ',
+        opt_emul_non_topn: 'TopN以外のみ',
+        opt_emul_all: 'すべて太線（自動インセット適用）',
+        // Adaptive
+        chk_adaptiveOutlines: '適応的枠線制御を有効化',
+        label_outlinePreset: '枠線プリセット:',
+        opt_preset_uniform: '均一',
+        opt_preset_density: '密度適応',
+        opt_preset_topn: 'TopN重視',
+        label_boxOpacityMode: 'ボックス透明度:',
+        label_outlineOpacityMode: '枠線透明度:',
+        opt_opacity_off: '固定（従来）',
+        opt_opacity_density: '密度ベース',
+        opt_opacity_topn: 'TopNベース',
+        // Highlight
+        label_highlightTopN: 'TopN強調表示:',
+        ph_highlightTopN: '0=無効',
+        label_highlightOpacity: '非TopNの減衰量:',
+        // Advanced
+        chk_debugMode: 'デバッグモード（ログ出力）',
+        chk_showBounds: '境界ボックス表示',
+        btn_testHeatbox: 'Heatboxテスト',
+        // Buttons
+        btn_create: 'ヒートマップ作成',
+        btn_clear: 'クリア',
+        btn_toggle: '表示/非表示',
+        btn_export: 'データ出力',
+        // Loading
+        loading: '処理中...'
       },
       en: {
         title_main: '🎛️ Cesium Heatbox Playground',
@@ -221,7 +274,77 @@ class HeatboxPlayground {
         or_minmax: 'Width min/max:',
         or_dminmax: 'Density min/max:',
         or_topn: 'TopN count:',
-        lang_label: 'Language'
+        lang_label: 'Language',
+        // Data
+        btn_load_sample: 'Load sample data',
+        btn_generate_test: 'Generate test data',
+        // Display
+        label_baseMap: 'Base map:',
+        chk_autoVoxel: 'Auto voxel size (v0.1.4)',
+        label_gridSize: 'Grid size (manual):',
+        chk_heightBased: 'Height-based boxes',
+        chk_showEmpty: 'Show empty voxels',
+        label_emptyOpacity: 'Empty voxel opacity:',
+        chk_wireframeOnly: 'Wireframe only',
+        // Color
+        label_colorMap: 'Color map:',
+        opt_color_custom: 'Custom (classic)',
+        opt_color_viridis: 'Viridis (scientific)',
+        opt_color_inferno: 'Inferno (scientific)',
+        label_customColor: 'Custom colors:',
+        opt_theme_heat: 'Heat (blue→red)',
+        opt_theme_cool: 'Cool (blue→magenta)',
+        opt_theme_rainbow: 'Rainbow',
+        chk_diverging: 'Diverging data (blue-white-red)',
+        label_divergingPivot: 'Diverging pivot:',
+        // Outline
+        label_outlineRenderMode: 'Render mode:',
+        opt_render_standard: 'Standard',
+        opt_render_inset: 'Inset first',
+        opt_render_emulation: 'Emulation only',
+        label_outlineInset: 'Outline inset (m):',
+        label_outlineInsetMode: 'Inset scope:',
+        opt_inset_off: 'OFF (disabled)',
+        opt_inset_topn: 'TopN only',
+        opt_inset_all: 'All',
+        chk_thickFrames: 'Thick outline (framed)',
+        label_voxelGap: 'Voxel gap (m):',
+        label_outlineOpacity: 'Outline opacity:',
+        label_outlineMode: 'Outline width mode:',
+        opt_outline_adaptive: 'Adaptive (by density)',
+        opt_outline_manual: 'Manual (fixed width)',
+        label_outlineWidth: 'Outline width (px):',
+        label_outlineEmulation: 'Outline emulation:',
+        opt_emul_off: 'Off',
+        opt_emul_topn: 'TopN only',
+        opt_emul_non_topn: 'Non-TopN only',
+        opt_emul_all: 'All (auto inset)',
+        // Adaptive
+        chk_adaptiveOutlines: 'Enable adaptive outlines',
+        label_outlinePreset: 'Outline preset:',
+        opt_preset_uniform: 'Uniform',
+        opt_preset_density: 'Adaptive by density',
+        opt_preset_topn: 'TopN focused',
+        label_boxOpacityMode: 'Box opacity:',
+        label_outlineOpacityMode: 'Outline opacity:',
+        opt_opacity_off: 'Fixed (classic)',
+        opt_opacity_density: 'By density',
+        opt_opacity_topn: 'By TopN',
+        // Highlight
+        label_highlightTopN: 'Highlight TopN:',
+        ph_highlightTopN: '0 = off',
+        label_highlightOpacity: 'Non-TopN attenuation:',
+        // Advanced
+        chk_debugMode: 'Debug mode (log output)',
+        chk_showBounds: 'Show bounds box',
+        btn_testHeatbox: 'Test Heatbox',
+        // Buttons
+        btn_create: 'Create Heatmap',
+        btn_clear: 'Clear',
+        btn_toggle: 'Show/Hide',
+        btn_export: 'Export Data',
+        // Loading
+        loading: 'Processing...'
       }
     };
   }
