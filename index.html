@@ -1,0 +1,56 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="refresh" content="0; url=./playground/">
+<link rel="canonical" href="./playground/">
+<title>Cesium Heatbox - Redirecting...</title>
+<style>
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background-color: #0e1b22;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    text-align: center;
+  }
+  .redirect-message {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #333;
+  }
+  .loading {
+    animation: pulse 1.5s ease-in-out infinite alternate;
+  }
+  @keyframes pulse {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+  }
+  a {
+    color: #4CAF50;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+</style>
+<body>
+  <div class="redirect-message">
+    <h1 class="loading">🌍 Cesium Heatbox</h1>
+    <p>Redirecting to playground...</p>
+    <p><a href="./playground/">Click here if not redirected automatically</a></p>
+  </div>
+  
+  <script>
+    // JavaScript fallback for meta refresh
+    setTimeout(function() {
+      if (window.location.pathname.endsWith('/') || window.location.pathname.endsWith('/index.html')) {
+        window.location.href = './playground/';
+      }
+    }, 100);
+  </script>
+</body>
+</html>
