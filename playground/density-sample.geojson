@@ -1,0 +1,126 @@
+{
+  "type": "FeatureCollection",
+  "name": "density_sample_data",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1,
+        "density": 85,
+        "type": "residential"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6917, 35.6895, 20]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2,
+        "density": 92,
+        "type": "commercial"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6920, 35.6898, 25]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3,
+        "density": 78,
+        "type": "residential"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6915, 35.6892, 18]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 4,
+        "density": 65,
+        "type": "park"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6910, 35.6888, 15]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 5,
+        "density": 88,
+        "type": "commercial"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6925, 35.6900, 30]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 6,
+        "density": 75,
+        "type": "residential"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6912, 35.6890, 22]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 7,
+        "density": 95,
+        "type": "commercial"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6922, 35.6897, 35]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 8,
+        "density": 58,
+        "type": "park"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6908, 35.6885, 12]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 9,
+        "density": 82,
+        "type": "residential"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6918, 35.6893, 28]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 10,
+        "density": 70,
+        "type": "mixed"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6914, 35.6896, 26]
+      }
+    }
+  ]
+}

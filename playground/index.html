@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cesium Heatbox Playground</title>
+  <!-- Favicon を追加してエラーを防ぐ -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+  <!-- CesiumJS CDN - バージョン 1.120 -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  
+  <!-- Cesium settings (no Ion token; CartoDB Light imagery set in app.js) -->
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null; // 明示的にIonを無効化
+    }
+  </script>
+  <style>
+    html, body, #cesiumContainer {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #111;
+    }
+    
+    #cesiumContainer {
+      background-color: #0e1b22 !important;
+    }
+    
+    #toolbar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 5px;
+      color: white;
+      z-index: 1000;
+      max-width: 360px;
+      max-height: calc(100% - 20px);
+      overflow-y: auto;
+    }
+    
+    #toolbar button {
+      margin: 5px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 3px;
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    #toolbar button:hover {
+      background: #45a049;
+    }
+    
+    #toolbar button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    
+    #info {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 5px;
+      color: white;
+      z-index: 1000;
+      max-width: 250px;
+      font-size: 12px;
+    }
+    
+    #fileInput {
+      margin: 10px 0;
+    }
+    
+    /* セクション共通スタイル（div/.section と details.section を両対応） */
+    .section {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #444;
+      border-radius: 3px;
+      background: rgba(0,0,0,0.25);
+    }
+    .section h3, .section > summary {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+    }
+    details.section > summary {
+      cursor: pointer;
+      list-style: none;
+      outline: none;
+    }
+    details.section > summary::-webkit-details-marker {
+      display: none;
+    }
+    details.section > summary::before {
+      content: '▸';
+      display: inline-block;
+      margin-right: 6px;
+      transform: translateY(-1px);
+      opacity: 0.9;
+    }
+    details.section[open] > summary::before {
+      content: '▾';
+    }
+    .section-content {
+      margin-top: 8px;
+    }
+  
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .control-group label {
+      flex: 1;
+      font-size: 11px;
+    }
+    
+    .control-group input, .control-group select {
+      flex: 1;
+      padding: 2px;
+      border: 1px solid #666;
+      border-radius: 2px;
+      background: #333;
+      color: white;
+    }
+    
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px;
+      border-radius: 5px;
+      z-index: 2000;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  
+  <div id="toolbar">
+    <div class="section">
+      <h3>🎛️ Cesium Heatbox Playground</h3>
+      <p style="font-size: 11px; margin: 5px 0;">v0.1.7 対応・UI整理版</p>
+    </div>
+    
+    <details class="section" open>
+      <summary>📁 データ読み込み</summary>
+      <div class="section-content">
+        <input type="file" id="fileInput" accept=".json,.geojson,.czml" />
+        <button id="loadSampleData">サンプルデータを読み込み</button>
+        <button id="generateTestData">テストデータを生成</button>
+      </div>
+    </details>
+    
+    <details class="section" open>
+      <summary>🔧 表示設定</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label>背景地図:</label>
+          <select id="baseMap">
+            <option value="carto-light" selected>CartoDB Light (Positron)</option>
+            <option value="carto-dark">CartoDB Dark Matter</option>
+            <option value="osm-standard">OpenStreetMap Standard</option>
+            <option value="osm-humanitarian">OSM Humanitarian</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="autoVoxelSize" />
+            自動サイズ決定（v0.1.4新機能）
+          </label>
+        </div>
+        <div class="control-group" id="manualSizeGroup">
+          <label>グリッドサイズ（手動）:</label>
+          <input type="range" id="gridSize" min="10" max="100" value="20" />
+          <span id="gridSizeValue">20</span>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="heightBased" />
+            高さベース表現
+          </label>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="showEmptyVoxels" />
+            空のボクセルを表示
+          </label>
+        </div>
+        <div class="control-group" id="emptyOpacityGroup" style="opacity: 0.5; pointer-events: none;">
+          <label>空ボクセル透明度:</label>
+          <input type="range" id="emptyOpacity" min="0" max="1" step="0.05" value="0.1" disabled />
+          <span id="emptyOpacityValue">0.1</span>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="wireframeOnly" />
+            枠線のみ表示
+          </label>
+        </div>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>🎨 色設定</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label>カラーマップ:</label>
+          <select id="colorMap">
+            <option value="custom">カスタム（従来）</option>
+            <option value="viridis" selected>Viridis（科学的）</option>
+            <option value="inferno">Inferno（科学的）</option>
+          </select>
+        </div>
+        <div class="control-group" id="customColorGroup">
+          <label>カスタム色:</label>
+          <select id="customColorTheme">
+            <option value="heat">ヒート（青→赤）</option>
+            <option value="cool">クール（青→マゼンタ）</option>
+            <option value="rainbow">レインボー</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="diverging" />
+            二極性データ（blue-white-red）
+          </label>
+        </div>
+        <div class="control-group" id="divergingPivotGroup" style="opacity: 0.5; pointer-events: none;">
+          <label>二極性中心値:</label>
+          <input type="number" id="divergingPivot" value="0" step="0.1" disabled />
+        </div>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>✏️ 枠線・見た目</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label>描画モード:</label>
+          <select id="outlineRenderMode">
+            <option value="standard" selected>標準</option>
+            <option value="inset">インセット主体</option>
+            <option value="emulation-only">エミュレーションのみ</option>
+          </select>
+        </div>
+        <!-- v0.1.6.1: インセット枠線（ADR-0004） -->
+        <div class="control-group">
+          <label>インセット枠線 (m):</label>
+          <input type="range" id="outlineInset" min="0" max="20" step="0.5" value="0" />
+          <span id="outlineInsetValue">0.0</span>
+        </div>
+        <div class="control-group">
+          <label>インセット適用範囲:</label>
+          <select id="outlineInsetMode">
+            <option value="off">OFF（無効）</option>
+            <option value="topn">TopN のみ</option>
+            <option value="all" selected>全体</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="enableThickFrames" />
+            厚い枠線表示（フレーム埋め込み）
+          </label>
+        </div>
+        <!-- v0.1.6: 枠線重なり対策（ボクセル間ギャップ） -->
+        <div class="control-group">
+          <label>ボクセル間ギャップ (m):</label>
+          <input type="range" id="voxelGap" min="0" max="20" step="0.5" value="0" />
+          <span id="voxelGapValue">0.0</span>
+        </div>
+        <!-- v0.1.6: 枠線透明度制御 -->
+        <div class="control-group">
+          <label>枠線透明度:</label>
+          <input type="range" id="outlineOpacity" min="0" max="1" step="0.1" value="1" />
+          <span id="outlineOpacityValue">1.0</span>
+        </div>
+        <!-- v0.1.6: 枠線太さモード -->
+        <div class="control-group">
+          <label>枠線太さモード:</label>
+          <select id="outlineMode">
+            <option value="adaptive" selected>自動（密度に応じて調整）</option>
+            <option value="manual">手動（固定太さ）</option>
+          </select>
+        </div>
+        <div class="control-group" id="manualOutlineWidthGroup" style="opacity: 0.5; pointer-events: none;">
+          <label>枠線太さ (px):</label>
+          <input type="range" id="outlineWidth" min="0" max="8" step="1" value="2" disabled />
+          <span id="outlineWidthValue">2</span>
+        </div>
+        <div class="control-group">
+          <label>太線エミュレーション:</label>
+          <select id="outlineEmulationMode">
+            <option value="off">無効</option>
+            <option value="topn">TopNのみ</option>
+            <option value="non-topn">TopN以外のみ</option>
+            <option value="all">すべて太線（自動インセット適用）</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>⚙️ 適応表示</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="adaptiveOutlines" />
+            適応的枠線制御を有効化
+          </label>
+        </div>
+        <div class="control-group">
+          <label>枠線プリセット:</label>
+          <select id="outlineWidthPreset">
+            <option value="uniform" selected>均一</option>
+            <option value="adaptive-density">密度適応</option>
+            <option value="topn-focus">TopN重視</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>ボックス透明度:</label>
+          <select id="boxOpacityMode">
+            <option value="off" selected>固定（従来）</option>
+            <option value="density">密度ベース</option>
+            <option value="topn">TopNベース</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>枠線透明度:</label>
+          <select id="outlineOpacityMode">
+            <option value="off" selected>固定（従来）</option>
+            <option value="density">密度ベース</option>
+            <option value="topn">TopNベース</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>⭐ 強調表示</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label>TopN強調表示:</label>
+          <input type="number" id="highlightTopN" min="0" max="50" value="0" placeholder="0=無効" />
+        </div>
+        <div class="control-group" id="highlightStyleGroup" style="opacity: 0.5; pointer-events: none;">
+          <label>非TopNの減衰量:</label>
+          <input type="range" id="highlightOpacity" min="0.1" max="1" step="0.1" value="0.9" disabled />
+          <span id="highlightOpacityValue">0.9</span>
+        </div>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>🛠️ 詳細設定</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="debugMode" />
+            デバッグモード（ログ出力）
+          </label>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="showBounds" />
+            境界ボックス表示
+          </label>
+        </div>
+        <button id="testHeatbox" style="background-color: orange;">Heatboxテスト</button>
+      </div>
+    </details>
+    
+    <div class="section">
+      <h3>🎮 操作</h3>
+      <button id="createHeatmap">ヒートマップ作成</button>
+      <button id="clearHeatmap">クリア</button>
+      <button id="toggleVisibility">表示/非表示</button>
+      <button id="exportData">データ出力</button>
+    </div>
+  </div>
+  
+  <div id="info">
+    <div class="section">
+      <h3>📊 統計情報</h3>
+      <div id="statistics">
+        <p>データ点数: <span id="dataCount">0</span></p>
+        <p>ボクセル数: <span id="voxelCount">0</span></p>
+        <p>空ボクセル: <span id="emptyVoxelCount">0</span></p>
+        <p>最大値: <span id="maxValue">-</span></p>
+        <p>最小値: <span id="minValue">-</span></p>
+        <p>平均値: <span id="avgValue">-</span></p>
+        <div id="autoSizeInfo" style="font-size: 10px; color: #aaa; margin-top: 5px; display: none;">
+          <p>自動調整: <span id="autoAdjusted">-</span></p>
+          <p>サイズ: <span id="sizeInfo">-</span></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="section">
+      <h3>🔍 環境情報</h3>
+      <div id="environmentInfo">
+        <p>Cesium: <span id="cesiumVersion">-</span></p>
+        <p>Heatbox: <span id="heatboxVersion">-</span></p>
+        <p>WebGL: <span id="webglSupport">-</span></p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>🧪 Outline Resolver 統計</h3>
+      <div id="outlineStats" style="font-size: 12px;">
+        <p>呼び出し回数: <span id="or_calls">0</span></p>
+        <p>平均太さ: <span id="or_avg">-</span> px</p>
+        <p>太さ min/max: <span id="or_min">-</span> / <span id="or_max">-</span> px</p>
+        <p>密度 min/max: <span id="or_dmin">-</span> / <span id="or_dmax">-</span></p>
+        <p>TopN対象: <span id="or_topn">0</span></p>
+      </div>
+    </div>
+  </div>
+  
+  <div id="loading">
+    <p>処理中...</p>
+  </div>
+  
+  <!-- Heatbox ライブラリ -->
+  <script src="../cesium-heatbox/dist/cesium-heatbox.umd.min.js?v=0.1.7"></script>
+  <script src="app.js"></script>
+</body>
+</html>
