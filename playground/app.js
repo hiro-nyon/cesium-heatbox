@@ -61,6 +61,7 @@ class HeatboxPlayground {
       sel.value = this._lang;
       sel.addEventListener('change', () => {
         const val = sel.value;
+        console.log('Language selector changed to:', val);
         this.setLanguage(val);
       });
     } catch (_) {}
@@ -70,8 +71,10 @@ class HeatboxPlayground {
    * 言語を設定
    */
   setLanguage(lang) {
+    console.log('=== setLanguage called ===', 'from:', this._lang, 'to:', lang);
     this._lang = lang || 'ja';
     try { if (typeof localStorage !== 'undefined') localStorage.setItem('hb_lang', this._lang); } catch (_) {}
+    console.log('Language set to:', this._lang);
     this._applyTranslations();
   }
 
@@ -79,8 +82,10 @@ class HeatboxPlayground {
    * 翻訳適用（主要テキストのみ）
    */
   _applyTranslations() {
+    console.log('=== _applyTranslations called ===', 'lang:', this._lang);
     const t = this._getTranslations();
     const L = t[this._lang] || t.ja;
+    console.log('Translation object L for', this._lang, ':', L);
     const map = {
       'i18n-title': 'title_main',
       'i18n-sum-data': 'sum_data',
@@ -112,9 +117,16 @@ class HeatboxPlayground {
       'i18n-label-or-topn': 'or_topn',
       'i18n-lang-label': 'lang_label'
     };
+    let updated = 0;
     Object.entries(map).forEach(([id, key]) => {
       const el = document.getElementById(id);
-      if (el && L[key]) el.textContent = L[key];
+      if (el && L[key]) {
+        console.log('Updating element:', id, 'from', el.textContent, 'to', L[key]);
+        el.textContent = L[key];
+        updated++;
+      } else {
+        console.warn('Element not found or no translation:', id, 'element:', !!el, 'translation:', !!L[key]);
+      }
     });
     // ボタン
     const btns = [
@@ -125,8 +137,15 @@ class HeatboxPlayground {
     ];
     btns.forEach(([id, key]) => {
       const el = document.querySelector(`[data-i18n-id="${id}"]`);
-      if (el && L[key]) el.textContent = L[key];
+      if (el && L[key]) {
+        console.log('Updating button:', id, 'from', el.textContent, 'to', L[key]);
+        el.textContent = L[key];
+        updated++;
+      } else {
+        console.warn('Button not found or no translation:', id, 'element:', !!el, 'translation:', !!L[key]);
+      }
     });
+    console.log('Translation update complete. Elements updated:', updated);
   }
 
   /**
