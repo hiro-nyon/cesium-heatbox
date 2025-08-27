@@ -16,7 +16,7 @@ class HeatboxPlayground {
     // v0.1.6: outlineWidthResolver の統計
     this._outlineStats = null;
     // i18n 状態
-    this._lang = (typeof localStorage !== 'undefined' && localStorage.getItem('hb_lang')) || 'ja';
+    this._lang = (typeof localStorage !== 'undefined' && localStorage.getItem('hb_lang')) || 'en';
     
     console.log('Cesium available:', typeof Cesium !== 'undefined');
     console.log('CesiumHeatbox available:', typeof CesiumHeatbox !== 'undefined');
@@ -83,6 +83,7 @@ class HeatboxPlayground {
     const L = t[this._lang] || t.ja;
     const map = {
       'i18n-title': 'title_main',
+      'i18n-subtitle': 'subtitle',
       'i18n-sum-data': 'sum_data',
       'i18n-sum-display': 'sum_display',
       'i18n-sum-color': 'sum_color',
@@ -138,6 +139,7 @@ class HeatboxPlayground {
     return {
       ja: {
         title_main: '🎛️ Cesium Heatbox Playground',
+        subtitle: 'v0.1.7 対応・UI整理版',
         sum_data: '📁 データ読み込み',
         sum_display: '🔧 表示設定',
         sum_color: '🎨 色設定',
@@ -243,6 +245,7 @@ class HeatboxPlayground {
       },
       en: {
         title_main: '🎛️ Cesium Heatbox Playground',
+        subtitle: 'v0.1.7 compatible • UI tidy-up',
         sum_data: '📁 Data',
         sum_display: '🔧 Display',
         sum_color: '🎨 Colors',
