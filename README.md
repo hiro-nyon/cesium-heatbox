@@ -9,6 +9,12 @@
 
 **日本語** | [English](#english)
 
+## デモ / Live Demo
+
+- Playground: https://hiro-nyon.github.io/cesium-heatbox/
+- 背景タイル: CartoDB Light (OSMベース)。高トラフィック時はタイルポリシーにご配慮ください。
+- デモは `gh-pages` ブランチに静的ファイルのみを配置しています。
+
 CesiumJS環境内の既存エンティティを対象とした3Dボクセルベースヒートマップ可視化ライブラリです。
 
 **English**
