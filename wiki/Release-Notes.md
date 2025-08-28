@@ -1,6 +1,10 @@
-# Release Notes
+# Release Notes（リリースノート） / Release Notes
+
+**日本語** | [English](#english)
 
 最新の変更はリポジトリの `CHANGELOG.md` を参照してください。ここでは主要トピックを抜粋します。
+
+## 日本語
 
 ## 0.1.5 (2025-08-25)
 - デバッグ: `debug.showBounds` で境界ボックス表示を明示的に制御（`debug` は boolean | object）
@@ -48,4 +52,80 @@
 - 初期実装、基本ボクセル可視化と統計
 - 仕様・開発ガイド・クイックスタートの追加
 
+## 取得・ビルド手順
+
+```bash
+git clone https://github.com/hiro-nyon/cesium-heatbox.git
+cd cesium-heatbox
+npm install
+npm run build:umd
+```
+
+詳細は Getting Started / Quick Start ページを参照してください。
+
 > 詳細は `CHANGELOG.md` を参照してください。
+
+## English
+
+Please refer to the repository's `CHANGELOG.md` for the latest changes. Here we extract major topics.
+
+### v0.1.7 (2025-01-09)
+- **Adaptive Outline Control**: Automatic adjustment based on neighborhood density, camera distance, and overlap risk
+- **Display Mode Extension**: Switching between standard/inset/emulation-only rendering methods  
+- **Opacity Resolvers**: Custom opacity control functionality
+- Performance optimization and error handling enhancements
+
+### v0.1.6.1 (2025-08-26)
+- **Inset Outline Feature**: Display outlines offset inward for improved visibility
+- Examples updated with inset outline UI
+- Comprehensive unit and integration tests added
+
+### v0.1.6 (2025-08-26)
+- **Outline Overlap Mitigation**: `voxelGap` option for inter-voxel gaps to improve visibility
+- **Outline Transparency Control**: `outlineOpacity` option to control outline transparency (0-1)
+- **Dynamic Outline Width Control**: `outlineWidthResolver` function for dynamic per-voxel outline width determination
+- **Legend Implementation Guide**: Detailed documentation for custom legend implementation
+- **Wiki Auto-sync**: Complete automation of Wiki updates via GitHub Actions
+
+### v0.1.5 (2025-08-25)
+- Debug: Explicit control of bounding box display with `debug.showBounds`
+- Color maps: `colorMap: 'viridis' | 'inferno'`, diverging colors `diverging`/`divergingPivot`
+- Highlighting: Emphasize top N voxels with `highlightTopN` and `highlightStyle`
+- Deprecated: `batchMode` is deprecated (accepted for compatibility but ignored, will be removed in future)
+
+### v0.1.4 (2025-08-24)
+- New feature: Automatic voxel size determination with `autoVoxelSize` (when `voxelSize` is unspecified)
+- Statistics/debug enhancement: Added auto-adjustment details to `HeatboxStatistics` and `getDebugInfo()`
+- Specification clarification: Clarified that actual rendering dimensions use actual cell sizes `cellSizeX/Y/Z` for each axis
+
+### v0.1.2 (2025-10-05)
+- **Visibility Improvement**: `wireframeOnly` option for outline-only display, making overlapping voxels easier to see
+- **Height-based Representation**: `heightBased` option to visualize density through height
+- **UI Extension**: Added new display options to Playground
+
+### v0.1.0 (2025-09-15)
+- Stable release (migrated from alpha)
+- CI (GitHub Actions) introduction, tree shaking support
+- README/configuration organization, duplicate configuration resolution
+
+### v0.1.0-alpha.3
+- New API additions: `createFromEntities`, `getOptions`, `getDebugInfo`, `Heatbox.filterEntities`
+- Jest configuration stabilization, JSDoc/type definition generation script organization
+- ESM/UMD entry point organization, external module handling adjustment
+
+### v0.1.0-alpha.2 / alpha.1
+- Initial implementation, basic voxel visualization and statistics
+- Addition of specifications, development guide, and quick start
+
+### Installation and Build Instructions
+
+```bash
+git clone https://github.com/hiro-nyon/cesium-heatbox.git
+cd cesium-heatbox
+npm install
+npm run build:umd
+```
+
+Please refer to the Getting Started / Quick Start pages for details.
+
+> Please refer to `CHANGELOG.md` for details.

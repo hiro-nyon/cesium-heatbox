@@ -1,6 +1,6 @@
 # Quick Start
 
-> **⚠️ 重要 / Important**: このライブラリは現在npm未登録です。以下の手順に従ってGitHubから取得してください。  
+> **Important**: このライブラリは現在npm未登録です。以下の手順に従ってGitHubから取得してください。  
 > This library is currently not registered on npm. Please follow the steps below to get it from GitHub.
 
 **日本語** | [English](#english)

@@ -1,16 +1,26 @@
-# Class: DataProcessor
+# Class: DataProcessor（DataProcessorクラス）
 
-エンティティデータの処理を担当するクラス
+**English** | [日本語](#日本語)
 
-## Constructor
+Class responsible for processing entity data, classification into voxels, and statistical calculations.
+
+エンティティデータの処理、ボクセルへの分類、統計計算を担当するクラス。
+
+## Constructor / コンストラクタ
 
 ### new DataProcessor()
 
-## Methods
+Creates a new DataProcessor instance for entity data processing.
+
+エンティティデータ処理のための新しいDataProcessorインスタンスを作成します。
+
+## Methods / メソッド
 
 ### (static) calculateStatistics(voxelData, grid) → {Object}
 
-ボクセルデータから統計情報を計算
+Calculates statistical information from voxel data.
+
+ボクセルデータから統計情報を計算します。
 
 | Name | Type | Description |
 |---|---|---|
@@ -18,6 +28,8 @@
 | grid | Object | グリッド情報 |
 
 ### (static) classifyEntitiesIntoVoxels(entities, bounds, grid) → {Map}
+
+Classifies entities into voxels (simple implementation).
 
 エンティティをボクセルに分類（シンプル実装）
 
@@ -28,6 +40,8 @@
 | grid | Object | グリッド情報 |
 
 ### (static) getTopNVoxels(voxelData, topN) → {Array}
+
+Returns the top N voxels by count.
 
 上位N個のボクセルを取得
 

@@ -1,10 +1,11 @@
-# Architecture（内部構成の概要） - v0.1.2
+# Architecture（内部構成の概要） / Architecture Overview - v0.1.7
 
-> **⚠️ 注意**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。
+> **Important**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。  
+> This library is currently not registered on npm. Please refer to [Quick-Start](Quick-Start.md) to get it from GitHub.
 
 **日本語** | [English](#english)
 
-本ライブラリは 4 つの中核コンポーネントで構成されています（v0.1.2でシンプル化）。
+本ライブラリは 4 つの中核コンポーネントで構成されています（v0.1.7で適応的制御を強化）。
 
 ## 日本語
 
@@ -29,20 +30,27 @@
 4. **統計算出**: `DataProcessor.calculateStatistics(...)` - 基本統計の計算
 5. **描画**: `VoxelRenderer.render(...)` - Entity ベースの描画
 
-### v0.1.2 の特徴
-- **Entity ベース描画**: Primitive から Entity に変更で安定性向上
-- **視認性改善**: wireframeOnly で重なったボクセルが見やすく
-- **高さベース表現**: heightBased で直感的な密度理解
-- **エラーハンドリング**: 堅牢なエンティティ処理
-- **パフォーマンス**: maxRenderVoxels で描画数制限（推奨300前後）
+### v0.1.7 の特徴
+- **適応的枠線制御**: 近傍密度・カメラ距離・重なりリスクに応じた自動調整
+- **表示モード拡張**: standard/inset/emulation-only の描画方式切替
+- **透明度resolver**: カスタム透明度制御機能
+- **インセット枠線**: 内側オフセット表示による視認性向上（v0.1.6.1）
+- **エラーハンドリング**: 堅牢なエンティティ処理とresolver例外処理
 
-### 新機能オプション
+### v0.1.7 新機能オプション
 ```javascript
 const heatbox = new Heatbox(viewer, {
-  wireframeOnly: true,    // 枠線のみ表示
-  heightBased: true,      // 高さベース表現  
-  outlineWidth: 2,        // 枠線の太さ
-  maxRenderVoxels: 300    // 描画数制限
+  // 適応的枠線制御
+  adaptiveOutlines: true,
+  outlineWidthPreset: 'adaptive-density',
+  // 表示モード
+  outlineRenderMode: 'emulation-only',
+  // 透明度resolver
+  boxOpacityResolver: ({ isTopN, normalizedDensity }) => 
+    isTopN ? 1.0 : Math.max(0.3, 0.3 + 0.7 * normalizedDensity),
+  // インセット枠線
+  outlineInset: 2.0,
+  outlineInsetMode: 'all'
 });
 ```
 
@@ -54,7 +62,7 @@ const heatbox = new Heatbox(viewer, {
 
 ## English
 
-This library consists of 4 core components (simplified in v0.1.2).
+This library consists of 4 core components (enhanced with adaptive control in v0.1.7).
 
 ### Components
 - `CoordinateTransformer` **(v0.1.2: Simplified)**

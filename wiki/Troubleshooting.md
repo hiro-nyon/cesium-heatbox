@@ -1,6 +1,11 @@
-# Troubleshooting（よくある問題）
+# Troubleshooting（よくある問題） / Troubleshooting
 
-> **⚠️ 注意**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。
+> **Important**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。  
+> This library is currently not registered on npm. Please refer to [Quick-Start](Quick-Start.md) to get it from GitHub.
+
+**日本語** | [English](#english)
+
+## 日本語
 
 ## npm install が失敗する（ERESOLVE）
 ```
@@ -70,3 +75,74 @@ TypeError: t.isDestroyed is not a function
 ```
 対応:
 - v0.1.2 で修正済み。古いバージョンを使用している場合は更新してください
+
+## English
+
+### npm install fails (ERESOLVE)
+```
+npm ERR! ERESOLVE unable to resolve dependency tree
+```
+Solution:
+```
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### ESLint configuration error
+```
+Error: ESLint configuration in eslint.config.js is invalid
+```
+Solution:
+- Use ESLint 8.x series (9.x flat configuration not supported)
+- Use `.eslintrc.js` format or match existing configuration
+
+### Cesium type definition warnings
+```
+warn deprecated @types/cesium@...: cesium provides its own type definitions
+```
+Solution:
+```
+npm uninstall @types/cesium
+```
+
+### Jest configuration error
+```
+Unknown option "moduleNameMapping" with value
+```
+Solution:
+- Fix `moduleNameMapping` → `moduleNameMapper`
+
+### Import path errors
+```
+Cannot find module '../src/core/CoordinateTransformer.js'
+```
+Solution:
+- Set relative paths correctly (e.g., `../../src/core/...`)
+
+### Cesium object undefined
+```
+TypeError: Cesium.Cartesian3 is not a constructor
+```
+Solution:
+- Prepare Cesium mocks for testing (refer to `test/setup.js`)
+- Load Cesium correctly via CDN in actual browsers
+
+### v0.1.2 Specific Issues
+
+#### Nothing displays with wireframeOnly
+Solution:
+- Set `opacity` to non-zero (wireframeOnly automatically sets it to 0.0)
+- Confirm `showOutline: true`
+
+#### Height not reflected with heightBased
+Solution:
+- Confirm that data has sufficient density variation
+- Set `maxRenderVoxels` appropriately (recommended: around 300)
+
+#### Entity isDestroyed error
+```
+TypeError: t.isDestroyed is not a function
+```
+Solution:
+- Fixed in v0.1.2. Please update if using an older version

@@ -1,14 +1,23 @@
-# Getting Started
+# Getting Started（はじめに）
 
-> **⚠️ 重要**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。
+> **Important / 重要**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。  
+> This library is currently not registered on npm. Please refer to [Quick-Start](Quick-Start.md) to get it from GitHub.
+
+**日本語** | [English](#english)
 
 このページでは、ライブラリ利用者向けに最短で使い始めるための手順を説明します。
 
-## インストール
+## English
+
+This page explains the quickest steps for library users to get started.
+
+## インストール / Installation
+
+### 日本語
 
 現在npm未登録のため、以下の方法で取得してください：
 
-### GitHubから直接取得
+#### GitHubから直接取得
 ```bash
 git clone https://github.com/hiro-nyon/cesium-heatbox.git
 cd cesium-heatbox
@@ -16,14 +25,36 @@ npm install
 npm run build:umd
 ```
 
-### CDN経由
+#### CDN経由
 ```html
 <script src="https://raw.githubusercontent.com/hiro-nyon/cesium-heatbox/main/dist/cesium-heatbox.umd.min.js"></script>
 ```
 
 Peer Dependency として Cesium を別途インストールしてください。
 
-## 使い方（基本）
+### English
+
+Since this library is not currently published on npm, please obtain it using the following methods:
+
+#### Direct from GitHub
+```bash
+git clone https://github.com/hiro-nyon/cesium-heatbox.git
+cd cesium-heatbox
+npm install
+npm run build:umd
+```
+
+#### Via CDN
+```html
+<script src="https://raw.githubusercontent.com/hiro-nyon/cesium-heatbox/main/dist/cesium-heatbox.umd.min.js"></script>
+```
+
+Please install Cesium separately as a peer dependency.
+
+## 使い方（基本） / Basic Usage
+
+### 日本語
+
 ```javascript
 import Heatbox from 'cesium-heatbox';
 

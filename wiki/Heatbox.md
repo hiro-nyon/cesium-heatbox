@@ -1,21 +1,32 @@
-# Class: Heatbox
+# Class: Heatbox（Heatboxクラス）
 
-CesiumJS Heatbox メインクラス
-3Dボクセルベースのヒートマップ可視化を提供
+**English** | [日本語](#日本語)
 
-## Constructor
+CesiumJS Heatbox main class that provides 3D voxel-based heatmap visualization.
+
+CesiumJS Heatbox メインクラス。3Dボクセルベースのヒートマップ可視化を提供します。
+
+## Constructor / コンストラクタ
 
 ### new Heatbox(viewer, options)
 
-## Methods
+Creates a new Heatbox instance for 3D voxel-based heatmap visualization.
+
+3Dボクセルベースのヒートマップ可視化のための新しいHeatboxインスタンスを作成します。
+
+## Methods / メソッド
 
 ### clear()
 
-ヒートマップをクリア
+Clears the heatmap and removes all rendered voxels.
+
+ヒートマップをクリアし、描画されたすべてのボクセルを削除します。
 
 ### (async) createFromEntities(entities) → {Promise.<Object>}
 
-エンティティからヒートマップを作成（非同期API）
+Creates a heatmap from entities (asynchronous API).
+
+エンティティからヒートマップを作成します（非同期API）。
 
 | Name | Type | Description |
 |---|---|---|
@@ -23,25 +34,37 @@ CesiumJS Heatbox メインクラス
 
 ### destroy()
 
+Destroys the instance and releases event listeners.
+
 インスタンスを破棄し、イベントリスナーを解放
 
 ### getBounds() → {Object|null}
+
+Gets current bounds information.
 
 境界情報を取得
 
 ### getDebugInfo() → {Object}
 
+Returns debug information.
+
 デバッグ情報を取得
 
 ### getOptions() → {Object}
+
+Returns current options.
 
 現在のオプションを取得
 
 ### getStatistics() → {Object|null}
 
+Returns statistics, or null if not created.
+
 統計情報を取得
 
 ### setData(entities)
+
+Sets heatmap data and triggers rendering.
 
 ヒートマップデータを設定し、描画を実行
 
@@ -51,6 +74,8 @@ CesiumJS Heatbox メインクラス
 
 ### setVisible(show)
 
+Toggles visibility.
+
 表示/非表示を切り替え
 
 | Name | Type | Description |
@@ -59,6 +84,8 @@ CesiumJS Heatbox メインクラス
 
 ### updateOptions(newOptions)
 
+Updates options.
+
 オプションを更新
 
 | Name | Type | Description |
@@ -66,6 +93,8 @@ CesiumJS Heatbox メインクラス
 | newOptions | Object | 新しいオプション |
 
 ### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
+
+Filters an entity array with a predicate (utility static method).
 
 エンティティ配列をフィルタ（ユーティリティ, 静的メソッド）
 
