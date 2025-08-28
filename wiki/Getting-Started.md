@@ -94,7 +94,48 @@ heatbox.setVisible(true);
 // heatbox.destroy();
 ```
 
-## オプション一覧（v0.1.5対応）
+### English
+
+```javascript
+import Heatbox from 'cesium-heatbox';
+
+// 1) Prepare a Cesium Viewer
+const viewer = new Cesium.Viewer('cesiumContainer');
+
+// 2) Initialize Heatbox (v0.1.5)
+const heatbox = new Heatbox(viewer, {
+  // v0.1.4: You can omit voxelSize and use autoVoxelSize
+  // voxelSize: 20,      // Uncomment to explicitly set
+  autoVoxelSize: true,   // Auto determine voxel size
+  opacity: 0.8,          // Opacity for data voxels
+  emptyOpacity: 0.03,    // Opacity for empty voxels
+  showOutline: true,     // Show outlines
+  showEmptyVoxels: false,// Draw empty voxels
+  wireframeOnly: false,  // Wireframe-only (v0.1.2)
+  heightBased: false,    // Height-based (v0.1.2)
+  outlineWidth: 2,       // Outline thickness (v0.1.2)
+  // v0.1.5: Explicit control of debug boundary display
+  debug: { showBounds: false },
+  // v0.1.5: Perceptual colormaps/diverging/TopN highlight
+  colorMap: 'custom',    // 'viridis' | 'inferno'
+  diverging: false,
+  divergingPivot: 0,
+  highlightTopN: null,
+  highlightStyle: { outlineWidth: 4, boostOpacity: 0.2 }
+});
+
+// 3) Create heatmap from entities (async)
+const entities = viewer.entities.values;
+const stats = await heatbox.createFromEntities(entities);
+console.log('stats', stats);
+
+// 4) Toggle visibility / clear / destroy
+heatbox.setVisible(true);
+// heatbox.clear();
+// heatbox.destroy();
+```
+
+## オプション一覧 / Options (v0.1.5+)
 - `voxelSize` number（既定: 20）
 - `opacity` number 0–1（既定: 0.8）
 - `emptyOpacity` number 0–1（既定: 0.03）
@@ -113,9 +154,36 @@ heatbox.setVisible(true);
 - **`highlightTopN` number|null / `highlightStyle`（v0.1.5）** - 上位Nボクセルを強調
 - `batchMode` は v0.1.5 で非推奨（互換のため受理するが無視）
 
-更新は `heatbox.updateOptions({ ... })` で反映できます。
+### English
+- `voxelSize` number (default: 20)
+- `opacity` number 0–1 (default: 0.8)
+- `emptyOpacity` number 0–1 (default: 0.03)
+- `showOutline` boolean (default: true)
+- `showEmptyVoxels` boolean (default: false)
+- `minColor` [r,g,b] (default: [0,32,255])
+- `maxColor` [r,g,b] (default: [255,64,0])
+- `maxRenderVoxels` number (render cap)
+- `wireframeOnly` boolean (v0.1.2) — outlines only
+- `heightBased` boolean (v0.1.2) — represent density with height
+- `outlineWidth` number (v0.1.2) — outline thickness (default: 2)
+- `debug` boolean | { showBounds?: boolean } (v0.1.3→v0.1.5) — logs/bounds
+- `autoVoxelSize` boolean (v0.1.4) — auto size when `voxelSize` is omitted
+- `colorMap` 'custom'|'viridis'|'inferno' (v0.1.5) — perceptual maps
+- `diverging` boolean / `divergingPivot` number (v0.1.5) — diverging scheme
+- `highlightTopN` number|null / `highlightStyle` (v0.1.5) — emphasize top N
+- `batchMode` deprecated in v0.1.5 (accepted for compat but ignored)
 
-## 統計情報
+### v0.1.7 Additions / 追加
+- `adaptiveOutlines` boolean — adaptive outline behavior
+- `outlineRenderMode` 'standard'|'inset'|'emulation-only' — rendering mode
+- `outlineWidthPreset` 'uniform'|'adaptive-density'|'topn-focus'
+- `boxOpacityResolver(ctx)` / `outlineOpacityResolver(ctx)` — opacity resolvers (priority: resolver > adaptive > fixed)
+- `adaptiveParams` — tunables for adaptive logic
+
+更新は `heatbox.updateOptions({ ... })` で反映できます。
+Apply updates via `heatbox.updateOptions({ ... })`.
+
+## 統計情報 / Statistics
 `getStatistics()` で取得できる主な項目:
 - `totalVoxels` 総ボクセル数
 - `renderedVoxels` 実際に描画されたボクセル数（v0.1.3追加）
@@ -124,13 +192,18 @@ heatbox.setVisible(true);
 - `totalEntities` 総エンティティ数
 - `minCount` / `maxCount` / `averageCount`
 
-## TypeScript
-型定義（`types/index.d.ts`）を同梱しています。ESM 環境でそのまま利用可能です。
+Key fields from `getStatistics()`:
+- `totalVoxels`, `renderedVoxels`, `nonEmptyVoxels`, `emptyVoxels`
+- `totalEntities`, `minCount`, `maxCount`, `averageCount`
 
-## 対応バンドル形式
+## TypeScript / 型定義
+型定義（`types/index.d.ts`）を同梱しています。ESM 環境でそのまま利用可能です。  
+Type definitions are bundled in `types/index.d.ts` and usable in ESM.
+
+## 対応バンドル形式 / Bundles
 - ES Modules: `import Heatbox from 'cesium-heatbox'`
 - UMD: `<script src=".../cesium-heatbox.umd.min.js"></script>` → `window.CesiumHeatbox`
 
-## 次のステップ
-- 基本コードと UI 操作例: [[Examples]]
-- 詳細 API: [[API-Reference]]
+## 次のステップ / Next Steps
+- 基本コードと UI 操作例 / Basic code and UI examples: [[Examples]]
+- 詳細 API / Detailed API: [[API-Reference]]
