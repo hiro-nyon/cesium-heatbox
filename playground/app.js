@@ -46,8 +46,219 @@ class HeatboxPlayground {
     this._resetOutlineStats();
     this._setupLanguageControls();
     this._applyTranslations();
+    this._setupMobileUI();
     
     console.log('=== HeatboxPlayground 初期化完了 ===');
+  }
+
+  /**
+   * モバイルUI機能の初期化
+   */
+  _setupMobileUI() {
+    const mobileToggle = document.getElementById('mobileMenuToggle');
+    const toolbar = document.getElementById('toolbar');
+    const cesiumContainer = document.getElementById('cesiumContainer');
+    
+    if (!mobileToggle || !toolbar) {
+      console.log('Mobile UI elements not found, skipping mobile setup');
+      return;
+    }
+
+    // ハンバーガーメニューの開閉制御
+    let isMenuOpen = false;
+    
+    const toggleMenu = () => {
+      isMenuOpen = !isMenuOpen;
+      
+      if (isMenuOpen) {
+        toolbar.classList.add('open');
+        mobileToggle.innerHTML = '✕';
+        mobileToggle.setAttribute('aria-label', 'メニューを閉じる');
+        // スクロールを一時的に無効化（背景スクロール防止）
+        document.body.style.overflow = 'hidden';
+      } else {
+        toolbar.classList.remove('open');
+        mobileToggle.innerHTML = '☰';
+        mobileToggle.setAttribute('aria-label', 'メニューを開く');
+        // スクロールを復元
+        document.body.style.overflow = '';
+      }
+    };
+
+    // ハンバーガーメニューボタンクリック
+    mobileToggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMenu();
+    });
+
+    // Cesium地図エリアクリックでメニューを閉じる
+    if (cesiumContainer) {
+      cesiumContainer.addEventListener('click', () => {
+        if (isMenuOpen) {
+          toggleMenu();
+        }
+      });
+    }
+
+    // ESCキーでメニューを閉じる
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isMenuOpen) {
+        toggleMenu();
+      }
+    });
+
+    // 画面サイズ変更時の処理
+    const handleResize = () => {
+      // デスクトップサイズになったらメニューを閉じる
+      if (window.innerWidth > 768 && isMenuOpen) {
+        isMenuOpen = false;
+        toolbar.classList.remove('open');
+        mobileToggle.innerHTML = '☰';
+        document.body.style.overflow = '';
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    // タッチデバイス検出と追加制御
+    this._setupTouchOptimizations();
+    
+    // 情報パネルのモバイル制御
+    this._setupMobileInfoPanel();
+    
+    console.log('Mobile UI setup completed');
+  }
+
+  /**
+   * タッチデバイス向け最適化
+   */
+  _setupTouchOptimizations() {
+    // タッチデバイス検出
+    const isTouchDevice = ('ontouchstart' in window) || 
+                         (navigator.maxTouchPoints > 0) || 
+                         (navigator.msMaxTouchPoints > 0);
+
+    if (!isTouchDevice) return;
+
+    console.log('Touch device detected, applying optimizations');
+
+    // ダブルタップでのズーム防止（メニューボタン等）
+    const preventDoubleZoom = (element) => {
+      let lastTouchEnd = 0;
+      element.addEventListener('touchend', (e) => {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+          e.preventDefault();
+        }
+        lastTouchEnd = now;
+      }, false);
+    };
+
+    // 主要なUI要素にダブルタップズーム防止を適用
+    const uiElements = document.querySelectorAll('#mobileMenuToggle, #toolbar button, select, input[type="range"]');
+    uiElements.forEach(preventDoubleZoom);
+
+    // スライダーのタッチ操作改善
+    const sliders = document.querySelectorAll('#toolbar input[type="range"]');
+    sliders.forEach(slider => {
+      slider.style.touchAction = 'pan-x'; // 水平スクロールのみ許可
+      
+      // タッチ開始時のフィードバック
+      slider.addEventListener('touchstart', () => {
+        slider.style.outline = '2px solid #4CAF50';
+      });
+      
+      slider.addEventListener('touchend', () => {
+        slider.style.outline = '';
+      });
+    });
+
+    // ツールバー内のスクロール改善
+    const toolbar = document.getElementById('toolbar');
+    if (toolbar) {
+      toolbar.style.webkitOverflowScrolling = 'touch';
+      toolbar.style.overscrollBehavior = 'contain';
+    }
+  }
+
+  /**
+   * モバイル向け情報パネル制御
+   */
+  _setupMobileInfoPanel() {
+    const infoPanel = document.getElementById('info');
+    if (!infoPanel) return;
+
+    // 小画面での情報パネル初期状態（最小化）
+    const checkMobileLayout = () => {
+      const isMobile = window.innerWidth <= 768;
+      
+      if (isMobile) {
+        // モバイルでは詳細セクションをデフォルトで折りたたむ
+        const detailsSections = infoPanel.querySelectorAll('details.section');
+        detailsSections.forEach(details => {
+          details.removeAttribute('open');
+        });
+        
+        // 情報パネルをコンパクトモードに
+        infoPanel.classList.add('mobile-compact');
+        
+        // タップで展開可能なヘッダーを追加
+        if (!infoPanel.querySelector('.mobile-info-toggle')) {
+          const toggleButton = document.createElement('div');
+          toggleButton.className = 'mobile-info-toggle';
+          toggleButton.innerHTML = '<span>ℹ️ 統計情報 ▼</span>';
+          toggleButton.style.cssText = `
+            background: rgba(0,0,0,0.8);
+            padding: 8px 12px;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 12px;
+            border-bottom: 1px solid #333;
+          `;
+          
+          infoPanel.insertBefore(toggleButton, infoPanel.firstChild);
+          
+          let isExpanded = false;
+          toggleButton.addEventListener('click', () => {
+            isExpanded = !isExpanded;
+            const sections = infoPanel.querySelectorAll('.section');
+            
+            if (isExpanded) {
+              sections.forEach(section => section.style.display = 'block');
+              toggleButton.innerHTML = '<span>ℹ️ 統計情報 ▲</span>';
+              infoPanel.style.maxHeight = '70vh';
+            } else {
+              sections.forEach(section => section.style.display = 'none');
+              toggleButton.innerHTML = '<span>ℹ️ 統計情報 ▼</span>';
+              infoPanel.style.maxHeight = '40px';
+            }
+          });
+          
+          // 初期状態は折りたたみ
+          const sections = infoPanel.querySelectorAll('.section');
+          sections.forEach(section => section.style.display = 'none');
+          infoPanel.style.maxHeight = '40px';
+        }
+      } else {
+        // デスクトップでは通常表示
+        infoPanel.classList.remove('mobile-compact');
+        const toggle = infoPanel.querySelector('.mobile-info-toggle');
+        if (toggle) {
+          toggle.remove();
+        }
+        
+        const sections = infoPanel.querySelectorAll('.section');
+        sections.forEach(section => {
+          section.style.display = 'block';
+        });
+        infoPanel.style.maxHeight = '';
+      }
+    };
+
+    // 初期チェックと画面サイズ変更時の対応
+    checkMobileLayout();
+    window.addEventListener('resize', checkMobileLayout);
   }
   
   /**

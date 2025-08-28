@@ -1,0 +1,348 @@
+/**
+ * Cesium Heatbox Playground - スタイルシート
+ * スマホ対応レスポンシブデザイン
+ */
+
+/* === 基本レイアウト === */
+html, body, #cesiumContainer {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Noto Sans JP', sans-serif;
+  background-color: #111;
+  /* 横スクロール防止 */
+  overflow-x: hidden;
+  /* タッチデバイスでのズーム制御 */
+  touch-action: manipulation;
+}
+
+/* 基本レイアウトの改善 */
+* {
+  box-sizing: border-box;
+}
+
+/* セレクト要素でのズーム防止（iOS Safari対策）*/
+select, input, textarea {
+  font-size: 16px; /* 16px未満だとiOSでズームが発生 */
+}
+
+#cesiumContainer {
+  background-color: #0e1b22 !important;
+}
+
+/* === デスクトップ向けツールバー === */
+#toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  border-radius: 5px;
+  color: white;
+  z-index: 1000;
+  max-width: 360px;
+  max-height: calc(100% - 20px);
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+
+/* モバイル向けハンバーガーメニューボタン */
+#mobileMenuToggle {
+  display: none;
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top));
+  left: calc(10px + env(safe-area-inset-left));
+  z-index: 1001;
+  background: rgba(0, 0, 0, 0.8);
+  border: none;
+  color: white;
+  font-size: 20px;
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+#mobileMenuToggle:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* === ボタンスタイル === */
+#toolbar button {
+  margin: 5px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 3px;
+  background: #4CAF50;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#toolbar button:hover {
+  background: #45a049;
+}
+
+#toolbar button:disabled {
+  background: #666;
+  cursor: not-allowed;
+}
+
+/* === 情報パネル === */
+#info {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  border-radius: 5px;
+  color: white;
+  z-index: 1000;
+  max-width: 250px;
+  font-size: 12px;
+}
+
+/* === フォーム要素 === */
+#fileInput {
+  margin: 10px 0;
+}
+
+/* === セクション共通スタイル === */
+/* div/.section と details.section を両対応 */
+.section {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 3px;
+  background: rgba(0,0,0,0.25);
+}
+
+.section h3, .section > summary {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+}
+
+details.section > summary {
+  cursor: pointer;
+  list-style: none;
+  outline: none;
+}
+
+details.section > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.section > summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 6px;
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+details.section[open] > summary::before {
+  content: '▾';
+}
+
+.section-content {
+  margin-top: 8px;
+}
+
+/* === コントロール要素 === */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.control-group label {
+  flex: 1;
+  font-size: 11px;
+}
+
+.control-group input, .control-group select {
+  flex: 1;
+  padding: 2px;
+  border: 1px solid #666;
+  border-radius: 2px;
+  background: #333;
+  color: white;
+}
+
+/* === ローディング表示 === */
+#loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 20px;
+  border-radius: 5px;
+  z-index: 2000;
+  display: none;
+}
+
+/* === モバイル・タブレット向けレスポンシブデザイン === */
+@media screen and (max-width: 768px) {
+  /* ハンバーガーメニューボタンを表示 */
+  #mobileMenuToggle {
+    display: block;
+  }
+  
+  /* ツールバーをモバイル向けに調整 */
+  #toolbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    border-radius: 0;
+    /* セーフエリア考慮（ノッチ等） */
+    padding-top: calc(60px + env(safe-area-inset-top));
+    padding-right: calc(15px + env(safe-area-inset-right));
+    padding-bottom: calc(15px + env(safe-area-inset-bottom));
+    padding-left: calc(15px + env(safe-area-inset-left));
+    box-sizing: border-box;
+    transform: translateX(-100%);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* ツールバーが開いているとき */
+  #toolbar.open {
+    transform: translateX(0);
+  }
+  
+  /* セクションの調整 */
+  .section {
+    margin: 8px 0;
+    padding: 12px;
+    border-radius: 5px;
+  }
+  
+  /* ボタンをモバイル向けに調整 */
+  #toolbar button {
+    margin: 3px 0;
+    padding: 12px 16px;
+    font-size: 14px;
+    width: 100%;
+    min-height: 44px; /* Appleのタッチターゲット最小サイズ */
+    border-radius: 5px;
+  }
+  
+  /* コントロールグループの調整 */
+  .control-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .control-group label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  
+  .control-group input, 
+  .control-group select {
+    min-height: 40px;
+    font-size: 16px; /* ズーム防止 */
+    border-radius: 4px;
+  }
+  
+  /* 情報パネルを下部に移動 */
+  #info {
+    position: fixed;
+    top: auto;
+    bottom: 10px;
+    right: 10px;
+    left: auto;
+    max-width: calc(100% - 20px);
+    max-height: 200px;
+    font-size: 11px;
+  }
+  
+  /* 小さなセクションは折りたたんで表示 */
+  #info .section {
+    margin: 2px 0;
+    padding: 6px;
+  }
+  
+  /* 詳細なセクションはデフォルトで閉じる */
+  details.section[open] {
+    margin-bottom: 12px;
+  }
+}
+
+/* === より小さな画面向け調整 === */
+@media screen and (max-width: 480px) {
+  /* より小さな画面向け調整 */
+  #toolbar {
+    padding-top: calc(50px + env(safe-area-inset-top));
+    padding-right: calc(10px + env(safe-area-inset-right));
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    padding-left: calc(10px + env(safe-area-inset-left));
+  }
+  
+  .section {
+    padding: 8px;
+  }
+  
+  #toolbar button {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+  
+  .control-group label {
+    font-size: 11px;
+  }
+  
+  /* 情報パネルをさらにコンパクトに */
+  #info {
+    font-size: 10px;
+    padding: 8px;
+    max-height: 150px;
+  }
+}
+
+/* === タッチデバイス向け調整 === */
+@media (hover: none) and (pointer: coarse) {
+  /* タッチデバイス専用スタイル */
+  #toolbar button:hover {
+    background: #4CAF50; /* hoverエフェクトを無効化 */
+  }
+  
+  #toolbar button:active {
+    background: #45a049;
+    transform: scale(0.98);
+  }
+  
+  /* スクロール改善 */
+  #toolbar, #info {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* === 画面の向き変更に対応 === */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  /* 横向きの小さな画面（スマホ横向き等）*/
+  #info {
+    display: none; /* 情報パネルを隠す */
+  }
+  
+  #toolbar {
+    padding: 40px 10px 10px 10px;
+  }
+}
