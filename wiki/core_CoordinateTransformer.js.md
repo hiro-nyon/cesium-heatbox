@@ -1,5 +1,10 @@
 # JSDoc: Source: core/CoordinateTransformer.js
 
+日本語 | English
+
+日本語: CoordinateTransformer のソース抜粋と実装詳細。  
+English: CoordinateTransformer source excerpts and implementation details.
+
 # Source: core/CoordinateTransformer.js
 
 ## Home

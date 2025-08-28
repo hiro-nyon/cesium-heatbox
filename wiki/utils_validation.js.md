@@ -1,5 +1,10 @@
 # JSDoc: Source: utils/validation.js
 
+日本語 | English
+
+日本語: 入力検証・オプション正規化・安全域チェックを提供。  
+English: Input validation, option normalization, and safety checks.
+
 # Source: utils/validation.js
 
 ## Home

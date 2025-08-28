@@ -1,5 +1,10 @@
 # JSDoc: Source: core/DataProcessor.js
 
+日本語 | English
+
+日本語: DataProcessor のソース抜粋と実装詳細。  
+English: DataProcessor source excerpts and implementation details.
+
 # Source: core/DataProcessor.js
 
 ## Home

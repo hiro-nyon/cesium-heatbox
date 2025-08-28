@@ -1,5 +1,10 @@
 # JSDoc: Source: utils/sampleData.js
 
+日本語 | English
+
+日本語: サンプルエンティティ生成やビューアユーティリティ。  
+English: Utilities for generating sample entities and viewer helpers.
+
 # Source: utils/sampleData.js
 
 ## Home

@@ -1,5 +1,10 @@
 # JSDoc: Source: core/VoxelRenderer.js
 
+日本語 | English
+
+日本語: VoxelRenderer のソース抜粋と実装詳細。  
+English: VoxelRenderer source excerpts and implementation details.
+
 # Source: core/VoxelRenderer.js
 
 ## Home

@@ -1,5 +1,10 @@
 # Global
 
+日本語 | English
+
+日本語: グローバルな定数・ユーティリティ・メタ情報の概要ページ。  
+English: Overview of global constants, utilities, and library metadata.
+
 ## Constructor
 
 ### (constant) COLOR_CONSTANTS

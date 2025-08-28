@@ -1,5 +1,10 @@
 # JSDoc: Source: core/VoxelGrid.js
 
+日本語 | English
+
+日本語: VoxelGrid のソース抜粋と実装詳細。  
+English: VoxelGrid source excerpts and implementation details.
+
 # Source: core/VoxelGrid.js
 
 ## Home

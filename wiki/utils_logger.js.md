@@ -1,5 +1,10 @@
 # JSDoc: Source: utils/logger.js
 
+日本語 | English
+
+日本語: ログ出力ユーティリティとログレベル管理。  
+English: Logging utility and log level management.
+
 # Source: utils/logger.js
 
 ## Home

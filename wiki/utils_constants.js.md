@@ -1,5 +1,10 @@
 # JSDoc: Source: utils/constants.js
 
+日本語 | English
+
+日本語: ライブラリの既定値・制限値・カラーマップなどの定数定義。  
+English: Constant definitions for defaults, limits, and color maps.
+
 # Source: utils/constants.js
 
 ## Home
