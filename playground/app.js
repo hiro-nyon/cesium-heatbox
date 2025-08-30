@@ -1221,7 +1221,7 @@ class HeatboxPlayground {
     // 実際に生成されたデータの範囲を計算してカメラ移動
     const dataBounds = this.calculateDataBounds(this.currentData);
     this.viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(dataBounds.centerLon, dataBounds.centerLat, 2000),
+      destination: Cesium.Cartesian3.fromDegrees(dataBounds.centerLon, dataBounds.centerLat, dataBounds.optimalHeight),
       orientation: {
         heading: 0,
         pitch: -Cesium.Math.PI_OVER_FOUR,
@@ -1296,7 +1296,7 @@ class HeatboxPlayground {
       // 実際に生成されたデータの範囲を計算してカメラ移動
       const dataBounds = this.calculateDataBounds(this.currentData);
       this.viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(dataBounds.centerLon, dataBounds.centerLat, 2000),
+        destination: Cesium.Cartesian3.fromDegrees(dataBounds.centerLon, dataBounds.centerLat, dataBounds.optimalHeight),
         orientation: {
           heading: 0,
           pitch: -Cesium.Math.PI_OVER_FOUR,
@@ -1429,6 +1429,23 @@ class HeatboxPlayground {
    */
   _zoomToHeatboxBounds() {
     try {
+      // まず現在のデータから範囲を計算
+      if (this.currentData && this.currentData.length > 0) {
+        const dataBounds = this.calculateDataBounds(this.currentData);
+        this.viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(dataBounds.centerLon, dataBounds.centerLat, dataBounds.optimalHeight),
+          orientation: {
+            heading: 0,
+            pitch: -Cesium.Math.PI_OVER_THREE, // 約 -60度
+            roll: 0
+          },
+          duration: 0.8
+        });
+        console.log('Camera zoomed to calculated data bounds:', dataBounds);
+        return;
+      }
+
+      // フォールバック: Heatboxの境界情報を使用
       if (!this.heatbox || typeof this.heatbox.getBounds !== 'function') return;
       const bounds = this.heatbox.getBounds();
       if (!bounds) return;
@@ -1686,6 +1703,7 @@ class HeatboxPlayground {
       return {
         centerLon: 139.69,
         centerLat: 35.69,
+        optimalHeight: 2000,
         minLon: 139.69,
         maxLon: 139.69,
         minLat: 35.69,
@@ -1695,6 +1713,7 @@ class HeatboxPlayground {
 
     let minLon = Infinity, maxLon = -Infinity;
     let minLat = Infinity, maxLat = -Infinity;
+    let minAlt = Infinity, maxAlt = -Infinity;
     let validCount = 0;
 
     const now = Cesium.JulianDate.now();
@@ -1713,11 +1732,14 @@ class HeatboxPlayground {
           const cartographic = Cesium.Cartographic.fromCartesian(position);
           const lon = Cesium.Math.toDegrees(cartographic.longitude);
           const lat = Cesium.Math.toDegrees(cartographic.latitude);
+          const alt = cartographic.height;
 
           minLon = Math.min(minLon, lon);
           maxLon = Math.max(maxLon, lon);
           minLat = Math.min(minLat, lat);
           maxLat = Math.max(maxLat, lat);
+          minAlt = Math.min(minAlt, alt);
+          maxAlt = Math.max(maxAlt, alt);
           validCount++;
         }
       } catch (e) {
@@ -1729,6 +1751,7 @@ class HeatboxPlayground {
       return {
         centerLon: 139.69,
         centerLat: 35.69,
+        optimalHeight: 2000,
         minLon: 139.69,
         maxLon: 139.69,
         minLat: 35.69,
@@ -1738,15 +1761,53 @@ class HeatboxPlayground {
 
     const centerLon = (minLon + maxLon) / 2;
     const centerLat = (minLat + maxLat) / 2;
+    const centerAlt = (minAlt + maxAlt) / 2;
+
+    // データ範囲の計算（地球上の距離）
+    const DEG_TO_METERS = 111000; // 約111km per degree
+    const lonSpanMeters = Math.abs(maxLon - minLon) * DEG_TO_METERS * Math.cos(centerLat * Math.PI / 180);
+    const latSpanMeters = Math.abs(maxLat - minLat) * DEG_TO_METERS;
+    const altSpanMeters = Math.abs(maxAlt - minAlt);
+    
+    // 最大スパンを取得
+    const maxSpanMeters = Math.max(lonSpanMeters, latSpanMeters, altSpanMeters);
+    
+    // 見下ろし角度（45度）を考慮した最適高度計算
+    // 45度の視野角で全データが収まるように計算
+    const pitchAngle = Math.PI / 4; // 45度
+    const viewingDistance = maxSpanMeters / Math.tan(pitchAngle / 2) / 2;
+    
+    // 最適高度を計算（データの中心高度 + 視距離の垂直成分）
+    const optimalHeight = Math.max(
+      centerAlt + viewingDistance * Math.sin(pitchAngle),
+      centerAlt + 500, // 最低500m上空
+      maxSpanMeters * 1.5 // スパンの1.5倍の高度を確保
+    );
+
+    // 最大高度制限（10km）
+    const finalHeight = Math.min(optimalHeight, 10000);
+
+    console.log('Data bounds calculation:', {
+      lonSpan: lonSpanMeters.toFixed(1) + 'm',
+      latSpan: latSpanMeters.toFixed(1) + 'm', 
+      altSpan: altSpanMeters.toFixed(1) + 'm',
+      maxSpan: maxSpanMeters.toFixed(1) + 'm',
+      calculatedHeight: optimalHeight.toFixed(1) + 'm',
+      finalHeight: finalHeight.toFixed(1) + 'm'
+    });
 
     return {
       centerLon,
       centerLat,
+      optimalHeight: finalHeight,
       minLon,
       maxLon,
       minLat,
       maxLat,
-      validCount
+      minAlt,
+      maxAlt,
+      validCount,
+      spanMeters: maxSpanMeters
     };
   }
   
@@ -1978,13 +2039,18 @@ class HeatboxPlayground {
       // v0.1.4: 自動ボクセルサイズ機能
       autoVoxelSize: autoVoxelSize,
       // 手動指定が無効な場合はvoxelSizeを設定しない（自動調整を有効にする）
+      // ただし、自動サイズが大きすぎる場合に備えて最大値を制限
       voxelSize: autoVoxelSize ? undefined : gridSize,
+      // 自動サイズの場合は最大ボクセルサイズを制限（密集表示を確保）
+      maxVoxelSize: autoVoxelSize ? 10 : undefined,  // さらに小さく（15→10）
+      // 目標ボクセル数を増やして密度を上げる
+      targetCells: autoVoxelSize ? 3000 : undefined,  // さらに増加（2000→3000）
       opacity: wireframeOnly ? 0.0 : 0.7,
       // 空ボクセル表示設定
       emptyOpacity: showEmptyVoxels ? emptyOpacity : 0.0,
       showEmptyVoxels: showEmptyVoxels,
       showOutline: true,
-      maxRenderVoxels: 300,
+      maxRenderVoxels: 2000,  // 表示数上限を大幅に増加（300→2000）
       wireframeOnly: wireframeOnly,
       heightBased: heightBased,
       outlineWidth: outlineWidthValue,
@@ -2407,7 +2473,7 @@ class HeatboxPlayground {
         emptyOpacity: 0.0,        // 空ボクセルは表示しない
         showOutline: true,        // アウトラインを表示
         showEmptyVoxels: false,   // 空ボクセルは表示しない
-        maxRenderVoxels: 100,     // 表示数を制限
+        maxRenderVoxels: 1000,    // 表示数制限を緩和（100→1000）
         minColor: [0, 128, 255],  // 青
         maxColor: [255, 0, 0]     // 赤
       };
