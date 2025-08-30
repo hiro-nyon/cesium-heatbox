@@ -1220,15 +1220,32 @@ class HeatboxPlayground {
     
     // 実際に生成されたデータの範囲を計算してカメラ移動
     const dataBounds = this.calculateDataBounds(this.currentData);
-    this.viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(dataBounds.centerLon, dataBounds.centerLat, dataBounds.optimalHeight),
+    
+    // より確実なflyTo設定
+    const flyToPromise = this.viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(
+        dataBounds.centerLon, 
+        dataBounds.centerLat, 
+        dataBounds.optimalHeight
+      ),
       orientation: {
         heading: 0,
-        pitch: -Cesium.Math.PI_OVER_FOUR,
+        pitch: -Cesium.Math.PI_OVER_FOUR, // -45度
         roll: 0
       },
-      duration: 1.5
+      duration: 2.0,
+      maximumHeight: dataBounds.optimalHeight * 1.5,
+      pitchAdjustHeight: dataBounds.optimalHeight * 0.8
     });
+
+    // flyTo完了を待機
+    if (flyToPromise && typeof flyToPromise.then === 'function') {
+      flyToPromise.then(() => {
+        console.log('Sample data camera positioning completed');
+      }).catch(err => {
+        console.warn('Sample data camera flyTo failed:', err);
+      });
+    }
     
     console.log('サンプルデータ読み込み完了:', this.currentData.length, '個のエンティティ');
     console.log('データ範囲:', dataBounds);
@@ -1295,15 +1312,32 @@ class HeatboxPlayground {
       
       // 実際に生成されたデータの範囲を計算してカメラ移動
       const dataBounds = this.calculateDataBounds(this.currentData);
-      this.viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(dataBounds.centerLon, dataBounds.centerLat, dataBounds.optimalHeight),
+      
+      // より確実なflyTo設定
+      const flyToPromise = this.viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+          dataBounds.centerLon, 
+          dataBounds.centerLat, 
+          dataBounds.optimalHeight
+        ),
         orientation: {
           heading: 0,
-          pitch: -Cesium.Math.PI_OVER_FOUR,
+          pitch: -Cesium.Math.PI_OVER_FOUR, // -45度
           roll: 0
         },
-        duration: 1.5
+        duration: 2.0,
+        maximumHeight: dataBounds.optimalHeight * 1.5,
+        pitchAdjustHeight: dataBounds.optimalHeight * 0.8
       });
+
+      // flyTo完了を待機
+      if (flyToPromise && typeof flyToPromise.then === 'function') {
+        flyToPromise.then(() => {
+          console.log('Test data camera positioning completed');
+        }).catch(err => {
+          console.warn('Test data camera flyTo failed:', err);
+        });
+      }
       
       console.log('テストデータ生成完了:', this.currentData.length, '個のエンティティ');
       console.log('データ範囲:', dataBounds);
@@ -1405,8 +1439,8 @@ class HeatboxPlayground {
         // 統計情報を更新
         this.updateStatisticsFromHeatmap(stats);
         
-        // カメラを最適な位置に移動
-        this._zoomToHeatboxBounds();
+        // カメラ移動は行わない（点データ生成時のみ移動）
+        // this._zoomToHeatboxBounds(); // コメントアウト
       } catch (error) {
         console.error('ヒートマップデータ処理エラー:', error);
         alert('データの処理中にエラーが発生しました: ' + error.message);
@@ -1429,18 +1463,34 @@ class HeatboxPlayground {
    */
   _zoomToHeatboxBounds() {
     try {
-      // まず現在のデータから範囲を計算
+      // まず現在のデータから範囲を計算（優先）
       if (this.currentData && this.currentData.length > 0) {
         const dataBounds = this.calculateDataBounds(this.currentData);
-        this.viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(dataBounds.centerLon, dataBounds.centerLat, dataBounds.optimalHeight),
+        
+        const flyToPromise = this.viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            dataBounds.centerLon, 
+            dataBounds.centerLat, 
+            dataBounds.optimalHeight
+          ),
           orientation: {
             heading: 0,
             pitch: -Cesium.Math.PI_OVER_THREE, // 約 -60度
             roll: 0
           },
-          duration: 0.8
+          duration: 1.5,
+          maximumHeight: dataBounds.optimalHeight * 2,
+          pitchAdjustHeight: dataBounds.optimalHeight * 0.5
         });
+        
+        if (flyToPromise && typeof flyToPromise.then === 'function') {
+          flyToPromise.then(() => {
+            console.log('Heatmap camera positioning completed (data-based)');
+          }).catch(err => {
+            console.warn('Heatmap camera flyTo failed:', err);
+          });
+        }
+        
         console.log('Camera zoomed to calculated data bounds:', dataBounds);
         return;
       }
@@ -1449,14 +1499,17 @@ class HeatboxPlayground {
       if (!this.heatbox || typeof this.heatbox.getBounds !== 'function') return;
       const bounds = this.heatbox.getBounds();
       if (!bounds) return;
+      
       const centerLon = bounds.centerLon ?? (bounds.minLon + bounds.maxLon) / 2;
       const centerLat = bounds.centerLat ?? (bounds.minLat + bounds.maxLat) / 2;
-      // 矩形サイズから最適高度を推定（近めに設定して可視性を確保）
+      
+      // 矩形サイズから最適高度を推定
       const DEG2M = 111000;
       const lonMeters = Math.abs(bounds.maxLon - bounds.minLon) * DEG2M * Math.cos((centerLat * Math.PI) / 180);
       const latMeters = Math.abs(bounds.maxLat - bounds.minLat) * DEG2M;
       const span = Math.max(lonMeters, latMeters);
-      const altitude = Math.min(Math.max(span * 0.6, 800), 4000); // 0.6xスパン、高度800〜4000mに収める
+      const altitude = Math.min(Math.max(span * 1.2, 800), 8000); // 1.2xスパン、高度800〜8000mに収める
+      
       this.viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, altitude),
         orientation: {
@@ -1464,9 +1517,10 @@ class HeatboxPlayground {
           pitch: -Cesium.Math.PI_OVER_THREE, // 約 -60度
           roll: 0
         },
-        duration: 0.8
+        duration: 1.0
       });
-      console.log('Camera zoomed to heatbox bounds:', bounds);
+      
+      console.log('Camera zoomed to heatbox bounds (fallback):', bounds);
       console.log('Scene primitives count:', this.viewer.scene.primitives.length);
     } catch (e) {
       console.warn('カメラ移動に失敗:', e);
@@ -1714,9 +1768,11 @@ class HeatboxPlayground {
     let minLon = Infinity, maxLon = -Infinity;
     let minLat = Infinity, maxLat = -Infinity;
     let minAlt = Infinity, maxAlt = -Infinity;
+    let sumLon = 0, sumLat = 0, sumAlt = 0;
     let validCount = 0;
 
     const now = Cesium.JulianDate.now();
+    const positions = [];
 
     entities.forEach(entity => {
       try {
@@ -1734,12 +1790,19 @@ class HeatboxPlayground {
           const lat = Cesium.Math.toDegrees(cartographic.latitude);
           const alt = cartographic.height;
 
+          // 境界計算
           minLon = Math.min(minLon, lon);
           maxLon = Math.max(maxLon, lon);
           minLat = Math.min(minLat, lat);
           maxLat = Math.max(maxLat, lat);
           minAlt = Math.min(minAlt, alt);
           maxAlt = Math.max(maxAlt, alt);
+          
+          // 重心計算用
+          sumLon += lon;
+          sumLat += lat;
+          sumAlt += alt;
+          positions.push({ lon, lat, alt });
           validCount++;
         }
       } catch (e) {
@@ -1759,46 +1822,50 @@ class HeatboxPlayground {
       };
     }
 
-    const centerLon = (minLon + maxLon) / 2;
-    const centerLat = (minLat + maxLat) / 2;
-    const centerAlt = (minAlt + maxAlt) / 2;
+    // 重心計算（単純平均）
+    const centroidLon = sumLon / validCount;
+    const centroidLat = sumLat / validCount;
+    const centroidAlt = sumAlt / validCount;
+
+    // データの幾何学的中心（境界の中点）
+    const geometricCenterLon = (minLon + maxLon) / 2;
+    const geometricCenterLat = (minLat + maxLat) / 2;
+    
+    // 重心と幾何学的中心の重み付け平均（重心を重視）
+    const finalCenterLon = centroidLon * 0.7 + geometricCenterLon * 0.3;
+    const finalCenterLat = centroidLat * 0.7 + geometricCenterLat * 0.3;
 
     // データ範囲の計算（地球上の距離）
     const DEG_TO_METERS = 111000; // 約111km per degree
-    const lonSpanMeters = Math.abs(maxLon - minLon) * DEG_TO_METERS * Math.cos(centerLat * Math.PI / 180);
+    const lonSpanMeters = Math.abs(maxLon - minLon) * DEG_TO_METERS * Math.cos(finalCenterLat * Math.PI / 180);
     const latSpanMeters = Math.abs(maxLat - minLat) * DEG_TO_METERS;
     const altSpanMeters = Math.abs(maxAlt - minAlt);
     
     // 最大スパンを取得
-    const maxSpanMeters = Math.max(lonSpanMeters, latSpanMeters, altSpanMeters);
+    const maxHorizontalSpan = Math.max(lonSpanMeters, latSpanMeters);
     
-    // 見下ろし角度（45度）を考慮した最適高度計算
-    // 45度の視野角で全データが収まるように計算
-    const pitchAngle = Math.PI / 4; // 45度
-    const viewingDistance = maxSpanMeters / Math.tan(pitchAngle / 2) / 2;
+    // Cesiumの視野角（60度）と見下ろし角度（45度）を考慮した最適高度計算
+    const viewingAngle = Math.PI / 3; // 60度（Cesiumのデフォルト）
+    const pitchAngle = Math.PI / 4;   // 45度の見下ろし
     
-    // 最適高度を計算（データの中心高度 + 視距離の垂直成分）
+    // 全データが視野に収まる距離を計算
+    // 視野角の半分で、データスパンの対角線長が見える距離
+    const diagonalSpan = Math.sqrt(lonSpanMeters * lonSpanMeters + latSpanMeters * latSpanMeters);
+    const requiredDistance = (diagonalSpan / 2) / Math.tan(viewingAngle / 2);
+    
+    // 見下ろし角度を考慮した高度
     const optimalHeight = Math.max(
-      centerAlt + viewingDistance * Math.sin(pitchAngle),
-      centerAlt + 500, // 最低500m上空
-      maxSpanMeters * 1.5 // スパンの1.5倍の高度を確保
+      centroidAlt + requiredDistance * Math.sin(pitchAngle) * 1.2, // 1.2倍でマージン
+      centroidAlt + 300, // 最低300m上空
+      maxHorizontalSpan * 0.8 // スパンの0.8倍の高度を確保
     );
 
-    // 最大高度制限（10km）
-    const finalHeight = Math.min(optimalHeight, 10000);
+    // 最大高度制限（20km）
+    const finalHeight = Math.min(optimalHeight, 20000);
 
-    console.log('Data bounds calculation:', {
-      lonSpan: lonSpanMeters.toFixed(1) + 'm',
-      latSpan: latSpanMeters.toFixed(1) + 'm', 
-      altSpan: altSpanMeters.toFixed(1) + 'm',
-      maxSpan: maxSpanMeters.toFixed(1) + 'm',
-      calculatedHeight: optimalHeight.toFixed(1) + 'm',
-      finalHeight: finalHeight.toFixed(1) + 'm'
-    });
-
-    return {
-      centerLon,
-      centerLat,
+    const result = {
+      centerLon: finalCenterLon,
+      centerLat: finalCenterLat,
       optimalHeight: finalHeight,
       minLon,
       maxLon,
@@ -1806,9 +1873,25 @@ class HeatboxPlayground {
       maxLat,
       minAlt,
       maxAlt,
+      centroidLon,
+      centroidLat,
+      centroidAlt,
       validCount,
-      spanMeters: maxSpanMeters
+      spanMeters: maxHorizontalSpan,
+      diagonalSpan
     };
+
+    console.log('Smart camera positioning:', {
+      'Centroid': `${centroidLon.toFixed(4)}, ${centroidLat.toFixed(4)}`,
+      'Final center': `${finalCenterLon.toFixed(4)}, ${finalCenterLat.toFixed(4)}`,
+      'Span': `${maxHorizontalSpan.toFixed(0)}m`,
+      'Diagonal': `${diagonalSpan.toFixed(0)}m`, 
+      'Required distance': `${requiredDistance.toFixed(0)}m`,
+      'Final height': `${finalHeight.toFixed(0)}m`,
+      'Data points': validCount
+    });
+
+    return result;
   }
   
   /**
