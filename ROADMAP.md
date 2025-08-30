@@ -12,43 +12,55 @@
 - 改善: ドキュメント構造統一、API説明の詳細化
 - ドキュメント: 完全バイリンガル対応、開発ガイド充実
 
-### v0.1.9（短期・品質向上）- ハードニングとテスト強化
+### v0.1.9（短期・品質向上）- ハードニング＋適応的可視化の第一歩
 Priority: High | Target: 2025-09
-- Scope
-  - [ ] Lint 0 errors（`prefer-const`/未使用変数などの解消）
-  - [ ] 主要分岐の単体テスト追加（色補間・TopN分岐・`updateOptions` 再描画）
-  - [ ] 例の安定化（Basic/Advanced の微修正）
-  - [ ] OIT 切替例の検討（可能であれば導入）
-  - [ ] 命名整合（`outlineRenderMode`: `standard`/`inset`/`emulation-only` に統一）
+- Scope（Playground発見の2課題に対処: 表示の疎化/カメラ不整合）
+  - [ ] 適応的レンダリング制限（オプトイン）
+    - 実装: `renderLimitStrategy: 'density'|'coverage'|'hybrid'` を追加（デフォルトは既存の `'density'`）。
+    - 併用設定: `minCoverageRatio`（0–1, デフォルト0.2）, `coverageBinsXY`（自動/手動ビン数）で疎領域も拾う層化抽出を実装。
+  - [ ] 自動ボクセルサイズ決定の強化（オプトイン）
+    - 実装: `autoVoxelSizeMode: 'basic'|'occupancy'` を追加（デフォルト `'basic'`）。
+    - `occupancy` は期待占有セル数 E[occupied] ≈ M·(1-exp(-N/M)) を用い、`maxRenderVoxels` と `targetFill`（デフォルト0.6）に整合するサイズを反復近似。
+  - [ ] スマート視覚化支援（オプトイン）
+    - 実装: `autoView: false` と `fitView(options)` を公開。`fitView` はデータ境界に対し、ピッチ/視野角を考慮した高度を自動計算（もしくは `Camera.flyToBoundingSphere` を利用）。
+  - [ ] ハードニング/テスト
+    - Lint 0 errors、`VoxelRenderer` 抽出戦略の単体テスト追加、`Heatbox.updateOptions` 再描画確認。
+    - 例（Basic/Advanced）の初期設定/文言を新フラグに追随。
 - Deliverables
-  - [ ] 追加テスト: `VoxelRenderer` の色補間・TopN, `Heatbox.updateOptions` の再描画分岐
-  - [ ] Example 微修正（初期設定/エラーハンドリング/UI文言）
-  - [ ] Docs: チューニングFAQ（重なり/ちらつき対策、推奨パラメータ）
-  - [ ] Debug: `debug:true` 時のログ拡充（主要オプション/統計/境界/描画数を表形式で出力）
-  - [ ] Docs: i18nポリシーとエラーメッセージ多言語化の設計（実装は0.2で段階導入）
+  - [ ] `renderLimitStrategy` + `minCoverageRatio` + `coverageBinsXY`（後方互換: 既定は従来通り）
+  - [ ] `autoVoxelSizeMode: 'occupancy'` + `autoVoxelTargetFill`（推奨値0.6）
+  - [ ] `Heatbox.fitView(bounds, { paddingMeters, pitch, heading, altitudeStrategy })` と `options.autoView`
+  - [ ] Debug/統計: `selectionStrategy`, `clippedNonEmpty`, `coverageRatio` を `getStatistics()` に追加
+  - [ ] Docs: Playground既知課題と解法（設定例つき）をチューニングFAQへ追記
+  - [ ] 追加テスト: 選択戦略（密度/層化/ハイブリッド）のサンプル再現, `updateOptions` の再描画分岐
 - Acceptance Criteria
-  - [ ] Lint 0 errors, 全テスト緑
-  - [ ] Basic/Advanced が初期状態でエラーなく起動・操作可能
-  - [ ] README/Wiki/Examples が v0.1.9 内容に同期
+  - [ ] 疎密混在データで `maxRenderVoxels` を 300 にしても、`renderLimitStrategy: 'hybrid'` で低密度セルが可視化に最低限含まれる（`coverageRatio ≥ 0.3`）
+  - [ ] `autoVoxelSizeMode: 'occupancy'` 有効時、`renderedVoxels / maxRenderVoxels` が 0.4–0.8 に収まり、過剰トリミングが抑制される
+  - [ ] `autoView: true` でデータ境界が10%パディング付きで確実にフレーム内に収まる（ピッチ-30°でも欠落なし）
+  - [ ] Lint 0 errors, 追加テスト緑、Basic/Advanced が初期状態で正常動作
 - Out-of-Scope
-  - コアロジックの大規模改修（0.2 以降に委譲）
+  - コアレンダラ大改修（Primitive化等, 0.4以降）
 - Risks & Mitigations
-  - OIT の互換性差（GPU/ブラウザ差）→ 例はオプショナル、Fallback手順を明記
+  - 抽出戦略のばらつき → ハイブリッド（TopK by density + 層化サンプル）で安定化、`debug` で比率を可視化
+  - カメラ適合の端ケース → `flyToBoundingSphere` をFallbackに用意
 
-### v0.1.10（観測可能性・性能の可視化）- Observability & Perf
+### v0.1.10（観測可能性・プロファイル）- Observability & Profiles
 Priority: Medium | Target: 2025-10
 - Scope
   - [ ] Advanced に簡易パフォーマンスオーバーレイ（描画数/TopN比率/平均密度/フレーム時間）
   - [ ] ベンチ計測の整備（`npm run benchmark` の出力整形としきい値表示）
   - [ ] Docs: チューニングFAQの追補（計測の読み方/指標の目安）
+  - [ ] 設定プロファイル機能（ユースケース別の推奨セット）
 - Deliverables
   - [ ] `examples/advanced/` にオーバーレイUI（ON/OFF）
   - [ ] `tools/benchmark.js` の改善（集計とCSV/markdownサマリ）
   - [ ] ドキュメント: パフォーマンスの見方/ボトルネック傾向
   - [ ] ブラウザ互換のスモークテスト（CIでの最小限の起動確認/レンダラ初期化）
+  - [ ] `profile: 'mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data'` を `validateAndNormalizeOptions` でマージ適用（ユーザー設定が最終優先）
 - Acceptance Criteria
   - [ ] オーバーレイのON/OFFで目視確認でき、描画数とフレーム時間が相関して表示される
   - [ ] ベンチ出力が再現可能で、PRで差分比較が容易
+  - [ ] `profile` 指定で、同一データに対し一貫した設定セットが適用される（例: `mobile-fast` で `opacity`/`highlightTopN`/`renderLimitStrategy` が想定値）
 - Out-of-Scope
   - 新規描画バックエンド（0.4 系で検討）
 - Risks & Mitigations
