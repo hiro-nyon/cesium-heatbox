@@ -1,5 +1,6 @@
 /**
- * バリデーション関連のユーティリティ関数
+ * Validation utility functions.
+ * バリデーション関連のユーティリティ関数。
  */
 
 import * as Cesium from 'cesium';
@@ -7,9 +8,10 @@ import { PERFORMANCE_LIMITS, ERROR_MESSAGES } from './constants.js';
 import { Logger } from './logger.js';
 
 /**
- * CesiumJS Viewerが有効かチェック
+ * Check whether a CesiumJS Viewer is valid.
+ * CesiumJS Viewerが有効かチェックします。
  * @param {Object} viewer - CesiumJS Viewer
- * @returns {boolean} 有効な場合はtrue
+ * @returns {boolean} true if valid / 有効な場合は true
  */
 export function isValidViewer(viewer) {
   if (!viewer) {
@@ -32,9 +34,10 @@ export function isValidViewer(viewer) {
 }
 
 /**
- * エンティティ配列が有効かチェック
- * @param {Array} entities - エンティティ配列
- * @returns {boolean} 有効な場合はtrue
+ * Check whether the entity array is valid.
+ * エンティティ配列が有効かチェックします。
+ * @param {Array} entities - Entity array / エンティティ配列
+ * @returns {boolean} true if valid / 有効な場合は true
  */
 export function isValidEntities(entities) {
   if (!Array.isArray(entities)) {
@@ -53,9 +56,10 @@ export function isValidEntities(entities) {
 }
 
 /**
- * ボクセルサイズが有効かチェック
- * @param {number} voxelSize - ボクセルサイズ
- * @returns {boolean} 有効な場合はtrue
+ * Check whether the voxel size is valid.
+ * ボクセルサイズが有効かチェックします。
+ * @param {number} voxelSize - Voxel size / ボクセルサイズ
+ * @returns {boolean} true if valid / 有効な場合は true
  */
 export function isValidVoxelSize(voxelSize) {
   if (typeof voxelSize !== 'number' || isNaN(voxelSize)) {
@@ -70,9 +74,10 @@ export function isValidVoxelSize(voxelSize) {
 }
 
 /**
- * エンティティが有効な位置情報を持つかチェック
+ * Check whether an entity has a valid position.
+ * エンティティが有効な位置情報を持つかチェックします。
  * @param {Object} entity - Cesium Entity
- * @returns {boolean} 有効な場合はtrue
+ * @returns {boolean} true if valid / 有効な場合は true
  */
 export function hasValidPosition(entity) {
   if (!entity || !entity.position) {
@@ -94,10 +99,11 @@ export function hasValidPosition(entity) {
 }
 
 /**
- * 処理するボクセル数が制限内かチェック
- * @param {number} totalVoxels - 総ボクセル数
- * @param {number} voxelSize - ボクセルサイズ
- * @returns {Object} チェック結果
+ * Validate that total voxel count is within limits.
+ * 処理するボクセル数が制限内かチェックします。
+ * @param {number} totalVoxels - Total voxels / 総ボクセル数
+ * @param {number} voxelSize - Voxel size / ボクセルサイズ
+ * @returns {Object} Validation result / チェック結果
  */
 export function validateVoxelCount(totalVoxels, voxelSize) {
   const result = {
@@ -120,10 +126,11 @@ export function validateVoxelCount(totalVoxels, voxelSize) {
 }
 
 /**
- * オプションを検証して正規化
- * v0.1.5: batchMode非推奨化と新機能バリデーションを追加
- * @param {Object} options - ユーザー指定のオプション
- * @returns {Object} 正規化されたオプション
+ * Validate and normalize options.
+ * オプションを検証して正規化します。
+ * v0.1.5: batchMode 非推奨化と新機能バリデーションを追加。
+ * @param {Object} options - User-specified options / ユーザー指定のオプション
+ * @returns {Object} Normalized options / 正規化されたオプション
  */
 export function validateAndNormalizeOptions(options = {}) {
   const normalized = { ...options };
@@ -234,10 +241,11 @@ export function validateAndNormalizeOptions(options = {}) {
 }
 
 /**
- * データ範囲に基づいて初期ボクセルサイズを推定
- * @param {Object} bounds - 境界情報
- * @param {number} entityCount - エンティティ数
- * @returns {number} 推定ボクセルサイズ（メートル）
+ * Estimate initial voxel size based on data range.
+ * データ範囲に基づいて初期ボクセルサイズを推定します。
+ * @param {Object} bounds - Bounds info / 境界情報
+ * @param {number} entityCount - Number of entities / エンティティ数
+ * @returns {number} Estimated voxel size in meters / 推定ボクセルサイズ（メートル）
  */
 export function estimateInitialVoxelSize(bounds, entityCount) {
   try {

@@ -1,5 +1,6 @@
 /**
- * CesiumJS Heatbox - エントリーポイント
+ * CesiumJS Heatbox - Entry point.
+ * CesiumJS Heatbox - エントリーポイント。
  */
 
 import { Heatbox } from './Heatbox.js';
@@ -17,25 +18,28 @@ export { getAllEntities, generateTestEntities };
 export { Heatbox as CesiumHeatbox };
 
 /**
- * ライブラリのメタ情報
+ * Library metadata.
+ * ライブラリのメタ情報。
  */
-export const VERSION = '0.1.7';
+export const VERSION = '0.1.8';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 
 /**
- * Quick start helper function
- * @param {Object} viewer - CesiumJS Viewer
- * @param {Object} options - Configuration options
- * @returns {Heatbox} New Heatbox instance
+ * Quick start helper function.
+ * クイックスタート用のヘルパー関数。
+ * @param {Object} viewer - CesiumJS Viewer / CesiumJS Viewer
+ * @param {Object} options - Configuration options / 設定オプション
+ * @returns {Heatbox} New Heatbox instance / 生成された Heatbox インスタンス
  */
 export function createHeatbox(viewer, options) {
   return new Heatbox(viewer, options);
 }
 
 /**
- * 環境情報を取得
- * @returns {Object} 環境情報
+ * Get environment information.
+ * 環境情報を取得します。
+ * @returns {Object} Environment info / 環境情報
  */
 export function getEnvironmentInfo() {
   // WebGL サポートの確認

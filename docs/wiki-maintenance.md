@@ -1,4 +1,177 @@
-# GitHub Wiki 自動化・保守手順
+# GitHub Wiki Automation and Maintenance Procedures (GitHub Wiki 自動化・保守手順)
+
+[English](#english) | [日本語](#日本語)
+
+## English
+
+### Overview
+
+v0.1.6 introduced GitHub Wiki automatic synchronization functionality. Changes to docs/api, README.md, and CHANGELOG.md are automatically reflected in the Wiki.
+
+### Automation Configuration
+
+#### 1. GitHub Actions Workflow
+
+**File**: `.github/workflows/wiki-sync.yml`
+
+**Trigger Conditions**:
+- Push changes to `docs/` on `main` branch
+- Push changes to `wiki/` folder  
+- Changes to `README.md`, `CHANGELOG.md`
+- Manual execution (`workflow_dispatch`)
+
+**Permission Requirements**:
+- `GITHUB_TOKEN` (basic permissions)
+- Or `WIKI_TOKEN` Personal Access Token (recommended)
+
+#### 2. npm Scripts
+
+```bash
+# Document generation + Wiki sync + GitHub Wiki publishing (complete process)
+npm run wiki:update
+
+# Individual execution
+npm run docs           # JSDoc generation
+npm run wiki:sync      # docs/api → wiki/ conversion
+npm run wiki:publish   # Push to GitHub Wiki
+```
+
+#### 3. File Configuration
+
+```
+cesium-heatbox/
+├── .github/workflows/wiki-sync.yml    # Automation workflow
+├── docs/api/                           # JSDoc generation (source)
+├── wiki/                              # Markdown conversion results
+├── tools/
+│   ├── wiki-sync.js                   # docs/api → wiki/ conversion
+│   └── wiki/publish-wiki.sh           # GitHub Wiki push
+└── docs/wiki-maintenance.md           # This procedure document
+```
+
+### Setup Procedures
+
+#### 1. Personal Access Token Setup (Recommended)
+
+1. GitHub → Settings → Developer settings → Personal access tokens
+2. "Generate new token (classic)" 
+3. Permission selection:
+   - `repo` (full access)
+   - Or minimum permissions: `public_repo` + Wiki write permissions
+4. Copy generated token
+5. Repository → Settings → Secrets and variables → Actions
+6. Create new secret: `WIKI_TOKEN` = {generated token}
+
+#### 2. Initial Test Execution
+
+```bash
+# Manual test
+npm run wiki:update
+
+# GitHub Actions manual execution
+# Repository → Actions → "Wiki Sync" → "Run workflow"
+```
+
+#### 3. Operation Verification
+
+- Check https://github.com/hiro-nyon/cesium-heatbox/wiki
+- Verify Home.md, Release-Notes.md are correctly updated
+- Check API-related pages are generated
+
+### Operation Procedures
+
+#### Daily Operation (Automatic)
+
+1. Push docs/ changes to `main` branch
+2. Wiki automatically updates after 2-3 minutes
+3. Check https://github.com/hiro-nyon/cesium-heatbox/wiki as needed
+
+#### Manual Execution (When Needed)
+
+```bash
+# Execute complete process locally
+npm run wiki:update
+
+# Execute with GitHub Actions (force sync)
+# Repository → Actions → "Wiki Sync" → "Run workflow" → force_sync: true
+```
+
+#### Emergency Fallback
+
+1. **If automation fails**:
+   ```bash
+   npm run wiki:publish  # Manually push to GitHub Wiki
+   ```
+
+2. **To revert Wiki contents**:
+   ```bash
+   git clone https://github.com/hiro-nyon/cesium-heatbox.wiki.git
+   cd cesium-heatbox.wiki
+   git log --oneline  # Check commit history
+   git reset --hard <previous_good_commit>
+   git push --force-with-lease origin master
+   ```
+
+3. **To return to completely manual operation**:
+   - Disable `.github/workflows/wiki-sync.yml`
+   - Use existing `tools/wiki/publish-wiki.sh`
+
+### Troubleshooting
+
+#### Common Errors
+
+1. **`remote: Permission denied`**
+   - Check `WIKI_TOKEN` permissions
+   - Check token expiration
+   - Check repository access permissions
+
+2. **`No changes to commit to wiki`**
+   - Normal operation (behavior when no changes)
+   - Force sync: Execute manually with `force_sync: true`
+
+3. **`Wiki changes detected but sync failed`**
+   - Check Wiki repository status
+   - Execute manual fallback
+
+#### Debugging Methods
+
+1. **Check GitHub Actions logs**:
+   Repository → Actions → relevant workflow → detailed logs
+
+2. **Test with local execution**:
+   ```bash
+   npm run wiki:sync  # Test conversion only
+   npm run wiki:publish  # Test push only
+   ```
+
+3. **Check differences**:
+   ```bash
+   git diff wiki/  # Check conversion results
+   ```
+
+### Maintenance and Improvement
+
+#### Regular Inspection (Monthly)
+
+- [ ] Check Wiki content consistency
+- [ ] Check for broken links  
+- [ ] Check GitHub Actions execution history
+- [ ] Check Personal Access Token expiration
+
+#### Feature Improvements (Future)
+
+- Improve JSDoc → Markdown conversion quality
+- Unify Wiki templates
+- Enhance difference notifications
+- Integration with CI/CD pipeline
+
+### References
+
+- [GitHub Wiki Git Access](https://docs.github.com/en/communities/documenting-your-project-with-wikis/adding-or-editing-wiki-pages#adding-or-editing-wiki-pages-locally)
+- [GitHub Actions Workflow Syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
+- [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+
+## 日本語
 
 ## 概要
 

@@ -1,10 +1,166 @@
-# API リファレンス - v0.1.7
+# API Reference (APIリファレンス) - v0.1.7
 
-> **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得してください。
+[English](#english) | [日本語](#日本語)
 
-## Heatbox クラス
+## English
 
-### コンストラクタ
+> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
+
+### Heatbox Class
+
+#### Constructor
+
+##### `new Heatbox(viewer, options)`
+
+Creates a new Heatbox instance.
+
+**Parameters:**
+- `viewer` (Cesium.Viewer) - CesiumJS Viewer instance
+- `options` (Object, optional) - Configuration options
+
+**Options (v0.1.7 compatible):**
+- `voxelSize` (number, default: 20) - Target voxel size (meters). Actual rendering dimensions use real cell sizes `cellSizeX/Y/Z` based on grid division, which may be smaller than `voxelSize` (to prevent overlaps).
+- `opacity` (number, default: 0.8) - Data voxel opacity (0.0-1.0)
+- `emptyOpacity` (number, default: 0.03) - Empty voxel opacity (0.0-1.0)
+- `showOutline` (boolean, default: true) - Show outline
+- `showEmptyVoxels` (boolean, default: false) - Show empty voxels
+- `minColor` (Array, default: [0, 32, 255]) - Minimum density color (RGB)
+- `maxColor` (Array, default: [255, 64, 0]) - Maximum density color (RGB)
+- `maxRenderVoxels` (number, default: 50000) - Maximum render voxel count
+- **`wireframeOnly` (boolean, default: false) - Wireframe only display (v0.1.2 new feature)**
+- **`heightBased` (boolean, default: false) - Express density as height (v0.1.2 new feature)**
+- **`outlineWidth` (number, default: 2) - Outline thickness (v0.1.2 new feature)**
+- **`debug` (boolean | { showBounds?: boolean }, default: false) - Log control and bounds display (v0.1.5 expanded to object format)**
+- **`autoVoxelSize` (boolean, default: false) - v0.1.4: Auto-determine voxel size. Effective when `voxelSize` is not specified**
+- **`colorMap` ('custom'|'viridis'|'inferno', default: 'custom') - v0.1.5: Perceptually uniform color maps**
+- **`diverging` (boolean, default: false) / `divergingPivot` (number, default: 0) - v0.1.5: Diverging color scheme for bipolar data**
+- **`highlightTopN` (number|null, default: null) / `highlightStyle` ({ outlineWidth?: number; boostOpacity?: number }) - v0.1.5: Highlight top N voxels**
+
+For brevity, see the Japanese section below for complete option details and examples.
+
+#### Methods
+
+##### `createFromEntities(entities)`
+
+Asynchronously creates a heatmap from an entity array.
+
+**Parameters:**
+- `entities` (Array<Cesium.Entity>)
+
+**Returns:**
+- `Promise<HeatboxStatistics>`
+
+##### `setData(entities)`
+
+Creates heatmap data from entity array and renders it.
+
+**Parameters:**
+- `entities` (Array<Cesium.Entity>) - Target entity array
+
+##### `updateOptions(newOptions)`
+
+Updates options and re-renders existing heatmap.
+
+**Parameters:**
+- `newOptions` (Object) - New options
+
+##### `setVisible(show)`
+
+Toggles heatmap visibility.
+
+**Parameters:**
+- `show` (boolean) - true to show
+
+##### `clear()`
+
+Clears heatmap and resets related resources.
+
+##### `destroy()`
+
+Destroys Heatbox instance and releases allocated resources.
+
+##### `getStatistics()`
+
+Gets current heatmap statistics.
+
+**Returns:**
+- `HeatboxStatistics|null` - Statistics object or null if data not created.
+
+##### `getBounds()`
+
+Gets current heatmap bounds information (latitude/longitude).
+
+**Returns:**
+- `Object|null` - Bounds information object or null if data not created.
+
+#### Static Methods
+
+##### `Heatbox.filterEntities(entities, predicate)`
+
+Filters entity array with arbitrary condition function.
+
+**Returns:**
+- `Array<Cesium.Entity>`
+
+### Type Definitions
+
+#### HeatboxStatistics
+
+```typescript
+interface HeatboxStatistics {
+  totalVoxels: number;        // Total voxel count (including empty)
+  renderedVoxels: number;     // Rendered voxel count
+  nonEmptyVoxels: number;     // Non-empty voxel count
+  emptyVoxels: number;        // Empty voxel count
+  totalEntities: number;      // Total entity count
+  minCount: number;           // Minimum entity count per voxel
+  maxCount: number;           // Maximum entity count per voxel
+  averageCount: number;       // Average entity count per voxel
+  // v0.1.4 auto voxel size adjustment info
+  autoAdjusted?: boolean;
+  originalVoxelSize?: number | null;
+  finalVoxelSize?: number | null;
+  adjustmentReason?: string | null;
+}
+```
+
+### Utility Functions
+
+#### `createHeatbox(viewer, options)`
+
+Helper function to create a Heatbox instance.
+
+#### `getAllEntities(viewer)`
+
+Gets all entities from specified viewer.
+
+#### `generateTestEntities(viewer, bounds, count)`
+
+Generates test entities for testing purposes.
+
+#### `getEnvironmentInfo()`
+
+Gets environment information such as library version and WebGL support status.
+
+### Error Handling
+
+Common errors include: no target entities, invalid CesiumJS Viewer, voxel count exceeding limits, and WebGL not supported. See Japanese section for detailed solutions.
+
+### Performance Considerations
+
+- **Recommended entity count**: 500-1,500
+- **Recommended voxel size**: 20-50 meters  
+- **Max voxel count**: Under 50,000
+
+See Japanese section for complete performance optimization tips.
+
+## 日本語
+
+> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得してください。
+
+### Heatbox クラス
+
+#### コンストラクタ
 
 #### `new Heatbox(viewer, options)`
 

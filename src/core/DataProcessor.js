@@ -6,15 +6,17 @@ import { VoxelGrid } from './VoxelGrid.js';
 import { Logger } from '../utils/logger.js';
 
 /**
- * エンティティデータの処理を担当するクラス
+ * Class responsible for processing entity data.
+ * エンティティデータの処理を担当するクラス。
  */
 export class DataProcessor {
   /**
-   * エンティティをボクセルに分類（シンプル実装）
-   * @param {Array} entities - エンティティ配列
-   * @param {Object} bounds - 境界情報
-   * @param {Object} grid - グリッド情報
-   * @returns {Map} ボクセルデータ（キー: ボクセルキー, 値: ボクセル情報）
+   * Classify entities into voxels (simple implementation).
+   * エンティティをボクセルに分類（シンプル実装）。
+   * @param {Array} entities - Entity array / エンティティ配列
+   * @param {Object} bounds - Bounds info / 境界情報
+   * @param {Object} grid - Grid info / グリッド情報
+   * @returns {Map} Voxel data Map (key: voxel key, value: info) / ボクセルデータ（キー: ボクセルキー, 値: ボクセル情報）
    */
   static classifyEntitiesIntoVoxels(entities, bounds, grid) {
     const voxelData = new Map();
@@ -113,10 +115,11 @@ export class DataProcessor {
   }
   
   /**
-   * ボクセルデータから統計情報を計算
-   * @param {Map} voxelData - ボクセルデータ
-   * @param {Object} grid - グリッド情報
-   * @returns {Object} 統計情報
+   * Calculate statistics from voxel data.
+   * ボクセルデータから統計情報を計算します。
+   * @param {Map} voxelData - Voxel data / ボクセルデータ
+   * @param {Object} grid - Grid info / グリッド情報
+   * @returns {Object} Statistics / 統計情報
    */
   static calculateStatistics(voxelData, grid) {
     if (voxelData.size === 0) {
@@ -161,10 +164,11 @@ export class DataProcessor {
   }
   
   /**
-   * 上位N個のボクセルを取得
-   * @param {Map} voxelData - ボクセルデータ
-   * @param {number} topN - 取得する上位の数
-   * @returns {Array} 上位N個のボクセル情報
+   * Get top-N densest voxels.
+   * 上位 N 個のボクセルを取得します。
+   * @param {Map} voxelData - Voxel data / ボクセルデータ
+   * @param {number} topN - Number to get / 取得する上位の数
+   * @returns {Array} Top-N voxel info / 上位N個のボクセル情報
    */
   static getTopNVoxels(voxelData, topN) {
     if (voxelData.size === 0 || topN <= 0) {

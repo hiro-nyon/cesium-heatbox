@@ -1,6 +1,186 @@
-# 開発初心者向けガイド
+# Development Guide for Beginners (開発初心者向けガイド)
 
-> **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
+[English](#english) | [日本語](#日本語)
+
+## English
+
+> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
+
+**Target Audience**: Development beginners and those new to JavaScript/Node.js library development  
+**Purpose**: Understand the development and release procedures for the cesium-heatbox project
+
+### Table of Contents
+
+1. [Development Environment Setup](#development-environment-setup)
+2. [Git Basics](#git-basics)
+3. [About npm (Node Package Manager)](#about-npm-node-package-manager)
+4. [Version Management and Tagging](#version-management-and-tagging)
+5. [Development Workflow](#development-workflow)
+6. [Testing and Building](#testing-and-building)
+7. [Release Process](#release-process)
+8. [Troubleshooting](#troubleshooting)
+
+#### Development Environment Setup
+
+**Required Software:**
+
+1. **Node.js (Required)**
+   ```bash
+   node --version  # v18.0.0 or higher required
+   npm --version   # v8.0.0 or higher required
+   ```
+
+2. **Git (Required)**
+   ```bash
+   git --version
+   ```
+
+3. **Visual Studio Code (Recommended)**
+   - Recommended extensions: JavaScript snippets, ESLint, Prettier, GitLens
+
+**Project Setup:**
+```bash
+cd /path/to/cesium-heatbox
+npm install
+npm run dev
+```
+
+#### Git Basics
+
+Git is a version control system for tracking code changes and enabling collaboration. Key concepts include repositories, commits, branches, tags, and remote/local repositories.
+
+**Basic Commands:**
+```bash
+# Check status
+git status
+git diff
+
+# Record changes
+git add .
+git commit -m "commit message"
+
+# Sync with remote
+git pull origin main
+git push origin main
+
+# Branch operations
+git branch
+git checkout -b feature/new-feature
+git merge feature/new-feature
+```
+
+**Commit Message Format:**
+```
+<type>(<scope>): <subject>
+
+Examples:
+feat(core): add data source selection functionality
+fix(renderer): resolve voxel color interpolation issue
+docs: update API documentation
+```
+
+#### About npm (Node Package Manager)
+
+npm manages JavaScript packages and runs development scripts. Key concepts include package.json, dependencies, devDependencies, and scripts.
+
+**Common Commands:**
+```bash
+# Package management
+npm install package-name
+npm install --save-dev package-name
+npm uninstall package-name
+
+# Script execution
+npm run dev
+npm run build
+npm test
+npm run lint
+
+# Version management
+npm version patch  # 0.1.0 → 0.1.1
+npm version minor  # 0.1.1 → 0.2.0
+npm version major  # 0.2.0 → 1.0.0
+```
+
+#### Development Workflow
+
+**Daily Development Cycle:**
+1. Morning: `git pull origin main`, `npm install`, `npm run dev`
+2. Development: Edit code, `npm test`, `npm run lint`, `npm run build`
+3. Completion: `git add .`, `git commit -m "message"`, `git push origin main`
+
+**Feature Development Flow:**
+1. Specification review
+2. Design
+3. Implementation
+4. Testing
+5. Documentation
+6. Code review
+7. Commit
+
+#### Testing and Building
+
+**Testing Types:**
+- Unit tests: Individual function testing
+- Integration tests: Component interaction testing
+
+**Test Commands:**
+```bash
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
+
+**Build Commands:**
+```bash
+npm run build        # Production build
+npm run build:dev    # Development build
+npm run build:watch  # Watch mode
+```
+
+#### Release Process
+
+**Preparation:**
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+**Version Updates:**
+```bash
+# Alpha release
+npm version 0.1.0-alpha.1 --no-git-tag-version
+git add .
+git commit -m "chore: bump version to 0.1.0-alpha.1"
+git tag v0.1.0-alpha.1
+git push origin main --tags
+
+# Stable release
+npm version 0.1.0 --no-git-tag-version
+git tag v0.1.0
+git push origin main --tags
+```
+
+**NPM Publishing:**
+```bash
+npm publish --tag alpha  # Alpha release
+npm publish              # Stable release
+```
+
+#### Troubleshooting
+
+**Common Issues:**
+- npm install errors: Clear cache, delete node_modules, reinstall
+- Test failures: Check detailed error messages, verify import paths
+- Build errors: Check file paths, import statements, webpack config
+- Git push errors: Pull latest changes, resolve conflicts
+
+For detailed solutions, see the Japanese section below.
+
+## 日本語
+
+> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
 
 **対象**: 開発初心者・JavaScript/Node.jsライブラリ開発が初めての方  
 **目的**: cesium-heatboxプロジェクトの開発・リリース手順を理解する

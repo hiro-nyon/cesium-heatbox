@@ -1,6 +1,241 @@
-# CesiumJS Heatbox ライブラリ仕様書
+# CesiumJS Heatbox Library Specification (CesiumJS Heatbox ライブラリ仕様書)
 
-> **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
+[English](#english) | [日本語](#日本語)
+
+## English
+
+> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
+
+**Version**: 0.1.5  
+**Last Updated**: October 2025  
+**Author**: hiro-nyon  
+
+### Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [Technical Specifications](#technical-specifications)
+3. [Architecture Design](#architecture-design)
+4. [API Specifications](#api-specifications)
+5. [Performance Requirements](#performance-requirements)
+6. [Error Handling](#error-handling)
+7. [UI/UX Specifications](#uiux-specifications)
+8. [Test Specifications](#test-specifications)
+9. [Implementation Guidelines](#implementation-guidelines)
+10. [Constraints](#constraints)
+11. [Future Extensions](#future-extensions)
+
+#### Project Overview
+
+**Purpose**
+
+Develop "Heatbox", a 3D voxel-based heatmap visualization library targeting existing entities in CesiumJS environments. Visualize spatial data analysis by dividing geographic space into fixed-size voxels and visualizing entity density within each voxel in 3D space.
+
+**Basic Principles**
+
+- **Entity-based**: Automatically acquire data from existing Cesium Entities
+- **Automatic range setting**: Auto-calculate optimal rectangular (AABB) range from entity distribution
+- **Minimum voxel count**: Efficient processing with minimum voxel count containing specified range
+- **Relative color coding**: Dynamic color coding based on minimum/maximum values in data
+- **Phased development**: Focus on basic functionality in v0.1.0, expand in future
+
+**Target Users**
+
+- Geographic spatial application developers using CesiumJS
+- Researchers and analysts requiring 3D spatial data density analysis
+- Specialists in architecture and urban planning performing 3D visualization
+
+#### Technical Specifications
+
+**Technology Stack**
+
+Development Environment:
+- **Module System**: ES Modules (ES6 import/export)
+- **Build Tool**: Webpack 5
+- **Transpiler**: Babel (ES2015+ support)
+- **Test Framework**: Jest
+- **Linter**: ESLint (JavaScript Standard Style)
+- **Package Manager**: npm
+- **Type Checking**: TypeScript (type definition files)
+
+Dependency Management:
+- **peerDependencies**: cesium ^1.120.0
+- **dependencies**: {} (no runtime dependencies for lightweight design)
+- **devDependencies**: Development tools (Webpack, Babel, Jest, ESLint, TypeScript, etc.)
+
+Supported Module Formats:
+- **ES Modules (recommended)**: For modern browsers and Node.js environments
+- **UMD (legacy support)**: Direct browser loading
+- **CommonJS**: Old Node.js environments
+- **TypeScript type definitions**: Included
+
+Browser Support:
+- **Minimum requirements**: Chrome 90+, Firefox 90+, Safari 14+, Edge 90+
+- **Recommended**: Latest versions
+
+Node.js Requirements:
+- **Development environment**: Node.js 18.0.0+, npm 8.0.0+
+- **Runtime requirements**: ESM support Node.js 14.0.0+
+
+#### Architecture Design
+
+**Project Structure**
+
+```
+cesium-heatbox/
+├── src/                       # Source code
+│   ├── index.js              # Main entry point
+│   ├── Heatbox.js            # Main class
+│   ├── core/                 # Core functionality
+│   │   ├── CoordinateTransformer.js
+│   │   ├── VoxelGrid.js
+│   │   ├── DataProcessor.js
+│   │   └── VoxelRenderer.js
+│   └── utils/                # Utilities
+├── dist/                      # Build output
+├── test/                      # Test code
+├── examples/                  # Usage examples
+├── docs/                      # Documentation
+└── types/                     # TypeScript type definitions
+```
+
+**Class Structure**
+
+```javascript
+class Heatbox {
+    constructor(viewer, options)
+    setData(entities)
+    updateOptions(newOptions)
+    setVisible(show)
+    clear()
+    destroy()
+    getStatistics()
+    getBounds()
+}
+```
+
+**Data Structures**
+
+Bounds (boundary information):
+```javascript
+const bounds = {
+    minLon: number,     // Minimum longitude
+    maxLon: number,     // Maximum longitude
+    minLat: number,     // Minimum latitude
+    maxLat: number,     // Maximum latitude
+    minAlt: number,     // Minimum altitude
+    maxAlt: number,     // Maximum altitude
+    centerLon: number,  // Center longitude
+    centerLat: number,  // Center latitude
+    centerAlt: number   // Center altitude
+};
+```
+
+#### Performance Requirements
+
+**Processing Time Goals**
+
+| Entity Count | Target Time | Approx Voxels | Instanced FPS |
+|-------------|-------------|---------------|---------------|
+| 100-500     | < 1 sec     | < 5,000       | ≥ 60          |
+| 500-1,500   | < 3 sec     | < 15,000      | ≥ 58          |
+| 1,500-3,000 | < 5 sec     | < 30,000      | ≥ 56          |
+| 3,000+      | < 10 sec    | < 50,000      | ≥ 55          |
+
+**Memory Usage**
+- **Base memory**: 10-20MB (library core)
+- **Voxel data**: (2KB × non-empty voxels) + (0.2KB × empty voxels)
+- **Maximum recommended**: Under 100MB
+
+**Limitation Values**
+```javascript
+const performanceLimits = {
+    maxEntities: 5000,              // Maximum processable entities
+    maxVoxels: 50000,              // Maximum renderable voxels
+    maxEmptyVoxelsRendered: 10000,  // Empty voxel rendering limit
+    minVoxelSize: 5,               // Minimum voxel size (meters)
+    maxVoxelSize: 1000,            // Maximum voxel size (meters)
+    warningThreshold: 30000        // Warning display voxel count threshold
+};
+```
+
+#### Error Handling
+
+**Error Classification and Response**
+
+Input Data Errors:
+```javascript
+// No entities
+if (entities.length === 0) {
+    throw new Error('No target entities');
+}
+
+// Invalid position information
+if (!position || isNaN(position.x)) {
+    console.warn(`Entity ${index} has invalid position`);
+    continue; // Skip and continue processing
+}
+```
+
+Resource Limit Errors:
+```javascript
+// Voxel count exceeds limit
+if (totalVoxels > maxVoxels) {
+    throw new Error(
+        `Voxel count exceeds limit(${maxVoxels}): ${totalVoxels}\n` +
+        `Please increase voxel size to ${recommendedSize}m or higher`
+    );
+}
+```
+
+#### Future Extensions
+
+**v0.2.0 Planned Features**
+
+Dynamic functionality:
+- **Real-time updates**: Automatic reflection of entity changes
+- **Animation**: Time-series data playback functionality
+- **Interaction**: Voxel click and hover events
+
+Data source selection functionality:
+- **Data source specification**: Generate heatmaps from specific data source entities only
+- **Data source switching**: Compare heatmaps between multiple data sources
+- **Data source integration**: Create heatmaps combining multiple data sources
+- **Data source management**: List and search functionality for data sources
+
+Customization:
+- **Custom color scales**: Gradients and categorical color coding
+- **Filtering**: Conditional filtering by attributes
+- **Export**: PNG and data CSV output
+
+**v0.3.0 Planned Features**
+
+Advanced analysis:
+- **Hierarchical voxels**: Different levels of detail (LOD)
+- **Statistical analysis**: Advanced statistics like variance and correlation coefficients
+- **Interpolation functionality**: Density interpolation in 3D space
+
+Performance optimization:
+- **WebWorker**: Background processing
+- **WebGPU support investigation**: Introduction of next-generation GPU computing
+- **Color LUT texturization**: GPU optimization of color coding processing
+
+**Long-term Roadmap**
+
+v1.0.0 features:
+- **Production quality**: Enterprise environment support
+- **Plugin system**: Third-party extensions
+- **Cloud integration**: Direct database connection
+
+Research and development items:
+- **Machine learning integration**: Anomaly detection and pattern recognition
+- **AR/VR support**: 3D display in WebXR environments
+- **Distributed processing**: Parallel analysis of large-scale data
+
+For detailed specifications, constraints, and implementation guidelines, see the Japanese section below.
+
+## 日本語
+
+> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
 
 **バージョン**: 0.1.5  
 **最終更新**: 2025年10月  

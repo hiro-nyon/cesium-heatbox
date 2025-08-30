@@ -1,4 +1,206 @@
-# Git & NPM リファレンス
+# Git & NPM Reference (Git & NPM リファレンス)
+
+[English](#english) | [日本語](#日本語)
+
+## English
+
+**Target Audience**: Reference for development beginners  
+**Purpose**: Quick reference for basic Git, NPM, and Node.js operations
+
+### Table of Contents
+
+1. [Git Operations Reference](#git-operations-reference)
+2. [NPM Operations Reference](#npm-operations-reference)
+3. [Version Management](#version-management)
+4. [Project Management](#project-management)
+5. [Troubleshooting](#troubleshooting)
+
+#### Git Operations Reference
+
+**Basic Concepts:**
+- **Repository**: Storage location for project history
+- **Commit**: Snapshot recording changes
+- **Branch**: Development branching (main branch is default)
+- **Tag**: Label for specific commits (for version management)
+- **Remote**: Online repository (GitHub, etc.)
+- **Local**: Repository on your computer
+
+**Commonly Used Commands:**
+
+Status checking:
+```bash
+git status              # Check current status
+git diff                # Check file differences
+git log --oneline       # Check commit history
+```
+
+Recording changes:
+```bash
+git add filename.js     # Stage specific file
+git add .              # Stage all files
+git commit -m "message" # Create commit
+git commit --amend     # Modify previous commit
+```
+
+Remote synchronization:
+```bash
+git pull origin main    # Get latest from remote
+git push origin main    # Send local changes to remote
+```
+
+Branch operations:
+```bash
+git branch                           # List branches
+git checkout -b feature/new-feature  # Create and switch to new branch
+git merge feature/new-feature        # Merge branch
+git branch -d feature/new-feature    # Delete branch
+```
+
+Tag operations:
+```bash
+git tag                    # List tags
+git tag v1.0.0            # Create tag
+git tag -a v1.0.0 -m "msg" # Create annotated tag
+git push origin v1.0.0     # Push tag to remote
+git push origin --tags     # Push all tags
+```
+
+**Commit Message Guidelines:**
+
+Format:
+```
+<type>(<scope>): <subject>
+```
+
+Types:
+- `feat`: New features
+- `fix`: Bug fixes
+- `docs`: Documentation updates
+- `style`: Code style changes
+- `refactor`: Refactoring
+- `test`: Test additions/fixes
+- `chore`: Maintenance tasks
+
+Good examples:
+```bash
+git commit -m "feat(core): add data source selection functionality"
+git commit -m "fix(renderer): resolve voxel color interpolation issue"
+git commit -m "docs: update API documentation for new methods"
+```
+
+#### NPM Operations Reference
+
+**Basic Concepts:**
+- **package.json**: Project configuration file
+- **node_modules**: Storage for installed packages
+- **package-lock.json**: Detailed dependency information
+- **dependencies**: Packages needed in production
+- **devDependencies**: Packages needed only during development
+- **scripts**: Commands executable with npm run
+
+**Package Management:**
+
+Installation:
+```bash
+npm install                    # Install all dependencies from package.json
+npm install package-name       # Install specific package
+npm install --save-dev package-name  # Install as dev dependency
+npm install package-name@1.2.3 # Install specific version
+npm install -g package-name    # Install globally
+```
+
+Uninstallation:
+```bash
+npm uninstall package-name                # Uninstall package
+npm uninstall --save-dev package-name     # Uninstall dev dependency
+```
+
+Package information:
+```bash
+npm list                # List installed packages
+npm list --depth=0      # Top-level packages only
+npm outdated           # Check for outdated packages
+npm info package-name  # Package details
+```
+
+**Script Execution:**
+```bash
+npm run script-name    # Execute script from package.json
+npm run dev           # Start development server
+npm run build         # Execute build
+npm test              # Run tests
+npm start             # Start application
+```
+
+**Version Management:**
+```bash
+npm version patch     # Update patch version (0.1.0 → 0.1.1)
+npm version minor     # Update minor version (0.1.0 → 0.2.0)
+npm version major     # Update major version (0.1.0 → 1.0.0)
+
+# Prerelease versions
+npm version prerelease --preid=alpha
+npm version prerelease --preid=beta
+npm version prerelease --preid=rc
+```
+
+**Publishing:**
+```bash
+npm publish --dry-run  # Check publish contents
+npm publish           # Normal publish
+npm publish --tag alpha  # Publish with tag
+```
+
+#### Semantic Versioning
+
+**Format: MAJOR.MINOR.PATCH**
+- **MAJOR**: Breaking changes
+- **MINOR**: New features (backward compatible)
+- **PATCH**: Bug fixes
+
+**Prerelease versions:**
+```
+1.0.0-alpha.1    # Early development version
+1.0.0-beta.1     # Feature-complete version
+1.0.0-rc.1       # Release candidate
+```
+
+#### Common Issues and Solutions
+
+**npm install errors:**
+```bash
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Git push errors:**
+```bash
+git pull origin main      # Get latest changes
+# Resolve conflicts if any
+git push origin main      # Retry push
+```
+
+**Tag conflicts:**
+```bash
+git tag -d v1.0.0               # Delete local tag
+git push origin --delete v1.0.0  # Delete remote tag
+git tag v1.0.0                  # Create new tag
+git push origin v1.0.0           # Push new tag
+```
+
+**Environment reset:**
+```bash
+rm -rf node_modules package-lock.json dist coverage
+npm cache clean --force
+npm install
+npm test
+npm run build
+```
+
+For detailed explanations and additional examples, see the Japanese section below.
+
+## 日本語
 
 **対象**: 開発初心者向けのリファレンス  
 **目的**: Git・NPM・Node.jsの基本操作を素早く参照

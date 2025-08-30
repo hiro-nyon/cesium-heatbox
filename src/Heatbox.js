@@ -11,14 +11,17 @@ import { DataProcessor } from './core/DataProcessor.js';
 import { VoxelRenderer } from './core/VoxelRenderer.js';
 
 /**
- * CesiumJS Heatbox メインクラス
- * 3Dボクセルベースのヒートマップ可視化を提供
+ * Main class of CesiumJS Heatbox.
+ * Provides 3D voxel-based heatmap visualization in CesiumJS environments.
+ *
+ * CesiumJS Heatbox メインクラス。
+ * CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提供します。
  */
 export class Heatbox {
   /**
-   * コンストラクタ
-   * @param {Cesium.Viewer} viewer - CesiumJS Viewer インスタンス
-   * @param {Object} options - 設定オプション
+   * Constructor
+   * @param {Cesium.Viewer} viewer - CesiumJS Viewer instance / CesiumJS Viewer インスタンス
+   * @param {Object} options - Configuration options / 設定オプション
    */
   constructor(viewer, options = {}) {
     if (!isValidViewer(viewer)) {
@@ -41,8 +44,9 @@ export class Heatbox {
   }
 
   /**
-   * ヒートマップデータを設定し、描画を実行
-   * @param {Cesium.Entity[]} entities - 対象エンティティ配列
+   * Set heatmap data and render.
+   * ヒートマップデータを設定し、描画を実行します。
+   * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
    */
   setData(entities) {
     if (!isValidEntities(entities)) {
@@ -149,9 +153,10 @@ export class Heatbox {
   }
 
   /**
-   * エンティティからヒートマップを作成（非同期API）
-   * @param {Cesium.Entity[]} entities - 対象エンティティ配列
-   * @returns {Promise<Object>} 統計情報
+   * Create heatmap from entities (async).
+   * エンティティからヒートマップを作成（非同期 API）。
+   * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
+   * @returns {Promise<Object>} Statistics info / 統計情報
    */
   async createFromEntities(entities) {
     if (!isValidEntities(entities)) {
@@ -162,15 +167,17 @@ export class Heatbox {
   }
 
   /**
-   * 表示/非表示を切り替え
-   * @param {boolean} show - 表示する場合はtrue
+   * Toggle visibility.
+   * 表示/非表示を切り替えます。
+   * @param {boolean} show - true to show / 表示する場合は true
    */
   setVisible(show) {
     this.renderer.setVisible(show);
   }
 
   /**
-   * ヒートマップをクリア
+   * Clear the heatmap and internal state.
+   * ヒートマップと内部状態をクリアします。
    */
   clear() {
     this.renderer.clear();
@@ -181,7 +188,8 @@ export class Heatbox {
   }
 
   /**
-   * インスタンスを破棄し、イベントリスナーを解放
+   * Destroy the instance and release event listeners.
+   * インスタンスを破棄し、イベントリスナーを解放します。
    */
   destroy() {
     this.clear();
@@ -192,16 +200,18 @@ export class Heatbox {
   }
 
   /**
-   * 現在のオプションを取得
-   * @returns {Object} オプション
+   * Get current options.
+   * 現在のオプションを取得します。
+   * @returns {Object} Options / オプション
    */
   getOptions() {
     return { ...this.options };
   }
 
   /**
-   * オプションを更新
-   * @param {Object} newOptions - 新しいオプション
+   * Update options and re-render if applicable.
+   * オプションを更新し、必要に応じて再描画します。
+   * @param {Object} newOptions - New options / 新しいオプション
    */
   updateOptions(newOptions) {
     this.options = validateAndNormalizeOptions({ ...this.options, ...newOptions });
@@ -216,7 +226,8 @@ export class Heatbox {
   }
 
   /**
-   * 内部のイベントリスナーを初期化
+   * Initialize internal event listeners.
+   * 内部のイベントリスナーを初期化します。
    * @private
    */
   _initializeEventListeners() {
@@ -248,24 +259,27 @@ export class Heatbox {
   }
 
   /**
-   * 統計情報を取得
-   * @returns {Object|null} 統計情報、未作成の場合はnull
+   * Get statistics if available.
+   * 統計情報を取得します（未作成の場合は null）。
+   * @returns {Object|null} Statistics or null / 統計情報 または null
    */
   getStatistics() {
     return this._statistics;
   }
 
   /**
-   * 境界情報を取得
-   * @returns {Object|null} 境界情報、未作成の場合はnull
+   * Get bounds info if available.
+   * 境界情報を取得します（未作成の場合は null）。
+   * @returns {Object|null} Bounds or null / 境界情報 または null
    */
   getBounds() {
     return this._bounds;
   }
 
   /**
-   * デバッグ情報を取得
-   * @returns {Object} デバッグ情報
+   * Get debug information.
+   * デバッグ情報を取得します。
+   * @returns {Object} Debug info / デバッグ情報
    */
   getDebugInfo() {
     const baseInfo = {
@@ -293,10 +307,11 @@ export class Heatbox {
   }
 
   /**
-   * エンティティ配列をフィルタ（ユーティリティ, 静的メソッド）
-   * @param {Cesium.Entity[]} entities - エンティティ配列
-   * @param {Function} predicate - フィルタ関数
-   * @returns {Cesium.Entity[]} フィルタ済み配列
+   * Filter entity array (utility static method).
+   * エンティティ配列をフィルタします（ユーティリティ・静的メソッド）。
+   * @param {Cesium.Entity[]} entities - Entity array / エンティティ配列
+   * @param {Function} predicate - Predicate function / フィルタ関数
+   * @returns {Cesium.Entity[]} Filtered array / フィルタ済み配列
    */
   static filterEntities(entities, predicate) {
     if (!Array.isArray(entities) || typeof predicate !== 'function') return [];

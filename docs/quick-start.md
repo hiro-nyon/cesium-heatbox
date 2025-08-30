@@ -1,6 +1,303 @@
-# クイックスタートガイド
+# Quick Start Guide (クイックスタートガイド)
 
-> **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
+[English](#english) | [日本語](#日本語)
+
+## English
+
+> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
+
+**Target Audience**: Those who want to use cesium-heatbox immediately  
+**Time Required**: 10-15 minutes  
+**Prerequisites**: Node.js 18+, Git, basic JavaScript knowledge
+
+### Table of Contents
+
+1. [Environment Setup (5 minutes)](#environment-setup-5-minutes)
+2. [Project Setup (3 minutes)](#project-setup-3-minutes)
+3. [Sample Execution (2 minutes)](#sample-execution-2-minutes)
+4. [Basic Development Work (5 minutes)](#basic-development-work-5-minutes)
+5. [Next Steps](#next-steps)
+
+#### Environment Setup (5 minutes)
+
+**1. Check Node.js Installation**
+
+```bash
+# Check version
+node --version  # v18.0.0 or higher required
+npm --version   # v8.0.0 or higher required
+```
+
+**If not installed:**
+1. Download LTS version from [Node.js official site](https://nodejs.org/)
+2. Run installer
+
+**2. Check Git Installation**
+
+```bash
+# Check version
+git --version
+```
+
+**If not installed:**
+- Download from [Git official site](https://git-scm.com/)
+- macOS: `brew install git`
+- Windows: Install Git for Windows
+
+#### Project Setup (3 minutes)
+
+**1. Navigate to Project Directory**
+
+```bash
+cd /path/to/cesium-heatbox
+```
+
+**2. Install Dependencies**
+
+```bash
+# Initial setup
+npm install
+
+# Verify success
+npm ls --depth=0
+```
+
+**3. Basic Operation Check**
+
+```bash
+# Run tests
+npm test
+
+# Run build
+npm run build
+
+# Check results
+ls -la dist/
+```
+
+**Expected output:**
+```
+dist/
+├── cesium-heatbox.js
+├── cesium-heatbox.min.js
+└── cesium-heatbox.umd.js
+```
+
+#### Sample Execution (2 minutes)
+
+**1. Start Development Server**
+
+```bash
+# Start development server
+npm run dev
+
+# Check in browser
+# Browser should open automatically (usually http://localhost:8080)
+```
+
+**2. Check Basic Sample**
+
+Verify in browser:
+- Basic 3D map display
+- Heatmap configuration UI
+- Entity generation and heatmap creation buttons
+
+**3. Function Test**
+
+1. **Generate Entities**: Click "Generate Test Entities" button
+2. **Create Heatmap**: Click "Create Heatmap" button
+3. **Change Settings**: Adjust voxel size and opacity
+4. **Toggle Display**: Use "Show/Hide" button to verify
+
+#### Basic Development Work (5 minutes)
+
+**1. Open Code in Editor**
+
+```bash
+# Open with Visual Studio Code
+code .
+
+# Or open with other editor
+open .
+```
+
+**Basic File Structure:**
+```
+cesium-heatbox/
+├── src/                    # Source code
+│   ├── Heatbox.js         # Main class
+│   ├── core/              # Core functionality
+│   └── utils/             # Utilities
+├── examples/              # Sample code
+│   └── basic/
+│       ├── index.html
+│       └── app.js
+├── test/                  # Test code
+└── docs/                  # Documentation
+```
+
+**2. Try Simple Changes**
+
+Change default voxel size:
+```javascript
+// src/utils/constants.js
+export const DEFAULT_VOXEL_SIZE = 20;  // Change 20 → 30
+```
+
+Change default colors:
+```javascript
+// src/utils/constants.js
+export const DEFAULT_MIN_COLOR = [0, 32, 255];     // Blue
+export const DEFAULT_MAX_COLOR = [255, 64, 0];     // Red
+// → Try changing to other colors
+```
+
+**3. Verify Changes**
+
+```bash
+# Check with development server (hot reload)
+npm run dev
+
+# Check with tests
+npm test
+
+# Check with build
+npm run build
+```
+
+**4. Commit Changes**
+
+```bash
+# Check changes
+git status
+git diff
+
+# Commit changes
+git add .
+git commit -m "chore: update default voxel size to 30"
+
+# Push to GitHub
+git push origin main
+```
+
+#### Next Steps
+
+**1. Read Detailed Documentation**
+
+- **[development-guide.md](./development-guide.md)**: From basics to advanced development
+- **[specification.md](./specification.md)**: Complete project specifications
+- **[API.md](./API.md)**: Detailed API specifications
+
+**2. Practical Development**
+
+Feature implementation:
+1. Check v0.2.0 planned features in **specification.md**
+2. Challenge implementing **data source selection functionality**
+3. Add **test cases**
+4. Update **documentation**
+
+Quality improvement:
+1. Improve **test coverage**
+2. Optimize **performance**
+3. Enhance **error handling**
+4. Improve **usability**
+
+**3. Release Preparation**
+
+Alpha release:
+```bash
+# Update version
+npm version 0.1.0-alpha.1 --no-git-tag-version
+
+# Create tag
+git add .
+git commit -m "chore: bump version to 0.1.0-alpha.1"
+git tag v0.1.0-alpha.1
+
+# Push
+git push origin main
+git push origin v0.1.0-alpha.1
+```
+
+Future NPM publication:
+```bash
+# Prepare for publication
+npm publish --dry-run
+
+# Publish as alpha
+npm publish --tag alpha
+```
+
+### Frequently Used Commands
+
+**Development:**
+```bash
+npm install     # Install dependencies
+npm run dev     # Start development server
+npm test        # Run tests
+npm run build   # Build
+npm run lint    # Linting
+```
+
+**Git Operations:**
+```bash
+git status                    # Check status
+git add .                     # Stage changes
+git commit -m "message"       # Commit
+git push origin main          # Push
+git pull origin main          # Pull latest
+```
+
+**Troubleshooting:**
+```bash
+# Environment reset
+rm -rf node_modules package-lock.json
+npm install
+
+# Detailed error checking
+npm test -- --verbose
+npm run build -- --verbose
+```
+
+### Frequently Asked Questions
+
+**Q: Development server won't start**
+**A:** Check:
+1. Node.js 18+ installed
+2. `npm install` succeeded
+3. Port 8080 available
+
+**Q: Tests fail**
+**A:** Try:
+1. `npm test -- --verbose` for detailed errors
+2. `npm install` to reinstall dependencies
+3. Run specific test: `npm test -- Heatbox.test.js`
+
+**Q: Build fails**
+**A:** Check:
+1. No ESLint errors: `npm run lint`
+2. No type errors: `npm run type-check`
+3. File paths are correct
+
+**Q: Git push error**
+**A:** Try:
+1. `git pull origin main` to get latest
+2. Resolve conflicts if any
+3. Push again
+
+### Success Tips
+
+1. **Start small**: Don't make big changes at once
+2. **Test frequently**: Always run tests after changes
+3. **Commit often**: Commit in meaningful units
+4. **Read documentation**: Check specifications for questions
+5. **Don't fear experimentation**: Failure is a learning opportunity
+
+Congratulations! Enjoy developing with cesium-heatbox!
+
+## 日本語
+
+> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
 
 **対象**: cesium-heatboxを今すぐ使いたい方  
 **所要時間**: 10-15分  

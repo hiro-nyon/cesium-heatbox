@@ -243,6 +243,9 @@ Please refer to the `examples/` folder for basic usage examples.
 
 ## ドキュメント / Documentation
 
+英語 → 日本語の順で掲載し、各ページ先頭に言語切替リンク（[English](docs/API.md#english) | [日本語](docs/API.md#日本語)）を用意しています。  
+Docs are structured English first, then Japanese. Each page includes a language switch at the top.
+
 ### 日本語
 - [API リファレンス](docs/API.md)
 - [クイックスタート](docs/quick-start.md)

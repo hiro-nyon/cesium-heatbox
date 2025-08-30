@@ -1,181 +1,129 @@
 # CesiumJS Heatbox - Roadmap
 
-> このロードマップは四半期ごとに見直します。最新の進捗は GitHub Issues / Projects を参照してください。
+> **Note**: このロードマップは予定であり、優先度や実装順序は変更される可能性があります。最新の進捗は [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) と [GitHub Projects](https://github.com/hiro-nyon/cesium-heatbox/projects) をご確認ください。
 
-本計画は「0.1で完結できるもの」と「0.2/0.3以降でなければ難しいもの」を切り分け、各バージョンのスコープ・受け入れ基準・互換性影響を明確化します。
+## v0.1.5 (近期予定) - 基本機能強化
 
----
+**Priority: High | Target: Q1 2025**
 
-## 0.1 系（安定化フェーズ）
+### 計画中の機能
+- [ ] デバッグ描画制御: `debug.showBounds` オプションでバウンディングボックス表示のON/OFF制御
+- [ ] 未使用オプション整理: `batchMode: 'auto'` の実装または仕様からの削除で整合性確保
+- [ ] カラーマップ選択: `viridis`、`inferno` 等の知覚均等カラーマップ選択機能
+- [ ] 二極性データ対応: 正負値に対応した発散配色（blue-white-red）
+- [ ] トップN強調表示: 密度上位ボクセルのみ色・サイズ・ラベル強調、他は淡色表示
 
-### v0.1.5（完了: 2025-08-25）- 基本機能強化
-- 追加: `debug.showBounds`、知覚均等カラーマップ（`viridis`/`inferno`）、発散配色（`diverging`/`divergingPivot`）、`highlightTopN`/`highlightStyle`
-- 非推奨: `batchMode` は受理するが無視（v1.0.0で削除予定）
-- ドキュメント: README/API/Wiki 同期、ADR-0002 Accepted
+### 修正予定
+- [ ] 実装と仕様の整合: ドキュメントでのPrimitive/Entity描画方式記述を現状に合わせて修正
+- [ ] Cesiumバージョン整合: peerDependencies `cesium ^1.120.0` とサンプルCDN参照の一致確認
+- [ ] ESM/UMDビルド整合: `package.json`のエントリポイントと実際のビルド成果物の一致確認
 
-### v0.1.6（短期・仕上げ）- ハードニングとドキュメント
-Priority: High | Target: 2025-09
-- 品質
-  - [ ] Lint 0 errors（現状指摘の `prefer-const`/未使用変数の解消）
-  - [ ] 主要分岐のテスト追補（VoxelRenderer 色補間・TopN分岐の正常系）
-  - [ ] 例の安定化（Basic/Advancedの微修正、OIT切替例の追記）
-- ドキュメント
-  - [ ] Wiki公開スクリプト/手順の整備（`docs/api`→Wiki 反映の一次自動化）
-  - [ ] Legend（凡例）の「サンプル実装」ドキュメント（ライブラリ外の実装例として提示）
-- 新機能（軽微）
-  - [ ] 枠線太さ調整オプション拡張: `outlineWidth` をより柔軟に設定可能（個別ボクセル・全体・TopN強調の太さ個別制御）
-  - [ ] Examples基本・高度デモで枠線太さ調整UI追加
-- 互換性: 変更なし（非破壊）。軽微なAPI追加（後方互換性維持）。
-- 受け入れ基準: Lint 0 errors、テスト緑、README/Wiki/Examples が v0.1.6 内容に同期、枠線調整機能の動作確認。
-
-### v0.1.6.1（パッチ）- インセット枠線の導入（ADR-0004）
-Priority: High | Target: 2025-09
-- 機能
-  - [ ] `outlineInset`（m）をデフォルトOFFで追加（二重Box方式）。
-  - [ ] 必要に応じ `outlineInsetMode: 'all'|'topn'` を検討（TopN限定でコスト抑制）。
-- 相互作用/運用
-  - [ ] Docs: 不透明塗りでは効果が限定的で、`opacity<1` もしくは `wireframeOnly:true`、`voxelGap` 併用推奨を明記。
-  - [ ] Examples: basic/advanced にスライダー（m）とトグル追加（OFF→TopN→ALLの3段階）。
-- 受け入れ基準（ADR準拠）
-  - [ ] 1000ボクセル規模で描画時間 +30〜50% 以内（上限 +50%）。
-  - [ ] outlineWidthResolver/TopN/outlineOpacity/voxelGap と併用時に破綻なし。
-  - [ ] 単体/結合テスト（寸法/優先順位/alpha反映）と目視チェックを通過。
-
-### v0.1.7（適応的表示の核）- 太枠エミュレーションを中心とした視認性最適化
-Priority: Medium | Target: 2025-10
-
-- コア機能（Adaptive Outlines）
-  - [ ] 適応的枠線制御の実装（核）：
-    - 近傍密度・TopN・ズーム・重なりリスクに基づき、枠線太さ・透明度・インセット/エミュ有無を自動調整
-    - 0.1.6.2 の「太線エミュレーション（中間位置ポリライン）」を適応的にON/OFF/太さ調整
-  - [ ] 適応的透明度（Adaptive Opacity）：点（エンティティ）数や近傍密度に応じて透明度を自動調整
-    - 対象: ボックス塗り（fill）、標準枠線（outline）、インセット枠線（二重Box）、中間位置の太枠エミュ（ポリライン）
-    - API（案）: `boxOpacityResolver`, `outlineOpacityResolver`（0–1にクランプ、既存 `outlineOpacity` との優先順位整理）
-  - [ ] エミュレーション専用表示モード（要求）:
-    - [ ] 「枠線（box.outline）とインセット（二重Box）を出さず、太枠エミュレーションのみ表示」モードの追加
-    - [ ] オプション案: `outlineRenderMode: 'standard' | 'inset' | 'emulation-only'`（後方互換デフォルトは'standard'）
-  - [ ] ヒューリスティクス/プリセット:
-    - [ ] `outlineWidthPreset: 'adaptive-density' | 'topn-focus' | 'uniform'`
-    - [ ] 近傍密度（指定半径/近傍数）・カメラ距離・TopN/選択フラグ・重なりリスクを入力とする参照実装
-
-- UI/Examples
-  - [ ] Basic/Advanced: 「適応的表示」トグル + しきい値/半径/TopN優先度のスライダー
-  - [ ] 「エミュレーション専用」トグルを追加（'standard'/'inset'/'emulation-only' の切替）
-  - [ ] 密度パターン生成（格子/群集/疎）で効果を可視化
-
-- Docs/Wiki
-  - [ ] API: `outlineRenderMode` と適応的制御の説明（入力シグナル・優先順位・相互作用）
-  - [ ] API: `boxOpacityResolver` / `outlineOpacityResolver` の仕様（適用対象・優先順位・クランプ）
-  - [ ] ガイド: チューニング手順（密集/疎/遠景の推奨値、TopN併用の勘所）
-  - [ ] FAQ: 重なり/ちらつき時の対処（voxelGap/outlineOpacity/inset/エミュの使い分け）
-
-- パフォーマンス/品質
-  - [ ] 1000〜5000ボクセル規模でのオーバーヘッド<5%（高頻度フレームでも安定）
-  - [ ] メモリ安定（複数回描画/再設定でリークなし）
-  - [ ] 受け入れ基準：密集・疎・混在パターンで視認性が一律太さ/固定透明度より改善、TopN/選択が埋もれない
-  - [ ] 透明度は0–1にクランプされ、fill/outline/inset/エミュすべてで期待どおりに反映される
-
-- 互換性
-  - 変更なし（非破壊）。モード追加とプリセット追加のみ。デフォルトは従来表示。
-
-> 注: 0.1系では「コアのデータモデル変更や新レイヤー」は行わず、安定化と利用性向上に限定します。
+**実装工数: 低 | 互換性影響: なし**
 
 ---
 
-## 0.2 系（機能拡張フェーズ）
+## v0.2.0 (中期予定) - インタラクション機能
 
-### v0.2.0 - 分類スキームと凡例（連続/離散）
-Priority: High | Target: 2025-11
-- 分類スキーム（最小セット）
-  - [ ] linear（既定）、log（log10/2）、equal-interval、quantize、threshold（custom thresholds）
-  - [ ] quantile、jenks（ckmeans）
-  - [ ] 適用対象: 色（color）に加えて、透明度（opacity）にも適用（fill と outline の双方）
-  - [ ] API例: 
-    - `classification: 'linear'|'log'|'equal-interval'|'quantize'|'threshold'|'quantile'|'jenks'`
-    - `classes?: number`, `thresholds?: number[]`, `discrete?: boolean`
-    - `classificationTargets?: { color?: boolean; opacity?: boolean }`（既定: color=true, opacity=false）
-    - `opacityStops?`/`opacityRange?` など連続/離散の指定（0–1にクランプ）
-- 凡例/ガイド
-  - [ ] 連続/離散に応じたラベル・境界値表示（必要に応じて透明度の示唆も表現）
-  - [ ] TopN・diverging との整合（分類と強調の優先順位）
-  - [ ] ドキュメントに「色のみ/色+透明度」両パターンの例とベストプラクティスを追記
-- 実装方針
-  - 既存ライブラリの活用（d3-array/d3-scale/simple-statistics 等）を優先。バンドルサイズ配慮のためユーティリティ部品のみ導入。
-- 互換性: 低（新オプション追加のみ、既存デフォルト維持）。
-- 受け入れ基準:
-  - [ ] 代表データで各分類が視覚的に区別でき、凡例/ガイドが同期表示される。
-  - [ ] 透明度分類を有効化した場合、fill/outline（標準/インセット/エミュ）に0–1で正しく反映される。
-  - [ ] 適応的透明度（resolver）と併用時の優先順位（分類→resolver もしくは resolver→分類）を明示し、挙動が一貫。
+**Priority: Medium | Target: Q2 2025**
 
-### v0.2.1 - 時間依存データ（PoC）
-Priority: Medium | Target: 2026-01
-- [ ] `viewer.clock.currentTime` に基づく時刻評価・スライス描画（ステップ更新）
-- [ ] キャッシュ/再計算ポリシーの基本設計（時間次元の増加コスト抑制）
-- 互換性: 低（オプション追加）。
-- 受け入れ基準: サンプルで時刻操作に応じてボクセルが更新され、体感カクつきが許容範囲内。
+### 計画中の機能
+- [ ] 時間依存データ対応: `viewer.clock.currentTime` を用いた動的時刻での位置評価
+- [ ] エンティティ範囲拡張: polygon、polyline、billboard、model等の代表点推定ユーティリティ
+- [ ] 分類スキーム（カラースケール）拡張: 主要な分類方式を幅広くサポート（既存ライブラリを優先利用）
+  - 連続スケール: linear（既定）、log（log10/log2 等）
+  - 離散ビニング: equal-interval（等幅）、quantize（等幅ビン）、threshold（任意境界）、custom thresholds（手動配列）
+  - 分位ベース: quantile（等頻度）、percentile（同義）
+  - 自然分類: Jenks/Fisher-Jenks（ckmeans）
+  - 統計ベース: standard deviation（平均±nσ）
+  - その他候補: geometric breaks（幾何級数）、head/tail breaks（長尾分布向け）、k-means（一般化）
+  - 実装指針（ライブラリ）: 
+    - simple-statistics（ckmeans/quantile等）
+    - d3-array（quantile/threshold）, d3-scale（quantize/quantile/threshold）, d3-scale-chromatic（カラーパレット）
+    - 代替: chroma.js（スケール生成・クラス分割）
+  - API想定: `classification: 'linear'|'log'|'equal-interval'|'quantize'|'threshold'|'quantile'|'jenks'|'stddev'|'geometric'|'headtail'|'kmeans'|'custom'`, `classes?: number`, `thresholds?: number[]`, `palette?: 'viridis'|'inferno'|...`, `discrete?: boolean`
+  - 連続/離散の切替と凡例更新（境界値/パーセンタイル/平均±σの表示）
+- [ ] 凡例・分布表示: 最小・最大・中央値・分位を併記した読み取り支援
+- [ ] OIT有効化: `viewer.scene.orderIndependentTranslucency = true` での半透明重ね順問題緩和
+- [ ] シルエット・エッジ強調: アウトライン・選択時シルエットによる輪郭強調
 
-### v0.2.2 - メモリ/パフォーマンス最適化
-Priority: Medium | Target: 2026-02
-- [ ] 必要フィールドのみ保持（エンティティ配列の縮約）
-- [ ] 描画リストの再利用・差分更新
-- 互換性: 変更なし（内部最適化）。
+### 変更予定
+- [ ] メモリ削減最適化: エンティティ配列保持方法の最適化（カウントのみ保持、必要フィールド限定等）
+
+### フェーズ分割（目安）
+- Phase A（v0.2.0）: linear/log/quantile/equal-interval/quantize/threshold/custom + jenks（ckmeans） + stddev、凡例対応、基本パレット（d3-scale-chromatic）
+- Phase B（v0.3.0以降）: geometric/headtail/k-meansの追加、高度なパレット編集、分類毎の自動推奨クラス数、UI連動
+
+**実装工数: 中 | 互換性影響: 軽微（新オプション追加のみ）**
 
 ---
 
-## 0.3 系（高度可視化フェーズ）
+## v0.3.0 (長期予定) - 高度な可視化機能
 
-### v0.3.0 - スライス/深度フェード/フォーカス
-Priority: Medium | Target: 2026-04
-- [ ] スライス表示（X/Y/Z 平面での断面）
-- [ ] 深度フェード（カメラ距離に応じた不透明度）
-- [ ] フォーカス・コンテキスト（近傍強調・周辺減衰）
-- 互換性: 中（新API追加）。
+**Priority: Medium | Target: Q3-Q4 2025**
 
-### v0.3.1 - ROI/ローカルヒストグラム
-Priority: Medium | Target: 2026-05
-- [ ] 3Dボックス/ポリゴンでの範囲選択（ROI）
-- [ ] ROI内分布のローカルヒストグラムとカラーマップ連動
+### 計画中の機能
+- [ ] スライス表示: X/Y/Z断面移動による内部構造把握機能
+- [ ] 深度フェード: カメラからの距離に応じた自動不透明度調整
+- [ ] 前面ハイライト: 画面手前層の通常描画、奥層のワイヤーフレーム透視化
+- [ ] フォーカス・コンテキスト: 選択ボクセル近傍の高彩度表示、周辺淡色化
+- [ ] ROI抽出: 3Dボックス・ポリゴン範囲選択による局所分析
+- [ ] ローカルヒストグラム: 選択範囲の値分布表示とカラーマップ調整連動
 
-### v0.3.2 - MIP風投影/動的TopN
-Priority: Low | Target: 2026-06
-- [ ] 最大値投影（MIP）サマリ表示
-- [ ] 時間変化に同期した動的TopN演出
+**実装工数: 高 | 互換性影響: 中（新API追加、既存動作は維持）**
 
 ---
 
-## 0.4 系（アーキテクチャ強化）
+## v0.4.0 (将来予定) - アーキテクチャ強化
 
-### v0.4.0 - レンダリング基盤の拡張（実験的）
-Priority: Low | Target: 2026 H2
-- [ ] Primitiveベース描画（実験的）を `renderBackend: 'entity'|'primitive'` フラグで選択可能に（デフォルトはentity）
-- [ ] 座標変換の精度向上（高緯度・広域向けの ENU/ECEF 段階移行の調査）
-- 互換性: 大（内部構造の変更。デフォルトは既存維持）
+**Priority: Low | Target: 2026**
 
-### v0.4.1+ - 応用表現/出力
-- [ ] 2.5Dカラム/六角ビニング（応用表現）
-- [ ] 静的LoD事前計算
-- [ ] 3D Tiles出力
+### 計画中の機能
+- [ ] 2.5Dカラム表示: 高さ方向集計による棒グラフ（四角・六角）押し出し表示
+- [ ] 六角ビニング: 地表六角格子・垂直層スタックによる規則的表現
+- [ ] 空ボクセル最適化: LOD・スキップレベル・サンプリング表示による効率化
 
----
+### 変更予定
+- [ ] Primitiveバッチ描画: Entity大量描画限界解消のためGeometryInstance + Primitive実装検討
+- [ ] 座標変換強化: 高緯度・大域範囲での誤差軽減向けENU/ECEFベース座標変換への段階移行
 
-## 1.0.0（メジャー）
-
-Priority: Future | Target: TBD
-- [ ] レガシー削除（`batchMode`削除 ほか）
-- [ ] しきい値面（等値面; Marching Cubes）
-- [ ] 高度な統計分析/監視
-- 互換性: 破壊的変更を伴う可能性
+**実装工数: 非常に高 | 互換性影響: 大（内部アーキテクチャ変更）**
 
 ---
 
-## 継続タスク（全バージョン）
+## v1.0.0 (未定) - メジャーリリース
 
-- テスト強化: VoxelRenderer分岐網羅、`updateOptions` の再描画分岐、ピック判定の実機整合
-- ドキュメント保守: 各バージョン機能の同期、例の継続更新、API仕様の一貫性
-- 品質ゲート: Lintエラーゼロ、主要モジュールの基本分岐をカバー
+**Priority: Future | Target: TBD**
+
+### 計画中の機能
+- [ ] しきい値面（等値面）: 密度しきい値でのMarching Cubesメッシュ化・半透明表面表示
+
+### 変更予定
+- [ ] 破壊的変更: レガシーAPIの削除、パフォーマンス要件の見直し
+
+**実装工数: 極めて高 | 互換性影響: 破壊的変更**
+
+---
+
+## 継続的タスク（全バージョン共通）
+
+### テスト強化
+- [ ] VoxelRenderer分岐網羅率向上
+- [ ] `Heatbox.updateOptions` の再描画分岐テスト
+- [ ] ピック判定の実機整合テスト追加
+
+### ドキュメント保守
+- [ ] 各バージョンの新機能に対応したドキュメント更新
+- [ ] サンプル・例の継続的更新
+- [ ] API仕様書の同期保持
 
 ---
 
 ## コントリビューション
 
-議論や提案は Discussions / Issues / Projects へ。状況に応じて調整します。
+ロードマップの優先度や機能について議論したい場合は、以下で参加できます：
+
+- [GitHub Discussions](https://github.com/hiro-nyon/cesium-heatbox/discussions) - 機能提案・議論
+- [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) - 具体的なバグ・機能要求
+- [GitHub Projects](https://github.com/hiro-nyon/cesium-heatbox/projects) - 進捗管理
+
+ロードマップは四半期ごとに見直され、コミュニティフィードバックに基づいて調整されます。

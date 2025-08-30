@@ -31,9 +31,10 @@ Accepted / Deprecated / Superseded by ADR-YYYY
 | ADR | タイトル | ステータス | 日付 |
 |-----|----------|------------|------|
 | [ADR-0001](ADR-0001-auto-voxel-size-implementation.md) | ボクセルサイズ自動決定機能の実装方針 | Accepted | 2025-01-24 |
-| [ADR-0002](ADR-0002-v0.1.5-basics-enhancements.md) | v0.1.5 基本機能強化（デバッグ・カラーマップ・TopN・整合） | Accepted | 2025-08-25 |
+| [ADR-0002](ADR-0002-v0.1.5-basics-enhancements.md) | v0.1.5 基本機能強化（デバッグ・カラーマップ・TopN・整合） | Proposed | 2025-08-25 |
 | [ADR-0003](ADR-0003-v0.1.6-hardening-and-docs.md) | v0.1.6 ハードニングとドキュメント（Lint/Tests/Wiki/凡例/枠線） | Proposed | 2025-08-25 |
 | [ADR-0004](ADR-0004-outline-inset-voxels.md) | 枠線の内側オフセット（インセット枠線）機能の設計 | Proposed | 2025-08-26 |
+| [ADR-0005](ADR-0005-adaptive-outlines-and-emulation-only.md) | 適応的枠線制御とエミュレーション専用表示モード | Proposed | 2025-08-26 |
 
 ## 参考資料
 

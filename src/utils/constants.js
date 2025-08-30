@@ -1,9 +1,11 @@
 /**
- * CesiumJS Heatbox ライブラリの定数定義
+ * Constant definitions for CesiumJS Heatbox library.
+ * CesiumJS Heatbox ライブラリの定数定義。
  */
 
 /**
- * デフォルト設定値
+ * Default option values.
+ * デフォルト設定値。
  */
 export const DEFAULT_OPTIONS = {
   voxelSize: 20,
@@ -56,7 +58,8 @@ export const DEFAULT_OPTIONS = {
 };
 
 /**
- * パフォーマンス制限値
+ * Performance limits.
+ * パフォーマンス制限値。
  */
 export const PERFORMANCE_LIMITS = {
   maxEntities: 5000,
@@ -68,7 +71,8 @@ export const PERFORMANCE_LIMITS = {
 };
 
 /**
- * 座標変換定数
+ * Coordinate-related constants.
+ * 座標変換定数。
  */
 export const COORDINATE_CONSTANTS = {
   EARTH_RADIUS: 6378137,
@@ -77,7 +81,8 @@ export const COORDINATE_CONSTANTS = {
 };
 
 /**
- * エラーメッセージ
+ * Error message strings.
+ * エラーメッセージ。
  */
 export const ERROR_MESSAGES = {
   NO_ENTITIES: '対象エンティティがありません',
@@ -90,7 +95,8 @@ export const ERROR_MESSAGES = {
 };
 
 /**
- * 統計情報のデフォルト値
+ * Default statistics values.
+ * 統計情報のデフォルト値。
  */
 export const DEFAULT_STATISTICS = {
   totalVoxels: 0,
@@ -104,7 +110,8 @@ export const DEFAULT_STATISTICS = {
 };
 
 /**
- * 色分け関連定数
+ * Color-related constants.
+ * 色分け関連定数。
  */
 export const COLOR_CONSTANTS = {
   MIN_HUE: 240, // 青

@@ -24,68 +24,121 @@ function convertHtmlToMarkdown(htmlContent, filename) {
   const main = document.querySelector('#main') || document.body;
   const pageTitle = main.querySelector('.page-title')?.textContent?.trim() || 'API Reference';
 
-  let md = `# ${pageTitle}\n\n`;
+  // タイトルを日英併記に整形
+  const makeBilingualTitle = (title) => {
+    // 代表的なパターン: "Class: Heatbox" → "Class: Heatbox（Heatboxクラス）"
+    if (/^Class:\s*(.+)$/i.test(title)) {
+      const m = title.match(/^Class:\s*(.+)$/i);
+      const cls = m && m[1] ? m[1].trim() : title;
+      return `Class: ${cls}（${cls}クラス）`;
+    }
+    if (/^API Reference$/i.test(title)) {
+      return `API Reference（APIリファレンス）`;
+    }
+    return title;
+  };
 
-  // クラス説明
+  // 言語判定の簡易関数
+  const isJapanese = (text) => /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(text || '');
+
+  // 構造化抽出
   const classDesc = main.querySelector('.class-description');
-  if (classDesc) {
-    md += `${classDesc.textContent.trim()}\n\n`;
-  }
+  const classDescText = classDesc ? classDesc.textContent.trim() : '';
 
-  // コンストラクタ
-  const ctor = main.querySelector('h4.name#' + (pageTitle.split(':').pop()?.trim().replace('Class', '').trim() || ''));
   const ctorHeader = main.querySelector('h2 + h4.name') || main.querySelector('h4.name');
   const ctorParamsTable = ctorHeader?.nextElementSibling?.tagName === 'TABLE' ? ctorHeader.nextElementSibling : null;
-  if (ctorHeader) {
-    md += `## Constructor\n\n`;
-    md += `### ${ctorHeader.textContent.trim()}\n\n`;
-    if (ctorParamsTable) {
-      md += convertTableToMarkdown(ctorParamsTable);
-    }
-  }
 
-  // メソッド一覧（重複除去）
   const seen = new Set();
-  const methodHeaders = main.querySelectorAll('h4.name[id]');
-  if (methodHeaders.length) {
-    md += `## Methods\n\n`;
-  }
+  const methodHeaders = Array.from(main.querySelectorAll('h4.name[id]'));
+  const methods = [];
   methodHeaders.forEach(h4 => {
     const id = h4.getAttribute('id');
     const title = h4.textContent.trim();
     if (!id || seen.has(id)) return;
-    // クラス名と同名の見出しはコンストラクタなのでスキップ
     if (title.toLowerCase().includes('new ') || title.includes('VoxelRenderer(') || title.includes('Heatbox(')) {
       return;
     }
     seen.add(id);
-    md += `### ${title}\n\n`;
 
-    // 説明（直後の .description を拾う）
+    // 説明
     let descNode = h4.nextElementSibling;
     while (descNode && !(descNode.classList?.contains('description'))) {
       if (descNode.tagName === 'H4') break;
       descNode = descNode.nextElementSibling;
     }
-    if (descNode && descNode.classList.contains('description')) {
-      md += `${descNode.textContent.trim()}\n\n`;
-    }
+    const descText = (descNode && descNode.classList.contains('description')) ? (descNode.textContent.trim()) : '';
 
-    // パラメータ表（直後の table.params を拾う）
+    // パラメータ表
     let tableNode = h4.nextElementSibling;
     while (tableNode && !(tableNode.tagName === 'TABLE' && tableNode.classList.contains('params'))) {
       if (tableNode.tagName === 'H4') break;
       tableNode = tableNode.nextElementSibling;
     }
-    if (tableNode) {
-      md += convertTableToMarkdown(tableNode);
-    }
+
+    methods.push({ title, descText, tableNode });
   });
 
-  // 追加: Heatboxの使用例（実APIベース）
-  if (/Heatbox\.html$/.test(filename)) {
-    md += generateHeatboxUsageExample();
+  // 英語セクションの描画
+  let en = '';
+  en += `## English\n\n`;
+  if (classDescText) {
+    if (isJapanese(classDescText)) {
+      en += `> English translation pending. See Japanese section below.\n\n`;
+    } else {
+      en += `${classDescText}\n\n`;
+    }
   }
+  if (ctorHeader) {
+    en += `### Constructor\n\n`;
+    en += `#### ${ctorHeader.textContent.trim()}\n\n`;
+    if (ctorParamsTable) {
+      en += convertTableToMarkdown(ctorParamsTable, 'en');
+    }
+  }
+  if (methods.length) {
+    en += `### Methods\n\n`;
+    for (const m of methods) {
+      en += `#### ${m.title}\n\n`;
+      if (m.descText) {
+        if (isJapanese(m.descText)) {
+          en += `> English translation pending. See Japanese section below.\n\n`;
+        } else {
+          en += `${m.descText}\n\n`;
+        }
+      }
+      if (m.tableNode) en += convertTableToMarkdown(m.tableNode, 'en');
+    }
+  }
+
+  // 追加: Heatbox英語使用例
+  if (/Heatbox\.html$/.test(filename)) {
+    en += generateHeatboxUsageExample();
+  }
+
+  // 日本語セクションの描画
+  let ja = '';
+  ja += `## 日本語\n\n`;
+  if (classDescText) ja += `${classDescText}\n\n`;
+  if (ctorHeader) {
+    ja += `### コンストラクタ\n\n`;
+    ja += `#### ${ctorHeader.textContent.trim()}\n\n`;
+    if (ctorParamsTable) {
+      ja += convertTableToMarkdown(ctorParamsTable, 'ja');
+    }
+  }
+  if (methods.length) {
+    ja += `### メソッド\n\n`;
+    for (const m of methods) {
+      ja += `#### ${m.title}\n\n`;
+      if (m.descText) ja += `${m.descText}\n\n`;
+      if (m.tableNode) ja += convertTableToMarkdown(m.tableNode, 'ja');
+    }
+  }
+
+  // 仕上げ: タイトル + 言語スイッチ + 言語順に結合（英語→日本語）
+  let md = `# ${makeBilingualTitle(pageTitle)}\n\n`;
+  md += `[English](#english) | [日本語](#日本語)\n\n`;
+  md += en + '\n' + ja + '\n';
 
   return md.trim() + '\n';
 }
@@ -95,7 +148,7 @@ function convertHtmlToMarkdown(htmlContent, filename) {
  * @param {Element} table - テーブル要素
  * @returns {string} Markdownテーブル
  */
-function convertTableToMarkdown(table) {
+function convertTableToMarkdown(table, lang = 'bi') {
   let markdown = '';
   const rows = table.querySelectorAll('tr');
   
@@ -104,7 +157,23 @@ function convertTableToMarkdown(table) {
   // ヘッダー
   const headerCells = rows[0].querySelectorAll('th, td');
   if (headerCells.length > 0) {
-    const headers = Array.from(headerCells).map(cell => cell.textContent.trim());
+    const toJa = (h) => {
+      const t = h.toLowerCase();
+      if (t === 'name') return '名前';
+      if (t === 'type') return '型';
+      if (t === 'attributes') return '属性';
+      if (t === 'default') return '既定値';
+      if (t === 'description') return '説明';
+      if (t === 'returns') return '返り値';
+      return h; // 既知以外はそのまま
+    };
+    const headers = Array.from(headerCells).map(cell => {
+      const en = cell.textContent.trim();
+      if (lang === 'en') return en;
+      if (lang === 'ja') return toJa(en);
+      const ja = toJa(en);
+      return ja === en ? en : `${en} / ${ja}`;
+    });
     markdown += `| ${headers.join(' | ')} |\n`;
     markdown += `|${headers.map(() => '---').join('|')}|\n`;
 
@@ -227,11 +296,15 @@ function getVersion() {
 
 function generateApiIndex(htmlFiles) {
   const version = getVersion();
-  let indexContent = `# API Reference
+  let indexContent = `# API Reference（APIリファレンス）
+
+[English](#english) | [日本語](#日本語)
+
+## English
 
 This documentation is auto-generated from JSDoc comments in the source code.
 
-## Classes
+### Classes
 
 `;
 
@@ -245,17 +318,45 @@ This documentation is auto-generated from JSDoc comments in the source code.
   });
 
   indexContent += `
-## Version Information
+### Version Information
 
 - **Current Version**: ${version}
 - **Last Updated**: ${new Date().toISOString().split('T')[0]}
 - **Generated From**: JSDoc → Markdown conversion
 
-## Quick Links
+### Quick Links
 
 - [Home](Home)
 - [Getting Started](Getting-Started)
 - [Examples](Examples)
+
+## 日本語
+
+このドキュメントは、ソースコードのJSDocコメントから自動生成されます。
+
+### クラス
+
+`;
+
+  classes.forEach(className => {
+    const file = htmlFiles.find(f => f.includes(className));
+    if (file) {
+      indexContent += `- [${className}](${className})\n`;
+    }
+  });
+
+  indexContent += `
+### バージョン情報
+
+- **現在のバージョン**: ${version}
+- **最終更新**: ${new Date().toISOString().split('T')[0]}
+- **生成元**: JSDoc → Markdown変換
+
+### クイックリンク
+
+- [Home](Home) - ホーム
+- [Getting Started](Getting-Started) - はじめに
+- [Examples](Examples) - サンプル
 `;
 
   fs.writeFileSync(path.join(WIKI_DIR, 'API-Reference.md'), indexContent);

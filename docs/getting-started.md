@@ -1,6 +1,249 @@
-# 開発環境のセットアップ
+# Development Environment Setup (開発環境のセットアップ)
 
-> **⚠️ 注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
+[English](#english) | [日本語](#日本語)
+
+## English
+
+> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
+
+### Requirements
+
+- Node.js 18.0.0 or higher
+- npm 8.0.0 or higher
+- Git
+
+### Installation
+
+```bash
+# Clone repository
+git clone https://github.com/hiro-nyon/cesium-heatbox.git
+cd cesium-heatbox
+
+# Install dependencies
+npm install
+```
+
+### Development Commands
+
+```bash
+# Start development server
+npm run dev
+
+# Build (all formats)
+npm run build
+
+# ESM build only
+npm run build:esm
+
+# UMD build only
+npm run build:umd
+
+# Generate type definitions
+npm run build:types
+
+# Watch mode
+npm run build:watch
+
+# Run tests
+npm test
+
+# Test watch mode
+npm run test:watch
+
+# Test with coverage
+npm run test:coverage
+
+# Linting
+npm run lint
+npm run lint:fix
+
+# Type checking
+npm run type-check
+
+# Benchmark
+npm run benchmark
+
+# Generate documentation
+npm run docs
+
+# Cleanup
+npm run clean
+```
+
+### Project Structure
+
+```
+cesium-heatbox/
+├── src/                    # Source code
+│   ├── index.js           # Entry point
+│   ├── Heatbox.js         # Main class
+│   ├── core/              # Core functionality
+│   │   ├── CoordinateTransformer.js
+│   │   ├── VoxelGrid.js
+│   │   ├── DataProcessor.js
+│   │   └── VoxelRenderer.js
+│   └── utils/             # Utilities
+│       ├── constants.js
+│       ├── validation.js
+│       └── sampleData.js
+├── test/                  # Test files
+├── examples/              # Usage examples
+├── docs/                  # Documentation
+├── types/                 # TypeScript type definitions
+└── dist/                  # Build output
+```
+
+### Development Guidelines
+
+#### Coding Standards
+
+- Use ESLint Standard Style
+- Document with JSDoc format
+- Function names start with verbs
+- Constants use UPPER_SNAKE_CASE
+- Class names use PascalCase
+
+#### Commit Messages
+
+```
+type(scope): description
+
+Examples:
+feat(core): add new voxel rendering algorithm
+fix(utils): handle edge case in coordinate transformation
+docs(api): update API documentation
+test(heatbox): add comprehensive test cases
+```
+
+#### Branch Strategy
+
+- `main`: Stable version
+- `develop`: Development version
+- `feature/*`: New feature development
+- `hotfix/*`: Emergency fixes
+
+### Testing
+
+#### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test -- Heatbox.test.js
+
+# Generate coverage report
+npm run test:coverage
+```
+
+#### Writing Tests
+
+```javascript
+describe('MyClass', () => {
+  let instance;
+  
+  beforeEach(() => {
+    instance = new MyClass();
+  });
+  
+  test('should do something', () => {
+    const result = instance.doSomething();
+    expect(result).toBe(expected);
+  });
+});
+```
+
+### Debugging
+
+#### Browser Debugging
+
+```bash
+# Start development server
+npm run dev
+
+# Access http://localhost:8080 in browser
+```
+
+#### Node.js Debugging
+
+```bash
+# Run with Node.js debugger
+node --inspect-brk node_modules/.bin/jest --runInBand
+
+# Access chrome://inspect in Chrome DevTools
+```
+
+### Building
+
+#### Development Build
+
+```bash
+npm run build:esm
+```
+
+#### Production Build
+
+```bash
+npm run build
+```
+
+Output files:
+- `dist/cesium-heatbox.js` - ESM development version
+- `dist/cesium-heatbox.min.js` - ESM production version
+- `dist/cesium-heatbox.umd.js` - UMD development version
+- `dist/cesium-heatbox.umd.min.js` - UMD production version
+
+### Release
+
+#### Version Management
+
+```bash
+# Patch version
+npm version patch
+
+# Minor version
+npm version minor
+
+# Major version
+npm version major
+
+# Push release tags
+git push origin main --tags
+```
+
+#### Automated Release
+
+GitHub Actions automatically:
+1. Runs tests
+2. Performs builds
+3. Publishes to NPM
+4. Creates GitHub Releases
+
+when tags are pushed.
+
+### Common Issues and Solutions
+
+**npm install fails:**
+```bash
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**ESLint configuration issues:**
+- Use ESLint 8.x (9.x not supported)
+- Use `.eslintrc.js` format
+
+**Test failures:**
+- Check import paths
+- Verify Cesium mocks in `test/setup.js`
+
+For detailed troubleshooting, see the Japanese section below.
+
+## 日本語
+
+> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
 
 ## 必要な環境
 

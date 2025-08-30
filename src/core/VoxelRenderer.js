@@ -1,5 +1,6 @@
 /**
- * ボクセルの描画を担当するクラス
+ * Class responsible for rendering 3D voxels.
+ * 3Dボクセルの描画を担当するクラス。
  * プロトタイプ実装ベース（シンプル・確実動作重視）
  */
 import * as Cesium from 'cesium';
@@ -31,13 +32,14 @@ const COLOR_MAPS = {
 };
 
 /**
- * 3Dボクセルの描画を担当するクラス
+ * Class responsible for 3D voxel rendering.
+ * 3Dボクセルの描画を担当するクラス。
  */
 export class VoxelRenderer {
   /**
-   * コンストラクタ
-   * @param {Cesium.Viewer} viewer - CesiumJS Viewer
-   * @param {Object} options - 描画オプション
+   * Constructor
+   * @param {Cesium.Viewer} viewer - CesiumJS Viewer / CesiumJS Viewer
+   * @param {Object} options - Rendering options / 描画オプション
    */
   constructor(viewer, options = {}) {
     this.viewer = viewer;
@@ -74,12 +76,13 @@ export class VoxelRenderer {
   }
 
   /**
-   * 適応的枠線パラメータを計算 (v0.1.7)
-   * @param {Object} voxelInfo - ボクセル情報
-   * @param {boolean} isTopN - TopNボクセルかどうか
-   * @param {Map} voxelData - 全ボクセルデータ
-   * @param {Object} statistics - 統計情報
-   * @returns {Object} 適応的パラメータ
+   * Compute adaptive outline parameters (v0.1.7).
+   * 適応的枠線パラメータを計算 (v0.1.7)。
+   * @param {Object} voxelInfo - Voxel info / ボクセル情報
+   * @param {boolean} isTopN - Whether it is TopN / TopNボクセルかどうか
+   * @param {Map} voxelData - All voxel data / 全ボクセルデータ
+   * @param {Object} statistics - Statistics / 統計情報
+   * @returns {Object} Adaptive params / 適応的パラメータ
    * @private
    */
   _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics) {
@@ -166,12 +169,13 @@ export class VoxelRenderer {
   }
 
   /**
-   * ボクセルデータを描画（シンプル実装）
-   * @param {Map} voxelData - ボクセルデータ
-   * @param {Object} bounds - 境界情報
-   * @param {Object} grid - グリッド情報
-   * @param {Object} statistics - 統計情報
-   * @returns {number} 実際に描画されたボクセル数
+   * Render voxel data (simple implementation).
+   * ボクセルデータを描画（シンプル実装）。
+   * @param {Map} voxelData - Voxel data / ボクセルデータ
+   * @param {Object} bounds - Bounds info / 境界情報
+   * @param {Object} grid - Grid info / グリッド情報
+   * @param {Object} statistics - Statistics / 統計情報
+   * @returns {number} Number of rendered voxels / 実際に描画されたボクセル数
    */
   render(voxelData, bounds, grid, statistics) {
     this.clear();
@@ -604,10 +608,11 @@ export class VoxelRenderer {
   }
 
   /**
-   * 密度に基づいて色を補間（v0.1.5: カラーマップ対応）
-   * @param {number} normalizedDensity - 正規化された密度 (0-1)
-   * @param {number} [rawValue] - 生値（二極性配色用）
-   * @returns {Cesium.Color} 計算された色
+   * Interpolate color based on density (v0.1.5: color maps supported).
+   * 密度に基づいて色を補間（v0.1.5: カラーマップ対応）。
+   * @param {number} normalizedDensity - Normalized density (0-1) / 正規化された密度 (0-1)
+   * @param {number} [rawValue] - Raw value for diverging scheme / 生値（二極性配色用）
+   * @returns {Cesium.Color} Calculated color / 計算された色
    */
   interpolateColor(normalizedDensity, rawValue = null) {
     // v0.1.5: 二極性配色対応（pivot<=0 の場合は安全にフォールバック）
@@ -636,10 +641,11 @@ export class VoxelRenderer {
   }
   
   /**
-   * カラーマップから色を補間
-   * @param {number} normalizedValue - 正規化された値 (0-1)
-   * @param {string} colorMapName - カラーマップ名
-   * @returns {Cesium.Color} 計算された色
+   * Interpolate color from a color map.
+   * カラーマップから色を補間します。
+   * @param {number} normalizedValue - Normalized value (0-1) / 正規化された値 (0-1)
+   * @param {string} colorMapName - Color map name / カラーマップ名
+   * @returns {Cesium.Color} Calculated color / 計算された色
    * @private
    */
   _interpolateFromColorMap(normalizedValue, colorMapName) {
@@ -667,9 +673,10 @@ export class VoxelRenderer {
   }
   
   /**
-   * 二極性配色（blue-white-red）で色を補間
-   * @param {number} rawValue - 生値
-   * @returns {Cesium.Color} 計算された色
+   * Interpolate diverging (blue-white-red) color.
+   * 二極性配色（blue-white-red）で色を補間します。
+   * @param {number} rawValue - Raw value / 生値
+   * @returns {Cesium.Color} Calculated color / 計算された色
    * @private
    */
   _interpolateDivergingColor(rawValue) {
@@ -691,10 +698,11 @@ export class VoxelRenderer {
   }
 
   /**
-   * ボクセルの説明文を生成
-   * @param {Object} voxelInfo - ボクセル情報
-   * @param {string} voxelKey - ボクセルキー
-   * @returns {string} HTML形式の説明文
+   * Create description HTML for a voxel.
+   * ボクセルの説明文を生成します。
+   * @param {Object} voxelInfo - Voxel info / ボクセル情報
+   * @param {string} voxelKey - Voxel key / ボクセルキー
+   * @returns {string} HTML description / HTML形式の説明文
    */
   createVoxelDescription(voxelInfo, voxelKey) {
     return `
@@ -980,8 +988,9 @@ export class VoxelRenderer {
   }
 
   /**
-   * 表示/非表示を切り替え
-   * @param {boolean} show - 表示する場合はtrue
+   * Toggle visibility.
+   * 表示/非表示を切り替えます。
+   * @param {boolean} show - true to show / 表示する場合は true
    */
   setVisible(show) {
     Logger.debug('VoxelRenderer.setVisible:', show);

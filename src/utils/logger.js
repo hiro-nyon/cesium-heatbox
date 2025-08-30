@@ -1,10 +1,12 @@
 /**
- * ログ出力制御ユーティリティ
- * NODE_ENVやdebugフラグによってログレベルを制御
+ * Logging utility.
+ * NODE_ENV and debug flags control the log level.
+ * ログ出力制御ユーティリティ。NODE_ENV や debug フラグによってログレベルを制御します。
  */
 
 /**
- * ログレベル定数
+ * Log level constants.
+ * ログレベル定数。
  */
 const LOG_LEVELS = {
   ERROR: 0,
@@ -14,9 +16,9 @@ const LOG_LEVELS = {
 };
 
 /**
- * 現在のログレベルを決定
- * NODE_ENV=production では ERROR と WARN のみ
- * DEBUG=true または NODE_ENV=development では全レベル出力
+ * Determine current log level.
+ * 現在のログレベルを決定します。
+ * NODE_ENV=production では ERROR と WARN のみ、DEBUG=true または NODE_ENV=development では全レベル出力。
  */
 function getLogLevel() {
   // 明示的にDEBUG=trueが設定されている場合
@@ -36,12 +38,14 @@ function getLogLevel() {
 let currentLogLevel = getLogLevel();
 
 /**
- * ログ出力の共通ユーティリティ
+ * Common logging utility.
+ * ログ出力の共通ユーティリティ。
  */
 export const Logger = {
   /**
-   * エラーログ（常に出力）
-   * @param {...any} args - ログ引数
+   * Error log (always output).
+   * エラーログ（常に出力）。
+   * @param {...any} args - Log arguments / ログ引数
    */
   error(...args) {
     if (currentLogLevel >= LOG_LEVELS.ERROR) {
@@ -50,8 +54,9 @@ export const Logger = {
   },
 
   /**
-   * 警告ログ
-   * @param {...any} args - ログ引数
+   * Warning log.
+   * 警告ログ。
+   * @param {...any} args - Log arguments / ログ引数
    */
   warn(...args) {
     if (currentLogLevel >= LOG_LEVELS.WARN) {
@@ -60,8 +65,9 @@ export const Logger = {
   },
 
   /**
-   * 情報ログ
-   * @param {...any} args - ログ引数
+   * Info log.
+   * 情報ログ。
+   * @param {...any} args - Log arguments / ログ引数
    */
   info(...args) {
     if (currentLogLevel >= LOG_LEVELS.INFO) {
@@ -70,8 +76,9 @@ export const Logger = {
   },
 
   /**
-   * デバッグログ
-   * @param {...any} args - ログ引数
+   * Debug log.
+   * デバッグログ。
+   * @param {...any} args - Log arguments / ログ引数
    */
   debug(...args) {
     if (currentLogLevel >= LOG_LEVELS.DEBUG) {
@@ -80,9 +87,10 @@ export const Logger = {
   },
 
   /**
-   * オプション設定によるログレベル制御
-   * v0.1.5: debugオプションがオブジェクトの場合に対応
-   * @param {Object} options - オプション
+   * Control log level by options.
+   * オプション設定によるログレベル制御。
+   * v0.1.5: debug オプションがオブジェクトの場合に対応。
+   * @param {Object} options - Options / オプション
    */
   setLogLevel(options) {
     if (options && options.debug !== undefined) {
@@ -99,8 +107,8 @@ export const Logger = {
 };
 
 /**
- * 下位互換のためのラッパー関数群
- * 既存のconsole.log置き換え用
+ * Wrapper functions for backward compatibility.
+ * 既存の console.log 置き換え用のラッパー関数群。
  */
 export const log = Logger.debug;
 export const warn = Logger.warn;

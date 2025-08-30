@@ -9,7 +9,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
-## [0.1.7] - 2025-01-09
+## [0.1.8] - 2025-08-30
+
+### Added
+- **完全バイリンガル対応**: 全ドキュメントとソースコードの日英併記対応
+  - 全 docs/ ファイル（API.md, contributing.md, development-guide.md など）を「English → 日本語」構造に統一
+  - 各ページ先頭に言語切替リンク（[English](#english) | [日本語](#日本語)）を追加
+  - 包括的な英語翻訳：技術仕様、開発ガイド、API仕様、貢献ガイドなど全セクション
+- **ソースコード国際化**: 全 JSDoc コメントの英日併記対応
+  - メインクラス（Heatbox.js）とコアモジュール（CoordinateTransformer, DataProcessor, VoxelGrid, VoxelRenderer）
+  - ユーティリティモジュール（constants.js, logger.js, validation.js）とエントリーポイント（index.js）
+  - パラメータ、戻り値、メソッド説明を「English description / 日本語説明」形式で併記
+- **Wiki自動化の国際化対応**: tools/wiki-sync.js の大幅拡張
+  - JSDoc → Markdown 変換時の自動バイリンガル構造生成
+  - API Reference インデックスページの日英併記対応
+  - テーブルヘッダー（Name/型, Type/型 など）の自動翻訳機能
+
+### Enhanced
+- **ドキュメント構造統一**: 全9個の docs/ ファイルで一貫したバイリンガル形式を採用
+  - 言語順序の統一：常に English → 日本語 の順序
+  - セクション識別子の統一：`## English` と `## 日本語` で明確に区分
+  - ナビゲーション統一：各ページに `[English](#english) | [日本語](#日本語)` リンク
+- **ADR（Architecture Decision Records）整合性**: 不整合だったADRファイル一覧を修正
+  - docs/adr/README.md に ADR-0003, ADR-0004, ADR-0005 を正式に追加
+  - 全ADRのステータス情報を最新状態に同期
+- **README.md国際化**: 既存のバイリンガル構造を維持しつつ品質向上
+  - 特徴比較、インストール方法、使用例の英語セクション充実
+
+### Documentation
+- **開発者向けドキュメント**: 英語翻訳による国際的な開発者サポート強化
+  - Quick Start Guide: 10-15分セットアップガイドの英語版
+  - Development Guide: 初心者向け開発ガイドの包括的英語翻訳
+  - Git & NPM Reference: コマンドリファレンスの英語版
+  - Legend Implementation Guide: カスタム凡例実装の英語版
+- **API仕様**: 全てのクラス・メソッド・パラメータの英語説明追加
+  - TypeScript型定義情報の英語解説
+  - エラーハンドリング、パフォーマンス要件の英語ドキュメント
+  - 実装ガイドライン、制約事項の英語版
+
+### Technical
+- **Wiki自動同期機能拡張**: バイリンガル対応による生成品質向上
+  - 日本語テキスト自動判定機能（`isJapanese()` 関数）
+  - 言語別セクション生成の自動化
+  - API Reference インデックスのバイリンガル構造自動生成
+- **型定義国際化**: JSDoc コメントの英日併記による TypeScript 支援向上
+- **保守性向上**: 統一されたドキュメント構造による保守コスト削減
+
+### Compatibility
+- **Non-breaking**: 全ての変更は後方互換性を維持（APIに変更なし）
+- **国際対応**: 日本語ユーザーの既存ワークフローを完全保持
+- **開発環境**: 既存の開発・ビルドプロセスに影響なし
+
+## [0.1.7] - 2025-08-26
 
 ### Added
 - **適応的枠線制御**: 近傍密度、TopN/選択、カメラ距離、重なりリスクに応じた自動調整

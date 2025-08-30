@@ -1,17 +1,20 @@
 /**
- * 座標変換を担当するクラス（シンプル実装）
+ * Coordinate transformation utilities (simple implementation).
+ * 座標変換を担当するクラス（シンプル実装）。
  */
 import * as Cesium from 'cesium';
 import { Logger } from '../utils/logger.js';
 
 /**
- * 座標変換機能を提供するクラス
+ * Class providing coordinate transformation utilities.
+ * 座標変換機能を提供するクラス。
  */
 export class CoordinateTransformer {
   /**
-   * エンティティ配列から3D境界を計算
-   * @param {Array} entities - エンティティ配列
-   * @returns {Object} 境界情報
+   * Calculate 3D bounds from an entity array.
+   * エンティティ配列から 3D 境界を計算します。
+   * @param {Array} entities - Entity array / エンティティ配列
+   * @returns {Object} Bounds info / 境界情報
    */
   static calculateBounds(entities) {
     if (!Array.isArray(entities) || entities.length === 0) {
@@ -93,13 +96,14 @@ export class CoordinateTransformer {
   }
   
   /**
-   * ボクセルインデックスを地理座標（中心位置）に変換
-   * @param {number} x - X軸ボクセルインデックス
-   * @param {number} y - Y軸ボクセルインデックス
-   * @param {number} z - Z軸ボクセルインデックス
-   * @param {Object} bounds - 境界情報
-   * @param {Object} grid - グリッド情報
-   * @returns {Object} 地理座標 {lon, lat, alt}
+   * Convert voxel indices to geographic coordinates (cell center).
+   * ボクセルインデックスを地理座標（中心位置）に変換します。
+   * @param {number} x - X-axis voxel index / X軸ボクセルインデックス
+   * @param {number} y - Y-axis voxel index / Y軸ボクセルインデックス
+   * @param {number} z - Z-axis voxel index / Z軸ボクセルインデックス
+   * @param {Object} bounds - Bounds info / 境界情報
+   * @param {Object} grid - Grid info / グリッド情報
+   * @returns {Object} Geographic coordinate {lon, lat, alt} / 地理座標 {lon, lat, alt}
    */
   static voxelIndexToCoordinate(x, y, z, bounds, grid) {
     const { minLon, maxLon, minLat, maxLat, minAlt, maxAlt } = bounds;
@@ -118,10 +122,11 @@ export class CoordinateTransformer {
   }
   
   /**
-   * 地理座標をCesium Cartesian3に変換
-   * @param {number} lon - 経度
-   * @param {number} lat - 緯度
-   * @param {number} alt - 高度
+   * Convert geographic coordinates to Cesium Cartesian3.
+   * 地理座標を Cesium Cartesian3 に変換します。
+   * @param {number} lon - Longitude / 経度
+   * @param {number} lat - Latitude / 緯度
+   * @param {number} alt - Altitude / 高度
    * @returns {Cesium.Cartesian3} Cesium Cartesian3
    */
   static coordinateToCartesian3(lon, lat, alt) {
