@@ -435,13 +435,14 @@ details.section[open] > summary::before {
     max-width: 100%;
     height: 100%;
     max-height: 100%;
-    /* Enhanced Liquid Glass for mobile overlay */
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    z-index: 300; /* タイムラインより高く設定（200より高く） */
+    /* Enhanced Liquid Glass for mobile overlay with better visibility */
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(15px) saturate(150%);
+    -webkit-backdrop-filter: blur(15px) saturate(150%);
     border: none;
     border-radius: 0;
-    box-shadow: none;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
     
     /* セーフエリア考慮（ノッチ等） */
     padding-top: calc(60px + env(safe-area-inset-top));
@@ -464,10 +465,12 @@ details.section[open] > summary::before {
     margin: 8px 0;
     padding: 12px;
     border-radius: 15px;
-    /* Mobile section enhanced liquid glass */
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(15px) saturate(130%);
-    -webkit-backdrop-filter: blur(15px) saturate(130%);
+    /* Mobile section enhanced liquid glass with better visibility */
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px) saturate(130%);
+    -webkit-backdrop-filter: blur(10px) saturate(130%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   }
   
   /* ボタンをモバイル向けに調整 */
@@ -478,10 +481,12 @@ details.section[open] > summary::before {
     width: 100%;
     min-height: 44px; /* Appleのタッチターゲット最小サイズ */
     border-radius: 15px;
-    /* Enhanced button glass effect for mobile */
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(15px) saturate(160%);
-    -webkit-backdrop-filter: blur(15px) saturate(160%);
+    /* Enhanced button glass effect for mobile with better visibility */
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px) saturate(160%);
+    -webkit-backdrop-filter: blur(10px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   }
   
   /* コントロールグループの調整 */
@@ -503,21 +508,24 @@ details.section[open] > summary::before {
     border-radius: 4px;
   }
   
-  /* 情報パネルを下部に移動 */
+  /* 情報パネルを中央上部に移動（タイムラインと被らないように） */
   #info {
     position: fixed;
-    top: auto;
-    bottom: 10px;
-    right: 10px;
+    top: calc(10px + env(safe-area-inset-top));
+    bottom: auto;
+    right: calc(50% - 150px); /* 中央に配置 */
     left: auto;
-    max-width: calc(100% - 20px);
-    max-height: 200px;
+    max-width: 300px;
+    max-height: 60vh;
     font-size: 11px;
+    z-index: 70; /* タイムラインより高く設定 */
     /* Enhanced mobile info panel glass */
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
     border-radius: 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   /* 小さなセクションは折りたたんで表示 */
@@ -561,7 +569,9 @@ details.section[open] > summary::before {
   #info {
     font-size: 10px;
     padding: 8px;
-    max-height: 150px;
+    max-height: 50vh;
+    max-width: calc(100% - 20px);
+    right: 10px;
   }
 }
 
