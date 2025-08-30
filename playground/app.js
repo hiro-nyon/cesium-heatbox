@@ -88,12 +88,15 @@ class HeatboxPlayground {
         toolbar.classList.add('open');
         mobileToggle.innerHTML = '✕';
         mobileToggle.setAttribute('aria-label', 'メニューを閉じる');
+        mobileToggle.setAttribute('aria-expanded', 'true');
+        mobileToggle.setAttribute('aria-controls', 'toolbar');
         // スクロールを一時的に無効化（背景スクロール防止）
         document.body.style.overflow = 'hidden';
       } else {
         toolbar.classList.remove('open');
         mobileToggle.innerHTML = '☰';
         mobileToggle.setAttribute('aria-label', 'メニューを開く');
+        mobileToggle.setAttribute('aria-expanded', 'false');
         // スクロールを復元
         document.body.style.overflow = '';
       }
@@ -131,6 +134,8 @@ class HeatboxPlayground {
         mobileToggle.innerHTML = '☰';
         document.body.style.overflow = '';
       }
+      // 情報パネルの位置を再計算
+      this._adjustUIPanelPositions();
     };
 
     window.addEventListener('resize', handleResize);
@@ -142,6 +147,50 @@ class HeatboxPlayground {
     this._setupMobileInfoPanel();
     
     console.log('Mobile UI setup completed');
+  }
+
+  /**
+   * CesiumのUI（右上ツールバー・タイムライン）と重ならないように
+   * 情報パネル(#info)の位置と高さを動的に調整
+   */
+  _adjustUIPanelPositions() {
+    const info = document.getElementById('info');
+    if (!info) return;
+
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      // モバイルはCSSで中央上固定にしているため、明示指定を解除
+      info.style.top = '';
+      info.style.right = '';
+      info.style.left = '';
+      info.style.bottom = '';
+      info.style.maxHeight = '';
+      return;
+    }
+
+    // デスクトップ: 右上のCesiumツールバーを避ける
+    const toolbarEl = document.querySelector('.cesium-viewer-toolbar');
+    const timelineEl = document.querySelector('.cesium-timeline-main');
+
+    let top = 10;
+    if (toolbarEl) {
+      const r = toolbarEl.getBoundingClientRect();
+      // ツールバー下端 + 10px までは下げる
+      if (r.bottom) top = Math.max(top, Math.round(r.bottom) + 10);
+    }
+
+    info.style.top = `${top}px`;
+    info.style.right = '10px';
+    info.style.left = 'auto';
+
+    // タイムラインと重ならないように高さ制限
+    let maxH = window.innerHeight - top - 20; // 下マージン20
+    if (timelineEl) {
+      const tr = timelineEl.getBoundingClientRect();
+      const timelineHeight = tr.height || (window.innerHeight - tr.top) || 0;
+      maxH = Math.max(80, window.innerHeight - top - timelineHeight - 20);
+    }
+    info.style.maxHeight = `${Math.floor(maxH)}px`;
   }
 
   /**
@@ -169,8 +218,8 @@ class HeatboxPlayground {
       }, false);
     };
 
-    // 主要なUI要素にダブルタップズーム防止を適用
-    const uiElements = document.querySelectorAll('#mobileMenuToggle, #toolbar button, select, input[type="range"]');
+    // 主要なUI要素にダブルタップズーム防止を適用（ハンバーガーは除外しクリックの確実性を優先）
+    const uiElements = document.querySelectorAll('#toolbar button, select, input[type="range"]');
     uiElements.forEach(preventDoubleZoom);
 
     // スライダーのタッチ操作改善
@@ -755,11 +804,15 @@ class HeatboxPlayground {
           console.log('First render completed');
           console.log('Globe ellipsoid:', this.viewer.scene.globe.ellipsoid);
           this.viewer.scene._firstRenderLogged = true;
+          // 初回レンダリング後にUI位置を調整
+          try { this._adjustUIPanelPositions(); } catch (_) {}
         }
       });
       
       console.log('=== Cesium Viewer 初期化完了 ===');
-      
+      // Viewer初期化直後にも位置調整を試みる
+      try { this._adjustUIPanelPositions(); } catch (_) {}
+
     } catch (error) {
       console.error('=== Cesium Viewer 初期化エラー ===');
       console.error('Error details:', error);

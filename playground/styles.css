@@ -174,7 +174,7 @@ select, input, textarea {
   position: fixed;
   top: calc(10px + env(safe-area-inset-top));
   left: calc(10px + env(safe-area-inset-left));
-  z-index: 60; /* Cesium UIより少し高く、でもツールバーより低く */
+  z-index: 500; /* モバイル用オーバーレイ(#toolbar.open)より上にして常に操作可能に */
   /* Liquid Glass mobile button style applied */
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(15px) saturate(150%);
