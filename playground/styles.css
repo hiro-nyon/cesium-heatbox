@@ -1,7 +1,121 @@
 /**
  * Cesium Heatbox Playground - スタイルシート
- * スマホ対応レスポンシブデザイン
+ * スマホ対応レスポンシブデザイン + Liquid Glass UI
  */
+
+/* === Liquid Glass Base === */
+.liquid-glass-element {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.liquid-glass-element:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Dark variant for better contrast */
+.liquid-glass-dark {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(15px) saturate(150%);
+  -webkit-backdrop-filter: blur(15px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.liquid-glass-dark:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Subtle glass buttons - Light Theme */
+.liquid-glass-button {
+  background: rgba(76, 175, 80, 0.25);
+  backdrop-filter: blur(15px) saturate(150%) brightness(1.1);
+  -webkit-backdrop-filter: blur(15px) saturate(150%) brightness(1.1);
+  border: 1px solid rgba(76, 175, 80, 0.6);
+  border-radius: 18px;
+  color: rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 4px 16px rgba(76, 175, 80, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-glass-button:hover {
+  background: rgba(76, 175, 80, 0.35);
+  border-color: rgba(76, 175, 80, 0.8);
+  box-shadow: 
+    0 6px 20px rgba(76, 175, 80, 0.25),
+    0 3px 12px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.liquid-glass-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.liquid-glass-button:disabled {
+  background: rgba(200, 200, 200, 0.2);
+  border-color: rgba(200, 200, 200, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.4);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Form elements with glass effect - Light Theme */
+.liquid-glass-input {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(15px) saturate(140%) brightness(1.1);
+  -webkit-backdrop-filter: blur(15px) saturate(140%) brightness(1.1);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 15px;
+  color: rgba(0, 0, 0, 0.8);
+  box-shadow: 
+    0 2px 8px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-glass-input:focus {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(76, 175, 80, 0.7);
+  box-shadow: 
+    0 4px 16px rgba(255, 255, 255, 0.15),
+    0 0 0 2px rgba(76, 175, 80, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+/* Glass hamburger menu button */
+.liquid-glass-hamburger {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.liquid-glass-hamburger:hover {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
 
 /* === 基本レイアウト === */
 html, body, #cesiumContainer {
@@ -37,15 +151,21 @@ select, input, textarea {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 10px;
-  border-radius: 5px;
+  /* Liquid Glass effect applied */
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(15px) saturate(150%);
+  -webkit-backdrop-filter: blur(15px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  
+  padding: 15px;
+  border-radius: 20px;
   color: white;
-  z-index: 1000;
-  max-width: 360px;
-  max-height: calc(100% - 20px);
+  z-index: 50; /* Cesium UIより低く設定 */
+  max-width: 380px;
+  max-height: calc(100% - 80px); /* 下部余白を追加してタイムラインとの重複を避ける */
   overflow-y: auto;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 /* モバイル向けハンバーガーメニューボタン */
@@ -54,70 +174,177 @@ select, input, textarea {
   position: fixed;
   top: calc(10px + env(safe-area-inset-top));
   left: calc(10px + env(safe-area-inset-left));
-  z-index: 1001;
-  background: rgba(0, 0, 0, 0.8);
-  border: none;
+  z-index: 60; /* Cesium UIより少し高く、でもツールバーより低く */
+  /* Liquid Glass mobile button style applied */
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(15px) saturate(150%);
+  -webkit-backdrop-filter: blur(15px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  
   color: white;
   font-size: 20px;
   width: 48px;
   height: 48px;
   border-radius: 24px;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  transition: all 0.3s ease;
 }
 
 #mobileMenuToggle:hover {
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
 }
 
 /* === ボタンスタイル === */
 #toolbar button {
+  /* Liquid Glass button style applied */
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  
   margin: 5px;
   padding: 8px 12px;
-  border: none;
-  border-radius: 3px;
-  background: #4CAF50;
+  border-radius: 15px;
   color: white;
   cursor: pointer;
   font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 #toolbar button:hover {
-  background: #45a049;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px) scale(1.02);
+}
+
+#toolbar button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 #toolbar button:disabled {
-  background: #666;
+  background: rgba(128, 128, 128, 0.3);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
   cursor: not-allowed;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: none;
 }
 
 /* === 情報パネル === */
 #info {
   position: absolute;
-  top: 10px;
+  top: 60px; /* 右上のCesium UIボタンを避けるため下に移動 */
   right: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 10px;
-  border-radius: 5px;
+  /* Liquid Glass effect applied */
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(15px) saturate(150%);
+  -webkit-backdrop-filter: blur(15px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  
+  padding: 15px;
+  border-radius: 20px;
   color: white;
-  z-index: 1000;
+  z-index: 50; /* Cesium UIより低く設定 */
   max-width: 250px;
   font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+#info:hover {
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
 }
 
 /* === フォーム要素 === */
 #fileInput {
+  /* Liquid Glass input style applied */
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  color: white;
+  padding: 10px 15px;
   margin: 10px 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  
+  /* ファイル入力の帯を完全に除去 */
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  
+  /* ブラウザデフォルトスタイルをリセット */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  
+  /* ファイル選択時の「ファイルが選択されていません」テキストのスタイル */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#fileInput:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  outline: none;
+}
+
+/* ファイル選択ボタンの「参照」ボタンスタイル */
+#fileInput::-webkit-file-upload-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  color: white;
+  padding: 6px 12px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+#fileInput::-webkit-file-upload-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 /* === セクション共通スタイル === */
 /* div/.section と details.section を両対応 */
 .section {
+  /* Liquid Glass section style applied */
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 18px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  
   margin: 10px 0;
-  padding: 10px;
-  border: 1px solid #444;
-  border-radius: 3px;
-  background: rgba(0,0,0,0.25);
+  padding: 15px;
+  transition: all 0.3s ease;
+}
+
+.section:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .section h3, .section > summary {
@@ -208,8 +435,14 @@ details.section[open] > summary::before {
     max-width: 100%;
     height: 100%;
     max-height: 100%;
-    background: rgba(0, 0, 0, 0.95);
+    /* Enhanced Liquid Glass for mobile overlay */
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: none;
     border-radius: 0;
+    box-shadow: none;
+    
     /* セーフエリア考慮（ノッチ等） */
     padding-top: calc(60px + env(safe-area-inset-top));
     padding-right: calc(15px + env(safe-area-inset-right));
@@ -230,7 +463,11 @@ details.section[open] > summary::before {
   .section {
     margin: 8px 0;
     padding: 12px;
-    border-radius: 5px;
+    border-radius: 15px;
+    /* Mobile section enhanced liquid glass */
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(15px) saturate(130%);
+    -webkit-backdrop-filter: blur(15px) saturate(130%);
   }
   
   /* ボタンをモバイル向けに調整 */
@@ -240,7 +477,11 @@ details.section[open] > summary::before {
     font-size: 14px;
     width: 100%;
     min-height: 44px; /* Appleのタッチターゲット最小サイズ */
-    border-radius: 5px;
+    border-radius: 15px;
+    /* Enhanced button glass effect for mobile */
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(15px) saturate(160%);
+    -webkit-backdrop-filter: blur(15px) saturate(160%);
   }
   
   /* コントロールグループの調整 */
@@ -272,12 +513,19 @@ details.section[open] > summary::before {
     max-width: calc(100% - 20px);
     max-height: 200px;
     font-size: 11px;
+    /* Enhanced mobile info panel glass */
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-radius: 20px;
   }
   
   /* 小さなセクションは折りたたんで表示 */
   #info .section {
     margin: 2px 0;
     padding: 6px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
   }
   
   /* 詳細なセクションはデフォルトで閉じる */
@@ -345,4 +593,41 @@ details.section[open] > summary::before {
   #toolbar {
     padding: 40px 10px 10px 10px;
   }
+}
+
+/* === Cesium UI要素の表示確保 === */
+/* CesiumのデフォルトUI要素が確実に表示されるように調整 */
+.cesium-viewer-toolbar,
+.cesium-viewer-fullscreenContainer,
+.cesium-viewer-vrContainer,
+.cesium-viewer-geocoderContainer,
+.cesium-widget-credits,
+.cesium-timeline-main,
+.cesium-animation-container,
+.cesium-navigation-help-wrapper,
+.cesium-selection-wrapper,
+.cesium-performance-watchdog-wrapper {
+  z-index: 100 !important; /* 我々のカスタムパネルより高く設定 */
+}
+
+/* タイムラインは特に重要なので少し高めに */
+.cesium-timeline-main {
+  z-index: 150 !important;
+}
+
+/* ホームボタンとフルスクリーンボタンなど右上UI */
+.cesium-viewer-toolbar {
+  z-index: 200 !important;
+}
+
+/* 下部のCesium Ionクレジット */
+.cesium-widget-credits {
+  z-index: 100 !important;
+  pointer-events: auto !important; /* クリック可能にする */
+}
+
+/* VRボタンとフルスクリーンボタン */
+.cesium-viewer-fullscreenContainer,
+.cesium-viewer-vrContainer {
+  z-index: 200 !important;
 }
