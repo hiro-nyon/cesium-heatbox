@@ -52,6 +52,20 @@ class HeatboxPlayground {
   }
 
   /**
+   * Heatboxコンストラクタを堅牢に取得（UMD形状差に対応）
+   */
+  _getHeatboxCtor() {
+    try {
+      const g = typeof window !== 'undefined' ? window : globalThis;
+      if (!g) return null;
+      if (typeof g.CesiumHeatbox === 'function') return g.CesiumHeatbox;
+      if (g.CesiumHeatbox && typeof g.CesiumHeatbox.Heatbox === 'function') return g.CesiumHeatbox.Heatbox;
+      if (typeof g.Heatbox === 'function') return g.Heatbox;
+    } catch (_) {}
+    return null;
+  }
+
+  /**
    * モバイルUI機能の初期化
    */
   _setupMobileUI() {
@@ -1181,75 +1195,57 @@ class HeatboxPlayground {
    */
   loadSampleData() {
     this.showLoading(true);
-    
-    // 東京周辺のサンプルデータをCesium Entityとして生成
-    this.viewer.entities.removeAll(); // 既存のエンティティをクリア
-    
-    const centerLon = 139.6917;
-    const centerLat = 35.6895;
-    const radius = 0.02; // 約2km（密度を上げる）
-    
-    for (let i = 0; i < 800; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const distance = Math.random() * radius;
-      const lon = centerLon + Math.cos(angle) * distance;
-      const lat = centerLat + Math.sin(angle) * distance;
-      const height = Math.random() * 200;
+    try {
+      // 東京周辺のサンプルデータをCesium Entityとして生成
+      this.viewer.entities.removeAll(); // 既存のエンティティをクリア
       
-      // Cesium Entityとして追加
-      this.viewer.entities.add({
-        id: `sample-${i}`,
-        position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
-        point: {
-          pixelSize: 5,
-          color: Cesium.Color.YELLOW,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 1
-        },
-        properties: {
-          weight: Math.random() * 100,
-          type: 'sample',
-          value: Math.random() * 100
-        }
+      const centerLon = 139.6917;
+      const centerLat = 35.6895;
+      const radius = 0.02; // 約2km（密度を上げる）
+      
+      for (let i = 0; i < 800; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * radius;
+        const lon = centerLon + Math.cos(angle) * distance;
+        const lat = centerLat + Math.sin(angle) * distance;
+        const height = Math.random() * 200;
+        
+        // Cesium Entityとして追加
+        this.viewer.entities.add({
+          id: `sample-${i}`,
+          position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
+          point: {
+            pixelSize: 5,
+            color: Cesium.Color.YELLOW,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 1
+          },
+          properties: {
+            weight: Math.random() * 100,
+            type: 'sample',
+            value: Math.random() * 100
+          }
+        });
+      }
+      
+      // 統計更新（Cesium Entitiesを使用）
+      this.currentData = this.viewer.entities.values;
+      this.updateStatistics();
+      
+      // すべてが確実に収まるようにBoundingSphereベースで移動
+      this.fitCameraToEntities(this.currentData, {
+        pitch: -Cesium.Math.toRadians(35),
+        duration: 2.0,
+        margin: 0.25,
+        complete: () => console.log('Sample data camera positioning completed')
       });
+      
+      console.log('サンプルデータ読み込み完了:', this.currentData.length, '個のエンティティ');
+    } catch (e) {
+      console.warn('サンプルデータ読み込みエラー:', e);
+    } finally {
+      this.showLoading(false);
     }
-    
-    // 統計更新（Cesium Entitiesを使用）
-    this.currentData = this.viewer.entities.values;
-    this.updateStatistics();
-    
-    // 実際に生成されたデータの範囲を計算してカメラ移動
-    const dataBounds = this.calculateDataBounds(this.currentData);
-    
-    // より確実なflyTo設定
-    const flyToPromise = this.viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(
-        dataBounds.centerLon, 
-        dataBounds.centerLat, 
-        dataBounds.optimalHeight
-      ),
-      orientation: {
-        heading: 0,
-        pitch: -Cesium.Math.PI_OVER_FOUR, // -45度
-        roll: 0
-      },
-      duration: 2.0,
-      maximumHeight: dataBounds.optimalHeight * 1.5,
-      pitchAdjustHeight: dataBounds.optimalHeight * 0.8
-    });
-
-    // flyTo完了を待機
-    if (flyToPromise && typeof flyToPromise.then === 'function') {
-      flyToPromise.then(() => {
-        console.log('Sample data camera positioning completed');
-      }).catch(err => {
-        console.warn('Sample data camera flyTo failed:', err);
-      });
-    }
-    
-    console.log('サンプルデータ読み込み完了:', this.currentData.length, '個のエンティティ');
-    console.log('データ範囲:', dataBounds);
-    this.showLoading(false);
   }
   
   /**
@@ -1310,37 +1306,15 @@ class HeatboxPlayground {
       this.currentData = this.viewer.entities.values;
       this.updateStatistics();
       
-      // 実際に生成されたデータの範囲を計算してカメラ移動
-      const dataBounds = this.calculateDataBounds(this.currentData);
-      
-      // より確実なflyTo設定
-      const flyToPromise = this.viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(
-          dataBounds.centerLon, 
-          dataBounds.centerLat, 
-          dataBounds.optimalHeight
-        ),
-        orientation: {
-          heading: 0,
-          pitch: -Cesium.Math.PI_OVER_FOUR, // -45度
-          roll: 0
-        },
+      // すべてが確実に収まるようにBoundingSphereベースで移動
+      const flyToPromise = this.fitCameraToEntities(this.currentData, {
+        pitch: -Cesium.Math.toRadians(35),
         duration: 2.0,
-        maximumHeight: dataBounds.optimalHeight * 1.5,
-        pitchAdjustHeight: dataBounds.optimalHeight * 0.8
+        margin: 0.25,
+        complete: () => console.log('Test data camera positioning completed')
       });
-
-      // flyTo完了を待機
-      if (flyToPromise && typeof flyToPromise.then === 'function') {
-        flyToPromise.then(() => {
-          console.log('Test data camera positioning completed');
-        }).catch(err => {
-          console.warn('Test data camera flyTo failed:', err);
-        });
-      }
       
       console.log('テストデータ生成完了:', this.currentData.length, '個のエンティティ');
-      console.log('データ範囲:', dataBounds);
     } catch (error) {
       console.error('テストデータ生成エラー:', error);
       alert('テストデータの生成に失敗しました: ' + error.message);
@@ -1398,7 +1372,11 @@ class HeatboxPlayground {
       
       // インスタンス作成 - CesiumHeatboxを直接コンストラクタとして使用
       console.log('Heatboxインスタンス作成中...');
-      this.heatbox = new CesiumHeatbox(this.viewer, options);
+      const HB = this._getHeatboxCtor();
+      if (!HB) {
+        throw new Error('Heatboxコンストラクタを解決できません（UMD読み込みを確認）');
+      }
+      this.heatbox = new HB(this.viewer, options);
       console.log('Heatboxインスタンス作成完了:', this.heatbox);
       console.log('Heatboxインスタンスのメソッド:', Object.getOwnPropertyNames(this.heatbox));
       
@@ -1465,33 +1443,14 @@ class HeatboxPlayground {
     try {
       // まず現在のデータから範囲を計算（優先）
       if (this.currentData && this.currentData.length > 0) {
-        const dataBounds = this.calculateDataBounds(this.currentData);
-        
-        const flyToPromise = this.viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(
-            dataBounds.centerLon, 
-            dataBounds.centerLat, 
-            dataBounds.optimalHeight
-          ),
-          orientation: {
-            heading: 0,
-            pitch: -Cesium.Math.PI_OVER_THREE, // 約 -60度
-            roll: 0
-          },
+        const flyToPromise = this.fitCameraToEntities(this.currentData, {
+          pitch: -Cesium.Math.toRadians(45),
           duration: 1.5,
-          maximumHeight: dataBounds.optimalHeight * 2,
-          pitchAdjustHeight: dataBounds.optimalHeight * 0.5
+          margin: 0.25,
+          complete: () => console.log('Heatmap camera positioning completed (data-based)')
         });
-        
-        if (flyToPromise && typeof flyToPromise.then === 'function') {
-          flyToPromise.then(() => {
-            console.log('Heatmap camera positioning completed (data-based)');
-          }).catch(err => {
-            console.warn('Heatmap camera flyTo failed:', err);
-          });
-        }
-        
-        console.log('Camera zoomed to calculated data bounds:', dataBounds);
+        void flyToPromise;
+        console.log('Camera zoomed to calculated data bounds (via BoundingSphere)');
         return;
       }
 
@@ -1750,7 +1709,84 @@ class HeatboxPlayground {
   }
   
   /**
-   * データの範囲を計算してカメラの最適位置を決定
+   * すべてのエンティティが確実に収まるように、BoundingSphereに基づいてカメラを移動
+   * - flyToBoundingSphere + HeadingPitchRange を利用し、ピッチ/余白/時間を指定
+   * - FOVとアスペクト比から必要距離を安全側で算出
+   */
+  async fitCameraToEntities(entities, opts = {}) {
+    try {
+      if (!this.viewer || !entities || entities.length === 0) return;
+
+      // 位置配列を作成
+      const now = Cesium.JulianDate.now();
+      const points = [];
+      for (const e of entities) {
+        try {
+          let p = null;
+          if (e.position && typeof e.position.getValue === 'function') {
+            p = e.position.getValue(now);
+          } else if (e.position && e.position.x !== undefined) {
+            p = e.position;
+          }
+          if (p) points.push(p);
+        } catch (_) {}
+      }
+
+      if (points.length === 0) return;
+
+      const sphere = Cesium.BoundingSphere.fromPoints(points);
+      if (!sphere || !isFinite(sphere.radius) || sphere.radius <= 0) {
+        // 半径0に近いケースは固定高度にフォールバック
+        const c = Cesium.Cartographic.fromCartesian(points[0]);
+        const lon = Cesium.Math.toDegrees(c.longitude);
+        const lat = Cesium.Math.toDegrees(c.latitude);
+        return this.viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(lon, lat, 1200),
+          orientation: {
+            heading: 0,
+            pitch: -Cesium.Math.PI_OVER_THREE,
+            roll: 0
+          },
+          duration: opts.duration ?? 1.2
+        });
+      }
+
+      // FOV/アスペクトから必要距離を計算（安全余白付き）
+      const camera = this.viewer.camera;
+      const canvas = this.viewer.scene.canvas;
+      const aspect = Math.max(0.0001, canvas.clientWidth / Math.max(1, canvas.clientHeight));
+      const frustum = camera.frustum;
+      const verticalFov = typeof frustum.fov === 'number' ? frustum.fov : Cesium.Math.toRadians(60);
+      const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * aspect);
+      const limitingFov = Math.min(verticalFov, horizontalFov);
+      const margin = Math.max(0.0, Math.min(0.8, opts.margin ?? 0.25));
+      const baseRange = sphere.radius / Math.sin(Math.max(0.1, limitingFov / 2));
+      const range = baseRange * (1 + margin);
+
+      const heading = isFinite(opts.heading) ? opts.heading : 0.0;
+      const pitch = isFinite(opts.pitch) ? opts.pitch : -Cesium.Math.toRadians(35);
+      const duration = isFinite(opts.duration) ? opts.duration : 2.0;
+
+      return this.viewer.camera.flyToBoundingSphere(sphere, {
+        duration,
+        offset: new Cesium.HeadingPitchRange(heading, pitch, range),
+        complete: opts.complete,
+        cancel: opts.cancel
+      });
+    } catch (e) {
+      console.warn('fitCameraToEntities failed, fallback:', e);
+      // フォールバック: 現行の簡易手法
+      const b = this.calculateDataBounds(entities);
+      return this.viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(b.centerLon, b.centerLat, b.optimalHeight),
+        orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_THREE, roll: 0 },
+        duration: 1.5
+      });
+    }
+  }
+
+  /**
+   * データの範囲を計算してカメラの最適位置を決定（幾何ベース計算）
    */
   calculateDataBounds(entities) {
     if (!entities || entities.length === 0) {
@@ -1857,15 +1893,32 @@ class HeatboxPlayground {
     const pitchAngle = Math.PI / 4;   // 45度の見下ろし
     
     // 全データが視野に収まる距離を計算
-    // 視野角の半分で、データスパンの対角線長が見える距離
+    // 45度ピッチでの実際の視野範囲を考慮
     const diagonalSpan = Math.sqrt(lonSpanMeters * lonSpanMeters + latSpanMeters * latSpanMeters);
-    const requiredDistance = (diagonalSpan / 2) / Math.tan(viewingAngle / 2);
+    
+    // ピッチ角度を考慮した実効視野範囲の計算
+    const effectiveViewAngle = viewingAngle; // 垂直視野角
+    const horizontalViewAngle = viewingAngle * (16/9); // アスペクト比考慮（概算）
+    
+    // データの境界を包含する最小距離を計算
+    // 水平方向と垂直方向の両方を考慮
+    const requiredDistanceForWidth = (lonSpanMeters / 2) / Math.tan(horizontalViewAngle / 2);
+    const requiredDistanceForHeight = (latSpanMeters / 2) / Math.tan(effectiveViewAngle / 2);
+    const requiredDistanceForDiagonal = (diagonalSpan / 2) / Math.tan(effectiveViewAngle / 2);
+    
+    // 最も制約の厳しい距離を選択し、安全マージンを追加
+    const baseRequiredDistance = Math.max(
+      requiredDistanceForWidth,
+      requiredDistanceForHeight, 
+      requiredDistanceForDiagonal
+    ) * 1.5; // 1.5倍の安全マージン
     
     // 見下ろし角度を考慮した高度
     const optimalHeight = Math.max(
-      centroidAlt + requiredDistance * Math.sin(pitchAngle) * 1.2, // 1.2倍でマージン
-      centroidAlt + 300, // 最低300m上空
-      maxHorizontalSpan * 0.8 // スパンの0.8倍の高度を確保
+      centroidAlt + baseRequiredDistance * Math.sin(pitchAngle),
+      centroidAlt + 500, // 最低500m上空
+      maxHorizontalSpan * 1.2, // スパンの1.2倍の高度を確保
+      diagonalSpan * 0.8 // 対角線の0.8倍も確保
     );
 
     // 最大高度制限（20km）
@@ -1873,7 +1926,7 @@ class HeatboxPlayground {
 
     // カメラ位置の調整：見下ろし視点のため、データ範囲の南側（手前）に配置
     // 45度の見下ろし角度で全データが見えるように、カメラを南に移動
-    const horizontalOffset = finalHeight * Math.cos(pitchAngle) * 0.6; // 水平距離
+    const horizontalOffset = finalHeight * Math.cos(pitchAngle) * 0.8; // 0.8倍で調整
     const latOffsetDegrees = (horizontalOffset / DEG_TO_METERS); // 緯度オフセット
     
     // カメラを南側に配置（緯度を減らす）
@@ -1900,17 +1953,24 @@ class HeatboxPlayground {
       spanMeters: maxHorizontalSpan,
       diagonalSpan,
       horizontalOffset,
-      latOffsetDegrees
+      latOffsetDegrees,
+      // 詳細計算情報
+      requiredDistanceForWidth,
+      requiredDistanceForHeight,
+      requiredDistanceForDiagonal,
+      baseRequiredDistance
     };
 
     console.log('Smart camera positioning:', {
       'Data centroid': `${centroidLon.toFixed(4)}, ${centroidLat.toFixed(4)}`,
       'Data center': `${finalCenterLon.toFixed(4)}, ${finalCenterLat.toFixed(4)}`,
       'Camera position': `${cameraLon.toFixed(4)}, ${cameraLat.toFixed(4)}`,
+      'Data span': `${lonSpanMeters.toFixed(0)}m × ${latSpanMeters.toFixed(0)}m`,
+      'Diagonal span': `${diagonalSpan.toFixed(0)}m`,
+      'Required distances': `W:${requiredDistanceForWidth.toFixed(0)}m, H:${requiredDistanceForHeight.toFixed(0)}m, D:${requiredDistanceForDiagonal.toFixed(0)}m`,
+      'Base distance': `${baseRequiredDistance.toFixed(0)}m`,
+      'Final height': `${finalHeight.toFixed(0)}m`,
       'Horizontal offset': `${horizontalOffset.toFixed(0)}m`,
-      'Lat offset': `${latOffsetDegrees.toFixed(6)}°`,
-      'Span': `${maxHorizontalSpan.toFixed(0)}m`,
-      'Height': `${finalHeight.toFixed(0)}m`,
       'Data points': validCount
     });
 
