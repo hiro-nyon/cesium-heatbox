@@ -1754,10 +1754,14 @@ class HeatboxPlayground {
    */
   calculateDataBounds(entities) {
     if (!entities || entities.length === 0) {
+      // フォールバック時も南側に配置  
+      const fallbackOffsetLat = 0.005; // 約500m南側
       return {
         centerLon: 139.69,
-        centerLat: 35.69,
+        centerLat: 35.69 - fallbackOffsetLat,
         optimalHeight: 2000,
+        dataCenterLon: 139.69,
+        dataCenterLat: 35.69,
         minLon: 139.69,
         maxLon: 139.69,
         minLat: 35.69,
@@ -1811,10 +1815,14 @@ class HeatboxPlayground {
     });
 
     if (validCount === 0) {
+      // フォールバック時も南側に配置
+      const fallbackOffsetLat = 0.005; // 約500m南側
       return {
         centerLon: 139.69,
-        centerLat: 35.69,
+        centerLat: 35.69 - fallbackOffsetLat,
         optimalHeight: 2000,
+        dataCenterLon: 139.69,
+        dataCenterLat: 35.69,
         minLon: 139.69,
         maxLon: 139.69,
         minLat: 35.69,
@@ -1863,10 +1871,22 @@ class HeatboxPlayground {
     // 最大高度制限（20km）
     const finalHeight = Math.min(optimalHeight, 20000);
 
+    // カメラ位置の調整：見下ろし視点のため、データ範囲の南側（手前）に配置
+    // 45度の見下ろし角度で全データが見えるように、カメラを南に移動
+    const horizontalOffset = finalHeight * Math.cos(pitchAngle) * 0.6; // 水平距離
+    const latOffsetDegrees = (horizontalOffset / DEG_TO_METERS); // 緯度オフセット
+    
+    // カメラを南側に配置（緯度を減らす）
+    const cameraLat = finalCenterLat - latOffsetDegrees;
+    const cameraLon = finalCenterLon; // 経度は中心のまま
+
     const result = {
-      centerLon: finalCenterLon,
-      centerLat: finalCenterLat,
+      centerLon: cameraLon,        // カメラ位置（調整済み）
+      centerLat: cameraLat,        // カメラ位置（調整済み）
       optimalHeight: finalHeight,
+      // データの中心位置（参考用）
+      dataCenterLon: finalCenterLon,
+      dataCenterLat: finalCenterLat,
       minLon,
       maxLon,
       minLat,
@@ -1878,16 +1898,19 @@ class HeatboxPlayground {
       centroidAlt,
       validCount,
       spanMeters: maxHorizontalSpan,
-      diagonalSpan
+      diagonalSpan,
+      horizontalOffset,
+      latOffsetDegrees
     };
 
     console.log('Smart camera positioning:', {
-      'Centroid': `${centroidLon.toFixed(4)}, ${centroidLat.toFixed(4)}`,
-      'Final center': `${finalCenterLon.toFixed(4)}, ${finalCenterLat.toFixed(4)}`,
+      'Data centroid': `${centroidLon.toFixed(4)}, ${centroidLat.toFixed(4)}`,
+      'Data center': `${finalCenterLon.toFixed(4)}, ${finalCenterLat.toFixed(4)}`,
+      'Camera position': `${cameraLon.toFixed(4)}, ${cameraLat.toFixed(4)}`,
+      'Horizontal offset': `${horizontalOffset.toFixed(0)}m`,
+      'Lat offset': `${latOffsetDegrees.toFixed(6)}°`,
       'Span': `${maxHorizontalSpan.toFixed(0)}m`,
-      'Diagonal': `${diagonalSpan.toFixed(0)}m`, 
-      'Required distance': `${requiredDistance.toFixed(0)}m`,
-      'Final height': `${finalHeight.toFixed(0)}m`,
+      'Height': `${finalHeight.toFixed(0)}m`,
       'Data points': validCount
     });
 
