@@ -47,6 +47,7 @@ class HeatboxPlayground {
     this._setupLanguageControls();
     this._applyTranslations();
     this._setupMobileUI();
+    this._setupDesktopCollapseUI();
     
     console.log('=== HeatboxPlayground 初期化完了 ===');
   }
@@ -150,12 +151,81 @@ class HeatboxPlayground {
   }
 
   /**
+   * デスクトップ向け：左右パネルの折りたたみUI
+   */
+  _setupDesktopCollapseUI() {
+    const makeBtn = (id, aria) => {
+      let btn = document.getElementById(id);
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.id = id;
+        btn.className = 'collapse-toggle';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', aria);
+        document.body.appendChild(btn);
+      }
+      return btn;
+    };
+
+    const leftBtn = makeBtn('collapseLeft', '左パネルの表示/非表示');
+    const rightBtn = makeBtn('collapseRight', '右パネルの表示/非表示');
+
+    const applyState = () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        document.body.classList.remove('left-collapsed', 'right-collapsed');
+        leftBtn.style.display = 'none';
+        rightBtn.style.display = 'none';
+        return;
+      }
+      leftBtn.style.display = '';
+      rightBtn.style.display = '';
+
+      const lc = (typeof localStorage !== 'undefined' && localStorage.getItem('hb_left_collapsed')) === '1';
+      const rc = (typeof localStorage !== 'undefined' && localStorage.getItem('hb_right_collapsed')) === '1';
+      document.body.classList.toggle('left-collapsed', !!lc);
+      document.body.classList.toggle('right-collapsed', !!rc);
+    };
+
+    const toggleLeft = () => {
+      const next = !document.body.classList.contains('left-collapsed');
+      document.body.classList.toggle('left-collapsed', next);
+      try { localStorage.setItem('hb_left_collapsed', next ? '1' : '0'); } catch (_) {}
+    };
+
+    const toggleRight = () => {
+      const next = !document.body.classList.contains('right-collapsed');
+      document.body.classList.toggle('right-collapsed', next);
+      try { localStorage.setItem('hb_right_collapsed', next ? '1' : '0'); } catch (_) {}
+      // 右の折りたたみ状態が変わったら位置再計算
+      try { this._adjustUIPanelPositions(); } catch (_) {}
+    };
+
+    leftBtn.addEventListener('click', toggleLeft);
+    rightBtn.addEventListener('click', toggleRight);
+
+    // 初期適用とリサイズ対応
+    applyState();
+    window.addEventListener('resize', applyState);
+  }
+
+  /**
    * CesiumのUI（右上ツールバー・タイムライン）と重ならないように
    * 情報パネル(#info)の位置と高さを動的に調整
    */
   _adjustUIPanelPositions() {
     const info = document.getElementById('info');
     if (!info) return;
+
+    // 右パネルが折りたたまれている場合は何もしない
+    if (document.body.classList.contains('right-collapsed')) {
+      info.style.top = '';
+      info.style.right = '';
+      info.style.left = '';
+      info.style.bottom = '';
+      info.style.maxHeight = '';
+      return;
+    }
 
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
