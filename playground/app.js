@@ -1187,9 +1187,9 @@ class HeatboxPlayground {
     
     const centerLon = 139.6917;
     const centerLat = 35.6895;
-    const radius = 0.1; // 約10km
+    const radius = 0.02; // 約2km（密度を上げる）
     
-    for (let i = 0; i < 500; i++) {
+    for (let i = 0; i < 800; i++) {
       const angle = Math.random() * Math.PI * 2;
       const distance = Math.random() * radius;
       const lon = centerLon + Math.cos(angle) * distance;
@@ -1218,17 +1218,20 @@ class HeatboxPlayground {
     this.currentData = this.viewer.entities.values;
     this.updateStatistics();
     
-    // カメラを移動
-    this.viewer.scene.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, 5000),
+    // 実際に生成されたデータの範囲を計算してカメラ移動
+    const dataBounds = this.calculateDataBounds(this.currentData);
+    this.viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(dataBounds.centerLon, dataBounds.centerLat, 2000),
       orientation: {
         heading: 0,
         pitch: -Cesium.Math.PI_OVER_FOUR,
         roll: 0
-      }
+      },
+      duration: 1.5
     });
     
     console.log('サンプルデータ読み込み完了:', this.currentData.length, '個のエンティティ');
+    console.log('データ範囲:', dataBounds);
     this.showLoading(false);
   }
   
@@ -1290,17 +1293,20 @@ class HeatboxPlayground {
       this.currentData = this.viewer.entities.values;
       this.updateStatistics();
       
-      // カメラを移動
-      this.viewer.scene.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(139.69, 35.69, 5000),
+      // 実際に生成されたデータの範囲を計算してカメラ移動
+      const dataBounds = this.calculateDataBounds(this.currentData);
+      this.viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(dataBounds.centerLon, dataBounds.centerLat, 2000),
         orientation: {
           heading: 0,
           pitch: -Cesium.Math.PI_OVER_FOUR,
           roll: 0
-        }
+        },
+        duration: 1.5
       });
       
       console.log('テストデータ生成完了:', this.currentData.length, '個のエンティティ');
+      console.log('データ範囲:', dataBounds);
     } catch (error) {
       console.error('テストデータ生成エラー:', error);
       alert('テストデータの生成に失敗しました: ' + error.message);
@@ -1670,6 +1676,78 @@ class HeatboxPlayground {
     } catch (e) {
       console.warn('デバッグ上位ボクセル描画に失敗:', e);
     }
+  }
+  
+  /**
+   * データの範囲を計算してカメラの最適位置を決定
+   */
+  calculateDataBounds(entities) {
+    if (!entities || entities.length === 0) {
+      return {
+        centerLon: 139.69,
+        centerLat: 35.69,
+        minLon: 139.69,
+        maxLon: 139.69,
+        minLat: 35.69,
+        maxLat: 35.69
+      };
+    }
+
+    let minLon = Infinity, maxLon = -Infinity;
+    let minLat = Infinity, maxLat = -Infinity;
+    let validCount = 0;
+
+    const now = Cesium.JulianDate.now();
+
+    entities.forEach(entity => {
+      try {
+        let position = null;
+        
+        if (entity.position && typeof entity.position.getValue === 'function') {
+          position = entity.position.getValue(now);
+        } else if (entity.position && entity.position.x !== undefined) {
+          position = entity.position;
+        }
+
+        if (position) {
+          const cartographic = Cesium.Cartographic.fromCartesian(position);
+          const lon = Cesium.Math.toDegrees(cartographic.longitude);
+          const lat = Cesium.Math.toDegrees(cartographic.latitude);
+
+          minLon = Math.min(minLon, lon);
+          maxLon = Math.max(maxLon, lon);
+          minLat = Math.min(minLat, lat);
+          maxLat = Math.max(maxLat, lat);
+          validCount++;
+        }
+      } catch (e) {
+        // エンティティ処理エラーはスキップ
+      }
+    });
+
+    if (validCount === 0) {
+      return {
+        centerLon: 139.69,
+        centerLat: 35.69,
+        minLon: 139.69,
+        maxLon: 139.69,
+        minLat: 35.69,
+        maxLat: 35.69
+      };
+    }
+
+    const centerLon = (minLon + maxLon) / 2;
+    const centerLat = (minLat + maxLat) / 2;
+
+    return {
+      centerLon,
+      centerLat,
+      minLon,
+      maxLon,
+      minLat,
+      maxLat,
+      validCount
+    };
   }
   
   /**
