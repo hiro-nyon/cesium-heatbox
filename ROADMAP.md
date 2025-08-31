@@ -17,31 +17,38 @@ Priority: High | Target: 2025-09
 - Scope（Playground発見の2課題に対処: 表示の疎化/カメラ不整合）
   - [ ] 適応的レンダリング制限（オプトイン）
     - 実装: `renderLimitStrategy: 'density'|'coverage'|'hybrid'` を追加（デフォルトは既存の `'density'`）。
-    - 併用設定: `minCoverageRatio`（0–1, デフォルト0.2）, `coverageBinsXY`（自動/手動ビン数）で疎領域も拾う層化抽出を実装。
+    - 併用設定: `minCoverageRatio`（0–1, デフォルト: 0.2）, `coverageBinsXY`（自動/手動ビン数）で疎領域も拾う層化抽出を実装。
   - [ ] 自動ボクセルサイズ決定の強化（オプトイン）
     - 実装: `autoVoxelSizeMode: 'basic'|'occupancy'` を追加（デフォルト `'basic'`）。
-    - `occupancy` は期待占有セル数 E[occupied] ≈ M·(1-exp(-N/M)) を用い、`maxRenderVoxels` と `targetFill`（デフォルト0.6）に整合するサイズを反復近似。
+    - `occupancy` は期待占有セル数 E[occupied] ≈ M·(1-exp(-N/M)) を用い、`maxRenderVoxels` と `targetFill`（デフォルト: 0.6）に整合するサイズを反復近似。
+    - 責務分離: 自動ボクセルサイズは「初期グリッド決定専用」。既定ではグリッド再構築は行わず、可視化の適応は“選抜（renderLimitStrategy）側”で行う。
   - [ ] スマート視覚化支援（オプトイン）
     - 実装: `autoView: false` と `fitView(options)` を公開。`fitView` はデータ境界に対し、ピッチ/視野角を考慮した高度を自動計算（もしくは `Camera.flyToBoundingSphere` を利用）。
+  - [ ] 端末依存の自動レンダリング上限（Auto Render Budget）
+    - 実装: `maxRenderVoxels: number|'auto'`（または `renderBudgetMode: 'manual'|'auto'`）。
+    - 指標: WebGL対応/上限、`navigator.deviceMemory`（Chrome系のみ）/`hardwareConcurrency`/`devicePixelRatio` などから端末ティア（低/中/高）を推定。`deviceMemory` 未対応時は `hardwareConcurrency` と画面解像度を主指標とするフォールバック。
+    - 連携: 戦略（density/coverage/hybrid）はユーザー選択のまま、描画上限（`maxRenderVoxels`）のみ自動初期化（以下「上限K」）。占有率モードとも併用可能。
   - [ ] ハードニング/テスト
-    - Lint 0 errors、`VoxelRenderer` 抽出戦略の単体テスト追加、`Heatbox.updateOptions` 再描画確認。
+    - Lint 0 errors、`VoxelRenderer` 選択戦略の単体テスト追加、`Heatbox.updateOptions` 再描画確認。
     - 例（Basic/Advanced）の初期設定/文言を新フラグに追随。
 - Deliverables
   - [ ] `renderLimitStrategy` + `minCoverageRatio` + `coverageBinsXY`（後方互換: 既定は従来通り）
   - [ ] `autoVoxelSizeMode: 'occupancy'` + `autoVoxelTargetFill`（推奨値0.6）
   - [ ] `Heatbox.fitView(bounds, { paddingMeters, pitch, heading, altitudeStrategy })` と `options.autoView`
-  - [ ] Debug/統計: `selectionStrategy`, `clippedNonEmpty`, `coverageRatio` を `getStatistics()` に追加
+  - [ ] Auto Render Budget: `maxRenderVoxels: 'auto'`（または `renderBudgetMode: 'auto'`）で端末ティア別の初期上限を自動設定
+  - [ ] Debug/統計: `selectionStrategy`, `clippedNonEmpty`, `coverageRatio` に加え、`renderBudgetTier`, `autoMaxRenderVoxels` を `getStatistics()` に追加
   - [ ] Docs: Playground既知課題と解法（設定例つき）をチューニングFAQへ追記
   - [ ] 追加テスト: 選択戦略（密度/層化/ハイブリッド）のサンプル再現, `updateOptions` の再描画分岐
 - Acceptance Criteria
   - [ ] 疎密混在データで `maxRenderVoxels` を 300 にしても、`renderLimitStrategy: 'hybrid'` で低密度セルが可視化に最低限含まれる（`coverageRatio ≥ 0.3`）
   - [ ] `autoVoxelSizeMode: 'occupancy'` 有効時、`renderedVoxels / maxRenderVoxels` が 0.4–0.8 に収まり、過剰トリミングが抑制される
   - [ ] `autoView: true` でデータ境界が10%パディング付きで確実にフレーム内に収まる（ピッチ-30°でも欠落なし）
+  - [ ] Auto Render Budget: `'auto'` 指定時に低ティア端末で `autoMaxRenderVoxels ≤ 12,000`、高ティア端末で `autoMaxRenderVoxels ≥ 40,000`（いずれも `PERFORMANCE_LIMITS.maxVoxels` 以下）
   - [ ] Lint 0 errors, 追加テスト緑、Basic/Advanced が初期状態で正常動作
 - Out-of-Scope
   - コアレンダラ大改修（Primitive化等, 0.4以降）
 - Risks & Mitigations
-  - 抽出戦略のばらつき → ハイブリッド（TopK by density + 層化サンプル）で安定化、`debug` で比率を可視化
+  - 選択戦略のばらつき → ハイブリッド（TopK by density + 層化サンプル）で安定化、`debug` で比率を可視化
   - カメラ適合の端ケース → `flyToBoundingSphere` をFallbackに用意
 
 ### v0.1.10（観測可能性・プロファイル）- Observability & Profiles
@@ -51,12 +58,14 @@ Priority: Medium | Target: 2025-10
   - [ ] ベンチ計測の整備（`npm run benchmark` の出力整形としきい値表示）
   - [ ] Docs: チューニングFAQの追補（計測の読み方/指標の目安）
   - [ ] 設定プロファイル機能（ユースケース別の推奨セット）
+  - [ ] Auto Quality（任意拡張）: `qualityMode: 'manual'|'auto'`, `targetFPS` 等で“選抜側のつまみ（K/比率/戦略）”のみを実測FPSに応じて微調整（グリッド再構築は既定で行わない）
 - Deliverables
   - [ ] `examples/advanced/` にオーバーレイUI（ON/OFF）
   - [ ] `tools/benchmark.js` の改善（集計とCSV/markdownサマリ）
   - [ ] ドキュメント: パフォーマンスの見方/ボトルネック傾向
   - [ ] ブラウザ互換のスモークテスト（CIでの最小限の起動確認/レンダラ初期化）
   - [ ] `profile: 'mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data'` を `validateAndNormalizeOptions` でマージ適用（ユーザー設定が最終優先）
+  - [ ] Auto Quality連携: `targetFPS` 達成のために `maxRenderVoxels`/`minCoverageRatio`/`renderLimitStrategy` をヒステリシス付きで微調整するサンプル実装
 - Acceptance Criteria
   - [ ] オーバーレイのON/OFFで目視確認でき、描画数とフレーム時間が相関して表示される
   - [ ] ベンチ出力が再現可能で、PRで差分比較が容易
