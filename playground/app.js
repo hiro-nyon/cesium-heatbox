@@ -1,3 +1,5 @@
+/* eslint-env browser */
+/* global Cesium, CesiumHeatbox */
 /**
  * Cesium Heatbox Playground - メインアプリケーション
  */
@@ -956,6 +958,31 @@ class HeatboxPlayground {
     // v0.1.4: 自動ボクセルサイズチェックボックス
     document.getElementById('autoVoxelSize').addEventListener('change', (e) => {
       this.toggleManualSizeControls(!e.target.checked);
+      this.toggleAutoVoxelModeControls(e.target.checked);
+    });
+    
+    // v0.1.9: 自動ボクセルサイズモード選択
+    document.getElementById('autoVoxelSizeMode').addEventListener('change', (e) => {
+      console.log('Auto voxel size mode changed:', e.target.value);
+    });
+    
+    // v0.1.9: Auto View チェックボックス
+    document.getElementById('autoView').addEventListener('change', (e) => {
+      this.toggleFitViewControls(e.target.checked);
+    });
+    
+    // v0.1.9: FitView設定スライダー
+    document.getElementById('fitViewHeading').addEventListener('input', (e) => {
+      document.getElementById('fitViewHeadingValue').textContent = e.target.value;
+    });
+    
+    document.getElementById('fitViewPitch').addEventListener('input', (e) => {
+      document.getElementById('fitViewPitchValue').textContent = e.target.value;
+    });
+    
+    // v0.1.9: 手動fitViewボタン
+    document.getElementById('manualFitView').addEventListener('click', () => {
+      this.executeFitView();
     });
     
     // 空ボクセル表示チェックボックス
@@ -2187,6 +2214,50 @@ class HeatboxPlayground {
   }
   
   /**
+   * v0.1.9: 自動ボクセルサイズモードコントロールの表示/非表示を切り替え
+   */
+  toggleAutoVoxelModeControls(show) {
+    const autoVoxelModeGroup = document.getElementById('autoVoxelModeGroup');
+    const autoVoxelSizeModeSelect = document.getElementById('autoVoxelSizeMode');
+    
+    if (show) {
+      autoVoxelModeGroup.style.opacity = '1';
+      autoVoxelModeGroup.style.pointerEvents = 'auto';
+      autoVoxelSizeModeSelect.disabled = false;
+    } else {
+      autoVoxelModeGroup.style.opacity = '0.5';
+      autoVoxelModeGroup.style.pointerEvents = 'none';
+      autoVoxelSizeModeSelect.disabled = true;
+    }
+  }
+  
+  /**
+   * v0.1.9: FitViewコントロールの表示/非表示を切り替え
+   */
+  toggleFitViewControls(show) {
+    const fitViewGroup = document.getElementById('fitViewGroup');
+    const fitViewPitchGroup = document.getElementById('fitViewPitchGroup');
+    const fitViewHeadingInput = document.getElementById('fitViewHeading');
+    const fitViewPitchInput = document.getElementById('fitViewPitch');
+    
+    if (show) {
+      fitViewGroup.style.opacity = '1';
+      fitViewGroup.style.pointerEvents = 'auto';
+      fitViewPitchGroup.style.opacity = '1';
+      fitViewPitchGroup.style.pointerEvents = 'auto';
+      fitViewHeadingInput.disabled = false;
+      fitViewPitchInput.disabled = false;
+    } else {
+      fitViewGroup.style.opacity = '0.5';
+      fitViewGroup.style.pointerEvents = 'none';
+      fitViewPitchGroup.style.opacity = '0.5';
+      fitViewPitchGroup.style.pointerEvents = 'none';
+      fitViewHeadingInput.disabled = true;
+      fitViewPitchInput.disabled = true;
+    }
+  }
+  
+  /**
    * v0.1.5: カスタムカラーコントロールの表示/非表示を切り替え
    */
   toggleCustomColorControls(show) {
@@ -2287,6 +2358,14 @@ class HeatboxPlayground {
     const outlineWidthPreset = document.getElementById('outlineWidthPreset')?.value || 'uniform';
     const boxOpacityMode = document.getElementById('boxOpacityMode')?.value || 'off';
     const outlineOpacityMode = document.getElementById('outlineOpacityMode')?.value || 'off';
+    
+    // v0.1.9: 新オプション
+    const autoVoxelSizeMode = document.getElementById('autoVoxelSizeMode')?.value || 'simple';
+    const maxRenderVoxels = document.getElementById('maxRenderVoxels')?.value || 'auto';
+    const renderLimitStrategy = document.getElementById('renderLimitStrategy')?.value || 'hybrid';
+    const autoView = document.getElementById('autoView')?.checked || false;
+    const fitViewHeading = parseFloat(document.getElementById('fitViewHeading')?.value || '0');
+    const fitViewPitch = parseFloat(document.getElementById('fitViewPitch')?.value || '-45');
 
     // v0.1.6: 枠線太さモード
     let outlineWidthResolver = null;
@@ -2418,7 +2497,32 @@ class HeatboxPlayground {
       options.maxColor = this.getColorForMap(customColorTheme, 'max');
     }
     
-    console.log('Heatbox options (v0.1.7):', options);
+    // v0.1.9: 新機能の追加
+    if (autoVoxelSize) {
+      options.autoVoxelSizeMode = autoVoxelSizeMode;
+    }
+    
+    // maxRenderVoxels の設定
+    if (maxRenderVoxels === 'auto') {
+      options.maxRenderVoxels = 'auto';  // Auto Render Budget有効
+    } else {
+      options.maxRenderVoxels = parseInt(maxRenderVoxels);
+    }
+    
+    // Adaptive Rendering Strategy
+    options.renderLimitStrategy = renderLimitStrategy;
+    
+    // Auto View設定
+    options.autoView = autoView;
+    if (autoView) {
+      options.fitViewOptions = {
+        heading: fitViewHeading,
+        pitch: fitViewPitch,
+        paddingRatio: 0.1
+      };
+    }
+    
+    console.log('Heatbox options (v0.1.9):', options);
     return options;
   }
 
@@ -2508,6 +2612,34 @@ class HeatboxPlayground {
     };
     
     return colorMaps[colorMap] ? colorMaps[colorMap][type] : colorMaps.heat[type];
+  }
+  
+  /**
+   * v0.1.9: 手動fitViewを実行
+   */
+  async executeFitView() {
+    if (!this.heatbox) {
+      alert('ヒートマップが作成されていません。まずデータを読み込んでヒートマップを作成してください。');
+      return;
+    }
+    
+    try {
+      const heading = parseFloat(document.getElementById('fitViewHeading').value);
+      const pitch = parseFloat(document.getElementById('fitViewPitch').value);
+      
+      await this.heatbox.fitView(null, {
+        heading: heading,
+        pitch: pitch,
+        paddingRatio: 0.1
+      });
+      
+      console.log('✅ Manual fitView completed successfully');
+      this.showTemporaryMessage('カメラ位置調整完了', 2000);
+      
+    } catch (error) {
+      console.error('❌ FitView execution failed:', error);
+      alert(`FitView実行エラー: ${error.message}`);
+    }
   }
   
   /**
@@ -2627,13 +2759,40 @@ class HeatboxPlayground {
       } else {
         document.getElementById('sizeInfo').textContent = '-';
       }
-      
-      // 調整理由がある場合はコンソールに出力
-      if (stats.adjustmentReason) {
-        console.log('自動調整理由:', stats.adjustmentReason);
-      }
     } else {
       autoSizeInfo.style.display = 'none';
+    }
+    
+    // v0.1.9: 新統計情報表示
+    const v019Stats = document.getElementById('v019Stats');
+    if (stats.selectionStrategy || stats.renderBudgetTier) {
+      v019Stats.style.display = 'block';
+      
+      // 選択戦略
+      document.getElementById('selectionStrategy').textContent = stats.selectionStrategy || '-';
+      
+      // レンダー数 (rendered/total)
+      const renderedText = stats.renderedVoxels !== undefined && stats.totalVoxels !== undefined 
+        ? `${stats.renderedVoxels}/${stats.totalVoxels}`
+        : (stats.renderedVoxels || '-');
+      document.getElementById('renderedVoxels').textContent = renderedText;
+      
+      // デバイスティア
+      document.getElementById('deviceTier').textContent = stats.renderBudgetTier || '-';
+      
+      // カバレッジ比率
+      const coverageText = stats.coverageRatio !== undefined 
+        ? `${(stats.coverageRatio * 100).toFixed(1)}`
+        : '-';
+      document.getElementById('coverageRatio').textContent = coverageText;
+      
+    } else {
+      v019Stats.style.display = 'none';
+    }
+    
+    // v0.1.4: 追加情報の補足ログ
+    if (stats.adjustmentReason) {
+      console.log('自動調整理由:', stats.adjustmentReason);
     }
   }
   
@@ -2827,6 +2986,61 @@ class HeatboxPlayground {
       console.error('Error:', error);
       console.error('Stack:', error.stack);
     }
+  }
+  
+  /**
+   * v0.1.9: 一時的なメッセージを表示
+   */
+  showTemporaryMessage(message, duration = 3000) {
+    // 既存のメッセージがあれば削除
+    const existingMessage = document.getElementById('temporaryMessage');
+    if (existingMessage) {
+      existingMessage.remove();
+    }
+    
+    // 新しいメッセージ要素を作成
+    const messageEl = document.createElement('div');
+    messageEl.id = 'temporaryMessage';
+    messageEl.textContent = message;
+    messageEl.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(76, 175, 80, 0.9);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      z-index: 10000;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      animation: fadeInOut ${duration}ms ease-in-out;
+    `;
+    
+    // アニメーションCSS追加
+    if (!document.getElementById('temporaryMessageStyle')) {
+      const style = document.createElement('style');
+      style.id = 'temporaryMessageStyle';
+      style.textContent = `
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+          20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(messageEl);
+    
+    // 指定時間後に削除
+    setTimeout(() => {
+      if (messageEl.parentNode) {
+        messageEl.remove();
+      }
+    }, duration);
   }
 }
 

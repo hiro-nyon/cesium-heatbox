@@ -33,7 +33,7 @@
   <div id="toolbar">
     <div class="section">
       <h3 id="i18n-title">🎛️ Cesium Heatbox Playground</h3>
-      <p style="font-size: 11px; margin: 5px 0;" data-i18n="subtitle">v0.1.7 対応・UI整理版</p>
+      <p style="font-size: 11px; margin: 5px 0;" data-i18n="subtitle">v0.1.9 新機能対応版</p>
       <div class="control-group">
         <label id="i18n-lang-label" for="langSelect">言語</label>
         <select id="langSelect">
@@ -69,6 +69,13 @@
             <input type="checkbox" id="autoVoxelSize" />
             <span data-i18n="chk_autoVoxel">自動サイズ決定（v0.1.4新機能）</span>
           </label>
+        </div>
+        <div class="control-group" id="autoVoxelModeGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_autoVoxelMode">自動サイズモード:</label>
+          <select id="autoVoxelSizeMode" disabled>
+            <option value="simple" data-i18n="opt_autoVoxel_simple">Simple（v0.1.8）</option>
+            <option value="occupancy" data-i18n="opt_autoVoxel_occupancy">Occupancy（v0.1.9新）</option>
+          </select>
         </div>
         <div class="control-group" id="manualSizeGroup">
           <label data-i18n="label_gridSize">グリッドサイズ（手動）:</label>
@@ -202,7 +209,48 @@
     </details>
 
     <details class="section">
-      <summary id="i18n-sum-adaptive">⚙️ 適応表示</summary>
+      <summary id="i18n-sum-adaptive">⚙️ 適応表示（v0.1.9新機能）</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label data-i18n="label_maxRenderVoxels">最大レンダーボクセル数:</label>
+          <select id="maxRenderVoxels">
+            <option value="auto" selected data-i18n="opt_budget_auto">Auto Budget（自動）</option>
+            <option value="3000" data-i18n="opt_budget_3k">3,000（軽量）</option>
+            <option value="8000" data-i18n="opt_budget_8k">8,000（標準）</option>
+            <option value="15000" data-i18n="opt_budget_15k">15,000（高性能）</option>
+            <option value="50000" data-i18n="opt_budget_50k">50,000（最大）</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label data-i18n="label_renderStrategy">レンダリング戦略:</label>
+          <select id="renderLimitStrategy">
+            <option value="density" data-i18n="opt_strategy_density">Density（密度重視）</option>
+            <option value="coverage" data-i18n="opt_strategy_coverage">Coverage（範囲重視）</option>
+            <option value="hybrid" selected data-i18n="opt_strategy_hybrid">Hybrid（バランス）</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="autoView" />
+            <span data-i18n="chk_autoView">自動カメラ位置調整</span>
+          </label>
+        </div>
+        <div class="control-group" id="fitViewGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_fitViewHeading">カメラ方向（度）:</label>
+          <input type="range" id="fitViewHeading" min="0" max="360" step="15" value="0" disabled />
+          <span id="fitViewHeadingValue">0</span>
+        </div>
+        <div class="control-group" id="fitViewPitchGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_fitViewPitch">カメラ角度（度）:</label>
+          <input type="range" id="fitViewPitch" min="-90" max="0" step="5" value="-45" disabled />
+          <span id="fitViewPitchValue">-45</span>
+        </div>
+        <button id="manualFitView" data-i18n="btn_fitView">手動カメラフィット</button>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary id="i18n-sum-legacy-adaptive">⚙️ 適応表示（レガシー）</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>
@@ -294,6 +342,12 @@
           <p><span id="i18n-autosize-adjusted">自動調整:</span> <span id="autoAdjusted">-</span></p>
           <p><span id="i18n-autosize-size">サイズ:</span> <span id="sizeInfo">-</span></p>
         </div>
+        <div id="v019Stats" style="font-size: 10px; color: #4CAF50; margin-top: 5px; display: none;">
+          <p><span id="i18n-v019-strategy">戦略:</span> <span id="selectionStrategy">-</span></p>
+          <p><span id="i18n-v019-rendered">レンダー数:</span> <span id="renderedVoxels">-</span></p>
+          <p><span id="i18n-v019-tier">デバイス:</span> <span id="deviceTier">-</span></p>
+          <p><span id="i18n-v019-coverage">カバレッジ:</span> <span id="coverageRatio">-</span>%</p>
+        </div>
       </div>
     </div>
     
@@ -323,7 +377,7 @@
   </div>
   
   <!-- Heatbox ライブラリ -->
-  <script src="../cesium-heatbox/dist/cesium-heatbox.umd.min.js?v=0.1.7"></script>
+  <script src="../dist/cesium-heatbox.umd.min.js?v=0.1.9"></script>
   <script src="app.js"></script>
 </body>
 </html>
