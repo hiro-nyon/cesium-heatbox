@@ -180,6 +180,110 @@ git commit -m "chore: update default voxel size to 30"
 git push origin main
 ```
 
+#### v0.1.9 New Features (Advanced Usage)
+
+**1. Adaptive Rendering with Auto Render Budget**
+
+Automatically optimize performance based on device capabilities:
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  maxRenderVoxels: 'auto',        // Auto device detection
+  renderLimitStrategy: 'hybrid',   // Smart voxel selection
+  autoVoxelSizeMode: 'occupancy'  // Enhanced calculation
+});
+
+await heatbox.setData(entities);
+
+// Check applied settings
+const stats = heatbox.getStatistics();
+console.log(`Device tier: ${stats.renderBudgetTier}`);
+console.log(`Auto max voxels: ${stats.autoMaxRenderVoxels}`);
+console.log(`Rendered: ${stats.renderedVoxels}/${stats.totalVoxels}`);
+```
+
+**2. Smart Camera Positioning**
+
+Automatically position camera for optimal data viewing:
+
+```javascript
+// Basic auto-fit
+await heatbox.fitView();
+
+// Custom camera angles
+await heatbox.fitView(null, {
+  heading: 45,      // Camera direction (degrees)
+  pitch: -60,       // Camera tilt (degrees)
+  paddingPercent: 0.2 // Extra space around data (ratio of data extent)
+});
+
+// Auto-fit after data loading
+const heatbox = new Heatbox(viewer, {
+  autoView: true,  // Automatically execute fitView
+  fitViewOptions: { heading: 0, pitch: -45 }
+});
+```
+
+**3. Rendering Strategy Comparison**
+
+Test different voxel selection strategies:
+
+```javascript
+// Dense data areas - use density strategy
+const denseHeatbox = new Heatbox(viewer, {
+  renderLimitStrategy: 'density',
+  maxRenderVoxels: 5000
+});
+
+// Wide area coverage - use coverage strategy  
+const coverageHeatbox = new Heatbox(viewer, {
+  renderLimitStrategy: 'coverage',
+  maxRenderVoxels: 5000
+});
+
+// Balanced approach - use hybrid strategy
+const hybridHeatbox = new Heatbox(viewer, {
+  renderLimitStrategy: 'hybrid',
+  maxRenderVoxels: 5000
+});
+```
+
+**4. Enhanced Auto Voxel Sizing**
+
+Use mathematical occupancy estimation for optimal voxel size:
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  autoVoxelSize: true,
+  autoVoxelSizeMode: 'occupancy', // v0.1.9 enhanced mode
+  maxRenderVoxels: 'auto'
+});
+
+await heatbox.setData(entities);
+
+// Check calculation results
+const stats = heatbox.getStatistics();
+console.log(`Original size: ${stats.originalVoxelSize}m`);
+console.log(`Final size: ${stats.finalVoxelSize}m`);
+console.log(`Adjusted: ${stats.autoAdjusted}`);
+console.log(`Reason: ${stats.adjustmentReason}`);
+```
+
+**5. Try the Interactive Demo**
+
+Experience v0.1.9 features with the comprehensive demo:
+
+```bash
+# Open advanced demo
+open examples/advanced/adaptive-rendering-demo.html
+```
+
+The demo includes:
+- Real-time strategy switching
+- Device tier visualization  
+- Performance monitoring
+- Interactive controls for all new features
+
 #### Next Steps
 
 **1. Read Detailed Documentation**

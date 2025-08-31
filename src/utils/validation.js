@@ -237,6 +237,68 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.enableThickFrames = Boolean(normalized.enableThickFrames);
   }
   
+  // v0.1.9: 適応的レンダリング制限のバリデーション
+  if (normalized.renderLimitStrategy !== undefined) {
+    const validStrategies = ['density', 'coverage', 'hybrid'];
+    if (!validStrategies.includes(normalized.renderLimitStrategy)) {
+      Logger.warn(`Invalid renderLimitStrategy: ${normalized.renderLimitStrategy}. Using 'density'.`);
+      normalized.renderLimitStrategy = 'density';
+    }
+  }
+  if (normalized.minCoverageRatio !== undefined) {
+    const v = parseFloat(normalized.minCoverageRatio);
+    normalized.minCoverageRatio = isNaN(v) ? 0.2 : Math.max(0, Math.min(1, v));
+  }
+  if (normalized.coverageBinsXY !== undefined) {
+    const v = normalized.coverageBinsXY;
+    if (v !== 'auto') {
+      const n = parseInt(v, 10);
+      if (!Number.isFinite(n) || n <= 0) {
+        Logger.warn(`Invalid coverageBinsXY: ${v}. Using 'auto'.`);
+        normalized.coverageBinsXY = 'auto';
+      } else {
+        normalized.coverageBinsXY = n;
+      }
+    }
+  }
+  
+  // v0.1.9: 自動ボクセルサイズ決定の強化
+  if (normalized.autoVoxelSizeMode !== undefined) {
+    const validModes = ['basic', 'occupancy'];
+    if (!validModes.includes(normalized.autoVoxelSizeMode)) {
+      Logger.warn(`Invalid autoVoxelSizeMode: ${normalized.autoVoxelSizeMode}. Using 'basic'.`);
+      normalized.autoVoxelSizeMode = 'basic';
+    }
+  }
+  if (normalized.autoVoxelTargetFill !== undefined) {
+    const v = parseFloat(normalized.autoVoxelTargetFill);
+    normalized.autoVoxelTargetFill = isNaN(v) ? 0.6 : Math.max(0, Math.min(1, v));
+  }
+  
+  // v0.1.9: Auto Render Budget
+  if (normalized.renderBudgetMode !== undefined) {
+    const validModes = ['manual', 'auto'];
+    if (!validModes.includes(normalized.renderBudgetMode)) {
+      Logger.warn(`Invalid renderBudgetMode: ${normalized.renderBudgetMode}. Using 'manual'.`);
+      normalized.renderBudgetMode = 'manual';
+    }
+  }
+  
+  // v0.1.9: 自動視点調整 fitView オプション
+  if (normalized.fitViewOptions !== undefined) {
+    const f = normalized.fitViewOptions || {};
+    const padding = parseFloat(f.paddingPercent);
+    const pitch = parseFloat(f.pitch);
+    const heading = parseFloat(f.heading);
+    const altitudeStrategy = f.altitudeStrategy;
+    normalized.fitViewOptions = {
+      paddingPercent: Number.isFinite(padding) ? Math.max(0, Math.min(1, padding)) : 0.1,
+      pitch: Number.isFinite(pitch) ? Math.max(-90, Math.min(0, pitch)) : -30,
+      heading: Number.isFinite(heading) ? heading : 0,
+      altitudeStrategy: altitudeStrategy === 'manual' ? 'manual' : 'auto'
+    };
+  }
+  
   return normalized;
 }
 
@@ -245,45 +307,124 @@ export function validateAndNormalizeOptions(options = {}) {
  * データ範囲に基づいて初期ボクセルサイズを推定します。
  * @param {Object} bounds - Bounds info / 境界情報
  * @param {number} entityCount - Number of entities / エンティティ数
+ * @param {Object} options - Calculation options / 計算オプション
  * @returns {number} Estimated voxel size in meters / 推定ボクセルサイズ（メートル）
  */
-export function estimateInitialVoxelSize(bounds, entityCount) {
+export function estimateInitialVoxelSize(bounds, entityCount, options = {}) {
   try {
-    // 1. データ範囲（X/Y/Z軸の物理的範囲）を計算
-    const dataRange = calculateDataRange(bounds);
+    const mode = options.autoVoxelSizeMode || 'basic';
     
-    // 2. エンティティ密度を推定
-    const volume = dataRange.x * dataRange.y * Math.max(dataRange.z, 10); // 最小高度差10m
-    const density = entityCount / volume; // エンティティ/立方メートル
-    
-    // 3. 密度に応じて適切なボクセルサイズを推定
-    // - 高密度: 細かいサイズ（10-20m）
-    // - 中密度: 標準サイズ（20-50m）
-    // - 低密度: 粗いサイズ（50-100m）
-    let estimatedSize;
-    
-    if (density > 0.001) {
-      // 高密度：細かいサイズ
-      estimatedSize = Math.max(10, Math.min(20, 20 / Math.sqrt(density * 1000)));
-    } else if (density > 0.0001) {
-      // 中密度：標準サイズ
-      estimatedSize = Math.max(20, Math.min(50, 50 / Math.sqrt(density * 10000)));
+    if (mode === 'occupancy') {
+      return estimateVoxelSizeByOccupancy(bounds, entityCount, options);
     } else {
-      // 低密度：粗いサイズ
-      estimatedSize = Math.max(50, Math.min(100, 100 / Math.sqrt(density * 100000)));
+      return estimateVoxelSizeBasic(bounds, entityCount);
     }
-    
-    // 制限値内に収める
-    estimatedSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
-                            Math.min(PERFORMANCE_LIMITS.maxVoxelSize, estimatedSize));
-    
-    Logger.debug(`Estimated voxel size: ${estimatedSize}m (density: ${density}, volume: ${volume})`);
-    return Math.round(estimatedSize);
-    
   } catch (error) {
     Logger.warn('Initial voxel size estimation failed:', error);
     return 20; // デフォルトサイズ
   }
+}
+
+/**
+ * Basic voxel size estimation (existing algorithm).
+ * 基本的なボクセルサイズ推定（既存アルゴリズム）
+ * @param {Object} bounds - Bounds info / 境界情報
+ * @param {number} entityCount - Number of entities / エンティティ数
+ * @returns {number} Estimated voxel size in meters / 推定ボクセルサイズ（メートル）
+ */
+function estimateVoxelSizeBasic(bounds, entityCount) {
+  // 1. データ範囲（X/Y/Z軸の物理的範囲）を計算
+  const dataRange = calculateDataRange(bounds);
+  
+  // 2. エンティティ密度を推定
+  const volume = dataRange.x * dataRange.y * Math.max(dataRange.z, 10); // 最小高度差10m
+  const density = entityCount / volume; // エンティティ/立方メートル
+  
+  // 3. 密度に応じて適切なボクセルサイズを推定
+  // - 高密度: 細かいサイズ（10-20m）
+  // - 中密度: 標準サイズ（20-50m）
+  // - 低密度: 粗いサイズ（50-100m）
+  let estimatedSize;
+  
+  if (density > 0.001) {
+    // 高密度：細かいサイズ
+    estimatedSize = Math.max(10, Math.min(20, 20 / Math.sqrt(density * 1000)));
+  } else if (density > 0.0001) {
+    // 中密度：標準サイズ
+    estimatedSize = Math.max(20, Math.min(50, 50 / Math.sqrt(density * 10000)));
+  } else {
+    // 低密度：粗いサイズ
+    estimatedSize = Math.max(50, Math.min(100, 100 / Math.sqrt(density * 100000)));
+  }
+  
+  // 制限値内に収める
+  estimatedSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+                          Math.min(PERFORMANCE_LIMITS.maxVoxelSize, estimatedSize));
+  
+  Logger.debug(`Basic voxel size estimated: ${estimatedSize}m (density: ${density}, volume: ${volume})`);
+  return Math.round(estimatedSize);
+}
+
+/**
+ * Occupancy-based voxel size estimation with iterative approximation.
+ * 占有率ベースのボクセルサイズ推定（反復近似）
+ * @param {Object} bounds - Bounds info / 境界情報
+ * @param {number} entityCount - Number of entities / エンティティ数
+ * @param {Object} options - Calculation options / 計算オプション
+ * @returns {number} Estimated voxel size in meters / 推定ボクセルサイズ（メートル）
+ */
+function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
+  const dataRange = calculateDataRange(bounds);
+  const maxRenderVoxels = options.maxRenderVoxels || 50000;
+  const targetFill = options.autoVoxelTargetFill || 0.6;
+  const maxIterations = 10;
+  const tolerance = 0.05; // 5%の許容誤差
+  
+  // 初期推定値（基本アルゴリズムから）
+  let currentSize = estimateVoxelSizeBasic(bounds, entityCount);
+  
+  Logger.debug(`Starting occupancy-based estimation: N=${entityCount}, target=${targetFill}, maxVoxels=${maxRenderVoxels}`);
+  
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    // 現在のサイズでの総ボクセル数を計算
+    const numVoxelsX = Math.ceil(dataRange.x / currentSize);
+    const numVoxelsY = Math.ceil(dataRange.y / currentSize);
+    const numVoxelsZ = Math.ceil(dataRange.z / currentSize);
+    const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
+    
+    // 期待占有セル数の計算: E[occupied] ≈ M × (1 - exp(-N/M))
+    const expectedOccupied = totalVoxels * (1 - Math.exp(-entityCount / totalVoxels));
+    
+    // 現在の占有率
+    const currentFill = Math.min(expectedOccupied / maxRenderVoxels, 1.0);
+    
+    Logger.debug(`Iteration ${iteration}: size=${currentSize.toFixed(1)}m, totalVoxels=${totalVoxels}, expectedOccupied=${expectedOccupied.toFixed(0)}, fill=${currentFill.toFixed(3)}`);
+    
+    // 収束判定
+    const fillError = Math.abs(currentFill - targetFill);
+    if (fillError < tolerance) {
+      Logger.debug(`Converged at iteration ${iteration}: size=${currentSize.toFixed(1)}m, fill=${currentFill.toFixed(3)}`);
+      break;
+    }
+    
+    // サイズ調整（Newton法的なアプローチ）
+    if (currentFill > targetFill) {
+      // 占有率が高すぎる → サイズを大きくしてボクセル数を減らす
+      currentSize *= Math.pow(currentFill / targetFill, 0.3);
+    } else {
+      // 占有率が低すぎる → サイズを小さくしてボクセル数を増やす
+      currentSize *= Math.pow(currentFill / targetFill, 0.3);
+    }
+    
+    // 制限値内に収める
+    currentSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+                          Math.min(PERFORMANCE_LIMITS.maxVoxelSize, currentSize));
+  }
+  
+  const finalSize = Math.round(currentSize);
+  Logger.info(`Occupancy-based voxel size: ${finalSize}m (target fill: ${targetFill})`);
+  
+  return finalSize;
 }
 
 /**

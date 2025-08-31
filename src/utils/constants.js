@@ -54,6 +54,27 @@ export const DEFAULT_OPTIONS = {
     densityThreshold: 5, // 密度しきい値（エンティティ数/ボクセル）
     cameraDistanceFactor: 1.0, // カメラ距離補正係数
     overlapRiskFactor: 0.3 // 重なりリスク補正係数
+  },
+  
+  // v0.1.9: 適応的レンダリング制限とスマート視覚化支援（ADR-0006 Phase 1）
+  renderLimitStrategy: 'density', // 'density' | 'coverage' | 'hybrid' 選択戦略
+  minCoverageRatio: 0.2, // hybrid戦略での層化抽出最小比率（0-1）
+  coverageBinsXY: 'auto', // 層化抽出用格子分割数（'auto' | number）
+  
+  // 自動ボクセルサイズ決定の強化
+  autoVoxelSizeMode: 'basic', // 'basic' | 'occupancy' 自動サイズ計算方式
+  autoVoxelTargetFill: 0.6, // 目標占有率（0-1, occupancyモード用）
+  
+  // Auto Render Budget
+  renderBudgetMode: 'manual', // 'manual' | 'auto' 描画上限制御
+  
+  // 自動視点調整
+  autoView: false, // 自動視点調整有効化
+  fitViewOptions: {
+    paddingPercent: 0.1, // データ範囲の10%パディング
+    pitch: -30, // ピッチ角度（度）
+    heading: 0, // ヘディング角度（度）
+    altitudeStrategy: 'auto' // 'auto' | 'manual' 高度計算戦略
   }
 };
 

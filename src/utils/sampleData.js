@@ -70,6 +70,60 @@ export function getAllEntities(viewer) {
 }
 
 /**
+ * Generate clustered sample entities without adding to a viewer.
+ * ビューアに追加せず、クラスター状のサンプルエンティティ配列を生成します。
+ * @param {number} total - 総エンティティ数
+ * @param {Object} config - { clusters: Array<{ center:[lon,lat,alt], radius:number, density:number, count:number }> }
+ * @returns {Array<Cesium.Entity>} エンティティ配列
+ */
+export function generateSampleData(total, config = {}) {
+  const clusters = Array.isArray(config.clusters) && config.clusters.length > 0
+    ? config.clusters
+    : [{ center: [139.75, 35.7, 50], radius: 0.02, density: 0.5, count: total }];
+
+  const entities = [];
+  let remaining = total;
+
+  clusters.forEach((c, idx) => {
+    const count = Math.min(remaining, Math.max(0, c.count || Math.floor(total / clusters.length)));
+    remaining -= count;
+
+    const [lon0, lat0, alt0] = c.center || [139.75, 35.7, 50];
+    const radius = c.radius || 0.02; // degrees
+    const altRange = 100;
+
+    for (let i = 0; i < count; i++) {
+      // Uniform random within circle (approx in degrees)
+      const r = Math.sqrt(Math.random()) * radius;
+      const theta = Math.random() * Math.PI * 2;
+      const lon = lon0 + r * Math.cos(theta);
+      const lat = lat0 + r * Math.sin(theta);
+      const alt = alt0 + (Math.random() - 0.5) * altRange;
+
+      const entity = new Cesium.Entity({
+        id: `sample-${idx}-${i}-${Math.random().toString(36).slice(2, 8)}`,
+        position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
+      });
+      entities.push(entity);
+    }
+  });
+
+  // If any remainder, add around the first cluster center
+  while (remaining-- > 0) {
+    const [lon0, lat0, alt0] = clusters[0].center;
+    const lon = lon0 + (Math.random() - 0.5) * 0.02;
+    const lat = lat0 + (Math.random() - 0.5) * 0.02;
+    const alt = alt0 + (Math.random() - 0.5) * 100;
+    entities.push(new Cesium.Entity({
+      id: `sample-extra-${Math.random().toString(36).slice(2, 8)}`,
+      position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
+    }));
+  }
+
+  return entities;
+}
+
+/**
  * 東京駅周辺の境界を取得
  * @returns {Object} 東京駅周辺の境界情報
  */

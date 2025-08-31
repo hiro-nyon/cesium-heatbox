@@ -51,8 +51,34 @@ Priority: High | Target: 2025-09
   - 選択戦略のばらつき → ハイブリッド（TopK by density + 層化サンプル）で安定化、`debug` で比率を可視化
   - カメラ適合の端ケース → `flyToBoundingSphere` をFallbackに用意
 
-### v0.1.10（観測可能性・プロファイル）- Observability & Profiles
-Priority: Medium | Target: 2025-10
+### v0.1.10（リファクタリング・モジュール化）- Refactoring & Modularization
+Priority: High | Target: 2025-10
+
+- Scope（挙動非変更・内部構造の整理）
+  - [ ] 選択戦略の分離: `src/core/selection/` に density/coverage/hybrid を分割しIF化
+  - [ ] 近似/推定の分離: `src/utils/voxelSizeEstimator.js`（basic/occupancy）を新設
+  - [ ] 端末ティア検出の分離: `src/utils/deviceTierDetector.js`（Auto Render Budget計算）
+  - [ ] 視点合わせの分離: `src/utils/viewFit.js` と `Heatbox.fitView()` の連携
+  - [ ] options正規化の抽出（任意）: `src/utils/options/normalize.js` に新オプション検証を移管
+  - [ ] 既存API/挙動は不変（Public API/既存オプション名は変更しない）
+- Deliverables
+  - [ ] `VoxelRenderer` から選択戦略ロジックを戦略層へ移動（densityで先行、続いてcoverage/hybrid）
+  - [ ] `Heatbox.setData()` 後段で選択メタの統計反映（`selectionStrategy`/`clippedNonEmpty`/`coverageRatio`）
+  - [ ] `estimateByOccupancy()` の独立化と `Heatbox` からの呼び出し
+  - [ ] `maxRenderVoxels: 'auto'` の解決を `deviceTierDetector` で実装
+  - [ ] JSDoc/型注釈の整備（公開関数）＋ファイル長の縮小（目標: 200–350行/ファイル）
+  - [ ] 単体テストの再配置（selection/estimator/tierDetector/viewFit）
+- Acceptance Criteria
+  - [ ] 既存のExamples/テストがすべてグリーン（挙動差分なし）
+  - [ ] ファイル分割が完了し、主要ファイルが目標行数内に収まる（例: `VoxelRenderer.js` < 350行）
+  - [ ] Lint 0 errors、型/JSdocが主要モジュールに付与されている
+  - [ ] CI時間/ビルドに顕著な退行がない（±10%以内）
+- Risks & Mitigations
+  - 大規模移動による衝突 → 小PR分割（戦略→推定→予算→視点の順）と即時レビュー
+  - 回帰リスク → 既存Examples/テストでのスナップショット・差分確認を強化
+
+### v0.1.11（観測可能性・プロファイル）- Observability & Profiles
+Priority: Medium | Target: 2025-11
 - Scope
   - [ ] Advanced に簡易パフォーマンスオーバーレイ（描画数/TopN比率/平均密度/フレーム時間）
   - [ ] ベンチ計測の整備（`npm run benchmark` の出力整形としきい値表示）
@@ -75,8 +101,8 @@ Priority: Medium | Target: 2025-10
 - Risks & Mitigations
   - 計測のばらつき → 複数回平均/サンプル数と偏差の表示
 
-### v0.1.11（適応的表示の核）- 視認性最適化の仕上げ
-Priority: Medium | Target: 2025-11
+### v0.1.12（適応的表示の核）- 視認性最適化の仕上げ
+Priority: Medium | Target: 2025-12
 
 - コア機能（仕上げ・検証）
   - [ ] 適応的制御のパラメータチューニングとデフォルト見直し（`adaptiveParams`/プリセットの係数微調整）

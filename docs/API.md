@@ -1,4 +1,4 @@
-# API Reference (APIリファレンス) - v0.1.7
+# API Reference (APIリファレンス) - v0.1.9
 
 [English](#english) | [日本語](#日本語)
 
@@ -18,7 +18,7 @@ Creates a new Heatbox instance.
 - `viewer` (Cesium.Viewer) - CesiumJS Viewer instance
 - `options` (Object, optional) - Configuration options
 
-**Options (v0.1.7 compatible):**
+**Options (v0.1.9 compatible):**
 - `voxelSize` (number, default: 20) - Target voxel size (meters). Actual rendering dimensions use real cell sizes `cellSizeX/Y/Z` based on grid division, which may be smaller than `voxelSize` (to prevent overlaps).
 - `opacity` (number, default: 0.8) - Data voxel opacity (0.0-1.0)
 - `emptyOpacity` (number, default: 0.03) - Empty voxel opacity (0.0-1.0)
@@ -26,15 +26,25 @@ Creates a new Heatbox instance.
 - `showEmptyVoxels` (boolean, default: false) - Show empty voxels
 - `minColor` (Array, default: [0, 32, 255]) - Minimum density color (RGB)
 - `maxColor` (Array, default: [255, 64, 0]) - Maximum density color (RGB)
-- `maxRenderVoxels` (number, default: 50000) - Maximum render voxel count
+- `maxRenderVoxels` (number|'auto', default: 50000) - Maximum render voxel count. v0.1.9: `'auto'` enables device-based Auto Render Budget
 - **`wireframeOnly` (boolean, default: false) - Wireframe only display (v0.1.2 new feature)**
 - **`heightBased` (boolean, default: false) - Express density as height (v0.1.2 new feature)**
 - **`outlineWidth` (number, default: 2) - Outline thickness (v0.1.2 new feature)**
 - **`debug` (boolean | { showBounds?: boolean }, default: false) - Log control and bounds display (v0.1.5 expanded to object format)**
 - **`autoVoxelSize` (boolean, default: false) - v0.1.4: Auto-determine voxel size. Effective when `voxelSize` is not specified**
+- **`autoVoxelSizeMode` ('basic'|'occupancy', default: 'basic') - v0.1.9: Auto voxel size calculation method. 'occupancy' uses occupancy-based estimation**
 - **`colorMap` ('custom'|'viridis'|'inferno', default: 'custom') - v0.1.5: Perceptually uniform color maps**
 - **`diverging` (boolean, default: false) / `divergingPivot` (number, default: 0) - v0.1.5: Diverging color scheme for bipolar data**
 - **`highlightTopN` (number|null, default: null) / `highlightStyle` ({ outlineWidth?: number; boostOpacity?: number }) - v0.1.5: Highlight top N voxels**
+- **`renderLimitStrategy` ('density'|'coverage'|'hybrid', default: 'density') - v0.1.9: Adaptive rendering strategy for voxel selection when exceeding maxRenderVoxels**
+- **`minCoverageRatio` (number, default: 0.2) - v0.1.9: Minimum coverage ratio for hybrid strategy**
+- **`coverageBinsXY` (number|'auto', default: 'auto') - v0.1.9: Number of XY bins for stratified coverage sampling**
+- **`renderBudgetMode` ('manual'|'auto', default: 'manual') - v0.1.9: Use Auto Render Budget when 'auto'**
+- **`autoView` (boolean, default: false) - v0.1.9: Automatically execute fitView after data loading**
+- **`fitViewOptions` (Object) - v0.1.9: Default options for fitView method**
+  - `heading` (number, default: 0) - Camera heading (degrees)
+  - `pitch` (number, default: -30) - Camera pitch (degrees)
+  - `paddingPercent` (number, default: 0.1) - Padding ratio around data bounds
 
 For brevity, see the Japanese section below for complete option details and examples.
 
@@ -86,6 +96,41 @@ Gets current heatmap statistics.
 **Returns:**
 - `HeatboxStatistics|null` - Statistics object or null if data not created.
 
+##### `fitView(bounds, options)` (v0.1.9)
+
+Automatically adjusts camera position to optimally view the heatmap data.
+
+**Parameters:**
+- `bounds` (Object, optional) - Custom bounds. If not specified, uses data bounds
+  - `minLon`, `maxLon`, `minLat`, `maxLat`, `minAlt`, `maxAlt` (number) - Boundary coordinates
+- `options` (Object, optional) - Camera positioning options
+  - `heading` (number, default: 0) - Camera heading in degrees
+  - `pitch` (number, default: -30) - Camera pitch in degrees
+  - `paddingPercent` (number, default: 0.1) - Padding ratio around bounds
+
+**Returns:**
+- `Promise<void>` - Completes when camera movement finishes
+
+**Example:**
+```javascript
+// Basic usage - fit to all data
+await heatbox.fitView();
+
+// Custom camera angle
+await heatbox.fitView(null, { 
+  heading: 45, 
+  pitch: -60, 
+  paddingPercent: 0.2 
+});
+
+// Fit to specific area
+await heatbox.fitView({ 
+  minLon: 139.7, maxLon: 139.75, 
+  minLat: 35.65, maxLat: 35.72,
+  minAlt: 0, maxAlt: 200 
+});
+```
+
 ##### `getBounds()`
 
 Gets current heatmap bounds information (latitude/longitude).
@@ -121,6 +166,13 @@ interface HeatboxStatistics {
   originalVoxelSize?: number | null;
   finalVoxelSize?: number | null;
   adjustmentReason?: string | null;
+  // v0.1.9 selection + budget meta
+  selectionStrategy?: 'density'|'coverage'|'hybrid';
+  clippedNonEmpty?: number;   // Number of non-empty voxels clipped by limit
+  coverageRatio?: number;     // Effective ratio of coverage selection (hybrid)
+  renderBudgetTier?: 'low'|'mid'|'high';
+  autoMaxRenderVoxels?: number; // Auto budget decided maxRenderVoxels
+  occupancyRatio?: number | null; // renderedVoxels / maxRenderVoxels (if numeric)
 }
 ```
 

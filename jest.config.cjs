@@ -5,6 +5,10 @@ module.exports = {
     '^@/(.*)': '<rootDir>/src/$1',
     '^cesium$': '<rootDir>/test/__mocks__/cesium.js'
   },
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/test/performance/'
+  ],
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/index.js',

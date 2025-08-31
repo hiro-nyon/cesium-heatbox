@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CesiumJS Heatbox v0.1.9 - Adaptive Rendering Demo</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html, body, #cesiumContainer {
+            width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            max-width: 350px;
+            z-index: 1000;
+        }
+        
+        #adaptiveControls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            min-width: 280px;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        #adaptiveControls h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        
+        #adaptiveControls select, #adaptiveControls button {
+            width: 100%;
+            padding: 5px;
+            margin: 5px 0;
+            border: 1px solid #555;
+            background: #333;
+            color: white;
+            border-radius: 3px;
+        }
+        
+        #adaptiveControls button {
+            background: #4CAF50;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        #adaptiveControls button:hover {
+            background: #45a049;
+        }
+        
+        .control-group {
+            margin: 10px 0;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        #status {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 11px;
+            max-width: 400px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    
+    <div id="info">
+        <h3>🚀 CesiumJS Heatbox v0.1.9</h3>
+        <h4>Adaptive Rendering Demo</h4>
+        <p><strong>新機能:</strong></p>
+        <ul>
+            <li>📊 <strong>Adaptive Rendering Limits</strong><br>
+                Density, Coverage, Hybrid の3戦略</li>
+            <li>💻 <strong>Auto Render Budget</strong><br>
+                デバイス性能に基づく自動調整</li>
+            <li>📏 <strong>Enhanced Auto Voxel Size</strong><br>
+                占有率ベースの最適化計算</li>
+            <li>🎯 <strong>Smart fitView</strong><br>
+                堅牢なカメラ位置計算</li>
+        </ul>
+        
+        <p><strong>操作方法:</strong></p>
+        <ol>
+            <li>左側のコントロールで設定変更</li>
+            <li>「Apply Settings」で再描画</li>
+            <li>「Show Stats」で統計情報表示</li>
+            <li>「Fit View」でカメラ調整</li>
+        </ol>
+        
+        <p><em>ブラウザのコンソール (F12) で詳細ログを確認できます。</em></p>
+    </div>
+    
+    <div id="status">
+        <div id="statusText">初期化中...</div>
+    </div>
+
+    <script type="module">
+        import { Heatbox } from '../../src/index.js';
+        import { generateSampleData } from '../../src/utils/sampleData.js';
+        
+        // デバッグ用のグローバル変数
+        window.currentHeatbox = null;
+        window.currentData = null;
+        
+        // ステータス更新関数
+        function updateStatus(message) {
+            document.getElementById('statusText').textContent = message;
+            console.log('📱 Status:', message);
+        }
+        
+        // シーン設定
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            shouldAnimate: false,
+            homeButton: false,
+            sceneModePicker: false,
+            baseLayerPicker: false,
+            geocoder: false,
+            navigationHelpButton: false,
+            timeline: false,
+            fullscreenButton: false
+        });
+        
+        // 東京周辺にカメラを設定
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(139.7, 35.7, 5000),
+            orientation: {
+                heading: 0.0,
+                pitch: -0.5,
+                roll: 0.0
+            }
+        });
+        
+        // コントロール作成
+        function createControls() {
+            const controlsHtml = `
+                <div id="adaptiveControls">
+                    <h3>🚀 v0.1.9 Adaptive Controls</h3>
+                    
+                    <div class="control-group">
+                        <label>🎯 Render Strategy:</label>
+                        <select id="strategySelect">
+                            <option value="density">🔥 Density-based (密度重視)</option>
+                            <option value="coverage">🗺️ Coverage-based (範囲重視)</option>
+                            <option value="hybrid" selected>⚖️ Hybrid (バランス)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>💻 Max Render Voxels:</label>
+                        <select id="budgetSelect">
+                            <option value="auto" selected>🤖 Auto Budget</option>
+                            <option value="3000">3,000 (軽量)</option>
+                            <option value="8000">8,000 (標準)</option>
+                            <option value="15000">15,000 (高性能)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>📏 Auto Voxel Size Mode:</label>
+                        <select id="voxelModeSelect">
+                            <option value="simple">📐 Simple (v0.1.8)</option>
+                            <option value="occupancy" selected>🎯 Occupancy (v0.1.9)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>📊 Dataset Size:</label>
+                        <select id="dataSizeSelect">
+                            <option value="small">小規模 (5,000 entities)</option>
+                            <option value="medium" selected>中規模 (10,000 entities)</option>
+                            <option value="large">大規模 (20,000 entities)</option>
+                        </select>
+                    </div>
+                    
+                    <button id="applySettings">✅ Apply Settings</button>
+                    <button id="fitViewBtn">🎯 Fit View</button>
+                    <button id="showStats">📊 Show Stats</button>
+                    <button id="clearBtn">🗑️ Clear</button>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('afterbegin', controlsHtml);
+            setupEventListeners();
+        }
+        
+        // イベントリスナー設定
+        function setupEventListeners() {
+            // Apply Settings
+            document.getElementById('applySettings').addEventListener('click', async () => {
+                updateStatus('設定適用中...');
+                
+                const strategy = document.getElementById('strategySelect').value;
+                const budget = document.getElementById('budgetSelect').value;
+                const voxelMode = document.getElementById('voxelModeSelect').value;
+                const dataSize = document.getElementById('dataSizeSelect').value;
+                
+                try {
+                    // 既存インスタンスを破棄
+                    if (window.currentHeatbox) {
+                        window.currentHeatbox.dispose();
+                    }
+                    
+                    // データサイズに応じてデータセット生成
+                    const entityCounts = { small: 5000, medium: 10000, large: 20000 };
+                    const totalEntities = entityCounts[dataSize];
+                    
+                    window.currentData = generateSampleData(totalEntities, {
+                        clusters: [
+                            { center: [139.7, 35.7, 50], radius: 0.02, density: 0.7, count: Math.floor(totalEntities * 0.4) },
+                            { center: [139.75, 35.72, 100], radius: 0.015, density: 0.5, count: Math.floor(totalEntities * 0.3) },
+                            { center: [139.8, 35.75, 30], radius: 0.03, density: 0.3, count: Math.floor(totalEntities * 0.2) },
+                            { center: [139.73, 35.65, 80], radius: 0.01, density: 0.8, count: Math.floor(totalEntities * 0.1) }
+                        ]
+                    });
+                    
+                    // 新しい設定でインスタンス作成
+                    window.currentHeatbox = new Heatbox(viewer, {
+                        autoVoxelSize: true,
+                        autoVoxelSizeMode: voxelMode,
+                        renderLimitStrategy: strategy,
+                        maxRenderVoxels: budget === 'auto' ? 'auto' : parseInt(budget),
+                        debug: true
+                    });
+                    
+                    // データ設定
+                    const startTime = performance.now();
+                    await window.currentHeatbox.setData(window.currentData);
+                    const loadTime = performance.now() - startTime;
+                    
+                    // 統計情報取得
+                    const stats = window.currentHeatbox.getStatistics();
+                    
+                    updateStatus(`✅ 完了 (${loadTime.toFixed(0)}ms) | ${stats.selectionStrategy} | ${stats.renderedVoxels}/${stats.totalVoxels} voxels`);
+                    
+                    console.log('📊 Applied Settings:', {
+                        strategy, budget, voxelMode, dataSize,
+                        loadTime: `${loadTime.toFixed(0)}ms`,
+                        stats
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ Error applying settings:', error);
+                    updateStatus(`❌ エラー: ${error.message}`);
+                }
+            });
+            
+            // Fit View
+            document.getElementById('fitViewBtn').addEventListener('click', async () => {
+                if (window.currentHeatbox) {
+                    try {
+                        updateStatus('Fit view実行中...');
+                        await window.currentHeatbox.fitView();
+                        updateStatus('✅ Fit view完了');
+                        console.log('✅ Fit view completed');
+                    } catch (error) {
+                        console.error('❌ Fit view error:', error);
+                        updateStatus(`❌ Fit viewエラー: ${error.message}`);
+                    }
+                }
+            });
+            
+            // Show Stats
+            document.getElementById('showStats').addEventListener('click', () => {
+                if (window.currentHeatbox) {
+                    const stats = window.currentHeatbox.getStatistics();
+                    const debugInfo = window.currentHeatbox.getDebugInfo();
+                    
+                    console.log('📊 Current Statistics:', stats);
+                    console.log('🔍 Debug Info:', debugInfo);
+                    
+                    // 詳細な統計情報を表示
+                    const deviceInfo = debugInfo.autoRenderBudget || {};
+                    alert(`
+📊 Heatbox Statistics (v0.1.9)
+
+🎯 Strategy: ${stats.selectionStrategy}
+💻 Device Tier: ${stats.renderBudgetTier || 'Manual'}
+🎛️ Max Render Voxels: ${stats.autoMaxRenderVoxels || stats.maxRenderVoxels || 'N/A'}
+🎨 Rendered Voxels: ${stats.renderedVoxels}
+📈 Total Voxels: ${stats.totalVoxels}
+📊 Coverage Ratio: ${((stats.coverageRatio || 0) * 100).toFixed(1)}%
+✂️ Clipped (Non-empty): ${stats.clippedNonEmpty || 0}
+
+📏 Final Voxel Size: ${stats.finalVoxelSize || stats.voxelSize}m
+🔄 Auto Adjusted: ${stats.autoAdjusted || false}
+📝 Adjustment Reason: ${stats.adjustmentReason || 'N/A'}
+
+💾 Device Memory: ${deviceInfo.deviceMemory || 'N/A'} GB
+⚙️ Hardware Cores: ${deviceInfo.hardwareConcurrency || 'N/A'}
+🖥️ Screen Resolution: ${deviceInfo.screenWidth}x${deviceInfo.screenHeight}
+                    `);
+                    
+                    updateStatus(`📊 統計情報表示: ${stats.renderedVoxels}/${stats.totalVoxels} voxels`);
+                } else {
+                    alert('❌ データが読み込まれていません。まず「Apply Settings」を実行してください。');
+                }
+            });
+            
+            // Clear
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                if (window.currentHeatbox) {
+                    window.currentHeatbox.dispose();
+                    window.currentHeatbox = null;
+                    updateStatus('🗑️ データクリア完了');
+                    console.log('🗑️ Heatbox cleared');
+                }
+            });
+        }
+        
+        // 自動デモ実行
+        async function runAutoDemo() {
+            updateStatus('自動デモ実行中...');
+            
+            try {
+                // 中規模データセットで初期化
+                document.getElementById('applySettings').click();
+                
+                // 3秒後にfitView実行
+                setTimeout(() => {
+                    document.getElementById('fitViewBtn').click();
+                }, 3000);
+                
+            } catch (error) {
+                console.error('❌ Auto demo error:', error);
+                updateStatus(`❌ 自動デモエラー: ${error.message}`);
+            }
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            createControls();
+            
+            // 3秒後に自動デモ開始
+            setTimeout(runAutoDemo, 1000);
+        });
+        
+        // エラーハンドリング
+        window.addEventListener('error', (event) => {
+            console.error('❌ Global error:', event.error);
+            updateStatus(`❌ エラー: ${event.error?.message || 'Unknown error'}`);
+        });
+        
+        console.log('🚀 CesiumJS Heatbox v0.1.9 Adaptive Rendering Demo loaded');
+    </script>
+</body>
+</html>
