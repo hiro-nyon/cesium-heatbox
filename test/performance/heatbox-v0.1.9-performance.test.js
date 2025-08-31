@@ -1,3 +1,4 @@
+/* eslint-env browser */
 /**
  * CesiumJS Heatbox v0.1.9 Performance Test
  * 

@@ -1042,25 +1042,28 @@ export class VoxelRenderer {
     let coverageRatio = null;
     
     switch (strategy) {
-      case 'coverage':
+      case 'coverage': {
         const coverageResult = this._selectByCoverage(allVoxels, maxCount, grid, topNVoxels);
         selectedVoxels = coverageResult.selected;
         clippedCount = allVoxels.length - selectedVoxels.length;
         break;
-        
-      case 'hybrid':
+      }
+      
+      case 'hybrid': {
         const hybridResult = this._selectByHybrid(allVoxels, maxCount, grid, topNVoxels);
         selectedVoxels = hybridResult.selected;
         clippedCount = allVoxels.length - selectedVoxels.length;
         coverageRatio = hybridResult.coverageRatio;
         break;
-        
+      }
+      
       case 'density':
-      default:
+      default: {
         const densityResult = this._selectByDensity(allVoxels, maxCount, topNVoxels);
         selectedVoxels = densityResult.selected;
         clippedCount = allVoxels.length - selectedVoxels.length;
         break;
+      }
     }
     
     return {
@@ -1192,8 +1195,6 @@ export class VoxelRenderer {
    */
   _selectByHybrid(allVoxels, maxCount, grid, forceInclude = new Set()) {
     const minCoverageRatio = this.options.minCoverageRatio || 0.2;
-    const coverageCount = Math.floor(maxCount * minCoverageRatio);
-    const densityCount = maxCount - coverageCount;
     
     const selected = [];
     const included = new Set();
