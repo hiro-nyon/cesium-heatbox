@@ -279,8 +279,13 @@ select, input, textarea {
   max-width: 380px;
   max-height: calc(100% - 80px - var(--hb-nav-height)); /* ナビゲーションとの重複を避ける */
   overflow-y: auto;
+  /* Hide scrollbars visually */
+  scrollbar-width: none; /* Firefox */
   transition: all 0.3s ease;
 }
+
+/* Hide scrollbars for WebKit */
+#toolbar::-webkit-scrollbar { width: 0; height: 0; }
 
 /* デスクトップ時の折りたたみ用アニメーション（transform使用） */
 @media screen and (min-width: 769px) {
@@ -395,7 +400,12 @@ select, input, textarea {
   max-width: 250px;
   font-size: 12px;
   transition: all 0.3s ease;
+  /* Hide scrollbars visually */
+  scrollbar-width: none; /* Firefox */
 }
+
+/* Hide scrollbars for WebKit */
+#info::-webkit-scrollbar { width: 0; height: 0; }
 
 /* 折りたたみトグルボタン（デスクトップのみ表示） */
 @media screen and (min-width: 769px) {
