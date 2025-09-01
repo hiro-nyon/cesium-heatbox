@@ -107,6 +107,14 @@
   .hb-nav-content {
     padding: 0 15px;
   }
+  
+  .hb-nav-right span {
+    display: none;
+  }
+  
+  .hb-nav-right .hb-nav-link:after {
+    content: '⭐';
+  }
 }
 
 /* === Liquid Glass Base === */
