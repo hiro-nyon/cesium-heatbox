@@ -106,13 +106,14 @@ function setupEventListeners() {
   document.getElementById('clearHeatmap').addEventListener('click', clearHeatmap);
   document.getElementById('toggleVisibility').addEventListener('click', toggleVisibility);
   
-  // Grid size slider
+  // Quick Start: no manual grid in UI; guard if remnants exist
   const gridSizeSlider = document.getElementById('gridSize');
   const gridSizeValue = document.getElementById('gridSizeValue');
-  
-  gridSizeSlider.addEventListener('input', function() {
-    gridSizeValue.textContent = this.value;
-  });
+  if (gridSizeSlider && gridSizeValue) {
+    gridSizeSlider.addEventListener('input', function() {
+      gridSizeValue.textContent = this.value;
+    });
+  }
   
   // Mobile menu handled by setupMobileMenu()
 }
@@ -470,42 +471,27 @@ async function createHeatmap() {
   
   try {
     updateStatus('Creating heatmap...', 'loading');
-    
-    // Get configuration options for Heatbox
-    const autoVoxelSize = document.getElementById('autoVoxelSize').checked;
-    const autoVoxelSizeMode = document.getElementById('autoVoxelSizeMode').value;
-    const gridSize = parseInt(document.getElementById('gridSize').value);
-    const colorScheme = document.getElementById('colorScheme').value;
+
+    // Quick Start: fixed auto settings
     const heightBased = document.getElementById('heightBased').checked;
     const autoCamera = document.getElementById('autoCamera').checked;
-    
-    // Build heatmap options
-    const options = {
-      // Match Playground defaults/strategy closely
-      autoVoxelSize: autoVoxelSize,
-      autoVoxelSizeMode: autoVoxelSizeMode,
-      voxelSize: autoVoxelSize ? undefined : gridSize,
-      maxVoxelSize: autoVoxelSize ? 10 : undefined,
-      targetCells: autoVoxelSize ? 3000 : undefined,
-      maxRenderVoxels: 2000,
-      renderLimitStrategy: 'hybrid',
 
-      // Visuals
-      colorMap: (colorScheme === 'viridis' || colorScheme === 'inferno') ? colorScheme : 'custom',
+    const options = {
+      autoVoxelSize: true,
+      autoVoxelSizeMode: 'simple',
+      voxelSize: undefined,
+      maxVoxelSize: 10,
+      targetCells: 3000,
+      maxRenderVoxels: 'auto',
+      renderLimitStrategy: 'hybrid',
+      colorMap: 'viridis',
       heightBased: heightBased,
       opacity: 0.7,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
       wireframeOnly: false,
-
-      // View
       autoView: autoCamera
     };
-    
-    // Add manual grid size if not using auto
-    if (!autoVoxelSize) {
-      options.voxelSize = gridSize;
-    }
     
     // Clear existing heatmap
     if (heatboxInstance) {

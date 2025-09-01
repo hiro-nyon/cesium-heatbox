@@ -65,12 +65,12 @@
   
   <div id="toolbar" class="liquid-glass-dark">
     <div class="section">
-      <h3>🚀 Quick Start Workflow</h3>
-      <p style="font-size: 11px; margin: 5px 0;">Simplified 3-step heatmap creation</p>
+      <h3>Quick Start</h3>
+      <p style="font-size: 11px; margin: 5px 0;">Load data and generate a heatmap in two clicks</p>
     </div>
     
     <details class="section" open>
-      <summary>📁 Step 1: Load Data</summary>
+      <summary>Step 1: Load Data</summary>
       <div class="section-content">
         <input type="file" id="fileInput" accept=".json,.geojson,.czml" />
         <button id="loadSampleData">Load Sample Data</button>
@@ -82,44 +82,9 @@
     </details>
     
     <details class="section" open>
-      <summary>🔧 Step 2: Configure</summary>
+      <summary>Step 2: Configure</summary>
       <div class="controls section-content">
-        <div class="control-group">
-          <label>Base Map:</label>
-          <select id="baseMap">
-            <option value="carto-light" selected>CartoDB Light (Positron)</option>
-            <option value="carto-dark">CartoDB Dark Matter</option>
-            <option value="osm-standard">OpenStreetMap Standard</option>
-            <option value="osm-humanitarian">OSM Humanitarian</option>
-          </select>
-        </div>
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="autoVoxelSize" checked />
-            <span>Auto Voxel Size (Recommended)</span>
-          </label>
-        </div>
-        <div class="control-group" id="autoVoxelModeGroup">
-          <label>Auto Size Mode:</label>
-          <select id="autoVoxelSizeMode">
-            <option value="simple">Simple (Fast)</option>
-            <option value="occupancy">Occupancy (Optimal)</option>
-          </select>
-        </div>
-        <div class="control-group" id="manualSizeGroup" style="opacity: 0.5; pointer-events: none;">
-          <label>Manual Grid Size:</label>
-          <input type="range" id="gridSize" min="10" max="100" value="20" disabled />
-          <span id="gridSizeValue">20</span>
-        </div>
-        <div class="control-group">
-          <label>Color Scheme:</label>
-          <select id="colorScheme">
-            <option value="viridis" selected>Viridis (Scientific)</option>
-            <option value="heat">Heat (Blue to Red)</option>
-            <option value="cool">Cool (Blue to Magenta)</option>
-            <option value="inferno">Inferno (Scientific)</option>
-          </select>
-        </div>
+        <!-- Quick Start keeps imagery fixed to Carto Light; auto voxel sizing enforced -->
         <div class="control-group">
           <label>
             <input type="checkbox" id="heightBased" />
@@ -136,7 +101,7 @@
     </details>
     
     <details class="section" open>
-      <summary>🎮 Step 3: Generate</summary>
+      <summary>Step 3: Generate</summary>
       <div class="controls section-content">
         <button id="createHeatmap" disabled>Create Heatmap</button>
         <button id="clearHeatmap" disabled>Clear Heatmap</button>
@@ -150,7 +115,7 @@
   
   <div id="info" class="liquid-glass-dark">
     <div class="section">
-      <h3>📊 Statistics</h3>
+      <h3>Statistics</h3>
       <div id="statistics">
         <p><span>Data Points:</span> <span id="dataCount">0</span></p>
         <p><span>Voxel Count:</span> <span id="voxelCount">0</span></p>
@@ -164,7 +129,7 @@
     </div>
     
     <div class="section">
-      <h3>🔍 Environment</h3>
+      <h3>Environment</h3>
       <div id="environmentInfo">
         <p><span>Cesium:</span> <span id="cesiumVersion">-</span></p>
         <p><span>Heatbox:</span> <span id="heatboxVersion">-</span></p>
