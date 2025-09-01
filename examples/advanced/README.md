@@ -31,7 +31,7 @@ const tokyoArea = Heatbox.filterEntities(
 );
 ```
 
-### 2. `wireframe-height-demo.js` / `wireframe-height-demo-umd.html` ⭐ **v0.1.2 新機能**
+### 2. `wireframe-height-demo.js` / `wireframe-height-demo-umd.html` **v0.1.2 新機能**
 **wireframeOnly & heightBased 機能のデモ**
 
 - 4つの表示モードの同時比較
@@ -89,7 +89,7 @@ await perfDemo.demonstrateRealTimeUpdates();
 const report = perfDemo.generatePerformanceReport();
 ```
 
-### 4. `outline-overlap-demo-umd.html` ⭐ **v0.1.6 新機能**
+### 4. `outline-overlap-demo-umd.html` **v0.1.6 新機能**
 **枠線重なり対策と動的枠線制御のデモ（ブラウザ直接実行対応）**
 
 - `voxelGap` によるボクセル寸法の縮小（重なり軽減）
@@ -99,7 +99,7 @@ const report = perfDemo.generatePerformanceReport();
 UMDビルドを参照するため、ファイルをそのままブラウザで開けます。
 Baseline（対策なし）と Mitigated（対策あり）をワンクリックで比較できます。
 
-## 🚀 使用方法
+## 使用方法
 
 ### オプション1: ブラウザ直接実行（簡単！）
 
@@ -161,7 +161,7 @@ const perfDemo = new PerformanceOptimizationDemo(viewer);
 await perfDemo.demonstrateProgressiveLoading();
 ```
 
-## 🎯 v0.1.2 新機能の活用
+## v0.1.2 新機能の活用
 
 ### wireframeOnly（枠線のみ表示）
 **問題**: 重なったボクセルで内部構造が見えない  
@@ -198,7 +198,7 @@ const heatbox = new Heatbox(viewer, {
 });
 ```
 
-## 📊 パフォーマンスガイドライン
+## パフォーマンスガイドライン
 
 ### データサイズ別推奨設定
 
@@ -216,7 +216,7 @@ const heatbox = new Heatbox(viewer, {
 3. **showEmptyVoxels = false**: 不要なボクセルを非表示
 4. **段階的ロード**: 大量データを分割処理
 
-## 🔧 トラブルシューティング
+## トラブルシューティング
 
 ### よくある問題
 
@@ -232,7 +232,7 @@ A: `heightBased: true`で高さベース表現を使用
 **Q: メモリ不足エラー**  
 A: `maxRenderVoxels`を小さくし、`wireframeOnly: true`を使用
 
-## 📚 関連ドキュメント
+## 関連ドキュメント
 
 - [API Reference](../../wiki/API-Reference.md)
 - [Examples](../../wiki/Examples.md)

@@ -42,7 +42,7 @@
 
 ### 主要変更
 - Added: `wireframeOnly`・`heightBased`・`outlineWidth` の導入と対応UI/サンプル
-- Changed: 重なったボクセルの視認性改善、ドキュメント整備（npm未登録の明記）
+- Changed: 重なったボクセルの視認性改善、ドキュメント整備
 - Fixed: ESLintエラー修正、削除APIの置換、テスト更新
 
 ---

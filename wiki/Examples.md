@@ -1,7 +1,4 @@
-# Examples（サンプルと使い方） / Examples (Samples and Usage)
-
-> **Important**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。  
-> This library is currently not registered on npm. Please refer to [Quick-Start](Quick-Start.md) to get it from GitHub.
+# Examples（使用例） / Examples
 
 **日本語** | [English](#english)
 

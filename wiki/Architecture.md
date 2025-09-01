@@ -1,7 +1,4 @@
-# Architecture（内部構成の概要） / Architecture Overview - v0.1.7
-
-> **Important**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。  
-> This library is currently not registered on npm. Please refer to [Quick-Start](Quick-Start.md) to get it from GitHub.
+# Architecture（設計） / Architecture
 
 **日本語** | [English](#english)
 

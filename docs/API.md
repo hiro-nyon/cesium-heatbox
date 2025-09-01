@@ -4,8 +4,6 @@
 
 ## English
 
-> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
-
 ### Heatbox Class
 
 #### Constructor
@@ -207,8 +205,6 @@ Common errors include: no target entities, invalid CesiumJS Viewer, voxel count 
 See Japanese section for complete performance optimization tips.
 
 ## 日本語
-
-> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得してください。
 
 ### Heatbox クラス
 

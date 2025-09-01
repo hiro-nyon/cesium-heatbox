@@ -265,11 +265,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - 重なったボクセルの視認性問題を解決
 - デバッグログ出力の最適化（ESLintエラー対応）
-- 全ドキュメントにnpm未登録状況の明記とGitHub取得方法の案内
+- 全ドキュメントの整備とインストール方法の更新
 - `examples/basic/`: v0.1.2新機能に対応したUI・ロジック更新
 - `examples/advanced/entity-filtering.js`: 削除されたAPIの置き換えと新機能対応
 - `wiki/Examples.md`: v0.1.2新機能の実用例を追加
-- `wiki/Getting-Started.md`: npm未登録対応とインストール手順更新
+- `wiki/Getting-Started.md`: インストール手順の更新
 - `types/index.d.ts`: 新オプションの型定義追加
 
 ### Fixed

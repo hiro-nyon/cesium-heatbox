@@ -4,8 +4,6 @@
 
 ## English
 
-> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
-
 We welcome contributions to the CesiumJS Heatbox project. This guide explains how to contribute and the procedures involved.
 
 ### How to Contribute
@@ -90,8 +88,6 @@ Update documentation as needed when making code changes. For API changes, update
 Contributions to this project are made under the [MIT License](../LICENSE). By submitting a pull request, you agree that your contributions will be published under this license.
 
 ## 日本語
-
-> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
 
 CesiumJS Heatboxプロジェクトへの貢献を歓迎します。このガイドでは、貢献の方法と手順について説明します。
 

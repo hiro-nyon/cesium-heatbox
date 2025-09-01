@@ -1,8 +1,5 @@
 # Development Guide（開発向け） / Development Guide
 
-> **Important**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。  
-> This library is currently not registered on npm. Please refer to [Quick-Start](Quick-Start.md) to get it from GitHub.
-
 **日本語** | [English](#english)
 
 初めて開発参加する方向けの要点です。詳細はリポジトリの `docs/development-guide.md` を参照してください。

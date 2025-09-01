@@ -4,7 +4,13 @@
 
 ## English
 
-> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
+## English
+
+## Prerequisites
+
+- Node.js 18.0.0 or higher
+- npm 8.0.0 or higher
+- Git
 
 **Target Audience**: Development beginners and those new to JavaScript/Node.js library development  
 **Purpose**: Understand the development and release procedures for the cesium-heatbox project
@@ -179,8 +185,6 @@ npm publish              # Stable release
 For detailed solutions, see the Japanese section below.
 
 ## 日本語
-
-> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
 
 **対象**: 開発初心者・JavaScript/Node.jsライブラリ開発が初めての方  
 **目的**: cesium-heatboxプロジェクトの開発・リリース手順を理解する

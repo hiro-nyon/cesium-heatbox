@@ -1,7 +1,4 @@
-# Troubleshooting（よくある問題） / Troubleshooting
-
-> **Important**: このライブラリは現在npm未登録です。[Quick-Start](Quick-Start.md)を参照してGitHubから取得してください。  
-> This library is currently not registered on npm. Please refer to [Quick-Start](Quick-Start.md) to get it from GitHub.
+# Troubleshooting（トラブルシューティング） / Troubleshooting
 
 **日本語** | [English](#english)
 
