@@ -4,8 +4,6 @@
 
 ## English
 
-> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
-
 **Target Audience**: Those who want to use cesium-heatbox immediately  
 **Time Required**: 10-15 minutes  
 **Prerequisites**: Node.js 18+, Git, basic JavaScript knowledge
@@ -46,13 +44,19 @@ git --version
 
 #### Project Setup (3 minutes)
 
-**1. Navigate to Project Directory**
+**1. Install cesium-heatbox**
 
 ```bash
-cd /path/to/cesium-heatbox
+# Install from npm
+npm install cesium-heatbox
+
+# Or for development from source
+git clone https://github.com/hiro-nyon/cesium-heatbox.git
+cd cesium-heatbox
+npm install
 ```
 
-**2. Install Dependencies**
+**2. Install Dependencies (if building from source)**
 
 ```bash
 # Initial setup
@@ -401,8 +405,6 @@ Congratulations! Enjoy developing with cesium-heatbox!
 
 ## 日本語
 
-> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
-
 **対象**: cesium-heatboxを今すぐ使いたい方  
 **所要時間**: 10-15分  
 **前提条件**: Node.js 18+、Git、基本的なJavaScript知識
@@ -447,13 +449,19 @@ git --version
 
 ## プロジェクトセットアップ（3分）
 
-### 1. プロジェクトディレクトリに移動
+### 1. cesium-heatboxのインストール
 
 ```bash
-cd /path/to/cesium-heatbox
+# npmからインストール
+npm install cesium-heatbox
+
+# または開発用にソースから
+git clone https://github.com/hiro-nyon/cesium-heatbox.git
+cd cesium-heatbox
+npm install
 ```
 
-### 2. 依存関係のインストール
+### 2. 依存関係のインストール（ソースからビルドする場合）
 
 ```bash
 # 初回セットアップ
@@ -627,13 +635,16 @@ git push origin main
 git push origin v0.1.0-alpha.1
 ```
 
-#### 将来的なNPM公開
+#### NPM公開（手動実行時）
 ```bash
 # 公開準備
 npm publish --dry-run
 
-# Alpha版として公開
+# プレリリース（alpha/beta/rc など）として公開
 npm publish --tag alpha
+
+# 安定版として公開（latest）
+npm publish --tag latest
 ```
 
 ---

@@ -3,9 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://github.com/hiro-nyon/cesium-heatbox/workflows/CI/badge.svg)](https://github.com/hiro-nyon/cesium-heatbox/actions)
 [![Version](https://img.shields.io/github/package-json/v/hiro-nyon/cesium-heatbox?label=version)](https://github.com/hiro-nyon/cesium-heatbox/blob/main/package.json)
-
-> **⚠️ 重要 / Important**: このライブラリは現在npm未登録です。GitHubから直接ダウンロードしてご利用ください。  
-> This library is currently not registered on npm. Please download directly from GitHub.
+[![npm](https://img.shields.io/npm/v/cesium-heatbox)](https://www.npmjs.com/package/cesium-heatbox)
 
 **日本語** | [English](#english)
 
@@ -99,60 +97,50 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 
 ### 日本語
 
-> **注意**: このライブラリは現在npm未登録のため、以下の方法でインストールしてください。
+#### npmからインストール（推奨）
 
-#### 方法1: GitHubから直接クローン
+```bash
+npm install cesium-heatbox
+```
+
+#### CDN経由で利用
+
+```html
+<!-- UMDバンドルをCDN経由で読み込み -->
+<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
+```
+
+#### ソースからビルド（開発者向け）
 
 ```bash
 git clone https://github.com/hiro-nyon/cesium-heatbox.git
 cd cesium-heatbox
 npm install
-npm run build:umd
-```
-
-#### 方法2: CDN経由で直接利用
-
-```html
-<!-- UMDバンドルを直接読み込み -->
-<script src="https://raw.githubusercontent.com/hiro-nyon/cesium-heatbox/main/dist/cesium-heatbox.umd.min.js"></script>
-```
-
-#### 将来的なnpm対応
-
-npm登録を検討中です。登録後は以下のコマンドでインストール可能になります：
-
-```bash
-# 将来的に利用可能予定
-npm install cesium-heatbox
+npm run build
 ```
 
 ### English
 
-> **Note**: This library is currently not registered on npm. Please install using the following methods:
+#### Install from npm (Recommended)
 
-#### Method 1: Direct Clone from GitHub
+```bash
+npm install cesium-heatbox
+```
+
+#### Use via CDN
+
+```html
+<!-- Load UMD bundle via CDN -->
+<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
+```
+
+#### Build from source (For development)
 
 ```bash
 git clone https://github.com/hiro-nyon/cesium-heatbox.git
 cd cesium-heatbox
 npm install
-npm run build:umd
-```
-
-#### Method 2: Direct Use via CDN
-
-```html
-<!-- Load UMD bundle directly -->
-<script src="https://raw.githubusercontent.com/hiro-nyon/cesium-heatbox/main/dist/cesium-heatbox.umd.min.js"></script>
-```
-
-#### Future npm Support
-
-We are considering npm registration. After registration, installation will be possible with:
-
-```bash
-# Will be available in the future
-npm install cesium-heatbox
+npm run build
 ```
 
 ## 基本的な使用方法 / Basic Usage

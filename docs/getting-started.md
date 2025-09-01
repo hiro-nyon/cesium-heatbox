@@ -4,8 +4,6 @@
 
 ## English
 
-> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
-
 ### Requirements
 
 - Node.js 18.0.0 or higher
@@ -15,11 +13,12 @@
 ### Installation
 
 ```bash
-# Clone repository
+# Install from npm
+npm install cesium-heatbox
+
+# Or clone repository for development
 git clone https://github.com/hiro-nyon/cesium-heatbox.git
 cd cesium-heatbox
-
-# Install dependencies
 npm install
 ```
 
@@ -243,22 +242,21 @@ For detailed troubleshooting, see the Japanese section below.
 
 ## 日本語
 
-> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
-
 ## 必要な環境
 
 - Node.js 18.0.0 以上
 - npm 8.0.0 以上
 - Git
 
-## インストール
+## インストール（npm推奨）
 
 ```bash
-# リポジトリをクローン
+# npmからインストール（推奨）
+npm install cesium-heatbox
+
+# または開発用にリポジトリをクローン
 git clone https://github.com/hiro-nyon/cesium-heatbox.git
 cd cesium-heatbox
-
-# 依存関係をインストール
 npm install
 ```
 

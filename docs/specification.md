@@ -4,10 +4,8 @@
 
 ## English
 
-> **Note**: This library is not yet registered on npm. Please obtain it directly from GitHub.
-
-**Version**: 0.1.5  
-**Last Updated**: October 2025  
+**Version**: 0.1.9  
+**Last Updated**: September 2025  
 **Author**: hiro-nyon  
 
 ### Table of Contents
@@ -34,9 +32,20 @@ Develop "Heatbox", a 3D voxel-based heatmap visualization library targeting exis
 
 - **Entity-based**: Automatically acquire data from existing Cesium Entities
 - **Automatic range setting**: Auto-calculate optimal rectangular (AABB) range from entity distribution
-- **Minimum voxel count**: Efficient processing with minimum voxel count containing specified range
+- **Adaptive rendering**: Smart voxel selection strategies (density/coverage/hybrid) for balanced visualization (v0.1.9)
+- **Intelligent sizing**: Occupancy-based auto voxel size calculation for optimal performance (v0.1.9)
+- **Device-aware**: Auto render budget based on device capabilities for consistent experience (v0.1.9)
+- **Smart visualization**: Automatic camera positioning and view optimization (v0.1.9)
 - **Relative color coding**: Dynamic color coding based on minimum/maximum values in data
-- **Phased development**: Focus on basic functionality in v0.1.0, expand in future
+- **Performance optimization**: Efficient processing with adaptive limits and multi-tier device support
+
+**Version History**
+
+- **v0.1.6** - Hardening and Documentation: Enhanced outline width control, overlap prevention, wiki automation
+- **v0.1.6.1** - Inset Outlines: Dual-box rendering system for visual separation
+- **v0.1.7** - Adaptive Outlines: Dynamic outline control, multiple rendering modes, opacity resolvers
+- **v0.1.8** - Performance and Stability: Improved rendering pipeline with caching optimizations
+- **v0.1.9** - Adaptive Rendering and Smart Views: Device-aware optimization, smart view assistance
 
 **Target Users**
 
@@ -110,6 +119,7 @@ class Heatbox {
     destroy()
     getStatistics()
     getBounds()
+    fitView(bounds, options)  // v0.1.9: Smart view assistance
 }
 ```
 
@@ -154,7 +164,13 @@ const performanceLimits = {
     maxEmptyVoxelsRendered: 10000,  // Empty voxel rendering limit
     minVoxelSize: 5,               // Minimum voxel size (meters)
     maxVoxelSize: 1000,            // Maximum voxel size (meters)
-    warningThreshold: 30000        // Warning display voxel count threshold
+    warningThreshold: 30000,       // Warning display voxel count threshold
+    // v0.1.9 Auto Render Budget device tiers
+    deviceTiers: {
+        low: { min: 8000, max: 12000 },
+        mid: { min: 20000, max: 35000 },
+        high: { min: 40000, max: 50000 }
+    }
 };
 ```
 
@@ -188,6 +204,26 @@ if (totalVoxels > maxVoxels) {
 ```
 
 #### Future Extensions
+
+**v0.1.9 Implemented Features**
+
+Adaptive rendering and smart visualization:
+- **Adaptive rendering strategies**: density/coverage/hybrid voxel selection (✅ Implemented)
+- **Device-aware performance**: Auto render budget based on device capabilities (✅ Implemented)
+- **Smart view assistance**: Automatic camera positioning and fitView method (✅ Implemented)
+- **Enhanced auto voxel sizing**: Occupancy-based calculation with iterative approximation (✅ Implemented)
+
+Outline enhancements (v0.1.6-0.1.8 features integrated):
+- **Dynamic outline width**: `outlineWidthResolver` function for per-voxel control (✅ Implemented)
+- **Outline overlap prevention**: `voxelGap` and `outlineOpacity` controls (✅ Implemented)
+- **Inset outlines**: Dual-box rendering with `outlineInset` for visual separation (✅ Implemented)
+- **Adaptive outline control**: Multiple rendering modes with density-based adjustments (✅ Implemented)
+- **Opacity resolvers**: Dynamic `boxOpacityResolver` and `outlineOpacityResolver` (✅ Implemented)
+
+Performance and stability:
+- **Caching optimizations**: Improved rendering pipeline for large datasets (✅ Implemented)
+- **Enhanced emulation**: WebGL line width limitation workarounds (✅ Implemented)
+- **Memory management**: Leak prevention and stability improvements (✅ Implemented)
 
 **v0.2.0 Planned Features**
 
@@ -235,10 +271,8 @@ For detailed specifications, constraints, and implementation guidelines, see the
 
 ## 日本語
 
-> **注意**: このライブラリは現在npm未登録です。GitHubから直接取得する必要があります。
-
-**バージョン**: 0.1.5  
-**最終更新**: 2025年10月  
+**バージョン**: 0.1.9  
+**最終更新**: 2025年9月  
 **作成者**: hiro-nyon  
 
 ## 目次
@@ -267,9 +301,20 @@ CesiumJS環境内の既存エンティティを対象とした3Dボクセルベ�
 
 - **Entityベース**: 既存のCesium Entityから自動でデータを取得
 - **自動範囲設定**: エンティティ分布から最適な直方体（AABB）範囲を自動計算
-- **最小ボクセル数**: 指定された範囲を内包する最小限のボクセル数で効率的に処理
+- **適応的レンダリング**: 疎密バランスを考慮したボクセル選択戦略（density/coverage/hybrid）（v0.1.9）
+- **知的サイズ決定**: 占有率ベースの自動ボクセルサイズ計算による最適なパフォーマンス（v0.1.9）
+- **端末適応**: 端末能力に基づく自動レンダリング予算で一貫した体験（v0.1.9）
+- **スマート可視化**: 自動カメラ位置調整と視点最適化（v0.1.9）
 - **相対的色分け**: データ内の最小値・最大値に基づく動的色分け
-- **段階的開発**: v0.1.0では基本機能に集中し、将来的に拡張
+- **パフォーマンス最適化**: 適応的制限とマルチティア端末サポートによる効率的処理
+
+### バージョン履歴
+
+- **v0.1.6** - ハードニングとドキュメント: 枠線太さ制御の強化、重なり防止、Wiki自動化
+- **v0.1.6.1** - インセット枠線: 視覚的分離のための二重ボックスレンダリングシステム
+- **v0.1.7** - 適応的枠線: 動的枠線制御、複数レンダリングモード、透明度リゾルバー
+- **v0.1.8** - パフォーマンスと安定性: キャッシング最適化によるレンダリングパイプライン改善
+- **v0.1.9** - 適応的レンダリングとスマートビュー: 端末適応最適化、スマートビュー支援
 
 ### 対象ユーザー
 
@@ -370,8 +415,47 @@ declare module 'cesium-heatbox' {
     showEmptyVoxels?: boolean;
     minColor?: [number, number, number];
     maxColor?: [number, number, number];
-    maxRenderVoxels?: number;
+    maxRenderVoxels?: number | 'auto'; // v0.1.9: Auto Render Budget
     batchMode?: 'auto' | 'primitive' | 'entity';
+    // v0.1.4+ features
+    autoVoxelSize?: boolean;
+    debug?: boolean | { showBounds?: boolean };
+    colorMap?: 'custom' | 'viridis' | 'inferno';
+    diverging?: boolean;
+    divergingPivot?: number;
+    highlightTopN?: number | null;
+    highlightStyle?: { outlineWidth?: number; boostOpacity?: number };
+    // v0.1.6 outline enhancements
+    outlineWidth?: number;
+    outlineOpacity?: number;
+    outlineWidthResolver?: (params: {
+      voxel: { x: number; y: number; z: number; count: number };
+      isTopN: boolean;
+      normalizedDensity: number;
+    }) => number;
+    voxelGap?: number;
+    // v0.1.6.1 inset outlines
+    outlineInset?: number;
+    outlineInsetMode?: 'all' | 'topn';
+    // v0.1.7 adaptive outlines
+    outlineRenderMode?: 'standard' | 'inset' | 'emulation-only';
+    boxOpacityResolver?: (ctx: any) => number;
+    outlineOpacityResolver?: (ctx: any) => number;
+    outlineWidthPreset?: 'adaptive-density' | 'topn-focus' | 'uniform';
+    adaptiveOutlines?: boolean;
+    // v0.1.9 adaptive rendering features
+    autoVoxelSizeMode?: 'basic' | 'occupancy';
+    renderLimitStrategy?: 'density' | 'coverage' | 'hybrid';
+    minCoverageRatio?: number;
+    coverageBinsXY?: number | 'auto';
+    renderBudgetMode?: 'manual' | 'auto';
+    autoView?: boolean;
+    fitViewOptions?: {
+      paddingPercent?: number;
+      pitch?: number;
+      heading?: number;
+      altitudeStrategy?: 'auto' | 'manual';
+    };
   }
 
   export interface HeatboxStatistics {
@@ -383,6 +467,17 @@ declare module 'cesium-heatbox' {
     minCount: number;
     maxCount: number;
     averageCount: number;
+    // v0.1.4+ additions
+    autoAdjusted?: boolean;
+    originalVoxelSize?: number;
+    finalVoxelSize?: number;
+    adjustmentReason?: string;
+    // v0.1.9 adaptive rendering statistics
+    selectionStrategy?: string;
+    clippedNonEmpty?: number;
+    coverageRatio?: number;
+    renderBudgetTier?: 'low' | 'mid' | 'high';
+    autoMaxRenderVoxels?: number;
   }
 
   export default class Heatbox {
@@ -394,6 +489,13 @@ declare module 'cesium-heatbox' {
     destroy(): void;
     getStatistics(): HeatboxStatistics | null;
     getBounds(): object | null;
+    // v0.1.9: Smart view assistance
+    fitView(bounds?: object, options?: {
+      paddingPercent?: number;
+      pitch?: number;
+      heading?: number;
+      altitudeStrategy?: 'auto' | 'manual';
+    }): Promise<void>;
   }
 
   export function createHeatbox(viewer: any, options: HeatboxOptions): Heatbox;
@@ -919,10 +1021,10 @@ npm run benchmark
 #### CDN配布
 ```html
 <!-- jsDelivr CDN -->
-<script src="https://cdn.jsdelivr.net/npm/cesium-heatbox@0.1.0/dist/cesium-heatbox.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cesium-heatbox@latest/dist/cesium-heatbox.min.js"></script>
 
 <!-- unpkg CDN -->
-<script src="https://unpkg.com/cesium-heatbox@0.1.0/dist/cesium-heatbox.min.js"></script>
+<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.min.js"></script>
 ```
 
 ### クラス構造
@@ -937,6 +1039,7 @@ class Heatbox {
     destroy()
     getStatistics()
     getBounds()
+    fitView(bounds, options)  // v0.1.9: スマート視覚化支援
 }
 ```
 
@@ -1102,7 +1205,13 @@ const performanceLimits = {
     maxEmptyVoxelsRendered: 10000,  // 空ボクセル描画上限
     minVoxelSize: 5,               // 最小ボクセルサイズ（メートル）
     maxVoxelSize: 1000,            // 最大ボクセルサイズ（メートル）
-    warningThreshold: 30000        // 警告表示のボクセル数閾値
+    warningThreshold: 30000,       // 警告表示のボクセル数閾値
+    // v0.1.9 自動レンダリング予算の端末ティア
+    deviceTiers: {
+        low: { min: 8000, max: 12000 },    // 低性能端末
+        mid: { min: 20000, max: 35000 },   // 中性能端末
+        high: { min: 40000, max: 50000 }   // 高性能端末
+    }
 };
 ```
 
@@ -1434,6 +1543,14 @@ const scaleConstraints = {
 ---
 
 ## 将来的な拡張
+
+### v0.1.9 実装済み機能
+
+#### 適応的レンダリングとスマート可視化
+- **適応的レンダリング戦略**: density/coverage/hybridボクセル選択（✅ 実装済み）
+- **端末適応パフォーマンス**: 端末能力に基づく自動レンダリング予算（✅ 実装済み）
+- **スマート視覚化支援**: 自動カメラ位置調整とfitViewメソッド（✅ 実装済み）
+- **拡張自動ボクセルサイジング**: 占有率ベース計算と反復近似（✅ 実装済み）
 
 ### v0.2.0 計画機能
 
