@@ -1,7 +1,113 @@
 /**
  * Cesium Heatbox Playground - スタイルシート
- * スマホ対応レスポンシブデザイン + Liquid Glass UI
+ * スマホ対応レスポンシブデザイン + Liquid Glass UI + 統一ナビゲーション
  */
+
+/* === CSS Variables === */
+:root {
+  --hb-nav-height: 45px;
+  --hb-nav-offset: 55px;
+}
+
+/* === 統一ナビゲーションバー === */
+.hb-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--hb-nav-height);
+  z-index: 1000;
+  
+  /* Liquid Glass navigation styling */
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+}
+
+.hb-nav-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 100%;
+}
+
+.hb-nav-left {
+  display: flex;
+  align-items: center;
+}
+
+.hb-nav-logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.hb-nav-logo:hover {
+  color: #64b5f6;
+}
+
+.hb-nav-icon {
+  font-size: 1.5rem;
+  margin-right: 8px;
+}
+
+.hb-nav-title {
+  font-size: 1.1rem;
+}
+
+.hb-nav-center {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.hb-nav-link {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.hb-nav-link:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hb-nav-link.active {
+  color: #64b5f6;
+  background: rgba(100, 181, 246, 0.15);
+}
+
+.hb-nav-right {
+  display: flex;
+  align-items: center;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .hb-nav-center {
+    display: none;
+  }
+  
+  .hb-nav-title {
+    font-size: 1rem;
+  }
+  
+  .hb-nav-content {
+    padding: 0 15px;
+  }
+}
 
 /* === Liquid Glass Base === */
 .liquid-glass-element {
@@ -149,7 +255,7 @@ select, input, textarea {
 /* === デスクトップ向けツールバー === */
 #toolbar {
   position: absolute;
-  top: 10px;
+  top: var(--hb-nav-offset);
   left: 10px;
   /* Liquid Glass effect applied */
   background: rgba(0, 0, 0, 0.3);
@@ -163,7 +269,7 @@ select, input, textarea {
   color: white;
   z-index: 50; /* Cesium UIより低く設定 */
   max-width: 380px;
-  max-height: calc(100% - 80px); /* 下部余白を追加してタイムラインとの重複を避ける */
+  max-height: calc(100% - 80px - var(--hb-nav-height)); /* ナビゲーションとの重複を避ける */
   overflow-y: auto;
   transition: all 0.3s ease;
 }
@@ -193,7 +299,7 @@ select, input, textarea {
 #mobileMenuToggle {
   display: none;
   position: fixed;
-  top: calc(10px + env(safe-area-inset-top));
+  top: calc(var(--hb-nav-offset) + env(safe-area-inset-top));
   left: calc(10px + env(safe-area-inset-left));
   z-index: 500; /* モバイル用オーバーレイ(#toolbar.open)より上にして常に操作可能に */
   /* Liquid Glass mobile button style applied */
@@ -265,7 +371,7 @@ select, input, textarea {
 /* === 情報パネル === */
 #info {
   position: absolute;
-  top: 60px; /* 右上のCesium UIボタンを避けるため下に移動 */
+  top: calc(var(--hb-nav-offset) + 10px); /* ナビゲーションの下、右上のCesium UIボタンを避けるため */
   right: 10px;
   /* Liquid Glass effect applied */
   background: rgba(0, 0, 0, 0.3);
@@ -597,7 +703,7 @@ details.section[open] > summary::before {
   /* 情報パネルを中央上部に移動（タイムラインと被らないように） */
   #info {
     position: fixed;
-    top: calc(10px + env(safe-area-inset-top));
+    top: calc(var(--hb-nav-offset) + env(safe-area-inset-top));
     bottom: auto;
     right: calc(50% - 150px); /* 中央に配置 */
     left: auto;

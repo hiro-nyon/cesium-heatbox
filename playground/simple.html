@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0e1b22">
+  <title>Cesium Heatbox - Quick Start</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+  
+  <!-- CesiumJS CDN - Version 1.120 -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  
+  <!-- Playground styles -->
+  <link href="styles.css" rel="stylesheet">
+  
+  <!-- Cesium settings -->
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  
+  <style>
+    :root {
+      --hb-nav-height: 45px;
+      --hb-nav-offset: 55px;
+    }
+    
+    /* Simple interface specific styles */
+    .simple-interface {
+      position: absolute;
+      top: var(--hb-nav-offset);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      min-width: 320px;
+      max-width: 600px;
+      width: 90%;
+    }
+    
+    .workflow-container {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+      color: white;
+    }
+    
+    .workflow-title {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(45deg, #64b5f6, #42a5f5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .step {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: all 0.3s ease;
+    }
+    
+    .step:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .step-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .step-number {
+      background: linear-gradient(45deg, #42a5f5, #2196f3);
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 12px;
+      font-size: 0.9rem;
+    }
+    
+    .step-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    
+    .step-content {
+      margin-left: 44px;
+    }
+    
+    .control-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .control-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .control-row label {
+      flex: 1;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .control-row input,
+    .control-row select,
+    .control-row button {
+      flex: 1;
+      min-height: 36px;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+    
+    .control-row input:focus,
+    .control-row select:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(100, 181, 246, 0.5);
+      outline: none;
+    }
+    
+    .control-row button {
+      background: rgba(76, 175, 80, 0.25);
+      border-color: rgba(76, 175, 80, 0.5);
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    .control-row button:hover {
+      background: rgba(76, 175, 80, 0.35);
+      border-color: rgba(76, 175, 80, 0.7);
+      transform: translateY(-1px);
+    }
+    
+    .control-row button:disabled {
+      background: rgba(128, 128, 128, 0.2);
+      border-color: rgba(128, 128, 128, 0.3);
+      color: rgba(255, 255, 255, 0.5);
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .primary-button {
+      background: linear-gradient(45deg, #4CAF50, #45a049) !important;
+      border: none !important;
+      color: white !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
+      box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3) !important;
+    }
+    
+    .primary-button:hover {
+      background: linear-gradient(45deg, #45a049, #3d8b40) !important;
+      box-shadow: 0 6px 24px rgba(76, 175, 80, 0.4) !important;
+      transform: translateY(-2px) !important;
+    }
+    
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .checkbox-row input[type="checkbox"] {
+      flex: none;
+      width: 18px;
+      height: 18px;
+      margin: 0;
+    }
+    
+    .status-display {
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.4;
+    }
+    
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+      .simple-interface {
+        top: calc(var(--hb-nav-offset) + 10px);
+        width: calc(100% - 20px);
+        max-width: none;
+      }
+      
+      .workflow-container {
+        padding: 16px;
+      }
+      
+      .workflow-title {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+      }
+      
+      .step {
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+      
+      .control-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      
+      .control-row label {
+        margin-bottom: 4px;
+      }
+      
+      .step-content {
+        margin-left: 0;
+      }
+      
+      .step-header {
+        justify-content: center;
+        margin-bottom: 16px;
+      }
+    }
+    
+    /* Hide default file input styling */
+    input[type="file"] {
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: 1px dashed rgba(255, 255, 255, 0.3) !important;
+      padding: 12px !important;
+      text-align: center !important;
+      border-radius: 8px !important;
+      cursor: pointer !important;
+    }
+    
+    input[type="file"]:hover {
+      background: rgba(255, 255, 255, 0.15) !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- 統一されたナビゲーションバー -->
+  <nav class="hb-nav">
+    <div class="hb-nav-content">
+      <div class="hb-nav-left">
+        <a href="../" class="hb-nav-logo">
+          <span class="hb-nav-icon">🌍</span>
+          <span class="hb-nav-title">Cesium Heatbox</span>
+        </a>
+      </div>
+      
+      <div class="hb-nav-center">
+        <a href="./simple.html" class="hb-nav-link active">Quick Start</a>
+        <a href="./" class="hb-nav-link">Full Playground</a>
+      </div>
+      
+      <div class="hb-nav-right">
+        <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank">
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Cesium container -->
+  <div id="cesiumContainer"></div>
+
+  <!-- Simple workflow interface -->
+  <div class="simple-interface">
+    <div class="workflow-container">
+      <h1 class="workflow-title">🚀 Quick Start Workflow</h1>
+      
+      <!-- Step 1: Load Data -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <h2 class="step-title">Load Data</h2>
+        </div>
+        <div class="step-content">
+          <div class="control-row">
+            <input type="file" id="fileInput" accept=".json,.geojson,.czml" />
+          </div>
+          <div class="control-row">
+            <button id="loadSampleData">Load Sample Data</button>
+            <button id="generateTestData">Generate Test Data</button>
+          </div>
+          <div class="status-display" id="dataStatus">
+            Ready to load data. Choose a file or use sample data to get started.
+          </div>
+        </div>
+      </div>
+      
+      <!-- Step 2: Customize -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <h2 class="step-title">Customize</h2>
+        </div>
+        <div class="step-content">
+          <div class="control-row">
+            <label>Grid Size:</label>
+            <input type="range" id="gridSize" min="10" max="100" value="20" />
+            <span id="gridSizeValue">20</span>
+          </div>
+          <div class="control-row">
+            <label>Color Scheme:</label>
+            <select id="colorScheme">
+              <option value="viridis">Viridis (Scientific)</option>
+              <option value="heat">Heat (Blue to Red)</option>
+              <option value="cool">Cool (Blue to Magenta)</option>
+            </select>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="heightBased" />
+            <label for="heightBased">Height-based visualization</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="autoCamera" checked />
+            <label for="autoCamera">Auto-adjust camera view</label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Step 3: Generate -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <h2 class="step-title">Generate</h2>
+        </div>
+        <div class="step-content">
+          <div class="control-row">
+            <button id="createHeatmap" class="primary-button" disabled>Create Heatmap</button>
+            <button id="clearHeatmap" disabled>Clear</button>
+          </div>
+          <div class="status-display" id="heatmapStatus">
+            Load data first to enable heatmap generation.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatbox library -->
+  <script src="../dist/cesium-heatbox.umd.min.js?v=0.1.9"></script>
+  <script src="simple-app.js"></script>
+</body>
+</html>

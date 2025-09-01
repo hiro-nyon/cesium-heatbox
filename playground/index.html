@@ -23,8 +23,38 @@
       Cesium.Ion.defaultAccessToken = null; // 明示的にIonを無効化
     }
   </script>
+  
+  <style>
+    :root {
+      --hb-nav-height: 45px;
+      --hb-nav-offset: 55px;
+    }
+  </style>
 </head>
 <body>
+  <!-- 統一されたナビゲーションバー -->
+  <nav class="hb-nav">
+    <div class="hb-nav-content">
+      <div class="hb-nav-left">
+        <a href="../" class="hb-nav-logo">
+          <span class="hb-nav-icon">🌍</span>
+          <span class="hb-nav-title">Cesium Heatbox</span>
+        </a>
+      </div>
+      
+      <div class="hb-nav-center">
+        <a href="../playground/simple.html" class="hb-nav-link">Quick Start</a>
+        <a href="../playground/" class="hb-nav-link active">Full Playground</a>
+      </div>
+      
+      <div class="hb-nav-right">
+        <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank">
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
   <div id="cesiumContainer"></div>
   
   <!-- モバイル向けハンバーガーメニューボタン -->
