@@ -9,7 +9,8 @@ let currentData = null;
 document.addEventListener('DOMContentLoaded', function() {
   initializeCesium();
   setupEventListeners();
-  // setupMobileMenu(); // QS does not use #toolbar
+  // Quick Start mobile: toggle #toolbar (Playground bottom-sheet styles)
+  setupQuickStartMobileMenu();
   initializeEnvironmentInfo();
   // setupAutoVoxelSizeToggle(); // QS enforces auto voxel size
 });
@@ -120,6 +121,20 @@ function setupEventListeners() {
   }
   
   // Mobile menu handled by setupMobileMenu()
+}
+
+// Quick Start mobile bottom-sheet toggle (reuse Playground toolbar styles)
+function setupQuickStartMobileMenu() {
+  try {
+    const toggle = document.getElementById('mobileMenuToggle');
+    const panel = document.getElementById('toolbar');
+    if (!toggle || !panel) return;
+    const close = () => panel.classList.remove('open');
+    const flip = () => panel.classList.toggle('open');
+    toggle.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); flip(); });
+    document.addEventListener('click', (e) => { if (!panel.contains(e.target) && !toggle.contains(e.target)) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  } catch (_) {}
 }
 
 // Re-render heatmap with updated emulation/opacity settings
