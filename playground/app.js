@@ -3057,9 +3057,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // CesiumHeatboxの読み込み確認
   if (typeof CesiumHeatbox === 'undefined') {
     console.error('CesiumHeatbox が読み込まれていません');
-    console.error('ファイルパス確認: ../cesium-heatbox/dist/cesium-heatbox.umd.min.js');
+    console.error('ファイルパス確認: ../dist/cesium-heatbox.umd.min.js');
     document.getElementById('loading').style.display = 'block';
-    document.getElementById('loading').innerHTML = '<p>❌ CesiumHeatbox が読み込まれていません</p><p>ライブラリファイルの場所を確認してください</p><p>期待するパス: ../cesium-heatbox/dist/cesium-heatbox.umd.min.js</p>';
+    document.getElementById('loading').innerHTML = '<p>❌ CesiumHeatbox が読み込まれていません</p><p>ライブラリファイルの場所を確認してください</p><p>期待するパス: ../dist/cesium-heatbox.umd.min.js</p>';
     return;
   }
   

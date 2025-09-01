@@ -1,0 +1,77 @@
+# ---- OS / Editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.history/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ---- Logs & Reports ----
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+report.*.json
+
+# ---- Runtime / PID ----
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ---- Dependency directories ----
+node_modules/
+jspm_packages/
+web_modules/
+
+# ---- Build outputs ----
+# Default: ignore build outputs
+dist/*
+build/
+out/
+.cache/
+.parcel-cache/
+.rollup.cache/
+.rpt2_cache/
+.tsbuildinfo
+*.tsbuildinfo
+
+# Track the Heatbox UMD bundle for static hosting (e.g., GitHub Pages)
+!dist/cesium-heatbox.umd.min.js
+!dist/cesium-heatbox.umd.min.js.map
+
+# If you intentionally commit other built artifacts, add explicit exceptions above.
+
+# ---- Test coverage / results ----
+coverage/
+.nyc_output/
+*.lcov
+
+# ---- Tooling caches ----
+.eslintcache
+.stylelintcache
+.npm/
+.yarn-integrity
+.turbo/
+
+# ---- Env files ----
+.env
+.env.*
+!.env.example
+.env.local
+.env.*.local
+
+# ---- Package publishing ----
+*.tgz
+
+# ---- Misc ----
+.vercel/
+.netlify/
+tmp/
+temp/
