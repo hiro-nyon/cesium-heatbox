@@ -47,10 +47,11 @@ function initializeViewer() {
       requestRenderMode: true,
       maximumRenderTimeChange: Infinity,
       
-      // Terrain and imagery
-      terrainProvider: Cesium.createWorldTerrain(),
-      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
+      // Terrain and imagery (no Ion dependency)
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+      imageryProvider: new Cesium.UrlTemplateImageryProvider({
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        subdomains: ['a','b','c','d'],
         credit: '© CartoDB © OpenStreetMap contributors'
       })
     });
@@ -61,7 +62,7 @@ function initializeViewer() {
     viewer.scene.moon.show = false;
     viewer.scene.sun.show = false;
     
-    console.log('✅ Cesium viewer initialized');
+    console.log('Cesium viewer initialized');
     updateEnvironmentInfo();
     
   } catch (error) {
@@ -155,7 +156,7 @@ function updateDataInfo(data) {
     dataCount.textContent = data.features.length;
   }
   
-  console.log(`✅ Data loaded: ${data.features.length} features`);
+  console.log(`Data loaded: ${data.features.length} features`);
 }
 
 // Convert GeoJSON to Cesium entities
@@ -202,7 +203,7 @@ function createHeatmap() {
     // Initialize heatbox if needed
     if (!heatbox && window.CesiumHeatbox) {
       heatbox = new window.CesiumHeatbox.default(viewer);
-      console.log('✅ Heatbox initialized');
+      console.log('Heatbox initialized');
     }
     
     if (!heatbox) {
@@ -235,7 +236,7 @@ function createHeatmap() {
     // Create new heatmap
     heatbox.setData(entities);
     
-    console.log('✅ Heatmap created successfully');
+    console.log('Heatmap created successfully');
     
   } catch (error) {
     console.error('Error creating heatmap:', error);
@@ -246,7 +247,7 @@ function createHeatmap() {
 function clearHeatmap() {
   if (heatbox) {
     heatbox.clear();
-    console.log('✅ Heatmap cleared');
+    console.log('Heatmap cleared');
   }
 }
 
@@ -254,7 +255,7 @@ function clearHeatmap() {
 function toggleVisibility() {
   if (heatbox) {
     heatbox.toggleVisibility();
-    console.log('✅ Heatmap visibility toggled');
+    console.log('Heatmap visibility toggled');
   }
 }
 
@@ -269,26 +270,26 @@ function updateGridSizeDisplay() {
 
 // Test heatbox functionality
 function testHeatbox() {
-  console.log('🧪 Testing Heatbox functionality...');
+  console.log('Testing Heatbox functionality...');
   
   if (typeof window.CesiumHeatbox === 'undefined') {
-    console.error('❌ CesiumHeatbox library not loaded');
+    console.error('CesiumHeatbox library not loaded');
     return;
   }
   
   if (!viewer) {
-    console.error('❌ Cesium viewer not initialized');
+    console.error('Cesium viewer not initialized');
     return;
   }
   
-  console.log('✅ Heatbox library loaded');
-  console.log('✅ Cesium viewer ready');
-  console.log('✅ Test passed');
+  console.log('Heatbox library loaded');
+  console.log('Cesium viewer ready');
+  console.log('Test passed');
 }
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Initializing Cesium Heatbox Playground');
+  console.log('Initializing Cesium Heatbox Playground');
   
   // Initialize Cesium viewer
   initializeViewer();
@@ -356,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateGridSizeDisplay(); // Initial update
   }
   
-  console.log('✅ Event listeners set up');
+  console.log('Event listeners set up');
 });
 
 // Error handling
@@ -364,4 +365,4 @@ window.addEventListener('error', function(event) {
   console.error('Global error:', event.error);
 });
 
-console.log('📦 Cesium Heatbox Tabbed App loaded');
+console.log('Cesium Heatbox Tabbed App loaded');

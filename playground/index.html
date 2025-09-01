@@ -7,8 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0e1b22">
   <title>Cesium Heatbox Playground</title>
-  <!-- Favicon を追加してエラーを防ぐ -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+  <!-- Favicon intentionally omitted to avoid emoji usage -->
   <!-- CesiumJS CDN - バージョン 1.120 -->
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
@@ -37,21 +36,20 @@
     <div class="hb-nav-content">
       <div class="hb-nav-left">
         <a href="../" class="hb-nav-logo">
-          <span class="hb-nav-icon">🌍</span>
           <span class="hb-nav-title">Cesium Heatbox</span>
         </a>
       </div>
       
       <div class="hb-nav-center">
-        <a href="../" class="hb-nav-link">🏠 Home</a>
-        <a href="./simple.html" class="hb-nav-link">🚀 Quick Start</a>
-        <a href="./" class="hb-nav-link active">🔬 Playground</a>
-        <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" class="hb-nav-link" target="_blank">📚 Docs</a>
+        <a href="../" class="hb-nav-link">Home</a>
+        <a href="./simple.html" class="hb-nav-link">Quick Start</a>
+        <a href="./" class="hb-nav-link active">Playground</a>
+        <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" class="hb-nav-link" target="_blank">Docs</a>
       </div>
       
       <div class="hb-nav-right">
         <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank">
-          <span>⭐ GitHub</span>
+          <span>GitHub</span>
         </a>
       </div>
     </div>
@@ -60,11 +58,11 @@
   <div id="cesiumContainer"></div>
   
   <!-- モバイル向けハンバーガーメニューボタン -->
-  <button id="mobileMenuToggle" aria-label="メニューを開く">☰</button>
+  <button id="mobileMenuToggle" class="liquid-glass-hamburger" aria-label="メニューを開く">☰</button>
   
-  <div id="toolbar">
+  <div id="toolbar" class="liquid-glass-dark">
     <div class="section">
-      <h3 id="i18n-title">🎛️ Cesium Heatbox Playground</h3>
+      <h3 id="i18n-title">Cesium Heatbox Playground</h3>
       <p style="font-size: 11px; margin: 5px 0;" data-i18n="subtitle">v0.1.9 新機能対応版</p>
       <div class="control-group">
         <label id="i18n-lang-label" for="langSelect">言語</label>
@@ -76,7 +74,7 @@
     </div>
     
     <details class="section" open>
-      <summary id="i18n-sum-data">📁 データ読み込み</summary>
+      <summary id="i18n-sum-data">データ読み込み</summary>
       <div class="section-content">
         <input type="file" id="fileInput" accept=".json,.geojson,.czml" />
         <button id="loadSampleData" data-i18n="btn_load_sample">サンプルデータを読み込み</button>
@@ -85,7 +83,7 @@
     </details>
     
     <details class="section" open>
-      <summary id="i18n-sum-display">🔧 表示設定</summary>
+      <summary id="i18n-sum-display">表示設定</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_baseMap">背景地図:</label>
@@ -141,7 +139,7 @@
     </details>
 
     <details class="section">
-      <summary id="i18n-sum-color">🎨 色設定</summary>
+      <summary id="i18n-sum-color">色設定</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_colorMap">カラーマップ:</label>
@@ -173,7 +171,7 @@
     </details>
 
     <details class="section">
-      <summary id="i18n-sum-outline">✏️ 枠線・見た目</summary>
+      <summary id="i18n-sum-outline">枠線・見た目</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_outlineRenderMode">描画モード:</label>
@@ -318,7 +316,7 @@
     </details>
 
     <details class="section">
-      <summary id="i18n-sum-highlight">⭐ 強調表示</summary>
+      <summary id="i18n-sum-highlight">強調表示</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_highlightTopN">TopN強調表示:</label>
@@ -333,7 +331,7 @@
     </details>
 
     <details class="section">
-      <summary id="i18n-sum-advanced">🛠️ 詳細設定</summary>
+      <summary id="i18n-sum-advanced">詳細設定</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>
@@ -352,7 +350,7 @@
     </details>
     
     <div class="section">
-      <h3 id="i18n-ops-title">🎮 操作</h3>
+      <h3 id="i18n-ops-title">操作</h3>
       <button id="createHeatmap" data-i18n="btn_create">ヒートマップ作成</button>
       <button id="clearHeatmap" data-i18n="btn_clear">クリア</button>
       <button id="toggleVisibility" data-i18n="btn_toggle">表示/非表示</button>
@@ -360,9 +358,9 @@
     </div>
   </div>
   
-  <div id="info">
+  <div id="info" class="liquid-glass-dark">
     <div class="section">
-      <h3 id="i18n-stats-title">📊 統計情報</h3>
+      <h3 id="i18n-stats-title">統計情報</h3>
       <div id="statistics">
         <p><span id="i18n-label-dataCount">データ点数:</span> <span id="dataCount">0</span></p>
         <p><span id="i18n-label-voxelCount">ボクセル数:</span> <span id="voxelCount">0</span></p>
@@ -384,7 +382,7 @@
     </div>
     
     <div class="section">
-      <h3 id="i18n-env-title">🔍 環境情報</h3>
+      <h3 id="i18n-env-title">環境情報</h3>
       <div id="environmentInfo">
         <p><span id="i18n-label-cesium">Cesium:</span> <span id="cesiumVersion">-</span></p>
         <p><span id="i18n-label-heatbox">Heatbox:</span> <span id="heatboxVersion">-</span></p>
@@ -393,7 +391,7 @@
     </div>
 
     <div class="section">
-      <h3 id="i18n-or-title">🧪 Outline Resolver 統計</h3>
+      <h3 id="i18n-or-title">Outline Resolver 統計</h3>
       <div id="outlineStats" style="font-size: 12px;">
         <p><span id="i18n-label-or-calls">呼び出し回数:</span> <span id="or_calls">0</span></p>
         <p><span id="i18n-label-or-avg">平均太さ:</span> <span id="or_avg">-</span> px</p>
@@ -410,6 +408,6 @@
   
   <!-- Heatbox ライブラリ -->
   <script src="../dist/cesium-heatbox.umd.min.js"></script>
-  <script src="app-tabbed.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

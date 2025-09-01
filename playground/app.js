@@ -62,6 +62,7 @@ class HeatboxPlayground {
       const g = typeof window !== 'undefined' ? window : globalThis;
       if (!g) return null;
       if (typeof g.CesiumHeatbox === 'function') return g.CesiumHeatbox;
+      if (g.CesiumHeatbox && typeof g.CesiumHeatbox.default === 'function') return g.CesiumHeatbox.default;
       if (g.CesiumHeatbox && typeof g.CesiumHeatbox.Heatbox === 'function') return g.CesiumHeatbox.Heatbox;
       if (typeof g.Heatbox === 'function') return g.Heatbox;
     } catch (_) {}
@@ -484,21 +485,21 @@ class HeatboxPlayground {
   _getTranslations() {
     return {
       ja: {
-        title_main: '🎛️ Cesium Heatbox Playground',
+        title_main: 'Cesium Heatbox Playground',
         subtitle: 'v0.1.7 対応・UI整理版',
-        sum_data: '📁 データ読み込み',
-        sum_display: '🔧 表示設定',
-        sum_color: '🎨 色設定',
-        sum_outline: '✏️ 枠線・見た目',
-        sum_adaptive: '⚙️ 適応表示',
-        sum_highlight: '⭐ 強調表示',
-        sum_advanced: '🛠️ 詳細設定',
-        ops_title: '🎮 操作',
+        sum_data: 'データ読み込み',
+        sum_display: '表示設定',
+        sum_color: '色設定',
+        sum_outline: '枠線・見た目',
+        sum_adaptive: '適応表示',
+        sum_highlight: '強調表示',
+        sum_advanced: '詳細設定',
+        ops_title: '操作',
         btn_create: 'ヒートマップ作成',
         btn_clear: 'クリア',
         btn_toggle: '表示/非表示',
         btn_export: 'データ出力',
-        stats_title: '📊 統計情報',
+        stats_title: '統計情報',
         label_dataCount: 'データ点数:',
         label_voxelCount: 'ボクセル数:',
         label_emptyVoxel: '空ボクセル:',
@@ -507,11 +508,11 @@ class HeatboxPlayground {
         label_avg: '平均値:',
         autosize_adjusted: '自動調整:',
         autosize_size: 'サイズ:',
-        env_title: '🔍 環境情報',
+        env_title: '環境情報',
         label_cesium: 'Cesium:',
         label_heatbox: 'Heatbox:',
         label_webgl: 'WebGL:',
-        or_title: '🧪 Outline Resolver 統計',
+        or_title: 'Outline Resolver 統計',
         or_calls: '呼び出し回数:',
         or_avg: '平均太さ:',
         or_minmax: '太さ min/max:',
@@ -590,21 +591,21 @@ class HeatboxPlayground {
         loading: '処理中...'
       },
       en: {
-        title_main: '🎛️ Cesium Heatbox Playground',
+        title_main: 'Cesium Heatbox Playground',
         subtitle: 'v0.1.7 compatible • UI tidy-up',
-        sum_data: '📁 Data',
-        sum_display: '🔧 Display',
-        sum_color: '🎨 Colors',
-        sum_outline: '✏️ Outlines & Look',
-        sum_adaptive: '⚙️ Adaptive',
-        sum_highlight: '⭐ Highlight',
-        sum_advanced: '🛠️ Advanced',
-        ops_title: '🎮 Actions',
+        sum_data: 'Data',
+        sum_display: 'Display',
+        sum_color: 'Colors',
+        sum_outline: 'Outlines & Look',
+        sum_adaptive: 'Adaptive',
+        sum_highlight: 'Highlight',
+        sum_advanced: 'Advanced',
+        ops_title: 'Actions',
         btn_create: 'Create Heatmap',
         btn_clear: 'Clear',
         btn_toggle: 'Show/Hide',
         btn_export: 'Export Data',
-        stats_title: '📊 Statistics',
+        stats_title: 'Statistics',
         label_dataCount: 'Points:',
         label_voxelCount: 'Voxels:',
         label_emptyVoxel: 'Empty voxels:',
@@ -613,11 +614,11 @@ class HeatboxPlayground {
         label_avg: 'Avg:',
         autosize_adjusted: 'Auto-adjust:',
         autosize_size: 'Size:',
-        env_title: '🔍 Environment',
+        env_title: 'Environment',
         label_cesium: 'Cesium:',
         label_heatbox: 'Heatbox:',
         label_webgl: 'WebGL:',
-        or_title: '🧪 Outline Resolver Stats',
+        or_title: 'Outline Resolver Stats',
         or_calls: 'Calls:',
         or_avg: 'Average width:',
         or_minmax: 'Width min/max:',
@@ -1366,9 +1367,8 @@ class HeatboxPlayground {
           position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
           point: {
             pixelSize: 5,
-            color: Cesium.Color.YELLOW,
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 1
+            color: Cesium.Color.fromCssColorString('#1976D2').withAlpha(0.85),
+            outlineWidth: 0
           },
           properties: {
             weight: Math.random() * 100,
@@ -1427,22 +1427,13 @@ class HeatboxPlayground {
         const alt = bounds.minAlt + (bounds.maxAlt - bounds.minAlt) * Math.random();
         const category = ['residential', 'commercial', 'industrial', 'park'][Math.floor(Math.random() * 4)];
         
-        // カテゴリ別の色
-        const colors = {
-          residential: Cesium.Color.BLUE,
-          commercial: Cesium.Color.RED,
-          industrial: Cesium.Color.ORANGE,
-          park: Cesium.Color.GREEN
-        };
-        
         this.viewer.entities.add({
           id: `test-${i}`,
           position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
           point: {
-            pixelSize: 4,
-            color: colors[category],
-            outlineColor: Cesium.Color.WHITE,
-            outlineWidth: 1
+            pixelSize: 5,
+            color: Cesium.Color.fromCssColorString('#1976D2').withAlpha(0.85),
+            outlineWidth: 0
           },
           properties: {
             weight: Math.random() * 100,
@@ -1549,10 +1540,21 @@ class HeatboxPlayground {
         });
         console.log('有効なエンティティ数:', validEntities.length);
         
-        // 統計情報を出力するため、非同期メソッドを使用
-        console.log('createFromEntitiesメソッドを使用');
-        await this.heatbox.createFromEntities(validEntities);
-        console.log('createFromEntities完了');
+        // Heatbox APIの互換呼び出し
+        if (typeof this.heatbox.createFromEntities === 'function') {
+          console.log('createFromEntitiesメソッドを使用');
+          await this.heatbox.createFromEntities(validEntities);
+          console.log('createFromEntities完了');
+        } else if (typeof this.heatbox.setData === 'function') {
+          console.log('setDataメソッドを使用');
+          this.heatbox.setData(validEntities);
+          if (typeof this.heatbox.update === 'function') {
+            this.heatbox.update();
+          }
+          console.log('setData完了');
+        } else {
+          throw new Error('Heatboxのデータ設定メソッドが見つかりません');
+        }
         
         // 統計情報の取得
         const stats = this.heatbox.getStatistics();

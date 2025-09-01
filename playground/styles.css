@@ -113,19 +113,19 @@
   }
   
   .hb-nav-right .hb-nav-link:after {
-    content: '⭐';
+    content: '';
   }
 }
 
 /* === Liquid Glass Base === */
 .liquid-glass-element {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px) saturate(180%);
-  -webkit-backdrop-filter: blur(10px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: all 0.25s ease;
 }
 
 .liquid-glass-element:hover {
@@ -137,11 +137,11 @@
 
 /* Dark variant for better contrast */
 .liquid-glass-dark {
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(15px) saturate(150%);
-  -webkit-backdrop-filter: blur(15px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px) saturate(115%);
+  -webkit-backdrop-filter: blur(6px) saturate(115%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .liquid-glass-dark:hover {
@@ -152,18 +152,18 @@
 
 /* Subtle glass buttons - Light Theme */
 .liquid-glass-button {
-  background: rgba(76, 175, 80, 0.25);
-  backdrop-filter: blur(15px) saturate(150%) brightness(1.1);
-  -webkit-backdrop-filter: blur(15px) saturate(150%) brightness(1.1);
-  border: 1px solid rgba(76, 175, 80, 0.6);
+  background: rgba(76, 175, 80, 0.20);
+  backdrop-filter: blur(6px) saturate(120%) brightness(1.02);
+  -webkit-backdrop-filter: blur(6px) saturate(120%) brightness(1.02);
+  border: 1px solid rgba(76, 175, 80, 0.5);
   border-radius: 18px;
   color: rgba(0, 0, 0, 0.8);
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
-  box-shadow: 
-    0 4px 16px rgba(76, 175, 80, 0.15),
-    0 2px 8px rgba(0, 0, 0, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 2px 10px rgba(76, 175, 80, 0.12),
+    0 1px 6px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .liquid-glass-button:hover {
@@ -192,9 +192,9 @@
 
 /* Form elements with glass effect - Light Theme */
 .liquid-glass-input {
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(15px) saturate(140%) brightness(1.1);
-  -webkit-backdrop-filter: blur(15px) saturate(140%) brightness(1.1);
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px) saturate(115%) brightness(1.02);
+  -webkit-backdrop-filter: blur(6px) saturate(115%) brightness(1.02);
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 15px;
   color: rgba(0, 0, 0, 0.8);
@@ -218,11 +218,11 @@
 /* Glass hamburger menu button */
 .liquid-glass-hamburger {
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .liquid-glass-hamburger:hover {
@@ -267,10 +267,10 @@ select, input, textarea {
   left: 10px;
   /* Liquid Glass effect applied */
   background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(15px) saturate(150%);
-  -webkit-backdrop-filter: blur(15px) saturate(150%);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   
   padding: 15px;
   border-radius: 20px;
@@ -309,7 +309,7 @@ select, input, textarea {
   position: fixed;
   top: calc(var(--hb-nav-offset) + env(safe-area-inset-top));
   left: calc(10px + env(safe-area-inset-left));
-  z-index: 500; /* モバイル用オーバーレイ(#toolbar.open)より上にして常に操作可能に */
+  z-index: 1200; /* ナビゲーション(1000)より上にして常に操作可能に */
   /* Liquid Glass mobile button style applied */
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(15px) saturate(150%);
@@ -337,8 +337,8 @@ select, input, textarea {
 #toolbar button {
   /* Liquid Glass button style applied */
   background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(12px) saturate(160%);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(4px) saturate(120%);
+  -webkit-backdrop-filter: blur(4px) saturate(120%);
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   
@@ -383,10 +383,10 @@ select, input, textarea {
   right: 10px;
   /* Liquid Glass effect applied */
   background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(15px) saturate(150%);
-  -webkit-backdrop-filter: blur(15px) saturate(150%);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   
   padding: 15px;
   border-radius: 20px;
@@ -449,8 +449,8 @@ select, input, textarea {
 #fileInput {
   /* Liquid Glass input style applied */
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px) saturate(140%);
-  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  backdrop-filter: blur(4px) saturate(110%);
+  -webkit-backdrop-filter: blur(4px) saturate(110%);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 15px;
   color: white;
@@ -507,12 +507,12 @@ select, input, textarea {
 /* div/.section と details.section を両対応 */
 .section {
   /* Liquid Glass section style applied */
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(6px) saturate(110%);
+  -webkit-backdrop-filter: blur(6px) saturate(110%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 18px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   
   margin: 10px 0;
   padding: 15px;
@@ -603,10 +603,11 @@ details.section[open] > summary::before {
   #mobileMenuToggle {
     display: block;
     /* ボトムシートと重ならないよう左上に配置 */
-    top: calc(10px + env(safe-area-inset-top));
+    top: calc(var(--hb-nav-offset) + 10px + env(safe-area-inset-top));
     bottom: auto;
     left: calc(10px + env(safe-area-inset-left));
     right: auto;
+    z-index: 1200; /* ナビゲーションの上で確実にタップ可能に */
   }
   
   /* ツールバーをボトムシートに調整 */
@@ -619,17 +620,17 @@ details.section[open] > summary::before {
     max-width: 100%;
     height: min(55vh, calc(100% - 120px)); /* 画面の約半分を覆う */
     max-height: 80vh;
-    z-index: 300; /* タイムラインより高く設定（200より高く） */
+    z-index: 1100; /* ナビより下、ハンバーガーより下、Cesium UIより上 */
     /* ボトムシート用 Liquid Glass */
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(15px) saturate(150%);
-    -webkit-backdrop-filter: blur(15px) saturate(150%);
-    border: none;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px) saturate(120%) brightness(1.02);
+    -webkit-backdrop-filter: blur(8px) saturate(120%) brightness(1.02);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     
     /* セーフエリア考慮（ノッチ等） */
     padding-top: calc(16px + env(safe-area-inset-top));
@@ -718,12 +719,14 @@ details.section[open] > summary::before {
     max-width: 300px;
     max-height: 60vh;
     font-size: 11px;
-    z-index: 70; /* タイムラインより高く設定 */
+    z-index: 1100; /* ナビやCesium UIより前面にしてタップ可能に */
     /* Enhanced mobile info panel glass */
     background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(8px) saturate(120%) brightness(1.02);
+    -webkit-backdrop-filter: blur(8px) saturate(120%) brightness(1.02);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
