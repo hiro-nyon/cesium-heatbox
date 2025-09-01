@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0e1b22">
+  <title>Cesium Heatbox - Quick Start</title>
+  
+  <!-- Favicon intentionally omitted to avoid emoji usage -->
+  
+  <!-- CesiumJS CDN - Version 1.120 -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  
+  <!-- Playground styles -->
+  <link href="styles.css" rel="stylesheet">
+  
+  <!-- Cesium settings -->
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  
+  <style>
+    :root {
+      --hb-nav-height: 45px;
+      --hb-nav-offset: 55px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 統一されたナビゲーションバー -->
+  <nav class="hb-nav">
+    <div class="hb-nav-content">
+      <div class="hb-nav-left">
+        <a href="../" class="hb-nav-logo">
+          <span class="hb-nav-title">Cesium Heatbox</span>
+        </a>
+      </div>
+      
+      <div class="hb-nav-center">
+        <a href="../" class="hb-nav-link">Home</a>
+        <a href="./simple.html" class="hb-nav-link active">Quick Start</a>
+        <a href="./" class="hb-nav-link">Playground</a>
+        <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" class="hb-nav-link" target="_blank">Docs</a>
+      </div>
+      
+      <div class="hb-nav-right">
+        <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank"><span>GitHub</span></a>
+        <button id="navDropdownToggle" class="liquid-glass-hamburger" aria-label="Open navigation">
+          <span id="navDropdownLabel">Quick Start</span>
+          <span style="margin-left: 4px;">▾</span>
+        </button>
+        <div id="navDropdownMenu" class="hb-dropdown liquid-glass-dark">
+          <a href="../">Home</a>
+          <a href="./simple.html">Quick Start</a>
+          <a href="./">Playground</a>
+          <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" target="_blank">Docs</a>
+          <a href="https://github.com/hiro-nyon/cesium-heatbox" target="_blank">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Cesium container -->
+  <div id="cesiumContainer"></div>
+  
+  <!-- モバイル向けハンバーガーメニューボタン -->
+  <button id="mobileMenuToggle" class="liquid-glass-hamburger" aria-label="メニューを開く">☰</button>
+  
+  <div id="toolbar" class="liquid-glass-dark">
+    <div class="section">
+      <h3>Quick Start</h3>
+      <p style="font-size: 11px; margin: 5px 0;">Load data and generate a heatmap in two clicks</p>
+    </div>
+    
+    <details class="section" open>
+      <summary>Step 1: Load Data</summary>
+      <div class="section-content">
+        <input type="file" id="fileInput" accept=".json,.geojson,.czml" />
+        <button id="loadSampleData">Load Sample Data</button>
+        <button id="generateTestData">Generate Test Data</button>
+        <div id="dataStatus" style="font-size: 10px; color: #aaa; margin-top: 5px;">
+          Ready to load data. Choose a file or use sample data to get started.
+        </div>
+      </div>
+    </details>
+    
+    <details class="section" open>
+      <summary>Step 2: Configure</summary>
+      <div class="controls section-content">
+        <!-- Quick Start keeps imagery fixed to Carto Light; auto voxel sizing enforced -->
+        <!-- Height-based visualization is not supported in QS; removed for clarity -->
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="autoCamera" checked />
+            <span>Auto-adjust camera view</span>
+          </label>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="wireframeOnly" />
+            <span>Wireframe</span>
+          </label>
+        </div>
+      </div>
+    </details>
+    
+    <details class="section" open>
+      <summary>Step 3: Generate</summary>
+      <div class="controls section-content">
+        <button id="createHeatmap" disabled>Create Heatmap</button>
+        <button id="clearHeatmap" disabled>Clear Heatmap</button>
+        <button id="toggleVisibility" disabled>Toggle Visibility</button>
+        <div id="heatmapStatus" style="font-size: 10px; color: #aaa; margin-top: 5px;">
+          Load data first to enable heatmap generation.
+        </div>
+        <!-- Inline statistics on the left UI -->
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1);">
+          <h4 style="margin:6px 0; font-size:12px; color:#e0e0e0;">Statistics</h4>
+          <div id="statistics" style="font-size:12px; color:#b0bec5;">
+            <p><span>Data Points:</span> <span id="dataCount">0</span></p>
+            <p><span>Voxel Count:</span> <span id="voxelCount">0</span></p>
+            <p><span>Max Value:</span> <span id="maxValue">-</span></p>
+            <p><span>Min Value:</span> <span id="minValue">-</span></p>
+            <div id="autoSizeInfo" style="font-size: 10px; color: #aaa; margin-top: 5px; display: none;">
+              <p><span>Auto Adjusted:</span> <span id="autoAdjusted">-</span></p>
+              <p><span>Final Size:</span> <span id="sizeInfo">-</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+  
+
+  <!-- Heatbox library -->
+  <script src="../dist/cesium-heatbox.umd.min.js"></script>
+  <script src="simple-app.js"></script>
+  <script>
+    // Mobile nav dropdown
+    (function(){
+      var toggle = document.getElementById('navDropdownToggle');
+      var menu = document.getElementById('navDropdownMenu');
+      var labelEl = document.getElementById('navDropdownLabel');
+      if (!toggle || !menu) return;
+      
+      function currentLabel(){
+        var p = location.pathname;
+        if (/\/playground\/simple\.html$/.test(p)) return 'Quick Start';
+        if (/\/playground\/(index\.html)?$/.test(p) || /\/playground\/$/.test(p)) return 'Playground';
+        if (/(^|\/)index\.html$/.test(p) || /\/$/.test(p)) return 'Home';
+        return 'Menu';
+      }
+      
+      function updateButton(open){
+        var caret = open ? '▴' : '▾';
+        var currentText = currentLabel();
+        
+        // ボタンの内容を完全に置き換え
+        toggle.innerHTML = '';
+        
+        // ラベル要素を作成
+        var label = document.createElement('span');
+        label.id = 'navDropdownLabel';
+        label.textContent = currentText;
+        label.style.flex = '1';
+        label.style.textAlign = 'left';
+        label.style.overflow = 'hidden';
+        label.style.textOverflow = 'ellipsis';
+        label.style.color = '#ffffff';
+        label.style.fontSize = 'inherit';
+        label.style.fontWeight = 'inherit';
+        
+        // キャレット要素を作成
+        var caretSpan = document.createElement('span');
+        caretSpan.textContent = caret;
+        caretSpan.style.marginLeft = '4px';
+        caretSpan.style.color = '#ffffff';
+        
+        // ボタンに追加
+        toggle.appendChild(label);
+        toggle.appendChild(caretSpan);
+        
+        labelEl = label;
+      }
+      
+      // 初期化
+      updateButton(false);
+      
+      toggle.addEventListener('click', function(e){ 
+        e.stopPropagation(); 
+        var open = !menu.classList.contains('open'); 
+        menu.classList.toggle('open'); 
+        updateButton(open); 
+      });
+      
+      document.addEventListener('click', function(e){ 
+        if (!menu.contains(e.target) && !toggle.contains(e.target)) { 
+          menu.classList.remove('open'); 
+          updateButton(false); 
+        } 
+      });
+      
+      document.addEventListener('keydown', function(e){ 
+        if (e.key === 'Escape') { 
+          menu.classList.remove('open'); 
+          updateButton(false); 
+        } 
+      });
+    })();
+  </script>
+</body>
+</html>

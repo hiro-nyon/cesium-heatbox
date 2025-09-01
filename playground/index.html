@@ -7,8 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0e1b22">
   <title>Cesium Heatbox Playground</title>
-  <!-- Favicon を追加してエラーを防ぐ -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+  <!-- Favicon intentionally omitted to avoid emoji usage -->
   <!-- CesiumJS CDN - バージョン 1.120 -->
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
@@ -23,17 +22,151 @@
       Cesium.Ion.defaultAccessToken = null; // 明示的にIonを無効化
     }
   </script>
+  
+  <style>
+    :root {
+      --hb-nav-height: 45px;
+      --hb-nav-offset: 55px;
+    }
+  </style>
 </head>
 <body>
+  <!-- 統一されたナビゲーションバー -->
+  <nav class="hb-nav">
+    <div class="hb-nav-content">
+      <div class="hb-nav-left">
+        <a href="../" class="hb-nav-logo">
+          <span class="hb-nav-title">Cesium Heatbox</span>
+        </a>
+      </div>
+      
+      <div class="hb-nav-center">
+        <a href="../" class="hb-nav-link">Home</a>
+        <a href="./simple.html" class="hb-nav-link">Quick Start</a>
+        <a href="./" class="hb-nav-link active">Playground</a>
+        <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" class="hb-nav-link" target="_blank">Docs</a>
+      </div>
+      
+      <div class="hb-nav-right">
+        <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank"><span>GitHub</span></a>
+        <button id="navDropdownToggle" class="liquid-glass-hamburger" aria-label="Open navigation">
+          <span id="navDropdownLabel">Playground</span>
+          <span style="margin-left: 4px;">▾</span>
+        </button>
+        <div id="navDropdownMenu" class="hb-dropdown liquid-glass-dark">
+          <a href="../">Home</a>
+          <a href="./simple.html">Quick Start</a>
+          <a href="./">Playground</a>
+          <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" target="_blank">Docs</a>
+          <a href="https://github.com/hiro-nyon/cesium-heatbox" target="_blank">GitHub</a>
+          <div class="nav-dropdown-divider"></div>
+          <div class="nav-dropdown-stats">
+            <div class="nav-stats-header" id="navStatsTitle" data-i18n="nav_stats_title">統計情報</div>
+            <!-- Quick summary (4 items) -->
+            <div class="nav-stats-grid">
+              <div class="nav-stat-item">
+                <span class="nav-stat-label" id="navLabelDataCount" data-i18n="nav_label_dataCount">データ点数:</span>
+                <span class="nav-stat-value" id="navDataCount">0</span>
+              </div>
+              <div class="nav-stat-item">
+                <span class="nav-stat-label" id="navLabelVoxelCount" data-i18n="nav_label_voxelCount">ボクセル数:</span>
+                <span class="nav-stat-value" id="navVoxelCount">0</span>
+              </div>
+              <div class="nav-stat-item">
+                <span class="nav-stat-label" id="navLabelMaxValue" data-i18n="nav_label_maxValue">最大値:</span>
+                <span class="nav-stat-value" id="navMaxValue">-</span>
+              </div>
+              <div class="nav-stat-item">
+                <span class="nav-stat-label" id="navLabelMinValue" data-i18n="nav_label_minValue">最小値:</span>
+                <span class="nav-stat-value" id="navMinValue">-</span>
+              </div>
+            </div>
+            <!-- Structured stats (mobile/tablet) -->
+            <div class="nav-extended-stats">
+              <!-- 詳細統計 -->
+              <div class="nav-ext-section" id="navDetailStats" style="font-size:11px;">
+                <div class="nav-ext-subheader" data-i18n="detail_title">詳細統計</div>
+                <div class="nav-ext-row"><span data-i18n="label_emptyVoxel">空ボクセル:</span> <strong id="navEmptyVoxelCount">-</strong></div>
+                <div class="nav-ext-row"><span data-i18n="label_avg">平均値:</span> <strong id="navAvgValue">-</strong></div>
+              </div>
+              <!-- 自動サイズ -->
+              <div class="nav-ext-section" style="margin-top:10px; font-size:11px;">
+                <div class="nav-ext-subheader" data-i18n="autosize_title">自動サイズ</div>
+                <div class="nav-ext-rows" id="navAutoSizeInfo" style="display:none; opacity:0.9;">
+                  <div class="nav-ext-row"><span data-i18n="autosize_adjusted">自動調整:</span> <strong id="navAutoAdjusted">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="autosize_size">ボクセルサイズ:</span> <strong id="navSizeInfo">-</strong></div>
+                </div>
+              </div>
+              <!-- レンダリング情報 -->
+              <div class="nav-ext-section" style="margin-top:10px; font-size:11px;">
+                <div class="nav-ext-subheader" data-i18n="render_title">レンダリング情報</div>
+                <div class="nav-ext-rows" id="navV019Stats" style="display:none; opacity:0.9;">
+                  <div class="nav-ext-row"><span data-i18n="nav_strategy">選択戦略:</span> <strong id="navSelectionStrategy">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="nav_rendered">描画ボクセル:</span> <strong id="navRenderedVoxels">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="nav_tier">デバイスティア:</span> <strong id="navDeviceTier">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="nav_coverage">カバレッジ(%):</span> <strong id="navCoverageRatio">-</strong>%</div>
+                </div>
+              </div>
+              <!-- 環境情報 -->
+              <div class="nav-ext-section" id="navEnvInfo" style="margin-top:10px;">
+                <div class="nav-ext-subheader" data-i18n="env_title">環境情報</div>
+                <div class="nav-env-grid">
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="label_cesium">Cesium:</span>
+                    <span class="nav-stat-value" id="navCesiumVersion">-</span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="label_heatbox">Heatbox:</span>
+                    <span class="nav-stat-value" id="navHeatboxVersion">-</span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="label_webgl">WebGL:</span>
+                    <span class="nav-stat-value" id="navWebglSupport">-</span>
+                  </div>
+                </div>
+              </div>
+              <!-- アウトライン統計 -->
+              <div class="nav-ext-section" id="navOutlineStats" style="margin-top:10px;">
+                <div class="nav-ext-subheader" data-i18n="or_title">Outline Resolver 統計</div>
+                <div class="nav-outline-grid">
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="or_calls">呼び出し:</span>
+                    <span class="nav-stat-value" id="navOrCalls">0</span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="or_avg">平均太さ:</span>
+                    <span class="nav-stat-value" id="navOrAvg">-</span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="or_minmax">太さ範囲:</span>
+                    <span class="nav-stat-value nav-stat-range"><span id="navOrMin">-</span>/<span id="navOrMax">-</span></span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="or_dminmax">密度範囲:</span>
+                    <span class="nav-stat-value nav-stat-range"><span id="navOrDMin">-</span>/<span id="navOrDMax">-</span></span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="or_topn">TopN対象:</span>
+                    <span class="nav-stat-value" id="navOrTopN">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
   <div id="cesiumContainer"></div>
   
   <!-- モバイル向けハンバーガーメニューボタン -->
-  <button id="mobileMenuToggle" aria-label="メニューを開く">☰</button>
+  <button id="mobileMenuToggle" class="liquid-glass-hamburger" aria-label="メニューを開く">☰</button>
   
-  <div id="toolbar">
+  <div id="toolbar" class="liquid-glass-dark">
     <div class="section">
-      <h3 id="i18n-title">🎛️ Cesium Heatbox Playground</h3>
-      <p style="font-size: 11px; margin: 5px 0;" data-i18n="subtitle">v0.1.9 新機能対応版</p>
+      <h3 id="i18n-title">Cesium Heatbox Playground</h3>
+      <p style="font-size: 11px; margin: 5px 0;" data-i18n="subtitle">Advanced controls</p>
       <div class="control-group">
         <label id="i18n-lang-label" for="langSelect">言語</label>
         <select id="langSelect">
@@ -44,7 +177,7 @@
     </div>
     
     <details class="section" open>
-      <summary id="i18n-sum-data">📁 データ読み込み</summary>
+      <summary id="i18n-sum-data">データ読み込み</summary>
       <div class="section-content">
         <input type="file" id="fileInput" accept=".json,.geojson,.czml" />
         <button id="loadSampleData" data-i18n="btn_load_sample">サンプルデータを読み込み</button>
@@ -52,8 +185,9 @@
       </div>
     </details>
     
+    <!-- Base Map -->
     <details class="section" open>
-      <summary id="i18n-sum-display">🔧 表示設定</summary>
+      <summary id="i18n-sum-basemap">Base Map</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_baseMap">背景地図:</label>
@@ -64,6 +198,13 @@
             <option value="osm-humanitarian">OSM Humanitarian</option>
           </select>
         </div>
+      </div>
+    </details>
+
+    <!-- Voxel Sizing & Rendering -->
+    <details class="section" open>
+      <summary id="i18n-sum-voxel">Voxel Sizing & Rendering</summary>
+      <div class="controls section-content">
         <div class="control-group">
           <label>
             <input type="checkbox" id="autoVoxelSize" />
@@ -109,7 +250,7 @@
     </details>
 
     <details class="section">
-      <summary id="i18n-sum-color">🎨 色設定</summary>
+      <summary id="i18n-sum-color">色設定</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_colorMap">カラーマップ:</label>
@@ -141,7 +282,7 @@
     </details>
 
     <details class="section">
-      <summary id="i18n-sum-outline">✏️ 枠線・見た目</summary>
+      <summary id="i18n-sum-outline">枠線・見た目</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_outlineRenderMode">描画モード:</label>
@@ -209,7 +350,7 @@
     </details>
 
     <details class="section">
-      <summary id="i18n-sum-adaptive">⚙️ 適応表示（v0.1.9新機能）</summary>
+      <summary id="i18n-sum-adaptive">適応表示</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_maxRenderVoxels">最大レンダーボクセル数:</label>
@@ -229,28 +370,13 @@
             <option value="hybrid" selected data-i18n="opt_strategy_hybrid">Hybrid（バランス）</option>
           </select>
         </div>
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="autoView" />
-            <span data-i18n="chk_autoView">自動カメラ位置調整</span>
-          </label>
-        </div>
-        <div class="control-group" id="fitViewGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_fitViewHeading">カメラ方向（度）:</label>
-          <input type="range" id="fitViewHeading" min="0" max="360" step="15" value="0" disabled />
-          <span id="fitViewHeadingValue">0</span>
-        </div>
-        <div class="control-group" id="fitViewPitchGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_fitViewPitch">カメラ角度（度）:</label>
-          <input type="range" id="fitViewPitch" min="-90" max="0" step="5" value="-45" disabled />
-          <span id="fitViewPitchValue">-45</span>
-        </div>
-        <button id="manualFitView" data-i18n="btn_fitView">手動カメラフィット</button>
+        <!-- moved to View section -->
+        <!-- moved to View section -->
       </div>
     </details>
 
     <details class="section">
-      <summary id="i18n-sum-legacy-adaptive">⚙️ 適応表示（レガシー）</summary>
+      <summary id="i18n-sum-legacy-adaptive">Adaptive (Legacy)</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>
@@ -285,8 +411,32 @@
       </div>
     </details>
 
+    <!-- View -->
     <details class="section">
-      <summary id="i18n-sum-highlight">⭐ 強調表示</summary>
+      <summary id="i18n-sum-view">View</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="autoView" />
+            <span data-i18n="chk_autoView">自動カメラ位置調整</span>
+          </label>
+        </div>
+        <div class="control-group" id="fitViewGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_fitViewHeading">カメラ方向（度）:</label>
+          <input type="range" id="fitViewHeading" min="0" max="360" step="15" value="0" disabled />
+          <span id="fitViewHeadingValue">0</span>
+        </div>
+        <div class="control-group" id="fitViewPitchGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_fitViewPitch">カメラ角度（度）:</label>
+          <input type="range" id="fitViewPitch" min="-90" max="0" step="5" value="-45" disabled />
+          <span id="fitViewPitchValue">-45</span>
+        </div>
+        <button id="manualFitView" data-i18n="btn_fitView">手動カメラフィット</button>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary id="i18n-sum-highlight">強調表示</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_highlightTopN">TopN強調表示:</label>
@@ -301,7 +451,7 @@
     </details>
 
     <details class="section">
-      <summary id="i18n-sum-advanced">🛠️ 詳細設定</summary>
+      <summary id="i18n-sum-advanced">詳細設定</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>
@@ -315,12 +465,12 @@
             <span data-i18n="chk_showBounds">境界ボックス表示</span>
           </label>
         </div>
-        <button id="testHeatbox" style="background-color: orange;" data-i18n="btn_testHeatbox">Heatboxテスト</button>
+        <button id="testHeatbox" data-i18n="btn_testHeatbox">Heatboxテスト</button>
       </div>
     </details>
     
     <div class="section">
-      <h3 id="i18n-ops-title">🎮 操作</h3>
+      <h3 id="i18n-ops-title">操作</h3>
       <button id="createHeatmap" data-i18n="btn_create">ヒートマップ作成</button>
       <button id="clearHeatmap" data-i18n="btn_clear">クリア</button>
       <button id="toggleVisibility" data-i18n="btn_toggle">表示/非表示</button>
@@ -328,9 +478,9 @@
     </div>
   </div>
   
-  <div id="info">
+  <div id="info" class="liquid-glass-dark">
     <div class="section">
-      <h3 id="i18n-stats-title">📊 統計情報</h3>
+      <h3 id="i18n-stats-title">統計情報</h3>
       <div id="statistics">
         <p><span id="i18n-label-dataCount">データ点数:</span> <span id="dataCount">0</span></p>
         <p><span id="i18n-label-voxelCount">ボクセル数:</span> <span id="voxelCount">0</span></p>
@@ -342,7 +492,7 @@
           <p><span id="i18n-autosize-adjusted">自動調整:</span> <span id="autoAdjusted">-</span></p>
           <p><span id="i18n-autosize-size">サイズ:</span> <span id="sizeInfo">-</span></p>
         </div>
-        <div id="v019Stats" style="font-size: 10px; color: #4CAF50; margin-top: 5px; display: none;">
+        <div id="v019Stats" style="font-size: 10px; color: #90a4ae; margin-top: 5px; display: none;">
           <p><span id="i18n-v019-strategy">戦略:</span> <span id="selectionStrategy">-</span></p>
           <p><span id="i18n-v019-rendered">レンダー数:</span> <span id="renderedVoxels">-</span></p>
           <p><span id="i18n-v019-tier">デバイス:</span> <span id="deviceTier">-</span></p>
@@ -352,7 +502,7 @@
     </div>
     
     <div class="section">
-      <h3 id="i18n-env-title">🔍 環境情報</h3>
+      <h3 id="i18n-env-title">環境情報</h3>
       <div id="environmentInfo">
         <p><span id="i18n-label-cesium">Cesium:</span> <span id="cesiumVersion">-</span></p>
         <p><span id="i18n-label-heatbox">Heatbox:</span> <span id="heatboxVersion">-</span></p>
@@ -361,7 +511,7 @@
     </div>
 
     <div class="section">
-      <h3 id="i18n-or-title">🧪 Outline Resolver 統計</h3>
+      <h3 id="i18n-or-title">Outline Resolver 統計</h3>
       <div id="outlineStats" style="font-size: 12px;">
         <p><span id="i18n-label-or-calls">呼び出し回数:</span> <span id="or_calls">0</span></p>
         <p><span id="i18n-label-or-avg">平均太さ:</span> <span id="or_avg">-</span> px</p>
@@ -377,7 +527,80 @@
   </div>
   
   <!-- Heatbox ライブラリ -->
-  <script src="../dist/cesium-heatbox.umd.min.js?v=0.1.9"></script>
+  <script src="../dist/cesium-heatbox.umd.min.js"></script>
   <script src="app.js"></script>
+  <script>
+    // Mobile nav dropdown
+    (function(){
+      var toggle = document.getElementById('navDropdownToggle');
+      var menu = document.getElementById('navDropdownMenu');
+      var labelEl = document.getElementById('navDropdownLabel');
+      if (!toggle || !menu) return;
+      
+      function currentLabel(){
+        var p = location.pathname;
+        if (/\/playground\/(index\.html)?$/.test(p) || /\/playground\/$/.test(p)) return 'Playground';
+        if (/\/playground\/simple\.html$/.test(p)) return 'Quick Start';
+        if (/(^|\/)index\.html$/.test(p) || /\/$/.test(p)) return 'Home';
+        return 'Menu';
+      }
+      
+      function updateButton(open){
+        var caret = open ? '▴' : '▾';
+        var currentText = currentLabel();
+        
+        // ボタンの内容を完全に置き換え
+        toggle.innerHTML = '';
+        
+        // ラベル要素を作成
+        var label = document.createElement('span');
+        label.id = 'navDropdownLabel';
+        label.textContent = currentText;
+        label.style.flex = '1';
+        label.style.textAlign = 'left';
+        label.style.overflow = 'hidden';
+        label.style.textOverflow = 'ellipsis';
+        label.style.color = '#ffffff';
+        label.style.fontSize = 'inherit';
+        label.style.fontWeight = 'inherit';
+        
+        // キャレット要素を作成
+        var caretSpan = document.createElement('span');
+        caretSpan.textContent = caret;
+        caretSpan.style.marginLeft = '4px';
+        caretSpan.style.color = '#ffffff';
+        
+        // ボタンに追加
+        toggle.appendChild(label);
+        toggle.appendChild(caretSpan);
+        
+        labelEl = label;
+      }
+      
+      // 初期化
+      updateButton(false);
+      
+      toggle.addEventListener('click', function(e){ 
+        e.stopPropagation(); 
+        var open = !menu.classList.contains('open'); 
+        menu.classList.toggle('open'); 
+        updateButton(open); 
+      });
+      
+      document.addEventListener('click', function(e){ 
+        if (!menu.contains(e.target) && !toggle.contains(e.target)) { 
+          menu.classList.remove('open'); 
+          updateButton(false); 
+        } 
+      });
+      
+      document.addEventListener('keydown', function(e){ 
+        if (e.key === 'Escape') { 
+          menu.classList.remove('open'); 
+          updateButton(false); 
+        } 
+      });
+    })();
+  </script>
 </body>
 </html>
