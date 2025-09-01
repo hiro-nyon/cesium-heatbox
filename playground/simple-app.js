@@ -473,7 +473,6 @@ async function createHeatmap() {
     updateStatus('Creating heatmap...', 'loading');
 
     // Quick Start: fixed auto settings
-    const heightBased = document.getElementById('heightBased').checked;
     const autoCamera = document.getElementById('autoCamera').checked;
 
     const options = {
@@ -485,7 +484,6 @@ async function createHeatmap() {
       maxRenderVoxels: 'auto',
       renderLimitStrategy: 'hybrid',
       colorMap: 'viridis',
-      heightBased: heightBased,
       opacity: 0.7,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
@@ -670,10 +668,10 @@ function updateStatus(message, type = 'info') {
 // Get status color based on type
 function getStatusColor(type) {
   switch (type) {
-    case 'success': return '#4caf50';
-    case 'error': return '#f44336';
-    case 'warning': return '#ff9800';
-    case 'loading': return '#2196f3';
-    default: return '#aaa';
+    case 'success': return '#64b5f6';
+    case 'error': return '#ef5350';
+    case 'warning': return '#ffa726';
+    case 'loading': return '#90caf9';
+    default: return '#b0bec5';
   }
 }
