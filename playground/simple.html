@@ -92,6 +92,12 @@
             <span>Auto-adjust camera view</span>
           </label>
         </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="wireframeOnly" />
+            <span>Wireframe</span>
+          </label>
+        </div>
       </div>
     </details>
     
@@ -104,34 +110,24 @@
         <div id="heatmapStatus" style="font-size: 10px; color: #aaa; margin-top: 5px;">
           Load data first to enable heatmap generation.
         </div>
+        <!-- Inline statistics on the left UI -->
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1);">
+          <h4 style="margin:6px 0; font-size:12px; color:#e0e0e0;">Statistics</h4>
+          <div id="statistics" style="font-size:12px; color:#b0bec5;">
+            <p><span>Data Points:</span> <span id="dataCount">0</span></p>
+            <p><span>Voxel Count:</span> <span id="voxelCount">0</span></p>
+            <p><span>Max Value:</span> <span id="maxValue">-</span></p>
+            <p><span>Min Value:</span> <span id="minValue">-</span></p>
+            <div id="autoSizeInfo" style="font-size: 10px; color: #aaa; margin-top: 5px; display: none;">
+              <p><span>Auto Adjusted:</span> <span id="autoAdjusted">-</span></p>
+              <p><span>Final Size:</span> <span id="sizeInfo">-</span></p>
+            </div>
+          </div>
+        </div>
       </div>
     </details>
   </div>
   
-  <div id="info" class="liquid-glass-dark">
-    <div class="section">
-      <h3>Statistics</h3>
-      <div id="statistics">
-        <p><span>Data Points:</span> <span id="dataCount">0</span></p>
-        <p><span>Voxel Count:</span> <span id="voxelCount">0</span></p>
-        <p><span>Max Value:</span> <span id="maxValue">-</span></p>
-        <p><span>Min Value:</span> <span id="minValue">-</span></p>
-        <div id="autoSizeInfo" style="font-size: 10px; color: #aaa; margin-top: 5px; display: none;">
-          <p><span>Auto Adjusted:</span> <span id="autoAdjusted">-</span></p>
-          <p><span>Final Size:</span> <span id="sizeInfo">-</span></p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="section">
-      <h3>Environment</h3>
-      <div id="environmentInfo">
-        <p><span>Cesium:</span> <span id="cesiumVersion">-</span></p>
-        <p><span>Heatbox:</span> <span id="heatboxVersion">-</span></p>
-        <p><span>WebGL:</span> <span id="webglSupport">-</span></p>
-      </div>
-    </div>
-  </div>
 
   <!-- Heatbox library -->
   <script src="../dist/cesium-heatbox.umd.min.js"></script>

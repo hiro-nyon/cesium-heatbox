@@ -9,9 +9,9 @@ let currentData = null;
 document.addEventListener('DOMContentLoaded', function() {
   initializeCesium();
   setupEventListeners();
-  setupMobileMenu();
+  // setupMobileMenu(); // QS does not use #toolbar
   initializeEnvironmentInfo();
-  setupAutoVoxelSizeToggle();
+  // setupAutoVoxelSizeToggle(); // QS enforces auto voxel size
 });
 
 // Initialize Cesium viewer
@@ -106,6 +106,10 @@ function setupEventListeners() {
   document.getElementById('clearHeatmap').addEventListener('click', clearHeatmap);
   document.getElementById('toggleVisibility').addEventListener('click', toggleVisibility);
   
+  // Live updates for wireframe
+  const wireframeCb = document.getElementById('wireframeOnly');
+  if (wireframeCb) wireframeCb.addEventListener('change', reRenderHeatmap);
+  
   // Quick Start: no manual grid in UI; guard if remnants exist
   const gridSizeSlider = document.getElementById('gridSize');
   const gridSizeValue = document.getElementById('gridSizeValue');
@@ -116,6 +120,36 @@ function setupEventListeners() {
   }
   
   // Mobile menu handled by setupMobileMenu()
+}
+
+// Re-render heatmap with updated emulation/opacity settings
+function reRenderHeatmap() {
+  if (!heatboxInstance || !currentEntities || currentEntities.length === 0) return;
+  try {
+    const wireframe = document.getElementById('wireframeOnly')?.checked || false;
+    Object.assign(heatboxInstance.options, {
+      showOutline: wireframe ? true : false,
+      opacity: wireframe ? 0.0 : 1.0,
+      boxOpacityResolver: !wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        return 0.05 + nd * 0.95; // 0.05–1.0
+      }) : (() => 0),
+      outlineEmulation: wireframe ? 'all' : 'off',
+      outlineInset: wireframe ? 2.0 : 0,
+      outlineInsetMode: 'all',
+      // Wireframe: solid outline (no density-based opacity), thicker width
+      ...(wireframe ? { outlineOpacity: 1.0, outlineOpacityResolver: undefined, outlineWidth: 10, outlineWidthResolver: undefined } : {})
+    });
+    if (typeof heatboxInstance.createFromEntities === 'function') {
+      heatboxInstance.createFromEntities(currentEntities);
+    } else {
+      heatboxInstance.setData(currentEntities);
+      if (typeof heatboxInstance.update === 'function') heatboxInstance.update();
+    }
+  } catch (e) {
+    console.error('Re-render failed:', e);
+  }
 }
 
 // Setup mobile hamburger to toggle bottom-sheet toolbar
@@ -475,25 +509,48 @@ async function createHeatmap() {
     // Quick Start: fixed auto settings
     const autoCamera = document.getElementById('autoCamera').checked;
 
+    const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     const options = {
       autoVoxelSize: true,
-      autoVoxelSizeMode: 'simple',
+      autoVoxelSizeMode: 'basic',
       voxelSize: undefined,
       maxVoxelSize: 10,
       targetCells: 3000,
       maxRenderVoxels: 'auto',
-      renderLimitStrategy: 'hybrid',
+      renderLimitStrategy: 'density',
       colorMap: 'viridis',
-      opacity: 0.7,
+      // Global opacity lets resolver drive contrast more clearly
+      opacity: wireframe ? 0.0 : 1.0,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
-      wireframeOnly: false,
+      showOutline: wireframe ? true : false,
+      // Default: density-driven fill shading
+      boxOpacityResolver: !wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5); // stronger gamma for contrast
+        return 0.05 + nd * 0.95; // 0.05–1.0 by density (stronger)
+      }) : (() => 0),
+      // Wireframe emulation (outlines only)
+      outlineEmulation: wireframe ? 'all' : 'off',
+      outlineInset: wireframe ? 2.0 : 0,
+      outlineInsetMode: 'all',
+      outlineOpacityResolver: wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        return 0.05 + nd * 0.95; // match box density mapping (0.05–1.0)
+      }) : undefined,
+      outlineWidthResolver: wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        return 6 + Math.round(nd * 6); // 6–12 px (thicker)
+      }) : undefined,
       autoView: autoCamera
     };
     
-    // Clear existing heatmap
+    // Clear existing heatmap and apply new options when reusing instance
     if (heatboxInstance) {
       heatboxInstance.clear();
+      try { Object.assign(heatboxInstance.options, options); } catch (_) {}
     }
     
     // Initialize heatbox if needed
@@ -506,7 +563,8 @@ async function createHeatmap() {
       if (!HB) throw new Error('Heatbox constructor not found');
       heatboxInstance = new HB(viewer, options);
       // Update heatbox version info
-      document.getElementById('heatboxVersion').textContent = 'Loaded';
+      const hv = document.getElementById('heatboxVersion');
+      if (hv) hv.textContent = 'Loaded';
     }
     
     // Create heatmap from Cesium Entities
@@ -539,6 +597,8 @@ function clearHeatmap() {
   try {
     if (heatboxInstance) {
       heatboxInstance.clear();
+      // Fully reset instance so next create uses fresh options
+      heatboxInstance = null;
       updateStatus('Heatmap cleared', 'success');
       
       // Update statistics
@@ -593,7 +653,7 @@ function updateStatisticsWithHeatmap(options) {
     if (autoVoxelSize) {
       // Show auto size information
       document.getElementById('autoSizeInfo').style.display = 'block';
-      document.getElementById('autoAdjusted').textContent = options.autoVoxelSizeMode || 'simple';
+      document.getElementById('autoAdjusted').textContent = options.autoVoxelSizeMode || 'basic';
       
       // Estimate based on data density
       const dataCount = currentEntities.length;
