@@ -82,8 +82,9 @@
       </div>
     </details>
     
+    <!-- Base Map -->
     <details class="section" open>
-      <summary id="i18n-sum-display">表示設定</summary>
+      <summary id="i18n-sum-basemap">Base Map</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_baseMap">背景地図:</label>
@@ -94,6 +95,13 @@
             <option value="osm-humanitarian">OSM Humanitarian</option>
           </select>
         </div>
+      </div>
+    </details>
+
+    <!-- Voxel Sizing & Rendering -->
+    <details class="section" open>
+      <summary id="i18n-sum-voxel">Voxel Sizing & Rendering</summary>
+      <div class="controls section-content">
         <div class="control-group">
           <label>
             <input type="checkbox" id="autoVoxelSize" />
@@ -259,23 +267,8 @@
             <option value="hybrid" selected data-i18n="opt_strategy_hybrid">Hybrid（バランス）</option>
           </select>
         </div>
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="autoView" />
-            <span data-i18n="chk_autoView">自動カメラ位置調整</span>
-          </label>
-        </div>
-        <div class="control-group" id="fitViewGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_fitViewHeading">カメラ方向（度）:</label>
-          <input type="range" id="fitViewHeading" min="0" max="360" step="15" value="0" disabled />
-          <span id="fitViewHeadingValue">0</span>
-        </div>
-        <div class="control-group" id="fitViewPitchGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_fitViewPitch">カメラ角度（度）:</label>
-          <input type="range" id="fitViewPitch" min="-90" max="0" step="5" value="-45" disabled />
-          <span id="fitViewPitchValue">-45</span>
-        </div>
-        <button id="manualFitView" data-i18n="btn_fitView">手動カメラフィット</button>
+        <!-- moved to View section -->
+        <!-- moved to View section -->
       </div>
     </details>
 
@@ -312,6 +305,30 @@
             <option value="topn" data-i18n="opt_opacity_topn">TopNベース</option>
           </select>
         </div>
+      </div>
+    </details>
+
+    <!-- View -->
+    <details class="section">
+      <summary id="i18n-sum-view">View</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="autoView" />
+            <span data-i18n="chk_autoView">自動カメラ位置調整</span>
+          </label>
+        </div>
+        <div class="control-group" id="fitViewGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_fitViewHeading">カメラ方向（度）:</label>
+          <input type="range" id="fitViewHeading" min="0" max="360" step="15" value="0" disabled />
+          <span id="fitViewHeadingValue">0</span>
+        </div>
+        <div class="control-group" id="fitViewPitchGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_fitViewPitch">カメラ角度（度）:</label>
+          <input type="range" id="fitViewPitch" min="-90" max="0" step="5" value="-45" disabled />
+          <span id="fitViewPitchValue">-45</span>
+        </div>
+        <button id="manualFitView" data-i18n="btn_fitView">手動カメラフィット</button>
       </div>
     </details>
 
