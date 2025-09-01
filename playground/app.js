@@ -2838,6 +2838,19 @@ class HeatboxPlayground {
     if (stats.adjustmentReason) {
       console.log('自動調整理由:', stats.adjustmentReason);
     }
+    // Update compact nav stats if present
+    try {
+      const nav = document.getElementById('navStatsText');
+      if (nav) {
+        if (stats.renderedVoxels !== undefined && stats.totalVoxels !== undefined) {
+          nav.textContent = `Voxels: ${stats.renderedVoxels}/${stats.totalVoxels}`;
+        } else if (stats.renderedVoxels !== undefined) {
+          nav.textContent = `Voxels: ${stats.renderedVoxels}`;
+        } else {
+          nav.textContent = `Voxels: ${document.getElementById('voxelCount')?.textContent || '-'}`;
+        }
+      }
+    } catch (_) {}
   }
   
   /**
@@ -2851,6 +2864,8 @@ class HeatboxPlayground {
     document.getElementById('avgValue').textContent = '-';
     // 自動調整情報も隠す
     document.getElementById('autoSizeInfo').style.display = 'none';
+    const nav = document.getElementById('navStatsText');
+    if (nav) nav.textContent = 'Voxels: -';
   }
   
   /**

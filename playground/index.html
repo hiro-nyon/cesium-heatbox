@@ -39,6 +39,7 @@
           <span class="hb-nav-title">Cesium Heatbox</span>
         </a>
       </div>
+      <div class="hb-nav-mobile-title" id="hbCurrentTitle">Playground</div>
       
       <div class="hb-nav-center">
         <a href="../" class="hb-nav-link">Home</a>
@@ -48,9 +49,18 @@
       </div>
       
       <div class="hb-nav-right">
-        <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank">
-          <span>GitHub</span>
-        </a>
+        <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank"><span>GitHub</span></a>
+        <div id="navStats" class="hb-nav-stats liquid-glass-dark" aria-label="Statistics">
+          <span id="navStatsText">Voxels: -</span>
+        </div>
+        <button id="navDropdownToggle" class="liquid-glass-hamburger" aria-label="Open navigation"><span id="navDropdownLabel">Playground</span> ▾</button>
+        <div id="navDropdownMenu" class="hb-dropdown liquid-glass-dark">
+          <a href="../">Home</a>
+          <a href="./simple.html">Quick Start</a>
+          <a href="./">Playground</a>
+          <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" target="_blank">Docs</a>
+          <a href="https://github.com/hiro-nyon/cesium-heatbox" target="_blank">GitHub</a>
+        </div>
       </div>
     </div>
   </nav>
@@ -426,5 +436,35 @@
   <!-- Heatbox ライブラリ -->
   <script src="../dist/cesium-heatbox.umd.min.js"></script>
   <script src="app.js"></script>
+  <script>
+    // Mobile nav dropdown
+    (function(){
+      var toggle = document.getElementById('navDropdownToggle');
+      var menu = document.getElementById('navDropdownMenu');
+      var labelEl = document.getElementById('navDropdownLabel');
+      var mobileTitle = document.getElementById('hbCurrentTitle');
+      if (!toggle || !menu) return;
+      function currentLabel(){
+        var p = location.pathname;
+        if (/\/playground\/(index\.html)?$/.test(p) || /\/playground\/$/.test(p)) return 'Playground';
+        if (/\/playground\/simple\.html$/.test(p)) return 'Quick Start';
+        if (/(^|\/)index\.html$/.test(p) || /\/$/.test(p)) return 'Home';
+        return 'Menu';
+      }
+      function setCaret(open){
+        var caret = open ? '▴' : '▾';
+        // Replace only the caret, keep label
+        toggle.innerHTML = '<span id="navDropdownLabel">' + (labelEl?.textContent || currentLabel()) + '</span> ' + caret;
+        labelEl = document.getElementById('navDropdownLabel');
+      }
+      // Initialize label
+      var lbl = currentLabel();
+      if (labelEl) labelEl.textContent = lbl; else setCaret(false);
+      if (mobileTitle) mobileTitle.textContent = lbl;
+      toggle.addEventListener('click', function(e){ e.stopPropagation(); var open = !menu.classList.contains('open'); menu.classList.toggle('open'); setCaret(open); });
+      document.addEventListener('click', function(e){ if (!menu.contains(e.target) && !toggle.contains(e.target)) { menu.classList.remove('open'); setCaret(false); } });
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { menu.classList.remove('open'); setCaret(false); } });
+    })();
+  </script>
 </body>
 </html>

@@ -92,7 +92,13 @@
 .hb-nav-right {
   display: flex;
   align-items: center;
+  position: relative;
 }
+
+/* Hide dropdown toggle by default (desktop) */
+#navDropdownToggle { display: none; }
+#navStats { display: none; }
+.hb-nav-mobile-title { display: none; }
 
 /* モバイル対応 */
 @media (max-width: 768px) {
@@ -111,10 +117,99 @@
   .hb-nav-right span {
     display: none;
   }
+  /* Hide right-side GitHub link entirely on mobile */
+  .hb-nav-right .hb-nav-link {
+    display: none;
+  }
   
   .hb-nav-right .hb-nav-link:after {
     content: '';
   }
+
+  /* Mobile dropdown toggle (right-top) */
+  #navDropdownToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    border-radius: 22px;
+    margin-left: 8px;
+    cursor: pointer;
+    z-index: 1200;
+    color: #e0e0e0; /* ensure icon is visible on dark nav */
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(0,0,0,0.4);
+    font-size: 16px;
+    padding: 0 12px;
+    white-space: nowrap;
+  }
+  #navDropdownToggle:hover { color: #ffffff; }
+
+  /* Mobile nav stats pill */
+  #navStats {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    margin-left: 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    color: #e0e0e0;
+    font-size: 12px;
+  }
+  #navStatsText { white-space: nowrap; }
+  .hb-nav-mobile-title {
+    display: block;
+    flex: 1 1 auto;
+    text-align: center;
+    color: #e0e0e0;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 8px;
+    pointer-events: none;
+  }
+}
+
+/* Broaden mobile rule for tablets (landscape) */
+@media (max-width: 1024px) {
+  .hb-nav-center { display: none; }
+  #navDropdownToggle { display: inline-flex; }
+  #navStats { display: inline-flex; }
+  /* Hide right-side GitHub link on tablet widths too */
+  .hb-nav-right .hb-nav-link { display: none; }
+  .hb-nav-mobile-title { display: block; }
+}
+
+/* Liquid Glass dropdown menu */
+.hb-dropdown {
+  position: absolute;
+  top: calc(var(--hb-nav-height) + 6px);
+  right: 10px;
+  min-width: 180px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  display: none;
+  z-index: 1400;
+}
+.hb-dropdown.open { display: block; }
+.hb-dropdown a {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #e0e0e0;
+  text-decoration: none;
+  font-size: 14px;
+}
+.hb-dropdown a:hover {
+  background: rgba(255,255,255,0.08);
+  color: #ffffff;
 }
 
 /* === Liquid Glass Base === */
