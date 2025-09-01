@@ -89,6 +89,17 @@
   background: rgba(100, 181, 246, 0.15);
 }
 
+/* Nav dropdown stats visibility improvements */
+.hb-dropdown .nav-stat-label,
+.hb-dropdown .nav-stat-value,
+.hb-dropdown .nav-ext-row span,
+.hb-dropdown .nav-ext-row strong {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+.hb-dropdown .nav-stats-header { color: #ffffff; }
+.hb-dropdown .nav-ext-row { line-height: 1.3; }
+
 .hb-nav-right {
   display: flex;
   align-items: center;
@@ -114,7 +125,8 @@
     padding: 0 15px;
   }
   
-  .hb-nav-right span {
+  /* Hide right-side spans except for navigation dropdown label */
+  .hb-nav-right span:not(#navDropdownLabel) {
     display: none;
   }
   /* Hide right-side GitHub link entirely on mobile */
@@ -130,57 +142,183 @@
   #navDropdownToggle {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    height: 44px;
-    border-radius: 22px;
+    justify-content: space-between; /* テキストと三角印を両端に配置 */
+    height: 36px;
+    border-radius: 18px;
     margin-left: 8px;
     cursor: pointer;
     z-index: 1200;
-    color: #e0e0e0; /* ensure icon is visible on dark nav */
-    border: 1px solid rgba(255,255,255,0.2);
-    background: rgba(0,0,0,0.4);
-    font-size: 16px;
+    color: #ffffff !important; /* 白色で現在のモードを表示（!important追加） */
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15); /* より見やすい背景 */
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     padding: 0 12px;
     white-space: nowrap;
+    min-width: 100px;
+    max-width: 140px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5); /* テキストを際立たせる */
   }
-  #navDropdownToggle:hover { color: #ffffff; }
+  
+  #navDropdownToggle:hover { 
+    color: #ffffff !important; 
+    background: rgba(255,255,255,0.25);
+    border-color: rgba(255,255,255,0.6);
+  }
+  
+  /* ラベルとキャレットのスタイル */
+  #navDropdownLabel {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: inherit !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+  }
 
-  /* Mobile nav stats pill */
-  #navStats {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 10px;
-    margin-left: 8px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(0,0,0,0.35);
-    backdrop-filter: blur(10px) saturate(120%);
-    -webkit-backdrop-filter: blur(10px) saturate(120%);
-    color: #e0e0e0;
-    font-size: 12px;
-  }
-  #navStatsText { white-space: nowrap; }
+  /* Mobile nav stats pill - REMOVED */
+  
+  /* モバイルタイトルを非表示（ドロップダウントグルに統合） */
   .hb-nav-mobile-title {
-    display: block;
-    flex: 1 1 auto;
-    text-align: center;
-    color: #e0e0e0;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 0 8px;
-    pointer-events: none;
+    display: none;
   }
 }
 
 /* Broaden mobile rule for tablets (landscape) */
 @media (max-width: 1024px) {
-  .hb-nav-center { display: none; }
-  #navDropdownToggle { display: inline-flex; }
-  #navStats { display: inline-flex; }
+  .hb-nav-center {
+    display: none;
+  }
+  
+  .hb-nav-title {
+    font-size: 1rem;
+  }
+  
+  .hb-nav-content {
+    padding: 0 15px;
+  }
+  
+  /* Hide right-side spans except for navigation dropdown label */
+  .hb-nav-right span:not(#navDropdownLabel) {
+    display: none;
+  }
   /* Hide right-side GitHub link on tablet widths too */
-  .hb-nav-right .hb-nav-link { display: none; }
-  .hb-nav-mobile-title { display: block; }
+  .hb-nav-right .hb-nav-link {
+    display: none;
+  }
+  
+  .hb-nav-right .hb-nav-link:after {
+    content: '';
+  }
+
+  /* Tablet dropdown toggle (same as mobile) */
+  #navDropdownToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between; /* テキストと三角印を両端に配置 */
+    height: 36px;
+    border-radius: 18px;
+    margin-left: 8px;
+    cursor: pointer;
+    z-index: 1200;
+    color: #ffffff !important; /* 白色で現在のモードを表示（!important追加） */
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15); /* より見やすい背景 */
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    padding: 0 12px;
+    white-space: nowrap;
+    min-width: 100px;
+    max-width: 140px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5); /* テキストを際立たせる */
+  }
+  
+  #navDropdownToggle:hover { 
+    color: #ffffff !important; 
+    background: rgba(255,255,255,0.25);
+    border-color: rgba(255,255,255,0.6);
+  }
+  
+  /* ラベルとキャレットのスタイル */
+  #navDropdownLabel {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: inherit !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+  }
+
+  /* Tablet nav stats pill - REMOVED */
+  
+  /* タブレットでもモバイルタイトルを非表示（ドロップダウントグルに統合） */
+  .hb-nav-mobile-title {
+    display: none;
+  }
+  /* Hide desktop info panel on mobile/tablet */
+  #info { display: none; }
+}
+
+/* Hide right stats sidebar on tablet/mobile (<=1024px) */
+@media (max-width: 1024px) {
+  #info { display: none !important; }
+  .nav-extended-stats { display: block; }
+}
+
+/* Extended stats default hidden on large screens */
+@media (min-width: 1025px) {
+  .nav-extended-stats { display: none !important; }
+}
+
+/* Extended stats layout */
+.nav-extended-stats {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.18);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.nav-extended-stats .nav-ext-section {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+.nav-extended-stats .nav-ext-row { 
+  margin: 4px 0; 
+  display: flex; 
+  justify-content: space-between; 
+  gap: 8px; 
+}
+.nav-extended-stats .nav-ext-row span,
+.nav-extended-stats .nav-ext-row strong {
+  color: #ffffff;
+}
+.nav-extended-stats strong { font-weight: 700; }
+/* Subheader inside extended stats */
+.nav-ext-subheader {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: #ffffff;
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+/* Ensure desktop shows the info panel */
+@media (min-width: 1025px) {
+  #info { display: block; }
 }
 
 /* Liquid Glass dropdown menu */
@@ -188,7 +326,9 @@
   position: absolute;
   top: calc(var(--hb-nav-height) + 6px);
   right: 10px;
-  min-width: 180px;
+  min-width: 220px;
+  max-height: 400px;
+  overflow-y: auto;
   padding: 8px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -197,7 +337,9 @@
   -webkit-backdrop-filter: blur(10px) saturate(120%);
   display: none;
   z-index: 1400;
+  scrollbar-width: none; /* Firefox */
 }
+.hb-dropdown::-webkit-scrollbar { width: 0; height: 0; }
 .hb-dropdown.open { display: block; }
 .hb-dropdown a {
   display: block;
@@ -210,6 +352,109 @@
 .hb-dropdown a:hover {
   background: rgba(255,255,255,0.08);
   color: #ffffff;
+}
+
+/* Navigation dropdown statistics section */
+.nav-dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 8px 4px;
+}
+
+.nav-dropdown-stats {
+  padding: 12px;
+  margin: 4px 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  /* Debug: make it more visible */
+  min-height: 80px;
+  display: block !important;
+}
+
+.nav-stats-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #b0b0b0;
+  margin-bottom: 8px;
+  text-align: center;
+  display: block;
+}
+
+.nav-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-height: 60px;
+}
+
+.nav-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.08);
+  min-height: 35px;
+  justify-content: center;
+}
+
+.nav-stat-label {
+  font-size: 10px;
+  color: #ffffff;
+  margin-bottom: 2px;
+  text-align: center;
+  display: block;
+  line-height: 1.2;
+}
+
+.nav-stat-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  display: block;
+  line-height: 1.2;
+}
+
+/* Force visibility for debugging */
+.nav-dropdown-divider,
+.nav-dropdown-stats,
+.nav-stats-header,
+.nav-stats-grid,
+.nav-stat-item,
+.nav-stat-label,
+.nav-stat-value {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.nav-stats-grid {
+  display: grid !important;
+}
+
+/* Environment and Outline grids */
+.nav-env-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.nav-outline-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.nav-stat-range {
+  font-size: 11px !important;
+}
+
+.nav-stat-item {
+  display: flex !important;
 }
 
 /* === Liquid Glass Base === */
@@ -478,6 +723,8 @@ select, input, textarea {
 
 /* === 情報パネル === */
 #info {
+  /* デスクトップでは初期表示にしたいので display:none を外す */
+  display: block; /* default visible; desktop override below maintains visibility */
   position: absolute;
   top: calc(var(--hb-nav-offset) + 10px); /* ナビゲーションの下、右上のCesium UIボタンを避けるため */
   right: 10px;
@@ -881,6 +1128,23 @@ details.section[open] > summary::before {
     max-width: calc(100% - 20px);
     right: 10px;
   }
+  
+  /* 小さな画面でのドロップダウンボタン調整 */
+  #navDropdownToggle {
+    height: 32px !important;
+    font-size: 12px !important;
+    min-width: 80px;
+    max-width: 100px;
+    padding: 0 8px !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+  }
+  
+  #navDropdownLabel {
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+  }
 }
 
 /* === タッチデバイス向け調整 === */
@@ -910,6 +1174,25 @@ details.section[open] > summary::before {
   
   #toolbar {
     padding: 40px 10px 10px 10px;
+  }
+}
+
+/* Ensure desktop shows the info panel even if previously hidden */
+@media (min-width: 1025px) {
+  #info {
+    display: block !important;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  body.right-collapsed #info {
+    transform: translateX(calc(100% + 40px));
+    opacity: 0;
+    pointer-events: none;
+  }
+  body:not(.right-collapsed) #info {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 

@@ -39,7 +39,6 @@
           <span class="hb-nav-title">Cesium Heatbox</span>
         </a>
       </div>
-      <div class="hb-nav-mobile-title" id="hbCurrentTitle">Playground</div>
       
       <div class="hb-nav-center">
         <a href="../" class="hb-nav-link">Home</a>
@@ -50,16 +49,110 @@
       
       <div class="hb-nav-right">
         <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank"><span>GitHub</span></a>
-        <div id="navStats" class="hb-nav-stats liquid-glass-dark" aria-label="Statistics">
-          <span id="navStatsText">Voxels: -</span>
-        </div>
-        <button id="navDropdownToggle" class="liquid-glass-hamburger" aria-label="Open navigation"><span id="navDropdownLabel">Playground</span> ▾</button>
+        <button id="navDropdownToggle" class="liquid-glass-hamburger" aria-label="Open navigation">
+          <span id="navDropdownLabel">Playground</span>
+          <span style="margin-left: 4px;">▾</span>
+        </button>
         <div id="navDropdownMenu" class="hb-dropdown liquid-glass-dark">
           <a href="../">Home</a>
           <a href="./simple.html">Quick Start</a>
           <a href="./">Playground</a>
           <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" target="_blank">Docs</a>
           <a href="https://github.com/hiro-nyon/cesium-heatbox" target="_blank">GitHub</a>
+          <div class="nav-dropdown-divider"></div>
+          <div class="nav-dropdown-stats">
+            <div class="nav-stats-header" id="navStatsTitle" data-i18n="nav_stats_title">統計情報</div>
+            <!-- Quick summary (4 items) -->
+            <div class="nav-stats-grid">
+              <div class="nav-stat-item">
+                <span class="nav-stat-label" id="navLabelDataCount" data-i18n="nav_label_dataCount">データ点数:</span>
+                <span class="nav-stat-value" id="navDataCount">0</span>
+              </div>
+              <div class="nav-stat-item">
+                <span class="nav-stat-label" id="navLabelVoxelCount" data-i18n="nav_label_voxelCount">ボクセル数:</span>
+                <span class="nav-stat-value" id="navVoxelCount">0</span>
+              </div>
+              <div class="nav-stat-item">
+                <span class="nav-stat-label" id="navLabelMaxValue" data-i18n="nav_label_maxValue">最大値:</span>
+                <span class="nav-stat-value" id="navMaxValue">-</span>
+              </div>
+              <div class="nav-stat-item">
+                <span class="nav-stat-label" id="navLabelMinValue" data-i18n="nav_label_minValue">最小値:</span>
+                <span class="nav-stat-value" id="navMinValue">-</span>
+              </div>
+            </div>
+            <!-- Structured stats (mobile/tablet) -->
+            <div class="nav-extended-stats">
+              <!-- 詳細統計 -->
+              <div class="nav-ext-section" id="navDetailStats" style="font-size:11px;">
+                <div class="nav-ext-subheader" data-i18n="detail_title">詳細統計</div>
+                <div class="nav-ext-row"><span data-i18n="label_emptyVoxel">空ボクセル:</span> <strong id="navEmptyVoxelCount">-</strong></div>
+                <div class="nav-ext-row"><span data-i18n="label_avg">平均値:</span> <strong id="navAvgValue">-</strong></div>
+              </div>
+              <!-- 自動サイズ -->
+              <div class="nav-ext-section" style="margin-top:10px; font-size:11px;">
+                <div class="nav-ext-subheader" data-i18n="autosize_title">自動サイズ</div>
+                <div class="nav-ext-rows" id="navAutoSizeInfo" style="display:none; opacity:0.9;">
+                  <div class="nav-ext-row"><span data-i18n="autosize_adjusted">自動調整:</span> <strong id="navAutoAdjusted">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="autosize_size">ボクセルサイズ:</span> <strong id="navSizeInfo">-</strong></div>
+                </div>
+              </div>
+              <!-- レンダリング情報 -->
+              <div class="nav-ext-section" style="margin-top:10px; font-size:11px;">
+                <div class="nav-ext-subheader" data-i18n="render_title">レンダリング情報</div>
+                <div class="nav-ext-rows" id="navV019Stats" style="display:none; opacity:0.9;">
+                  <div class="nav-ext-row"><span data-i18n="nav_strategy">選択戦略:</span> <strong id="navSelectionStrategy">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="nav_rendered">描画ボクセル:</span> <strong id="navRenderedVoxels">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="nav_tier">デバイスティア:</span> <strong id="navDeviceTier">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="nav_coverage">カバレッジ(%):</span> <strong id="navCoverageRatio">-</strong>%</div>
+                </div>
+              </div>
+              <!-- 環境情報 -->
+              <div class="nav-ext-section" id="navEnvInfo" style="margin-top:10px;">
+                <div class="nav-ext-subheader" data-i18n="env_title">環境情報</div>
+                <div class="nav-env-grid">
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="label_cesium">Cesium:</span>
+                    <span class="nav-stat-value" id="navCesiumVersion">-</span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="label_heatbox">Heatbox:</span>
+                    <span class="nav-stat-value" id="navHeatboxVersion">-</span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="label_webgl">WebGL:</span>
+                    <span class="nav-stat-value" id="navWebglSupport">-</span>
+                  </div>
+                </div>
+              </div>
+              <!-- アウトライン統計 -->
+              <div class="nav-ext-section" id="navOutlineStats" style="margin-top:10px;">
+                <div class="nav-ext-subheader" data-i18n="or_title">Outline Resolver 統計</div>
+                <div class="nav-outline-grid">
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="or_calls">呼び出し:</span>
+                    <span class="nav-stat-value" id="navOrCalls">0</span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="or_avg">平均太さ:</span>
+                    <span class="nav-stat-value" id="navOrAvg">-</span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="or_minmax">太さ範囲:</span>
+                    <span class="nav-stat-value nav-stat-range"><span id="navOrMin">-</span>/<span id="navOrMax">-</span></span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="or_dminmax">密度範囲:</span>
+                    <span class="nav-stat-value nav-stat-range"><span id="navOrDMin">-</span>/<span id="navOrDMax">-</span></span>
+                  </div>
+                  <div class="nav-stat-item">
+                    <span class="nav-stat-label" data-i18n="or_topn">TopN対象:</span>
+                    <span class="nav-stat-value" id="navOrTopN">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -442,8 +535,8 @@
       var toggle = document.getElementById('navDropdownToggle');
       var menu = document.getElementById('navDropdownMenu');
       var labelEl = document.getElementById('navDropdownLabel');
-      var mobileTitle = document.getElementById('hbCurrentTitle');
       if (!toggle || !menu) return;
+      
       function currentLabel(){
         var p = location.pathname;
         if (/\/playground\/(index\.html)?$/.test(p) || /\/playground\/$/.test(p)) return 'Playground';
@@ -451,19 +544,62 @@
         if (/(^|\/)index\.html$/.test(p) || /\/$/.test(p)) return 'Home';
         return 'Menu';
       }
-      function setCaret(open){
+      
+      function updateButton(open){
         var caret = open ? '▴' : '▾';
-        // Replace only the caret, keep label
-        toggle.innerHTML = '<span id="navDropdownLabel">' + (labelEl?.textContent || currentLabel()) + '</span> ' + caret;
-        labelEl = document.getElementById('navDropdownLabel');
+        var currentText = currentLabel();
+        
+        // ボタンの内容を完全に置き換え
+        toggle.innerHTML = '';
+        
+        // ラベル要素を作成
+        var label = document.createElement('span');
+        label.id = 'navDropdownLabel';
+        label.textContent = currentText;
+        label.style.flex = '1';
+        label.style.textAlign = 'left';
+        label.style.overflow = 'hidden';
+        label.style.textOverflow = 'ellipsis';
+        label.style.color = '#ffffff';
+        label.style.fontSize = 'inherit';
+        label.style.fontWeight = 'inherit';
+        
+        // キャレット要素を作成
+        var caretSpan = document.createElement('span');
+        caretSpan.textContent = caret;
+        caretSpan.style.marginLeft = '4px';
+        caretSpan.style.color = '#ffffff';
+        
+        // ボタンに追加
+        toggle.appendChild(label);
+        toggle.appendChild(caretSpan);
+        
+        labelEl = label;
       }
-      // Initialize label
-      var lbl = currentLabel();
-      if (labelEl) labelEl.textContent = lbl; else setCaret(false);
-      if (mobileTitle) mobileTitle.textContent = lbl;
-      toggle.addEventListener('click', function(e){ e.stopPropagation(); var open = !menu.classList.contains('open'); menu.classList.toggle('open'); setCaret(open); });
-      document.addEventListener('click', function(e){ if (!menu.contains(e.target) && !toggle.contains(e.target)) { menu.classList.remove('open'); setCaret(false); } });
-      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { menu.classList.remove('open'); setCaret(false); } });
+      
+      // 初期化
+      updateButton(false);
+      
+      toggle.addEventListener('click', function(e){ 
+        e.stopPropagation(); 
+        var open = !menu.classList.contains('open'); 
+        menu.classList.toggle('open'); 
+        updateButton(open); 
+      });
+      
+      document.addEventListener('click', function(e){ 
+        if (!menu.contains(e.target) && !toggle.contains(e.target)) { 
+          menu.classList.remove('open'); 
+          updateButton(false); 
+        } 
+      });
+      
+      document.addEventListener('keydown', function(e){ 
+        if (e.key === 'Escape') { 
+          menu.classList.remove('open'); 
+          updateButton(false); 
+        } 
+      });
     })();
   </script>
 </body>

@@ -185,7 +185,8 @@ class HeatboxPlayground {
       rightBtn.style.display = '';
 
       const lc = (typeof localStorage !== 'undefined' && localStorage.getItem('hb_left_collapsed')) === '1';
-      const rc = (typeof localStorage !== 'undefined' && localStorage.getItem('hb_right_collapsed')) === '1';
+      // Always show right panel by default on desktop (ignore stored state)
+      const rc = false;
       document.body.classList.toggle('left-collapsed', !!lc);
       document.body.classList.toggle('right-collapsed', !!rc);
     };
@@ -444,6 +445,13 @@ class HeatboxPlayground {
       'i18n-sum-advanced': 'sum_advanced',
       'i18n-ops-title': 'ops_title',
       'i18n-stats-title': 'stats_title',
+      // Navigation dropdown stats
+      'navStatsTitle': 'nav_stats_title',
+      'navLabelDataCount': 'nav_label_dataCount',
+      'navLabelVoxelCount': 'nav_label_voxelCount',
+      'navLabelMaxValue': 'nav_label_maxValue',
+      'navLabelMinValue': 'nav_label_minValue',
+      // Sidebar stats
       'i18n-label-dataCount': 'label_dataCount',
       'i18n-label-voxelCount': 'label_voxelCount',
       'i18n-label-emptyVoxel': 'label_emptyVoxel',
@@ -508,6 +516,20 @@ class HeatboxPlayground {
         btn_toggle: '表示/非表示',
         btn_export: 'データ出力',
         stats_title: '統計情報',
+        // Navigation dropdown stats
+        nav_stats_title: '統計情報',
+        nav_label_dataCount: 'データ点数:',
+        nav_label_voxelCount: 'ボクセル数:',
+        nav_label_maxValue: '最大値:',
+        nav_label_minValue: '最小値:',
+        nav_strategy: '戦略:',
+        nav_rendered: 'レンダリング:',
+        nav_tier: 'ティア:',
+        nav_coverage: 'カバレッジ:',
+        detail_title: '詳細統計',
+        autosize_title: '自動サイズ調整',
+        render_title: 'レンダリング情報',
+        // Sidebar stats
         label_dataCount: 'データ点数:',
         label_voxelCount: 'ボクセル数:',
         label_emptyVoxel: '空ボクセル:',
@@ -521,10 +543,10 @@ class HeatboxPlayground {
         label_heatbox: 'Heatbox:',
         label_webgl: 'WebGL:',
         or_title: 'Outline Resolver 統計',
-        or_calls: '呼び出し回数:',
+        or_calls: '呼び出し:',
         or_avg: '平均太さ:',
-        or_minmax: '太さ min/max:',
-        or_dminmax: '密度 min/max:',
+        or_minmax: '太さ範囲:',
+        or_dminmax: '密度範囲:',
         or_topn: 'TopN対象:',
         lang_label: '言語',
         // Adaptive (v0.1.9)
@@ -633,6 +655,20 @@ class HeatboxPlayground {
         btn_toggle: 'Show/Hide',
         btn_export: 'Export Data',
         stats_title: 'Statistics',
+        // Navigation dropdown stats
+        nav_stats_title: 'Statistics',
+        nav_label_dataCount: 'Points:',
+        nav_label_voxelCount: 'Voxels:',
+        nav_label_maxValue: 'Max:',
+        nav_label_minValue: 'Min:',
+        nav_strategy: 'Strategy:',
+        nav_rendered: 'Rendered:',
+        nav_tier: 'Tier:',
+        nav_coverage: 'Coverage:',
+        detail_title: 'Details',
+        autosize_title: 'Auto Sizing',
+        render_title: 'Rendering Info',
+        // Sidebar stats
         label_dataCount: 'Points:',
         label_voxelCount: 'Voxels:',
         label_emptyVoxel: 'Empty voxels:',
@@ -647,10 +683,10 @@ class HeatboxPlayground {
         label_webgl: 'WebGL:',
         or_title: 'Outline Resolver Stats',
         or_calls: 'Calls:',
-        or_avg: 'Average width:',
-        or_minmax: 'Width min/max:',
-        or_dminmax: 'Density min/max:',
-        or_topn: 'TopN count:',
+        or_avg: 'Avg Width:',
+        or_minmax: 'Width Range:',
+        or_dminmax: 'Density Range:',
+        or_topn: 'TopN Count:',
         lang_label: 'Language',
         // Adaptive (v0.1.9)
         label_maxRenderVoxels: 'Max render voxels:',
@@ -2627,6 +2663,17 @@ class HeatboxPlayground {
       if ($('or_dmin')) $('or_dmin').textContent = Number.isFinite(st.dmin) ? st.dmin.toFixed(2) : '-';
       if ($('or_dmax')) $('or_dmax').textContent = Number.isFinite(st.dmax) ? st.dmax.toFixed(2) : '-';
       if ($('or_topn')) $('or_topn').textContent = String(st.topN || 0);
+      // Nav拡張へも反映
+      try {
+        const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val;};
+        set('navOrCalls', String(st.calls||0));
+        set('navOrAvg', Number.isFinite(avg)?avg.toFixed(2):'-');
+        set('navOrMin', Number.isFinite(st.min)?st.min.toFixed(0):'-');
+        set('navOrMax', Number.isFinite(st.max)?st.max.toFixed(0):'-');
+        set('navOrDMin', Number.isFinite(st.dmin)?st.dmin.toFixed(2):'-');
+        set('navOrDMax', Number.isFinite(st.dmax)?st.dmax.toFixed(2):'-');
+        set('navOrTopN', String(st.topN||0));
+      } catch(_) {}
     } catch (_) {
       // ignore UI errors
     }
@@ -2768,12 +2815,36 @@ class HeatboxPlayground {
     const min = weights.length > 0 ? Math.min(...weights) : 0;
     const avg = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
     
+    // 右サイドバーの統計情報を更新
     document.getElementById('dataCount').textContent = this.currentData.length;
     document.getElementById('maxValue').textContent = max.toFixed(2);
     document.getElementById('minValue').textContent = min.toFixed(2);
     document.getElementById('avgValue').textContent = avg.toFixed(2);
     // 初期状態では空ボクセル数は不明
     document.getElementById('emptyVoxelCount').textContent = '-';
+    
+    // ナビゲーションドロップダウンの統計情報も更新
+    this.updateNavStats({
+      dataCount: this.currentData.length,
+      voxelCount: '-',
+      maxValue: max.toFixed(2),
+      minValue: min.toFixed(2),
+      avgValue: avg.toFixed(2),
+      emptyVoxelCount: '-'
+    });
+
+    // デバッグ: 要素存在と表示状態
+    try {
+      const ids = ['navDataCount','navVoxelCount','navMaxValue','navMinValue'];
+      const state = ids.reduce((acc,id)=>{ const el=document.getElementById(id); acc[id]={exists:!!el,text:el?.textContent}; return acc;},{});
+      console.log('[updateStatistics] nav stats element state', state);
+    } catch(_) {}
+    // 拡張ナビ統計初期化（平均と空ボクセル）
+    try {
+      const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val;};
+      set('navAvgValue', avg.toFixed(2));
+      set('navEmptyVoxelCount','-');
+    } catch(_) {}
   }
   
   /**
@@ -2783,12 +2854,26 @@ class HeatboxPlayground {
   updateStatisticsFromHeatmap(stats) {
     if (!stats) return;
     
-    // 基本統計情報
-    document.getElementById('voxelCount').textContent = (stats.renderedVoxels ?? stats.totalVoxels ?? 0).toString();
-    document.getElementById('emptyVoxelCount').textContent = (stats.emptyVoxels ?? 0).toString();
-    document.getElementById('maxValue').textContent = (stats.maxCount ?? 0).toFixed(2);
-    document.getElementById('minValue').textContent = (stats.minCount ?? 0).toFixed(2);
-    document.getElementById('avgValue').textContent = (stats.averageCount ?? 0).toFixed(2);
+    // ライブラリ側のバージョン差異に備えて各種キーを冗長に解決
+    const rendered = stats.renderedVoxels ?? stats.rendered ?? stats.voxelCount ?? 0;
+    const total = stats.totalVoxels ?? stats.total ?? rendered;
+    const empty = stats.emptyVoxels ?? stats.empty ?? (total - rendered >= 0 ? (total - rendered) : 0);
+    const maxVal = stats.maxCount ?? stats.maxValue ?? stats.max ?? 0;
+    const minVal = stats.minCount ?? stats.minValue ?? stats.min ?? 0;
+    const avgVal = stats.averageCount ?? stats.avgCount ?? stats.mean ?? (rendered ? (stats.sumCount / rendered) : 0) ?? 0;
+
+    // 基本統計情報（右サイド）
+    document.getElementById('voxelCount').textContent = (rendered || total || 0).toString();
+    document.getElementById('emptyVoxelCount').textContent = empty.toString();
+    document.getElementById('maxValue').textContent = Number(maxVal).toFixed(2);
+    document.getElementById('minValue').textContent = Number(minVal).toFixed(2);
+    document.getElementById('avgValue').textContent = Number(avgVal).toFixed(2);
+    
+    // デバッグ（初回のみ出力）
+    if (!this._navStatDebugLogged) {
+      console.log('[NavStats] Resolved stats keys:', { rendered, total, empty, maxVal, minVal, avgVal, raw: stats });
+      this._navStatDebugLogged = true;
+    }
     
     // v0.1.4: 自動調整情報表示
     const autoSizeInfo = document.getElementById('autoSizeInfo');
@@ -2838,7 +2923,54 @@ class HeatboxPlayground {
     if (stats.adjustmentReason) {
       console.log('自動調整理由:', stats.adjustmentReason);
     }
-    // Update compact nav stats if present
+    
+    // ナビゲーションドロップダウンの統計情報も更新
+    this.updateNavStats({
+      dataCount: document.getElementById('dataCount')?.textContent || '0',
+      voxelCount: (rendered || total || 0).toString(),
+      maxValue: Number(maxVal).toFixed(2),
+      minValue: Number(minVal).toFixed(2),
+      avgValue: Number(avgVal).toFixed(2),
+      emptyVoxelCount: empty.toString()
+    });
+    // 拡張ナビ統計
+    try {
+      const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val;};
+      set('navEmptyVoxelCount', empty.toString());
+      set('navAvgValue', Number(avgVal).toFixed(2));
+      // 自動調整
+      const navAuto = document.getElementById('navAutoSizeInfo');
+      if (navAuto) {
+        if (stats.autoAdjusted !== undefined) {
+          navAuto.style.display='block';
+          set('navAutoAdjusted', stats.autoAdjusted ? 'あり':'なし');
+          if (stats.autoAdjusted && stats.originalVoxelSize && stats.finalVoxelSize) {
+            set('navSizeInfo', `${stats.originalVoxelSize}m→${stats.finalVoxelSize}m`);
+          } else if (stats.finalVoxelSize) {
+            set('navSizeInfo', `${stats.finalVoxelSize}m`);
+          } else {
+            set('navSizeInfo','-');
+          }
+        } else {
+          navAuto.style.display='none';
+        }
+      }
+      // v0.1.9 stats
+      const nav019 = document.getElementById('navV019Stats');
+      if (nav019) {
+        if (stats.selectionStrategy || stats.renderBudgetTier) {
+          nav019.style.display='block';
+          set('navSelectionStrategy', stats.selectionStrategy || '-');
+          set('navRenderedVoxels', (stats.renderedVoxels!==undefined && stats.totalVoxels!==undefined) ? `${stats.renderedVoxels}/${stats.totalVoxels}` : (stats.renderedVoxels || '-'));
+          set('navDeviceTier', stats.renderBudgetTier || '-');
+          set('navCoverageRatio', stats.coverageRatio !== undefined ? (stats.coverageRatio*100).toFixed(1) : '-');
+        } else {
+          nav019.style.display='none';
+        }
+      }
+    } catch(_) {}
+    
+    // Update compact nav stats if present (legacy)
     try {
       const nav = document.getElementById('navStatsText');
       if (nav) {
@@ -2866,6 +2998,41 @@ class HeatboxPlayground {
     document.getElementById('autoSizeInfo').style.display = 'none';
     const nav = document.getElementById('navStatsText');
     if (nav) nav.textContent = 'Voxels: -';
+    
+    // ナビゲーションドロップダウンの統計情報もリセット
+    this.updateNavStats({
+      dataCount: '0',
+      voxelCount: '0',
+      maxValue: '-',
+      minValue: '-',
+      avgValue: '-',
+      emptyVoxelCount: '-'
+    });
+  }
+  
+  /**
+   * ナビゲーションドロップダウンの統計情報を更新
+   */
+  updateNavStats(stats) {
+    try {
+      const elements = {
+        navDataCount: document.getElementById('navDataCount'),
+        navVoxelCount: document.getElementById('navVoxelCount'),
+        navMaxValue: document.getElementById('navMaxValue'),
+        navMinValue: document.getElementById('navMinValue'),
+        navAvgValue: document.getElementById('navAvgValue'),
+        navEmptyVoxelCount: document.getElementById('navEmptyVoxelCount')
+      };
+      
+      if (elements.navDataCount) elements.navDataCount.textContent = stats.dataCount;
+      if (elements.navVoxelCount) elements.navVoxelCount.textContent = stats.voxelCount;
+      if (elements.navMaxValue) elements.navMaxValue.textContent = stats.maxValue;
+      if (elements.navMinValue) elements.navMinValue.textContent = stats.minValue;
+      if (elements.navAvgValue && stats.avgValue !== undefined) elements.navAvgValue.textContent = stats.avgValue;
+      if (elements.navEmptyVoxelCount && stats.emptyVoxelCount !== undefined) elements.navEmptyVoxelCount.textContent = stats.emptyVoxelCount;
+    } catch (error) {
+      console.warn('ナビゲーション統計更新エラー:', error);
+    }
   }
   
   /**
@@ -2878,6 +3045,13 @@ class HeatboxPlayground {
     document.getElementById('cesiumVersion').textContent = envInfo.cesiumVersion;
     document.getElementById('heatboxVersion').textContent = envInfo.version;
     document.getElementById('webglSupport').textContent = envInfo.webglSupport ? 'サポート' : '非サポート';
+    // ナビ拡張
+    try {
+      const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val;};
+      set('navCesiumVersion', envInfo.cesiumVersion);
+      set('navHeatboxVersion', envInfo.version);
+      set('navWebglSupport', envInfo.webglSupport ? 'サポート':'非サポート');
+    } catch(_) {}
   }
   
   /**
@@ -3101,6 +3275,28 @@ class HeatboxPlayground {
       }
     }, duration);
   }
+
+  /**
+   * 統計パネル可視性デバッグ
+   */
+  debugStatsPanels() {
+    try {
+      const info = document.getElementById('info');
+      const nav = document.querySelector('.nav-dropdown-stats');
+      const gather = (el) => el ? {display: el.style.display, computed: getComputedStyle(el).display, size: el.offsetWidth+'x'+el.offsetHeight} : null;
+      console.log('[debugStatsPanels]', {
+        info: gather(info),
+        rightCollapsed: document.body.classList.contains('right-collapsed'),
+        nav: gather(nav),
+        navValues: {
+          data: document.getElementById('navDataCount')?.textContent,
+          voxels: document.getElementById('navVoxelCount')?.textContent,
+          max: document.getElementById('navMaxValue')?.textContent,
+          min: document.getElementById('navMinValue')?.textContent
+        }
+      });
+    } catch(e) { console.warn('debugStatsPanels error', e); }
+  }
 }
 
 // アプリケーションを開始
@@ -3128,7 +3324,9 @@ window.addEventListener('DOMContentLoaded', () => {
   console.log('CesiumHeatbox properties:', Object.keys(CesiumHeatbox));
   
   try {
-    new HeatboxPlayground();
+    const app = new HeatboxPlayground();
+    // 初期デバッグ
+    setTimeout(()=> app.debugStatsPanels(), 500);
   } catch (error) {
     console.error('アプリケーション初期化エラー:', error);
     document.getElementById('loading').style.display = 'block';

@@ -41,7 +41,6 @@
           <span class="hb-nav-title">Cesium Heatbox</span>
         </a>
       </div>
-      <div class="hb-nav-mobile-title" id="hbCurrentTitle">Quick Start</div>
       
       <div class="hb-nav-center">
         <a href="../" class="hb-nav-link">Home</a>
@@ -52,7 +51,10 @@
       
       <div class="hb-nav-right">
         <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank"><span>GitHub</span></a>
-        <button id="navDropdownToggle" class="liquid-glass-hamburger" aria-label="Open navigation"><span id="navDropdownLabel">Quick Start</span> ▾</button>
+        <button id="navDropdownToggle" class="liquid-glass-hamburger" aria-label="Open navigation">
+          <span id="navDropdownLabel">Quick Start</span>
+          <span style="margin-left: 4px;">▾</span>
+        </button>
         <div id="navDropdownMenu" class="hb-dropdown liquid-glass-dark">
           <a href="../">Home</a>
           <a href="./simple.html">Quick Start</a>
@@ -145,8 +147,8 @@
       var toggle = document.getElementById('navDropdownToggle');
       var menu = document.getElementById('navDropdownMenu');
       var labelEl = document.getElementById('navDropdownLabel');
-      var mobileTitle = document.getElementById('hbCurrentTitle');
       if (!toggle || !menu) return;
+      
       function currentLabel(){
         var p = location.pathname;
         if (/\/playground\/simple\.html$/.test(p)) return 'Quick Start';
@@ -154,17 +156,62 @@
         if (/(^|\/)index\.html$/.test(p) || /\/$/.test(p)) return 'Home';
         return 'Menu';
       }
-      function setCaret(open){
+      
+      function updateButton(open){
         var caret = open ? '▴' : '▾';
-        toggle.innerHTML = '<span id="navDropdownLabel">' + (labelEl?.textContent || currentLabel()) + '</span> ' + caret;
-        labelEl = document.getElementById('navDropdownLabel');
+        var currentText = currentLabel();
+        
+        // ボタンの内容を完全に置き換え
+        toggle.innerHTML = '';
+        
+        // ラベル要素を作成
+        var label = document.createElement('span');
+        label.id = 'navDropdownLabel';
+        label.textContent = currentText;
+        label.style.flex = '1';
+        label.style.textAlign = 'left';
+        label.style.overflow = 'hidden';
+        label.style.textOverflow = 'ellipsis';
+        label.style.color = '#ffffff';
+        label.style.fontSize = 'inherit';
+        label.style.fontWeight = 'inherit';
+        
+        // キャレット要素を作成
+        var caretSpan = document.createElement('span');
+        caretSpan.textContent = caret;
+        caretSpan.style.marginLeft = '4px';
+        caretSpan.style.color = '#ffffff';
+        
+        // ボタンに追加
+        toggle.appendChild(label);
+        toggle.appendChild(caretSpan);
+        
+        labelEl = label;
       }
-      var lbl = currentLabel();
-      if (labelEl) labelEl.textContent = lbl; else setCaret(false);
-      if (mobileTitle) mobileTitle.textContent = lbl;
-      toggle.addEventListener('click', function(e){ e.stopPropagation(); var open = !menu.classList.contains('open'); menu.classList.toggle('open'); setCaret(open); });
-      document.addEventListener('click', function(e){ if (!menu.contains(e.target) && !toggle.contains(e.target)) { menu.classList.remove('open'); setCaret(false); } });
-      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { menu.classList.remove('open'); setCaret(false); } });
+      
+      // 初期化
+      updateButton(false);
+      
+      toggle.addEventListener('click', function(e){ 
+        e.stopPropagation(); 
+        var open = !menu.classList.contains('open'); 
+        menu.classList.toggle('open'); 
+        updateButton(open); 
+      });
+      
+      document.addEventListener('click', function(e){ 
+        if (!menu.contains(e.target) && !toggle.contains(e.target)) { 
+          menu.classList.remove('open'); 
+          updateButton(false); 
+        } 
+      });
+      
+      document.addEventListener('keydown', function(e){ 
+        if (e.key === 'Escape') { 
+          menu.classList.remove('open'); 
+          updateButton(false); 
+        } 
+      });
     })();
   </script>
 </body>
