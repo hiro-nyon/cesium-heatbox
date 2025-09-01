@@ -167,6 +167,37 @@ function enableHeatmapGeneration() {
   }
 }
 
+// Convert GeoJSON to Cesium entities
+function convertGeoJSONToEntities(geojson) {
+  const entities = [];
+  
+  if (geojson.type === 'FeatureCollection') {
+    geojson.features.forEach((feature, index) => {
+      if (feature.geometry && feature.geometry.type === 'Point') {
+        const [lon, lat, alt = 0] = feature.geometry.coordinates;
+        const value = feature.properties.value || Math.random() * 100;
+        
+        const entity = viewer.entities.add({
+          id: `point-${index}`,
+          position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+          point: {
+            pixelSize: 1,
+            show: false // Hide the visual point, just use for heatmap data
+          },
+          properties: {
+            value: value,
+            ...feature.properties
+          }
+        });
+        
+        entities.push(entity);
+      }
+    });
+  }
+  
+  return entities;
+}
+
 // Create heatmap
 function createHeatmap() {
   if (!currentData) {
@@ -190,7 +221,7 @@ function createHeatmap() {
     
     // Initialize heatbox if needed
     if (!heatbox && window.CesiumHeatbox) {
-      heatbox = new window.CesiumHeatbox.Heatbox(viewer);
+      heatbox = new window.CesiumHeatbox.default(viewer);
       console.log('✅ Heatbox initialized');
     }
     
@@ -198,9 +229,13 @@ function createHeatmap() {
       throw new Error('Heatbox library not loaded');
     }
     
+    // Convert GeoJSON to entities
+    const entities = convertGeoJSONToEntities(currentData);
+    console.log(`Converted ${entities.length} GeoJSON features to entities`);
+    
     // Configure heatbox options
     const options = {
-      gridSize: gridSize,
+      voxelSize: gridSize,
       heightBased: heightBased,
       autoVoxelSize: true,
       autoVoxelSizeMode: 'simple',
@@ -211,8 +246,8 @@ function createHeatmap() {
       autoView: autoCamera
     };
     
-    // Create heatmap
-    heatbox.createFromGeoJSON(currentData, options);
+    // Create heatmap from entities
+    heatbox.setData(entities);
     
     updateStatus('heatmapStatus', '✅ Heatmap created successfully!');
     
