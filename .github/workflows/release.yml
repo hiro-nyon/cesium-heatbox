@@ -28,18 +28,25 @@ jobs:
     - name: Run tests
       run: npm test
       
-    # タグに基づいて公開先を決定
+    # package.jsonのバージョンから公開先を決定（より確実）
     - name: Determine npm tag
       id: npm-tag
       run: |
-        if [[ ${{ github.ref }} == *"alpha"* ]]; then
+        VERSION=$(node -p "require('./package.json').version")
+        echo "Detected version: $VERSION"
+        
+        if [[ $VERSION == *"-alpha."* ]]; then
           echo "tag=alpha" >> $GITHUB_OUTPUT
-        elif [[ ${{ github.ref }} == *"beta"* ]]; then
+          echo "Publishing to alpha tag"
+        elif [[ $VERSION == *"-beta."* ]]; then
           echo "tag=beta" >> $GITHUB_OUTPUT
-        elif [[ ${{ github.ref }} == *"rc"* ]]; then
+          echo "Publishing to beta tag"
+        elif [[ $VERSION == *"-rc."* ]]; then
           echo "tag=rc" >> $GITHUB_OUTPUT
+          echo "Publishing to rc tag"
         else
           echo "tag=latest" >> $GITHUB_OUTPUT
+          echo "Publishing to latest tag"
         fi
     
     - name: Publish to npm

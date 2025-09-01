@@ -97,6 +97,6 @@
     "npm": ">=8.0.0"
   },
   "publishConfig": {
-    "tag": "latest"
+    "access": "public"
   }
 }
