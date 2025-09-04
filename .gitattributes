@@ -1,0 +1,10 @@
+# Mark generated/auxiliary content for GitHub linguist and diffs
+docs/api/** linguist-generated
+dist/** linguist-generated
+
+# Treat docs and wiki as documentation
+docs/** linguist-documentation
+wiki/** linguist-documentation
+
+# Normalize line endings
+* text=auto eol=lf
