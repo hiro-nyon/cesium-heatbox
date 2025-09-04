@@ -6,8 +6,8 @@
  */
 
 import * as Cesium from 'cesium';
-import { Heatbox } from '../src/index.js';
-import { generateSampleData } from '../src/utils/sampleData.js';
+import { Heatbox } from '../../src/index.js';
+import { generateSampleData } from '../../src/utils/sampleData.js';
 
 /**
  * Performance Test Suite for v0.1.9

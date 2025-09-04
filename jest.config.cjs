@@ -7,7 +7,7 @@ module.exports = {
   },
   testPathIgnorePatterns: [
     '/node_modules/',
-    '<rootDir>/test/performance/'
+    '/test/performance/heatbox-v0.1.9-performance.test.js'
   ],
   collectCoverageFrom: [
     'src/**/*.js',

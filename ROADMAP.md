@@ -23,7 +23,7 @@ Priority: High | Target: 2025-09
     - `occupancy` は期待占有セル数 E[occupied] ≈ M·(1-exp(-N/M)) を用い、`maxRenderVoxels` と `targetFill`（デフォルト: 0.6）に整合するサイズを反復近似。
     - 責務分離: 自動ボクセルサイズは「初期グリッド決定専用」。既定ではグリッド再構築は行わず、可視化の適応は“選抜（renderLimitStrategy）側”で行う。
   - [ ] スマート視覚化支援（オプトイン）
-    - 実装: `autoView: false` と `fitView(options)` を公開。`fitView` はデータ境界に対し、ピッチ/視野角を考慮した高度を自動計算（もしくは `Camera.flyToBoundingSphere` を利用）。
+    - 実装: `autoView: false` と `fitView(bounds, options)` を公開。`fitView` はデータ境界に対し、ピッチ/視野角を考慮した高度を自動計算（もしくは `Camera.flyToBoundingSphere` を利用）。
   - [ ] 端末依存の自動レンダリング上限（Auto Render Budget）
     - 実装: `maxRenderVoxels: number|'auto'`（または `renderBudgetMode: 'manual'|'auto'`）。
     - 指標: WebGL対応/上限、`navigator.deviceMemory`（Chrome系のみ）/`hardwareConcurrency`/`devicePixelRatio` などから端末ティア（低/中/高）を推定。`deviceMemory` 未対応時は `hardwareConcurrency` と画面解像度を主指標とするフォールバック。
@@ -34,7 +34,7 @@ Priority: High | Target: 2025-09
 - Deliverables
   - [ ] `renderLimitStrategy` + `minCoverageRatio` + `coverageBinsXY`（後方互換: 既定は従来通り）
   - [ ] `autoVoxelSizeMode: 'occupancy'` + `autoVoxelTargetFill`（推奨値0.6）
-  - [ ] `Heatbox.fitView(bounds, { paddingMeters, pitch, heading, altitudeStrategy })` と `options.autoView`
+  - [ ] `Heatbox.fitView(bounds, { paddingPercent, pitch, heading, altitudeStrategy })` と `options.autoView`
   - [ ] Auto Render Budget: `maxRenderVoxels: 'auto'`（または `renderBudgetMode: 'auto'`）で端末ティア別の初期上限を自動設定
   - [ ] Debug/統計: `selectionStrategy`, `clippedNonEmpty`, `coverageRatio` に加え、`renderBudgetTier`, `autoMaxRenderVoxels` を `getStatistics()` に追加
   - [ ] Docs: Playground既知課題と解法（設定例つき）をチューニングFAQへ追記
@@ -57,7 +57,7 @@ Priority: High | Target: 2025-10
 - Scope（挙動非変更・内部構造の整理）
   - [ ] 選択戦略の分離: `src/core/selection/` に density/coverage/hybrid を分割しIF化
   - [ ] 近似/推定の分離: `src/utils/voxelSizeEstimator.js`（basic/occupancy）を新設
-  - [ ] 端末ティア検出の分離: `src/utils/deviceTierDetector.js`（Auto Render Budget計算）
+  - [ ] 端末ティア検出の分離: 既存の `src/utils/deviceTierDetector.js`（Auto Render Budget計算）のI/F整備と再利用
   - [ ] 視点合わせの分離: `src/utils/viewFit.js` と `Heatbox.fitView()` の連携
   - [ ] options正規化の抽出（任意）: `src/utils/options/normalize.js` に新オプション検証を移管
   - [ ] 既存API/挙動は不変（Public API/既存オプション名は変更しない）

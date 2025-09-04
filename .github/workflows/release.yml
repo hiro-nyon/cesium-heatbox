@@ -2,54 +2,43 @@ name: Release
 
 on:
   push:
-    tags: 
-      - 'v*'
+    tags:
+      - 'v*'  # v0.1.10, v0.1.10-alpha.0 等で発火
 
 jobs:
-  release:
+  publish:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        registry-url: 'https://registry.npmjs.org'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build all formats
-      run: npm run build
-      
-    - name: Run tests
-      run: npm test
-      
-    # package.jsonのバージョンから公開先を決定（より確実）
-    - name: Determine npm tag
-      id: npm-tag
-      run: |
-        VERSION=$(node -p "require('./package.json').version")
-        echo "Detected version: $VERSION"
-        
-        if [[ $VERSION == *"-alpha."* ]]; then
-          echo "tag=alpha" >> $GITHUB_OUTPUT
-          echo "Publishing to alpha tag"
-        elif [[ $VERSION == *"-beta."* ]]; then
-          echo "tag=beta" >> $GITHUB_OUTPUT
-          echo "Publishing to beta tag"
-        elif [[ $VERSION == *"-rc."* ]]; then
-          echo "tag=rc" >> $GITHUB_OUTPUT
-          echo "Publishing to rc tag"
-        else
-          echo "tag=latest" >> $GITHUB_OUTPUT
-          echo "Publishing to latest tag"
-        fi
-    
-    - name: Publish to npm
-      run: npm publish --tag ${{ steps.npm-tag.outputs.tag }}
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Dry run (what will be published)
+        run: npm pack --dry-run
+
+      - name: Publish with proper dist-tag
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Publishing version $VERSION"
+          if [[ "$VERSION" == *-alpha.* || "$VERSION" == *-beta.* || "$VERSION" == *-rc.* ]]; then
+            npm publish --tag next
+          else
+            npm publish
+          fi
+
