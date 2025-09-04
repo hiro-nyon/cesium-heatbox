@@ -16,7 +16,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         registry-url: 'https://registry.npmjs.org'
         
     - name: Install dependencies
@@ -28,28 +28,32 @@ jobs:
     - name: Run tests
       run: npm test
       
-    # package.jsonのバージョンから公開先を決定（より確実）
-    - name: Determine npm tag
-      id: npm-tag
+    - name: Read package version
+      id: meta
+      run: echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+
+    - name: Generate docs and sync wiki (stable only)
+      if: ${{ !contains(steps.meta.outputs.version, '-') }}
       run: |
-        VERSION=$(node -p "require('./package.json').version")
-        echo "Detected version: $VERSION"
-        
-        if [[ $VERSION == *"-alpha."* ]]; then
-          echo "tag=alpha" >> $GITHUB_OUTPUT
-          echo "Publishing to alpha tag"
-        elif [[ $VERSION == *"-beta."* ]]; then
-          echo "tag=beta" >> $GITHUB_OUTPUT
-          echo "Publishing to beta tag"
-        elif [[ $VERSION == *"-rc."* ]]; then
-          echo "tag=rc" >> $GITHUB_OUTPUT
-          echo "Publishing to rc tag"
-        else
-          echo "tag=latest" >> $GITHUB_OUTPUT
-          echo "Publishing to latest tag"
-        fi
+        npm run docs
+        npm run wiki:sync
+
+    - name: Publish Wiki (stable only)
+      if: ${{ !contains(steps.meta.outputs.version, '-') }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OWNER: ${{ github.repository_owner }}
+        REPO: ${{ github.event.repository.name }}
+      run: |
+        bash tools/wiki/publish-wiki.sh "$OWNER" "$REPO"
     
     - name: Publish to npm
-      run: npm publish --tag ${{ steps.npm-tag.outputs.tag }}
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: |
+        VERSION=${{ steps.meta.outputs.version }}
+        if [[ "$VERSION" == *-alpha.* || "$VERSION" == *-beta.* || "$VERSION" == *-rc.* ]]; then
+          npm publish --tag next
+        else
+          npm publish
+        fi
