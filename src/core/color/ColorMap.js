@@ -146,6 +146,6 @@ export class ColorMap {
    * @returns {boolean} True if exists / 存在する場合true
    */
   static hasColorMap(colorMapName) {
-    return COLOR_MAPS.hasOwnProperty(colorMapName);
+    return Object.prototype.hasOwnProperty.call(COLOR_MAPS, colorMapName);
   }
 }

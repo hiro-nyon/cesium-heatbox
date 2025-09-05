@@ -182,7 +182,7 @@ export class DebugRenderer {
 
     try {
       // Create stats HTML overlay
-      const statsHtml = `
+      const _statsHtml = `
         <div style="
           position: absolute;
           top: 10px;
