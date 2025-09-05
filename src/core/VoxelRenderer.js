@@ -14,6 +14,7 @@ import { VoxelEntityFactory } from './voxel/VoxelEntityFactory.js';
 import { DebugRenderer } from './voxel/DebugRenderer.js';
 import { AdaptiveOutlineController } from './outline/AdaptiveOutlineController.js';
 import { OutlineRenderer } from './outline/OutlineRenderer.js';
+import { DescriptionBuilder } from './voxel/DescriptionBuilder.js';
 
 /**
  * Class responsible for 3D voxel rendering.
@@ -65,6 +66,9 @@ export class VoxelRenderer {
     // ADR-0008 Phase 2: Initialize outline components / 枠線コンポーネントを初期化
     this.adaptiveOutlineController = new AdaptiveOutlineController(this.options.adaptiveParams);
     this.outlineRenderer = new OutlineRenderer(viewer);
+    
+    // ADR-0008 Phase 3: Initialize description builder / 説明文ビルダーを初期化
+    this.descriptionBuilder = new DescriptionBuilder();
     
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
@@ -316,7 +320,7 @@ export class VoxelRenderer {
             y: y,
             z: z
           },
-          description: this.createVoxelDescription(info, key)
+          description: this.descriptionBuilder.createVoxelDescription(info, key)
         });
         
         // エンティティを作成
@@ -380,25 +384,6 @@ export class VoxelRenderer {
    */
   _shouldShowBounds() {
     return this.debugRenderer.shouldShowBounds(this.options?.debug);
-  }
-
-  /**
-   * Create description HTML for a voxel.
-   * ボクセルの説明文を生成します。
-   * @param {Object} voxelInfo - Voxel info / ボクセル情報
-   * @param {string} voxelKey - Voxel key / ボクセルキー
-   * @returns {string} HTML description / HTML形式の説明文
-   */
-  createVoxelDescription(voxelInfo, voxelKey) {
-    return `
-      <div style="padding: 10px; font-family: Arial, sans-serif;">
-        <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
-        <table style="width: 100%;">
-          <tr><td><b>エンティティ数:</b></td><td>${voxelInfo.count}</td></tr>
-          <tr><td><b>ID:</b></td><td>${voxelKey}</td></tr>
-        </table>
-      </div>
-    `;
   }
 
   /**
