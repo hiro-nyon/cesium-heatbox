@@ -4,6 +4,7 @@ let viewer = null;
 let heatboxInstance = null;
 let currentEntities = [];
 let currentData = null;
+let hbVisible = true;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -143,18 +144,15 @@ function reRenderHeatmap() {
   try {
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     Object.assign(heatboxInstance.options, {
-      showOutline: wireframe ? true : false,
+      showOutline: true,
       opacity: wireframe ? 0.0 : 1.0,
-      boxOpacityResolver: !wireframe ? (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        return 0.05 + nd * 0.95; // 0.05–1.0
-      }) : (() => 0),
-      outlineEmulation: wireframe ? 'all' : 'off',
+      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
       outlineInset: wireframe ? 2.0 : 0,
       outlineInsetMode: 'all',
-      // Wireframe: solid outline (no density-based opacity), thicker width
-      ...(wireframe ? { outlineOpacity: 1.0, outlineOpacityResolver: undefined, outlineWidth: 10, outlineWidthResolver: undefined } : {})
+      outlineOpacity: 1.0,
+      outlineWidth: wireframe ? 10 : (heatboxInstance.options?.outlineWidth || 2),
+      adaptiveOutlines: wireframe ? false : true,
+      outlineWidthPreset: wireframe ? 'uniform' : 'adaptive-density'
     });
     if (typeof heatboxInstance.createFromEntities === 'function') {
       heatboxInstance.createFromEntities(currentEntities);
@@ -529,36 +527,20 @@ async function createHeatmap() {
       autoVoxelSize: true,
       autoVoxelSizeMode: 'basic',
       voxelSize: undefined,
-      maxVoxelSize: 10,
-      targetCells: 3000,
       maxRenderVoxels: 'auto',
       renderLimitStrategy: 'density',
       colorMap: 'viridis',
-      // Global opacity lets resolver drive contrast more clearly
       opacity: wireframe ? 0.0 : 1.0,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
-      showOutline: wireframe ? true : false,
-      // Default: density-driven fill shading
-      boxOpacityResolver: !wireframe ? (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5); // stronger gamma for contrast
-        return 0.05 + nd * 0.95; // 0.05–1.0 by density (stronger)
-      }) : (() => 0),
-      // Wireframe emulation (outlines only)
-      outlineEmulation: wireframe ? 'all' : 'off',
+      showOutline: true,
+      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
       outlineInset: wireframe ? 2.0 : 0,
       outlineInsetMode: 'all',
-      outlineOpacityResolver: wireframe ? (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        return 0.05 + nd * 0.95; // match box density mapping (0.05–1.0)
-      }) : undefined,
-      outlineWidthResolver: wireframe ? (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        return 6 + Math.round(nd * 6); // 6–12 px (thicker)
-      }) : undefined,
+      outlineOpacity: 1.0,
+      outlineWidth: wireframe ? 10 : 2,
+      adaptiveOutlines: wireframe ? false : true,
+      outlineWidthPreset: wireframe ? 'uniform' : 'adaptive-density',
       autoView: autoCamera
     };
     
@@ -579,7 +561,16 @@ async function createHeatmap() {
       heatboxInstance = new HB(viewer, options);
       // Update heatbox version info
       const hv = document.getElementById('heatboxVersion');
-      if (hv) hv.textContent = 'Loaded';
+      if (hv) {
+        try {
+          const ver = (typeof CesiumHeatbox !== 'undefined' && CesiumHeatbox.VERSION)
+            ? CesiumHeatbox.VERSION
+            : '0.1.10-alpha.2';
+          hv.textContent = ver;
+        } catch (_) {
+          hv.textContent = '0.1.10-alpha.2';
+        }
+      }
     }
     
     // Create heatmap from Cesium Entities
@@ -634,8 +625,14 @@ function clearHeatmap() {
 function toggleVisibility() {
   try {
     if (heatboxInstance) {
-      heatboxInstance.toggleVisibility();
-      updateStatus('Heatmap visibility toggled', 'success');
+      hbVisible = !hbVisible;
+      if (typeof heatboxInstance.setVisible === 'function') {
+        heatboxInstance.setVisible(hbVisible);
+      } else if (typeof heatboxInstance.toggleVisibility === 'function') {
+        // Fallback for potential legacy helper
+        heatboxInstance.toggleVisibility();
+      }
+      updateStatus(`Heatmap ${hbVisible ? 'shown' : 'hidden'}`, 'success');
     }
   } catch (error) {
     console.error('Error toggling visibility:', error);

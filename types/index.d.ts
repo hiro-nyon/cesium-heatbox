@@ -1,0 +1,95 @@
+
+// Minimal type declarations for cesium-heatbox
+
+export interface HeatboxOptions {
+  voxelSize?: number;
+  opacity?: number;
+  emptyOpacity?: number;
+  showOutline?: boolean;
+  showEmptyVoxels?: boolean;
+  minColor?: [number, number, number];
+  maxColor?: [number, number, number];
+  maxRenderVoxels?: number;
+  /** @deprecated v0.1.5: ignored and scheduled for removal */
+  batchMode?: 'auto' | 'primitive' | 'entity';
+  // v0.1.3 追加 / v0.1.5: object form supported
+  debug?: boolean | { showBounds?: boolean };
+  // v0.1.2 新機能
+  wireframeOnly?: boolean;
+  heightBased?: boolean;
+  outlineWidth?: number;
+  // v0.1.4 新機能
+  autoVoxelSize?: boolean;           // 自動ボクセルサイズ決定
+  // v0.1.5 新機能
+  colorMap?: 'custom' | 'viridis' | 'inferno';
+  diverging?: boolean;
+  divergingPivot?: number;
+  highlightTopN?: number | null;
+  highlightStyle?: { outlineWidth?: number; boostOpacity?: number };
+  // v0.1.6 新機能
+  voxelGap?: number; // ボクセル間ギャップ（メートル）
+  outlineOpacity?: number; // 枠線透明度（0-1）
+  // v0.1.6.1: Inset outline
+  outlineInset?: number;
+  outlineInsetMode?: 'all' | 'topn';
+  // v0.1.7: Adaptive outline control
+  outlineRenderMode?: 'standard' | 'inset' | 'emulation-only';
+  adaptiveOutlines?: boolean;
+  outlineWidthPreset?: 'uniform' | 'adaptive-density' | 'topn-focus';
+  // v0.1.9: Auto view fitting
+  autoView?: boolean;
+  fitViewOptions?: {
+    paddingPercent?: number;
+    pitchDegrees?: number;
+    headingDegrees?: number;
+    altitudeStrategy?: 'auto' | 'manual';
+  };
+  // v0.1.9: Rendering limits and strategies  
+  renderLimitStrategy?: 'density' | 'coverage' | 'hybrid';
+  minCoverageRatio?: number;
+  coverageBinsXY?: 'auto' | number;
+}
+
+export interface HeatboxStatistics {
+  totalVoxels: number;
+  renderedVoxels: number;
+  nonEmptyVoxels: number;
+  emptyVoxels: number;
+  totalEntities: number;
+  minCount: number;
+  maxCount: number;
+  averageCount: number;
+  // v0.1.4 自動調整情報
+  autoAdjusted?: boolean;
+  originalVoxelSize?: number;
+  finalVoxelSize?: number;
+  adjustmentReason?: string;
+}
+
+export default class Heatbox {
+  constructor(viewer: any, options?: HeatboxOptions);
+  setData(entities: any[]): void;
+  createFromEntities(entities: any[]): Promise<HeatboxStatistics>;
+  setVisible(show: boolean): void;
+  clear(): void;
+  destroy(): void;
+  getOptions(): HeatboxOptions;
+  updateOptions(newOptions: HeatboxOptions): void;
+  getStatistics(): HeatboxStatistics | null;
+  getBounds(): any | null;
+  getDebugInfo(): any;
+  fitView(bounds?: any, options?: any): Promise<void>;
+  static filterEntities<T = any>(entities: T[], predicate: (e: T) => boolean): T[];
+}
+
+export { Heatbox };
+
+export function getAllEntities(viewer: any): any[];
+export function generateTestEntities(viewer: any, bounds: any, count?: number): any[];
+export function createHeatbox(viewer: any, options?: HeatboxOptions): Heatbox;
+export function getEnvironmentInfo(): any;
+
+export const CesiumHeatbox: typeof Heatbox;
+export const VERSION: string;
+export const AUTHOR: string;
+export const REPOSITORY: string;
