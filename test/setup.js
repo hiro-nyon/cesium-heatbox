@@ -63,3 +63,11 @@ global.testUtils = {
     };
   }
 };
+
+// Reduce test log noise by setting logger to WARN unless explicitly enabled by tests
+try {
+  const { Logger } = require('../src/utils/logger.js');
+  Logger.setLogLevel({ debug: false });
+} catch (_) {
+  // ignore if logger is not loadable in this context
+}
