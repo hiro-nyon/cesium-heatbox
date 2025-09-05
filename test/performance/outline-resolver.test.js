@@ -27,6 +27,7 @@ describe('outlineWidthResolver Performance', () => {
     viewer = {
       entities: {
         add: jest.fn(),
+        remove: jest.fn(),
         removeAll: jest.fn(),
         values: []
       }
