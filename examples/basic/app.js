@@ -285,34 +285,16 @@ function getOptionsFromUI() {
     debugOption = false;
   }
   
-  // v0.1.6: 適応的枠線制御の実装（旧版との互換性維持）
-  let outlineWidthResolver = null;
+  // v0.1.10: 適応的制御プリセット使用（ADR-0008 Phase 4 - 動的リゾルバ廃止）
+  let adaptivePreset = 'uniform';
+  let adaptiveEnabled = false;
   if (elements.adaptiveOutline?.checked) {
-    outlineWidthResolver = ({ voxel, isTopN, normalizedDensity }) => {
-      // 密度に応じた適応的制御（デモ用）
-      if (isTopN) return 6; // TopN は常に太く
-      if (normalizedDensity > 0.7) return 1; // 高密度は細く
-      if (normalizedDensity > 0.3) return 2; // 中密度は標準
-      return 3; // 低密度は太く
-    };
+    adaptiveEnabled = true;
+    adaptivePreset = 'adaptive-density'; // 密度適応型プリセット
   }
-
-  // v0.1.7: 透明度resolverのデモ実装
-  let boxOpacityResolver = null;
-  let outlineOpacityResolver = null;
   if (elements.useOpacityResolvers?.checked) {
-    // 順相関（密度が高いほど不透明、低いほど薄い）
-    boxOpacityResolver = ({ isTopN, normalizedDensity }) => {
-      if (isTopN) return 1.0; // TopNは最も不透明に
-      const v = 0.3 + 0.7 * (normalizedDensity || 0);
-      return Math.max(0, Math.min(1, v));
-    };
-
-    outlineOpacityResolver = ({ isTopN, normalizedDensity }) => {
-      if (isTopN) return 1.0; // TopNは最も不透明に
-      const v = 0.3 + 0.7 * (normalizedDensity || 0);
-      return Math.max(0, Math.min(1, v));
-    };
+    adaptiveEnabled = true;
+    adaptivePreset = 'topn-focus'; // TopN重点型プリセット
   }
 
   const options = {
@@ -336,13 +318,10 @@ function getOptionsFromUI() {
     // v0.1.6.1 新機能: インセット枠線
     outlineInset: elements.outlineInsetMode?.value === 'off' ? 0 : (parseFloat(elements.outlineInset?.value) || 0),
     outlineInsetMode: elements.outlineInsetMode?.value === 'off' ? 'all' : (elements.outlineInsetMode?.value || 'all'),
-    outlineWidthResolver: outlineWidthResolver,
-    // v0.1.7 新機能: 適応的枠線制御とエミュレーション専用表示モード
+    // v0.1.10: プリセットベース適応制御（ADR-0008 Phase 4）
     outlineRenderMode: elements.outlineRenderMode?.value || 'standard',
-    adaptiveOutlines: elements.adaptiveOutlines?.checked || false,
-    outlineWidthPreset: elements.outlineWidthPreset?.value || 'uniform',
-    boxOpacityResolver: boxOpacityResolver,
-    outlineOpacityResolver: outlineOpacityResolver
+    adaptiveOutlines: adaptiveEnabled,
+    outlineWidthPreset: elements.outlineWidthPreset?.value || adaptivePreset
   };
   
   // autoVoxelSizeがtrueでない場合のみvoxelSizeを設定

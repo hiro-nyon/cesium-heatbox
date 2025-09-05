@@ -102,22 +102,16 @@ export class VoxelRenderingEngine {
           }
         }
 
-        // ADR-0008 Phase 1: ボクセル寸法計算をVoxelGeometryで実行
-        const dimensions = VoxelGeometry.calculateVoxelDimensions(grid);
-        
-        // 高さベース表現の場合の高さ調整
-        let adjustedHeight = dimensions.height;
+        // ADR-0008 Phase 1: ボクセル寸法計算をVoxelGeometryで実行（voxelGap/heightBased対応）
+        const dims = VoxelGeometry.calculateVoxelDimensions(grid, normalizedDensity, options);
+        const sizeX = dims.x;
+        const sizeY = dims.y;
+        const sizeZ = dims.z;
         let adjustedAlt = centerAlt;
-        
-        if (options.heightBased && info.count > 0 && statistics.maxCount > 0) {
-          const heightRatio = info.count / statistics.maxCount;
-          adjustedHeight = dimensions.height * Math.max(0.1, heightRatio);
-          adjustedAlt = centerAlt + (adjustedHeight - dimensions.height) / 2;
-        }
 
         // 枠線の設定
         let outlineWidth = options.outlineWidth;
-        let outlineColor = options.showOutline ? Cesium.Color.WHITE : undefined;
+        let outlineColor = options.showOutline ? Cesium.Color.fromBytes(255, 255, 255, 255) : undefined;
         
         // v0.1.6: 動的枠線制御の適用（優先順位：resolver > 適応的 > 固定値）
         if (options.outlineWidthResolver && typeof options.outlineWidthResolver === 'function') {
@@ -143,39 +137,24 @@ export class VoxelRenderingEngine {
             outlineWidth = adaptiveParams.outlineWidth;
           }
         }
-        
-        // 枠線不透明度の処理
-        let outlineOpacity = 1.0;
-        if (options.outlineOpacityResolver && typeof options.outlineOpacityResolver === 'function') {
-          const resolverCtx = {
-            voxel: { x, y, z, count: info.count },
-            isTopN,
-            density: info.count,
-            normalizedDensity: statistics.maxCount > statistics.minCount ? 
-              (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0,
-            statistics,
-            adaptiveParams
-          };
-          try {
-            const resolverOpacity = options.outlineOpacityResolver(resolverCtx);
-            outlineOpacity = isNaN(resolverOpacity) ? 1.0 : Math.max(0, Math.min(1, resolverOpacity));
-          } catch (e) {
-            Logger.warn('outlineOpacityResolver error, using fallback:', e);
-            outlineOpacity = adaptiveParams.outlineOpacity || 1.0;
-          }
-        } else {
-          outlineOpacity = adaptiveParams.outlineOpacity || 1.0;
+        // v0.1.5: TopN強調時の枠線幅上書き（resolver適用後）
+        if (isTopN && options.highlightTopN) {
+          outlineWidth = (options.highlightStyle && options.highlightStyle.outlineWidth) || outlineWidth;
         }
-
-        // 枠線の色に透明度を適用
-        if (outlineColor && outlineOpacity !== 1.0) {
-          outlineColor = outlineColor.withAlpha(outlineOpacity);
+        
+        // ADR-0008 Phase 4: 適応的制御による枠線不透明度の処理
+        const outlineOpacity = (adaptiveParams.outlineOpacity != null)
+          ? adaptiveParams.outlineOpacity
+          : (options.outlineOpacity != null ? options.outlineOpacity : 1.0);
+        // 枠線の色に透明度を適用（デフォルト白）
+        if (options.showOutline) {
+          outlineColor = Cesium.Color.fromBytes(255, 255, 255, 255).withAlpha(outlineOpacity);
         }
 
         // ADR-0008 Phase 1: VoxelEntityFactoryでエンティティ作成
         const entityConfig = VoxelEntityFactory.createBoxEntity({
           position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, adjustedAlt),
-          dimensions: new Cesium.Cartesian3(dimensions.width, adjustedHeight, dimensions.depth),
+          dimensions: new Cesium.Cartesian3(sizeX, sizeY, sizeZ),
           color: color,
           opacity: opacity,
           wireframe: options.wireframeOnly,
@@ -221,10 +200,11 @@ export class VoxelRenderingEngine {
         
         const voxelInfoWithPosition = {
           ...info,
+          key: key,
           position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, adjustedAlt),
-          width: dimensions.width,
-          height: adjustedHeight,
-          depth: dimensions.depth,
+          width: sizeX,
+          height: sizeZ,
+          depth: sizeY,
           isTopN: isTopN
         };
 

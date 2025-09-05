@@ -296,6 +296,8 @@ export class VoxelRenderer {
    * @private
    */
   _shouldApplyInsetOutline(isTopN) {
-    return this.entityManager.shouldApplyInsetOutline(isTopN, this.options);
+    const mode = this.options.outlineInsetMode || 'all';
+    if (mode === 'topn') return !!isTopN;
+    return true;
   }
 }

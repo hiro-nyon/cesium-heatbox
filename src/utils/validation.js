@@ -189,21 +189,6 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.outlineOpacity = Math.max(0, Math.min(1, parseFloat(normalized.outlineOpacity) || 1));
   }
   
-  if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
-    if (typeof normalized.outlineWidthResolver !== 'function') {
-      Logger.warn('outlineWidthResolver must be a function. Ignoring.');
-      normalized.outlineWidthResolver = null;
-    }
-  }
-
-  // v0.1.6+: 太線エミュレーションモード
-  if (normalized.outlineEmulation !== undefined) {
-    const validModes = ['off', 'topn', 'non-topn', 'all'];
-    if (!validModes.includes(normalized.outlineEmulation)) {
-      Logger.warn(`Invalid outlineEmulation: ${normalized.outlineEmulation}. Using 'off'.`);
-      normalized.outlineEmulation = 'off';
-    }
-  }
 
   // v0.1.6.1 (ADR-0004): インセット枠線
   if (normalized.outlineInset !== undefined) {
@@ -285,17 +270,24 @@ export function validateAndNormalizeOptions(options = {}) {
     }
   }
   
-  // v0.1.9: 自動視点調整 fitView オプション
+  // v0.1.10: fitViewOptions API統一 (ADR-0008 Phase 4)
   if (normalized.fitViewOptions !== undefined) {
     const f = normalized.fitViewOptions || {};
     const padding = parseFloat(f.paddingPercent);
-    const pitch = parseFloat(f.pitch);
-    const heading = parseFloat(f.heading);
+    // 後方互換性: pitch/heading → pitchDegrees/headingDegrees
+    const pitch = parseFloat(f.pitchDegrees ?? f.pitch);
+    const heading = parseFloat(f.headingDegrees ?? f.heading);
     const altitudeStrategy = f.altitudeStrategy;
+    
+    // 旧API使用時の移行警告
+    if (f.pitch !== undefined || f.heading !== undefined) {
+      Logger.warn('fitViewOptions.pitch/heading は非推奨です。pitchDegrees/headingDegreesを使用してください。');
+    }
+    
     normalized.fitViewOptions = {
       paddingPercent: Number.isFinite(padding) ? Math.max(0, Math.min(1, padding)) : 0.1,
-      pitch: Number.isFinite(pitch) ? Math.max(-90, Math.min(0, pitch)) : -30,
-      heading: Number.isFinite(heading) ? heading : 0,
+      pitchDegrees: Number.isFinite(pitch) ? Math.max(-90, Math.min(0, pitch)) : -30,
+      headingDegrees: Number.isFinite(heading) ? heading : 0,
       altitudeStrategy: altitudeStrategy === 'manual' ? 'manual' : 'auto'
     };
   }
