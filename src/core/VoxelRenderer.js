@@ -8,31 +8,10 @@ import { Logger } from '../utils/logger.js';
 import { DensitySelectionStrategy } from './selection/DensitySelectionStrategy.js';
 import { CoverageSelectionStrategy } from './selection/CoverageSelectionStrategy.js';
 import { HybridSelectionStrategy } from './selection/HybridSelectionStrategy.js';
-
-// v0.1.5: カラーマップ定義（256段階のLUTテーブル）
-const COLOR_MAPS = {
-  // Viridisカラーマップ（簡略化した16段階）
-  viridis: [
-    [68, 1, 84], [71, 44, 122], [59, 81, 139], [44, 113, 142],
-    [33, 144, 141], [39, 173, 129], [92, 200, 99], [170, 220, 50],
-    [253, 231, 37], [255, 255, 255], [255, 255, 255], [255, 255, 255],
-    [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]
-  ],
-  // Infernoカラーマップ（簡略化した16段階）
-  inferno: [
-    [0, 0, 4], [31, 12, 72], [85, 15, 109], [136, 34, 106],
-    [186, 54, 85], [227, 89, 51], [249, 142, 8], [252, 187, 17],
-    [245, 219, 76], [252, 255, 164], [255, 255, 255], [255, 255, 255],
-    [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]
-  ],
-  // 二極性配色（blue-white-red）
-  diverging: [
-    [0, 0, 255], [32, 64, 255], [64, 128, 255], [96, 160, 255],
-    [128, 192, 255], [160, 224, 255], [192, 240, 255], [224, 248, 255],
-    [255, 255, 255], [255, 248, 224], [255, 240, 192], [255, 224, 160],
-    [255, 192, 128], [255, 160, 96], [255, 128, 64], [255, 64, 32], [255, 0, 0]
-  ]
-};
+import { ColorMap } from './color/ColorMap.js';
+import { VoxelGeometry } from './voxel/VoxelGeometry.js';
+import { VoxelEntityFactory } from './voxel/VoxelEntityFactory.js';
+import { DebugRenderer } from './voxel/DebugRenderer.js';
 
 /**
  * Class responsible for 3D voxel rendering.
@@ -77,6 +56,9 @@ export class VoxelRenderer {
     
     // v0.1.10: Initialize selection strategies / 選択戦略を初期化
     this._initializeSelectionStrategies();
+    
+    // ADR-0008 Phase 1: Initialize debug renderer / デバッグレンダラーを初期化
+    this.debugRenderer = new DebugRenderer(viewer);
     
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
@@ -205,11 +187,8 @@ export class VoxelRenderer {
       statistics
     });
 
-    // バウンディングボックスのデバッグ表示制御（v0.1.5: debug.showBounds対応）
-    const shouldShowBounds = this._shouldShowBounds();
-    if (shouldShowBounds) {
-      this._renderBoundingBox(bounds);
-    }
+    // ADR-0008 Phase 1: DebugRendererでバウンディングボックス表示制御
+    this.debugRenderer.renderBoundingBox(bounds, this.options.debug);
 
     // 表示するボクセルのリスト
     let displayVoxels = [];
@@ -282,10 +261,11 @@ export class VoxelRenderer {
       try {
         const { x, y, z } = info;
         
-        // ボクセル中心座標を計算（シンプルな方法）
-        const centerLon = bounds.minLon + (x + 0.5) * (bounds.maxLon - bounds.minLon) / grid.numVoxelsX;
-        const centerLat = bounds.minLat + (y + 0.5) * (bounds.maxLat - bounds.minLat) / grid.numVoxelsY;
-        const centerAlt = bounds.minAlt + (z + 0.5) * (bounds.maxAlt - bounds.minAlt) / grid.numVoxelsZ;
+        // ADR-0008 Phase 1: ボクセル中心座標をVoxelGeometryで計算
+        const center = VoxelGeometry.calculateVoxelCenter(x, y, z, bounds, grid);
+        const centerLon = center.longitude;
+        const centerLat = center.latitude;
+        const centerAlt = center.altitude;
         
         const isTopN = topNVoxels.has(key); // v0.1.5: TopNハイライト判定
         
@@ -304,7 +284,7 @@ export class VoxelRenderer {
           const normalizedDensity = statistics.maxCount > statistics.minCount ? 
             (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
           
-          color = this.interpolateColor(normalizedDensity, info.count);
+          color = ColorMap.interpolateColor(normalizedDensity, info.count, this.options);
           
           // v0.1.7: 透明度resolverの適用（優先順位：resolver > 適応的 > 固定値）
           if (this.options.boxOpacityResolver && typeof this.options.boxOpacityResolver === 'function') {
@@ -332,25 +312,13 @@ export class VoxelRenderer {
           }
         }
         
-        // v0.1.6: ボクセル寸法計算（voxelGap対応）
-        // 各軸のセルサイズ（グリッドが持つ実セルサイズを優先、なければvoxelSizeMetersにフォールバック）
-        let cellSizeX = grid.cellSizeX || (grid.lonRangeMeters ? (grid.lonRangeMeters / grid.numVoxelsX) : grid.voxelSizeMeters);
-        let cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
-        let baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
-
-        // v0.1.6: voxelGap による寸法縮小（枠線重なり対策）
-        if (this.options.voxelGap > 0) {
-          cellSizeX = Math.max(cellSizeX - this.options.voxelGap, cellSizeX * 0.1);
-          cellSizeY = Math.max(cellSizeY - this.options.voxelGap, cellSizeY * 0.1);
-          baseCellSizeZ = Math.max(baseCellSizeZ - this.options.voxelGap, baseCellSizeZ * 0.1);
-        }
-
-        let boxHeight = baseCellSizeZ;
-        if (this.options.heightBased && info.count > 0) {
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          boxHeight = baseCellSizeZ * (0.1 + normalizedDensity * 0.9); // 10%から100%の高さ
-        }
+        // ADR-0008 Phase 1: ボクセル寸法計算をVoxelGeometryで実行
+        const normalizedDensity = statistics.maxCount > statistics.minCount ? 
+          (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
+        const voxelDimensions = VoxelGeometry.calculateVoxelDimensions(grid, normalizedDensity, this.options);
+        const cellSizeX = voxelDimensions.x;
+        const cellSizeY = voxelDimensions.y;
+        const boxHeight = voxelDimensions.z;
         
         // v0.1.7: 動的枠線太さ制御（優先順位：resolver > 適応的 > 固定値）
         let finalOutlineWidth;
@@ -446,21 +414,22 @@ export class VoxelRenderer {
           }
         }
         
-        // エンティティの設定
-        const entityConfig = {
-          position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
-          box: {
-            dimensions: new Cesium.Cartesian3(
-              cellSizeX,
-              cellSizeY,
-              boxHeight
-            ),
-            outline: shouldShowStandardOutline && !emulateThickForThis,
-            outlineColor: outlineColorWithOpacity,
-            outlineWidth: Math.max(finalOutlineWidth || 1, 0) // 負値防止
+        // ADR-0008 Phase 1: VoxelEntityFactoryでエンティティ作成
+        const position = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt);
+        const dimensions = new Cesium.Cartesian3(cellSizeX, cellSizeY, boxHeight);
+        
+        const entityConfig = VoxelEntityFactory.createBoxEntity({
+          position: position,
+          dimensions: dimensions,
+          color: color,
+          opacity: opacity,
+          wireframe: this.options.wireframeOnly,
+          outline: {
+            show: shouldShowStandardOutline && !emulateThickForThis,
+            color: outlineColorWithOpacity,
+            width: finalOutlineWidth || 1
           },
           properties: {
-            type: 'voxel',
             key: key,
             count: info.count,
             x: x,
@@ -468,16 +437,7 @@ export class VoxelRenderer {
             z: z
           },
           description: this.createVoxelDescription(info, key)
-        };
-
-        // wireframeOnlyモードの場合は透明、そうでなければ通常の材質
-        if (this.options.wireframeOnly) {
-          entityConfig.box.material = Cesium.Color.TRANSPARENT;
-          entityConfig.box.fill = false;
-        } else {
-          entityConfig.box.material = color.withAlpha(opacity);
-          entityConfig.box.fill = true;
-        }
+        });
         
         // エンティティを作成
         const entity = this.viewer.entities.add(entityConfig);
@@ -521,14 +481,16 @@ export class VoxelRenderer {
             const midSizeY = Math.max(cellSizeY - effInsetY, cellSizeY * 0.1);
             const midSizeZ = Math.max(boxHeight - effInsetZ, boxHeight * 0.1);
 
-            this._addEdgePolylines(
-              centerCart,
-              midSizeX,
-              midSizeY,
-              midSizeZ,
-              outlineColorWithOpacity,
-              Math.max(finalOutlineWidth, 1)
+            // ADR-0008 Phase 1: VoxelEntityFactoryでエッジポリライン作成
+            const edgePolylines = VoxelEntityFactory.createBoxEdgePolylines(
+              centerCart, midSizeX, midSizeY, midSizeZ,
+              outlineColorWithOpacity, Math.max(finalOutlineWidth, 1)
             );
+            
+            edgePolylines.forEach(polylineConfig => {
+              const polylineEntity = this.viewer.entities.add(polylineConfig);
+              this.voxelEntities.push(polylineEntity);
+            });
           } catch (e) {
             Logger.warn('Failed to add emulated thick outline polylines:', e);
           }
@@ -543,185 +505,6 @@ export class VoxelRenderer {
     
     // 実際に描画されたボクセル数を返す
     return renderedCount;
-  }
-
-  /**
-   * バウンディングボックスを描画（デバッグ用）
-   * @param {Object} bounds - 境界情報
-   * @private
-   */
-  _renderBoundingBox(bounds) {
-    if (!bounds) return;
-
-    try {
-      // 中心点
-      const centerLon = (bounds.minLon + bounds.maxLon) / 2;
-      const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-      const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
-      
-      // サイズ計算（概算）
-      const widthMeters = (bounds.maxLon - bounds.minLon) * 111000 * Math.cos(centerLat * Math.PI / 180);
-      const depthMeters = (bounds.maxLat - bounds.minLat) * 111000;
-      const heightMeters = bounds.maxAlt - bounds.minAlt;
-      
-      // 境界ボックスの作成
-      const boundingBox = this.viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
-        box: {
-          dimensions: new Cesium.Cartesian3(widthMeters, depthMeters, heightMeters),
-          material: Cesium.Color.YELLOW.withAlpha(0.1),
-          outline: true,
-          outlineColor: Cesium.Color.YELLOW.withAlpha(0.3),
-          outlineWidth: 2
-        },
-        description: `バウンディングボックス<br>サイズ: ${widthMeters.toFixed(1)} x ${depthMeters.toFixed(1)} x ${heightMeters.toFixed(1)} m`
-      });
-      
-      this.voxelEntities.push(boundingBox);
-      
-      Logger.debug('Debug bounding box added:', {
-        center: { lon: centerLon, lat: centerLat, alt: centerAlt },
-        size: { width: widthMeters, depth: depthMeters, height: heightMeters }
-      });
-      
-    } catch (error) {
-      Logger.warn('Failed to render bounding box:', error);
-    }
-  }
-
-  /**
-   * ボックスのエッジをポリラインで描画（太線エミュレーション）
-   * @param {Cesium.Cartesian3} centerCart - ボックス中心
-   * @param {number} sx - X寸法（m）
-   * @param {number} sy - Y寸法（m）
-   * @param {number} sz - Z寸法（m）
-   * @param {Cesium.Color} color - 線色
-   * @param {number} width - 線幅（px）
-   * @private
-   */
-  _addEdgePolylines(centerCart, sx, sy, sz, color, width) {
-    try {
-      const halfX = sx / 2, halfY = sy / 2, halfZ = sz / 2;
-      const enu = Cesium.Transforms.eastNorthUpToFixedFrame(centerCart);
-      const toWorld = (dx, dy, dz) => {
-        const local = new Cesium.Cartesian3(dx, dy, dz);
-        return Cesium.Matrix4.multiplyByPoint(enu, local, new Cesium.Cartesian3());
-      };
-      const C = [
-        toWorld(-halfX, -halfY, -halfZ),
-        toWorld( halfX, -halfY, -halfZ),
-        toWorld( halfX,  halfY, -halfZ),
-        toWorld(-halfX,  halfY, -halfZ),
-        toWorld(-halfX, -halfY,  halfZ),
-        toWorld( halfX, -halfY,  halfZ),
-        toWorld( halfX,  halfY,  halfZ),
-        toWorld(-halfX,  halfY,  halfZ)
-      ];
-      const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-      edges.forEach(([i, j]) => {
-        const poly = this.viewer.entities.add({
-          polyline: {
-            positions: [C[i], C[j]],
-            width: width,
-            material: color,
-            arcType: Cesium.ArcType.NONE
-          }
-        });
-        this.voxelEntities.push(poly);
-      });
-    } catch (error) {
-      Logger.warn('Edge polyline creation failed:', error);
-    }
-  }
-
-  /**
-   * Interpolate color based on density (v0.1.5: color maps supported).
-   * 密度に基づいて色を補間（v0.1.5: カラーマップ対応）。
-   * @param {number} normalizedDensity - Normalized density (0-1) / 正規化された密度 (0-1)
-   * @param {number} [rawValue] - Raw value for diverging scheme / 生値（二極性配色用）
-   * @returns {Cesium.Color} Calculated color / 計算された色
-   */
-  interpolateColor(normalizedDensity, rawValue = null) {
-    // v0.1.5: 二極性配色対応（pivot<=0 の場合は安全にフォールバック）
-    if (this.options.diverging && rawValue !== null) {
-      const pivot = typeof this.options.divergingPivot === 'number' ? this.options.divergingPivot : 0;
-      if (pivot > 0) {
-        return this._interpolateDivergingColor(rawValue);
-      }
-      // pivot が 0 以下の場合は従来の補間にフォールバック
-    }
-    
-    // v0.1.5: カラーマップ対応
-    if (this.options.colorMap && this.options.colorMap !== 'custom') {
-      return this._interpolateFromColorMap(normalizedDensity, this.options.colorMap);
-    }
-    
-    // 従来のmin/max色補間（後方互換）
-    const [minR, minG, minB] = this.options.minColor;
-    const [maxR, maxG, maxB] = this.options.maxColor;
-    
-    const r = Math.round(minR + (maxR - minR) * normalizedDensity);
-    const g = Math.round(minG + (maxG - minG) * normalizedDensity);
-    const b = Math.round(minB + (maxB - minB) * normalizedDensity);
-    
-    return Cesium.Color.fromBytes(r, g, b);
-  }
-  
-  /**
-   * Interpolate color from a color map.
-   * カラーマップから色を補間します。
-   * @param {number} normalizedValue - Normalized value (0-1) / 正規化された値 (0-1)
-   * @param {string} colorMapName - Color map name / カラーマップ名
-   * @returns {Cesium.Color} Calculated color / 計算された色
-   * @private
-   */
-  _interpolateFromColorMap(normalizedValue, colorMapName) {
-    const colorMap = COLOR_MAPS[colorMapName];
-    if (!colorMap) {
-      Logger.warn(`Unknown color map: ${colorMapName}. Falling back to custom.`);
-      return this.interpolateColor(normalizedValue);
-    }
-    
-    // マップインデックスを計算
-    const scaledValue = normalizedValue * (colorMap.length - 1);
-    const lowerIndex = Math.floor(scaledValue);
-    const upperIndex = Math.min(lowerIndex + 1, colorMap.length - 1);
-    const fraction = scaledValue - lowerIndex;
-    
-    // 線形補間
-    const [r1, g1, b1] = colorMap[lowerIndex];
-    const [r2, g2, b2] = colorMap[upperIndex];
-    
-    const r = Math.round(r1 + (r2 - r1) * fraction);
-    const g = Math.round(g1 + (g2 - g1) * fraction);
-    const b = Math.round(b1 + (b2 - b1) * fraction);
-    
-    return Cesium.Color.fromBytes(r, g, b);
-  }
-  
-  /**
-   * Interpolate diverging (blue-white-red) color.
-   * 二極性配色（blue-white-red）で色を補間します。
-   * @param {number} rawValue - Raw value / 生値
-   * @returns {Cesium.Color} Calculated color / 計算された色
-   * @private
-   */
-  _interpolateDivergingColor(rawValue) {
-    const pivot = this.options.divergingPivot || 0;
-    
-    // ピボットからの偏差を正規化
-    let normalizedValue;
-    if (rawValue <= pivot) {
-      // 青い側 (0 to 0.5)
-      normalizedValue = 0.5 * (rawValue / pivot);
-      normalizedValue = Math.max(0, Math.min(0.5, normalizedValue));
-    } else {
-      // 赤い側 (0.5 to 1)
-      normalizedValue = 0.5 + 0.5 * ((rawValue - pivot) / pivot);
-      normalizedValue = Math.max(0.5, Math.min(1, normalizedValue));
-    }
-    
-    return this._interpolateFromColorMap(normalizedValue, 'diverging');
   }
 
   /**
@@ -763,29 +546,11 @@ export class VoxelRenderer {
     });
     
     this.voxelEntities = [];
-  }
-
-  /**
-   * デバッグ境界ボックス表示の判定（v0.1.5: debug.showBounds対応）
-   * @returns {boolean} 境界ボックスを表示する場合はtrue
-   * @private
-   */
-  _shouldShowBounds() {
-    if (!this.options.debug) {
-      return false;
-    }
     
-    if (typeof this.options.debug === 'boolean') {
-      // 従来の動作：debugがtrueの場合はバウンディングボックス表示
-      return this.options.debug;
+    // ADR-0008 Phase 1: DebugRendererもクリア
+    if (this.debugRenderer) {
+      this.debugRenderer.clear();
     }
-    
-    if (typeof this.options.debug === 'object' && this.options.debug !== null) {
-      // 新しい動作：debug.showBoundsで明示的に制御
-      return this.options.debug.showBounds === true;
-    }
-    
-    return false;
   }
 
   /**
