@@ -2,6 +2,7 @@
  * Debug rendering utilities.
  * デバッグ描画ユーティリティ。
  */
+import * as Cesium from 'cesium';
 import { Logger } from '../../utils/logger.js';
 import { VoxelEntityFactory } from './VoxelEntityFactory.js';
 

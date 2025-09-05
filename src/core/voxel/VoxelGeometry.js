@@ -59,12 +59,11 @@ export class VoxelGeometry {
     let cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
     let baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
 
-    // v0.1.6.1: ボクセルギャップ適用
+    // v0.1.6.1: ボクセルギャップ適用（従来のメートル単位差分適用に揃える）
     if (options.voxelGap > 0) {
-      const gapFactor = Math.max(0.1, 1 - options.voxelGap * 0.01);
-      cellSizeX *= gapFactor;
-      cellSizeY *= gapFactor;
-      baseCellSizeZ *= gapFactor;
+      cellSizeX = Math.max(cellSizeX - options.voxelGap, cellSizeX * 0.1);
+      cellSizeY = Math.max(cellSizeY - options.voxelGap, cellSizeY * 0.1);
+      baseCellSizeZ = Math.max(baseCellSizeZ - options.voxelGap, baseCellSizeZ * 0.1);
     }
 
     return {

@@ -508,6 +508,27 @@ export class VoxelRenderer {
   }
 
   /**
+   * Backward-compatible color interpolation API.
+   * 後方互換の色補間API（Phase1抽出後もI/F維持）。
+   * @param {number} normalizedDensity
+   * @param {number} [rawValue]
+   * @returns {Cesium.Color}
+   */
+  interpolateColor(normalizedDensity, rawValue = null) {
+    return ColorMap.interpolateColor(normalizedDensity, rawValue, this.options);
+  }
+
+  /**
+   * Backward-compatible debug bounds flag checker.
+   * 後方互換のデバッグ境界表示判定（旧_private I/F維持）。
+   * @returns {boolean}
+   * @private
+   */
+  _shouldShowBounds() {
+    return this.debugRenderer.shouldShowBounds(this.options?.debug);
+  }
+
+  /**
    * Create description HTML for a voxel.
    * ボクセルの説明文を生成します。
    * @param {Object} voxelInfo - Voxel info / ボクセル情報
