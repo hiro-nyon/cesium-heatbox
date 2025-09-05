@@ -77,15 +77,24 @@ Priority: High | Target: 2025-10
   - 大規模移動による衝突 → 小PR分割（戦略→推定→予算→視点の順）と即時レビュー
   - 回帰リスク → 既存Examples/テストでのスナップショット・差分確認を強化
 
-### v0.1.11（観測可能性・プロファイル）- Observability & Profiles
+### v0.1.11（APIクリーンアップ＋観測可能性）- API Cleanup & Observability
 Priority: Medium | Target: 2025-11
 - Scope
+  - [API Cleanup（Breaking含む）]
+    - オプション名の統一: `fitViewOptions.pitch`/`heading` → `pitchDegrees`/`headingDegrees`（旧名削除）
+    - `outlineEmulation` → `outlineRenderMode: 'emulation-only'` に集約
+    - Resolver系の削除: `outlineWidthResolver`/`outlineOpacityResolver`/`boxOpacityResolver`
+    - 代替: `outlineWidthPreset` + `adaptiveOutlines` + `adaptiveParams`
+    - `types/` と README/Wiki の更新、`MIGRATION.md` に移行手順を掲載
+  - [Observability/Profiles]
   - [ ] Advanced に簡易パフォーマンスオーバーレイ（描画数/TopN比率/平均密度/フレーム時間）
   - [ ] ベンチ計測の整備（`npm run benchmark` の出力整形としきい値表示）
   - [ ] Docs: チューニングFAQの追補（計測の読み方/指標の目安）
   - [ ] 設定プロファイル機能（ユースケース別の推奨セット）
   - [ ] Auto Quality（任意拡張）: `qualityMode: 'manual'|'auto'`, `targetFPS` 等で“選抜側のつまみ（K/比率/戦略）”のみを実測FPSに応じて微調整（グリッド再構築は既定で行わない）
 - Deliverables
+  - [ ] `MIGRATION.md` 更新（0.1.9 → 0.1.10 → 0.1.11）とWiki「Migration」への同期
+  - [ ] `types/` 更新（削除・名称統一を反映）
   - [ ] `examples/advanced/` にオーバーレイUI（ON/OFF）
   - [ ] `tools/benchmark.js` の改善（集計とCSV/markdownサマリ）
   - [ ] ドキュメント: パフォーマンスの見方/ボトルネック傾向
@@ -93,6 +102,7 @@ Priority: Medium | Target: 2025-11
   - [ ] `profile: 'mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data'` を `validateAndNormalizeOptions` でマージ適用（ユーザー設定が最終優先）
   - [ ] Auto Quality連携: `targetFPS` 達成のために `maxRenderVoxels`/`minCoverageRatio`/`renderLimitStrategy` をヒステリシス付きで微調整するサンプル実装
 - Acceptance Criteria
+  - [ ] 0.1.11 API に対して README/型/Wiki が整合し、`MIGRATION.md` に置換表・コード例が掲載
   - [ ] オーバーレイのON/OFFで目視確認でき、描画数とフレーム時間が相関して表示される
   - [ ] ベンチ出力が再現可能で、PRで差分比較が容易
   - [ ] `profile` 指定で、同一データに対し一貫した設定セットが適用される（例: `mobile-fast` で `opacity`/`highlightTopN`/`renderLimitStrategy` が想定値）
