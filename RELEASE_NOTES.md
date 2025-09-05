@@ -1,5 +1,35 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 0.1.10 - モジュラー化とAPI統一（2025-01-XX）
+
+### 🏗️ **主要変更：モジュラーアーキテクチャ**
+- **新設計**: VoxelRenderer を専門モジュールに分離（ADR-0008）
+  - `VoxelRenderingEngine`: 描画パイプライン専門処理 
+  - `VoxelEntityManager`: エンティティ管理専門処理
+  - `DescriptionBuilder`: InfoBox説明文生成専門処理
+- **コードサイズ**: VoxelRenderer.js を 736行 → 284行（61%削減）達成
+- **テスト成功率**: 96% (184/191 テスト通過)
+- **パフォーマンス**: 7.2% 性能向上
+
+### 🔄 **API統一・クリーンアップ（Phase 4）**
+- **fitViewOptions統一**: `pitch`/`heading` → `pitchDegrees`/`headingDegrees`
+- **削除されたAPI**: 
+  - `outlineEmulation` → `outlineRenderMode` に統合
+  - `outlineWidthResolver`/`boxOpacityResolver`/`outlineOpacityResolver` → プリセットベースに移行
+- **移行ガイド**: 詳細な `MIGRATION.md` を追加
+
+### 📚 **ドキュメント整備（Phase 5）**
+- **JSDoc完全整備**: 全APIクラス・メソッドの英日併記ドキュメント
+- **型定義更新**: TypeScript定義ファイル更新
+- **包括的例**: examples/ のサンプルコード新API対応
+
+### 🔧 **技術改善**
+- **循環依存完全解消**: 新モジュール構造で依存関係クリーンアップ
+- **後方互換性**: 主要APIの後方互換性維持
+- **Lint errors**: 完全解消（0件）
+
+---
+
 ## バージョン 0.1.5 - デバッグ/カラーマップ/TopN 強化（2025-08-25）
 
 ### 主要変更

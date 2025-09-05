@@ -1,7 +1,20 @@
 /**
- * Logging utility.
- * NODE_ENV and debug flags control the log level.
- * ログ出力制御ユーティリティ。NODE_ENV や debug フラグによってログレベルを制御します。
+ * Comprehensive logging utility with configurable levels and environment-aware output.
+ * 設定可能なレベルと環境対応出力を備えた包括的ログユーティリティ。
+ * 
+ * This logging system provides intelligent log level management based on environment
+ * variables (NODE_ENV, DEBUG) and runtime configuration. Supports multiple log levels
+ * (ERROR, WARN, INFO, DEBUG) with automatic filtering based on production vs development
+ * environments. Essential for debugging and monitoring heatbox operations.
+ * 
+ * このログシステムは、環境変数（NODE_ENV、DEBUG）と実行時設定に基づく
+ * インテリジェントなログレベル管理を提供します。複数のログレベル
+ * （ERROR、WARN、INFO、DEBUG）をサポートし、本番環境vs開発環境に基づく
+ * 自動フィルタリングを行います。ヒートボックス操作のデバッグと監視に必須です。
+ * 
+ * @namespace Logger
+ * @since v0.1.0
+ * @version 1.2.0 - Enhanced environment detection and configuration support
  */
 
 /**

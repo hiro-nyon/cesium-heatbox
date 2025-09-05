@@ -16,14 +16,134 @@ import { VoxelRenderingEngine } from './voxel/VoxelRenderingEngine.js';
 import { VoxelEntityManager } from './voxel/VoxelEntityManager.js';
 
 /**
- * Class responsible for 3D voxel rendering.
- * 3Dボクセルの描画を担当するクラス。
+ * Core class responsible for 3D voxel rendering and visualization management.
+ * 3Dボクセルのレンダリングと可視化管理を担当するコアクラス。
+ * 
+ * This class orchestrates the rendering of 3D voxel-based heatmaps by coordinating
+ * multiple specialized components: rendering engine, entity manager, outline controllers,
+ * and description builders. It provides the main interface for voxel visualization
+ * with support for advanced features like adaptive outlines, TopN highlighting,
+ * and customizable rendering modes.
+ * 
+ * このクラスは、レンダリングエンジン、エンティティマネージャー、アウトラインコントローラー、
+ * および説明文ビルダーなどの複数の専門コンポーネントを調整して、3Dボクセルベースの
+ * ヒートマップのレンダリングを統括します。適応的アウトライン、TopN強調、
+ * カスタマイズ可能なレンダリングモードなどの高度な機能をサポートする、
+ * ボクセル可視化のメインインターフェースを提供します。
+ * 
+ * @since v0.1.0
+ * @version v0.1.10 - Refactored with modular architecture (ADR-0008)
  */
 export class VoxelRenderer {
   /**
-   * Constructor
-   * @param {Cesium.Viewer} viewer - CesiumJS Viewer / CesiumJS Viewer
-   * @param {Object} options - Rendering options / 描画オプション
+   * Initialize VoxelRenderer with comprehensive rendering capabilities.
+   * 包括的なレンダリング機能を持つVoxelRendererを初期化します。
+   * 
+   * Creates a fully-featured voxel renderer with modular architecture including
+   * dedicated components for entity management, outline rendering, adaptive
+   * control systems, and description generation. Supports extensive customization
+   * through the options parameter.
+   * 
+   * エンティティ管理、アウトラインレンダリング、適応制御システム、
+   * 説明文生成の専用コンポーネントを含むモジュラーアーキテクチャを持つ、
+   * フル機能のボクセルレンダラーを作成します。optionsパラメーターを通じて
+   * 広範囲なカスタマイズをサポートします。
+   * 
+   * @param {Cesium.Viewer} viewer - CesiumJS Viewer instance for rendering / レンダリング用CesiumJSビューアーインスタンス
+   * @param {Object} [options={}] - Comprehensive rendering configuration / 包括的なレンダリング設定
+   * @param {number[]} [options.minColor=[0,0,255]] - RGB color for minimum density / 最小密度のRGB色
+   * @default [0, 0, 255]
+   * @param {number[]} [options.maxColor=[255,0,0]] - RGB color for maximum density / 最大密度のRGB色  
+   * @default [255, 0, 0]
+   * @param {number} [options.opacity=0.8] - Base opacity for voxels (0-1) / ボクセルの基本不透明度（0-1）
+   * @default 0.8
+   * @param {boolean} [options.showOutline=true] - Whether to show voxel outlines / ボクセルアウトラインの表示
+   * @default true
+   * @param {boolean} [options.adaptiveOutlines=false] - Enable adaptive outline control / 適応的アウトライン制御を有効化
+   * @default false
+   * @param {string} [options.outlineWidthPreset='uniform'] - Outline width preset ('uniform', 'adaptive-density', 'topn-focus') / アウトライン幅プリセット
+   * @default 'uniform'
+   * @param {string} [options.outlineRenderMode='standard'] - Rendering mode ('standard', 'inset', 'emulation-only') / レンダリングモード
+   * @default 'standard'
+   * @param {Object} [options.adaptiveParams] - Parameters for adaptive algorithms / 適応アルゴリズム用パラメーター
+   * 
+   * @throws {Error} Throws if viewer is invalid or required dependencies fail to initialize / ビューアーが無効または必要な依存関係の初期化に失敗した場合はエラーを投げます
+   * 
+   * @example
+   * // Basic renderer setup / 基本レンダラーセットアップ
+   * const renderer = new VoxelRenderer(viewer, {
+   *   opacity: 0.9,
+   *   showOutline: true,
+   *   minColor: [0, 0, 255],
+   *   maxColor: [255, 0, 0]
+   * });
+   * 
+   * @example
+   * // Advanced setup with adaptive features / 適応機能付き高度セットアップ
+   * const renderer = new VoxelRenderer(viewer, {
+   *   adaptiveOutlines: true,
+   *   outlineWidthPreset: 'adaptive-density',
+   *   outlineRenderMode: 'inset',
+   *   adaptiveParams: {
+   *     neighborhoodRadius: 75,
+   *     densityThreshold: 10
+   *   }
+   * });
+   * 
+   * @example
+   * // OutlineRenderMode patterns / アウトラインレンダリングモードパターン
+   * 
+   * // Pattern 1: Standard mode (default) / 標準モード（デフォルト）
+   * const standardRenderer = new VoxelRenderer(viewer, {
+   *   outlineRenderMode: 'standard',
+   *   showOutline: true,
+   *   outlineWidth: 2
+   * });
+   * 
+   * // Pattern 2: Inset mode (cleaner overlaps) / インセットモード（重なり軽減）
+   * const insetRenderer = new VoxelRenderer(viewer, {
+   *   outlineRenderMode: 'inset',
+   *   outlineInset: 0.1,          // 10% inset
+   *   outlineInsetMode: 'adaptive' // または 'all'
+   * });
+   * 
+   * // Pattern 3: Emulation-only mode / エミュレーション専用モード
+   * const emulationRenderer = new VoxelRenderer(viewer, {
+   *   outlineRenderMode: 'emulation-only',
+   *   adaptiveOutlines: true
+   * });
+   * 
+   * @example 
+   * // AdaptiveOutlines + OutlineWidthPreset patterns / 適応的アウトライン + 幅プリセットパターン
+   * 
+   * // Pattern 1: Uniform width (default) / 均一幅（デフォルト）
+   * const uniformRenderer = new VoxelRenderer(viewer, {
+   *   adaptiveOutlines: false,
+   *   outlineWidthPreset: 'uniform'
+   * });
+   * 
+   * // Pattern 2: Density-adaptive width / 密度適応幅
+   * const densityRenderer = new VoxelRenderer(viewer, {
+   *   adaptiveOutlines: true,
+   *   outlineWidthPreset: 'adaptive-density',
+   *   adaptiveParams: {
+   *     minOutlineWidth: 1,
+   *     maxOutlineWidth: 4
+   *   }
+   * });
+   * 
+   * // Pattern 3: TopN focused width / TopN集中幅
+   * const topnRenderer = new VoxelRenderer(viewer, {
+   *   adaptiveOutlines: true,
+   *   outlineWidthPreset: 'topn-focus',
+   *   highlightTopN: 20,
+   *   highlightStyle: {
+   *     outlineWidth: 5,
+   *     outlineOpacity: 1.0
+   *   }
+   * });
+   * 
+   * @since v0.1.0
    */
   constructor(viewer, options = {}) {
     this.viewer = viewer;
@@ -138,6 +258,12 @@ export class VoxelRenderer {
 
     // Update selection stats if applicable
     if (this.options.maxRenderVoxels && voxelData.size > this.options.maxRenderVoxels) {
+      /**
+       * Internal selection statistics for debugging and performance monitoring.
+       * デバッグとパフォーマンス監視用の内部選択統計。
+       * @private
+       * @type {Object}
+       */
       this._selectionStats = this._selectionStats || {
         strategy: 'none',
         clippedNonEmpty: 0,

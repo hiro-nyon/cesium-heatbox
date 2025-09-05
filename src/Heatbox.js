@@ -58,9 +58,34 @@ export class Heatbox {
   }
 
   /**
-   * Set heatmap data and render.
-   * ヒートマップデータを設定し、描画を実行します。
-   * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
+   * Set heatmap data and render 3D voxel visualization.
+   * ヒートマップデータを設定し、3Dボクセル可視化を描画します。
+   * 
+   * This method processes the provided entity array, calculates optimal voxel grid,
+   * and renders 3D voxel-based heatmap visualization in the Cesium viewer.
+   * 
+   * このメソッドは提供されたエンティティ配列を処理し、最適なボクセルグリッドを計算して、
+   * Cesiumビューアーで3Dボクセルベースのヒートマップ可視化を描画します。
+   * 
+   * @param {Cesium.Entity[]} entities - Array of Cesium entities with position information / 位置情報を持つCesiumエンティティの配列
+   * @throws {Error} Throws error if entities array is invalid / エンティティ配列が無効な場合はエラーを投げます
+   * @returns {Promise<void>} Promise that resolves when rendering is complete / 描画完了時に解決するPromise
+   * 
+   * @example
+   * // Basic usage / 基本使用法
+   * const entities = generateTestEntities(viewer, bounds, 1000);
+   * await heatbox.setData(entities);
+   * 
+   * @example  
+   * // With error handling / エラーハンドリング付き
+   * try {
+   *   await heatbox.setData(entities);
+   *   console.log('Heatmap rendered successfully');
+   * } catch (error) {
+   *   console.error('Failed to render heatmap:', error);
+   * }
+   * 
+   * @since v0.1.0
    */
   async setData(entities) {
     if (!isValidEntities(entities)) {
@@ -189,10 +214,47 @@ export class Heatbox {
   }
 
   /**
-   * Create heatmap from entities (async).
-   * エンティティからヒートマップを作成（非同期 API）。
-   * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
-   * @returns {Promise<Object>} Statistics info / 統計情報
+   * Create heatmap from entities and return detailed statistics.
+   * エンティティからヒートマップを作成し、詳細統計情報を返します。
+   * 
+   * This method is equivalent to calling setData() followed by getStatistics().
+   * It processes the entity array to create voxel-based heatmap visualization
+   * and returns comprehensive statistics about the rendered result.
+   * 
+   * このメソッドは setData() に続けて getStatistics() を呼び出すことと同等です。
+   * エンティティ配列を処理してボクセルベースのヒートマップ可視化を作成し、
+   * レンダリング結果に関する包括的な統計情報を返します。
+   * 
+   * @param {Cesium.Entity[]} entities - Array of Cesium entities to process / 処理するCesiumエンティティの配列
+   * @returns {Promise<Object>} Detailed rendering statistics / 詳細なレンダリング統計情報
+   * @returns {Promise<number>} returns.totalVoxels - Total number of voxels in grid / グリッド内の総ボクセル数
+   * @returns {Promise<number>} returns.renderedVoxels - Number of actually rendered voxels / 実際にレンダリングされたボクセル数
+   * @returns {Promise<number>} returns.nonEmptyVoxels - Number of voxels containing data / データを含むボクセル数
+   * @returns {Promise<number>} returns.minCount - Minimum entity count in any voxel / 任意のボクセル内の最小エンティティ数
+   * @returns {Promise<number>} returns.maxCount - Maximum entity count in any voxel / 任意のボクセル内の最大エンティティ数
+   * @returns {Promise<number>} returns.averageCount - Average entity count per non-empty voxel / 非空ボクセルあたりの平均エンティティ数
+   * @throws {Error} Throws error if entities array is empty or invalid / エンティティ配列が空または無効な場合はエラーを投げます
+   * 
+   * @example
+   * // Create heatmap and get statistics / ヒートマップ作成と統計取得
+   * const entities = generateTestEntities(viewer, bounds, 1000);
+   * const stats = await heatbox.createFromEntities(entities);
+   * console.log(`Rendered ${stats.renderedVoxels} out of ${stats.totalVoxels} voxels`);
+   * 
+   * @example
+   * // Error handling with statistics / 統計情報付きエラーハンドリング
+   * try {
+   *   const stats = await heatbox.createFromEntities(entities);
+   *   if (stats.renderedVoxels === 0) {
+   *     console.warn('No voxels were rendered - check data distribution');
+   *   }
+   * } catch (error) {
+   *   console.error('Failed to create heatmap:', error);
+   * }
+   * 
+   * @since v0.1.0
+   * @see {@link setData} For data processing without returning statistics
+   * @see {@link getStatistics} For retrieving statistics after rendering
    */
   async createFromEntities(entities) {
     if (!isValidEntities(entities)) {
@@ -203,17 +265,83 @@ export class Heatbox {
   }
 
   /**
-   * Toggle visibility.
-   * 表示/非表示を切り替えます。
-   * @param {boolean} show - true to show / 表示する場合は true
+   * Control heatmap visibility without clearing data or re-rendering.
+   * データやレンダリングをクリアすることなくヒートマップの表示を制御します。
+   * 
+   * This method efficiently toggles the visibility of all rendered voxels
+   * by setting the 'show' property on Cesium entities. The underlying data
+   * and voxel grid remain intact, allowing for fast show/hide operations.
+   * 
+   * このメソッドはCesiumエンティティの'show'プロパティを設定することで、
+   * レンダリングされた全ボクセルの表示を効率的に切り替えます。基盤データと
+   * ボクセルグリッドはそのまま保持され、高速な表示/非表示操作が可能です。
+   * 
+   * @param {boolean} show - Whether to show the heatmap (true) or hide it (false) / ヒートマップを表示する（true）か隠す（false）か
+   * @returns {void}
+   * 
+   * @example
+   * // Show heatmap / ヒートマップを表示
+   * heatbox.setVisible(true);
+   * 
+   * @example
+   * // Hide heatmap temporarily / 一時的にヒートマップを隠す
+   * heatbox.setVisible(false);
+   * // ... other operations ...
+   * heatbox.setVisible(true); // Show again quickly
+   * 
+   * @example
+   * // Toggle visibility based on user interaction / ユーザー操作に基づく表示切り替え
+   * const toggleButton = document.getElementById('toggleHeatmap');
+   * let isVisible = true;
+   * toggleButton.onclick = () => {
+   *   isVisible = !isVisible;
+   *   heatbox.setVisible(isVisible);
+   *   toggleButton.textContent = isVisible ? 'Hide' : 'Show';
+   * };
+   * 
+   * @since v0.1.0
+   * @see {@link clear} For permanently removing the heatmap
    */
   setVisible(show) {
     this.renderer.setVisible(show);
   }
 
   /**
-   * Clear the heatmap and internal state.
-   * ヒートマップと内部状態をクリアします。
+   * Completely clear heatmap visualization and reset internal state.
+   * ヒートマップ可視化を完全にクリアし、内部状態をリセットします。
+   * 
+   * This method removes all rendered voxel entities from the Cesium viewer and
+   * resets all internal data structures (bounds, grid, voxel data, statistics).
+   * After calling this method, the Heatbox instance returns to its initial state
+   * and is ready to process new data.
+   * 
+   * このメソッドは、レンダリングされた全ボクセルエンティティをCesiumビューアーから削除し、
+   * 全ての内部データ構造（境界、グリッド、ボクセルデータ、統計）をリセットします。
+   * このメソッドを呼び出した後、Heatboxインスタンスは初期状態に戻り、新しいデータを処理する準備ができます。
+   * 
+   * @returns {void}
+   * 
+   * @example
+   * // Clear current heatmap before loading new data / 新しいデータを読み込む前に現在のヒートマップをクリア
+   * heatbox.clear();
+   * await heatbox.setData(newEntities);
+   * 
+   * @example
+   * // Clean up when component is destroyed / コンポーネント破棄時のクリーンアップ
+   * const cleanup = () => {
+   *   heatbox.clear();
+   *   heatbox.destroy(); // Final cleanup
+   * };
+   * 
+   * @example
+   * // Reset to initial state for reuse / 再利用のため初期状態にリセット
+   * heatbox.clear();
+   * console.log(heatbox.getBounds()); // null - no data loaded
+   * console.log(heatbox.getStatistics()); // null - no statistics available
+   * 
+   * @since v0.1.0
+   * @see {@link setVisible} For temporary hiding without clearing data
+   * @see {@link destroy} For final cleanup including event handlers
    */
   clear() {
     this.renderer.clear();
@@ -253,9 +381,42 @@ export class Heatbox {
   }
 
   /**
-   * Update options and re-render if applicable.
-   * オプションを更新し、必要に応じて再描画します。
-   * @param {Object} newOptions - New options / 新しいオプション
+   * Update heatbox configuration options and automatically re-render if data exists.
+   * ヒートボックスの設定オプションを更新し、データが存在する場合は自動的に再描画します。
+   * 
+   * This method merges new options with existing configuration and triggers 
+   * automatic re-rendering when data is already loaded. Options are validated
+   * and normalized before application.
+   * 
+   * このメソッドは新しいオプションを既存の設定とマージし、データが既にロードされている場合は
+   * 自動的な再描画をトリガーします。オプションは適用前に検証・正規化されます。
+   * 
+   * @param {Object} newOptions - Configuration options to update / 更新する設定オプション
+   * @param {number} [newOptions.voxelSize] - Voxel size in meters / ボクセルサイズ（メートル）
+   * @param {number} [newOptions.opacity] - Base opacity (0-1) / 基本不透明度（0-1）
+   * @param {boolean} [newOptions.showOutline] - Whether to show voxel outlines / ボクセル輪郭の表示
+   * @param {string} [newOptions.colorMap] - Color map type ('custom', 'viridis', 'inferno') / カラーマップタイプ
+   * @param {number} [newOptions.highlightTopN] - Number of top voxels to highlight / 強調表示するトップボクセル数
+   * @param {boolean} [newOptions.adaptiveOutlines] - Enable adaptive outline control / 適応的輪郭制御を有効化
+   * @throws {Error} Throws error if options validation fails / オプション検証が失敗した場合はエラーを投げます
+   * @returns {void}
+   * 
+   * @example
+   * // Update color settings / 色設定の更新
+   * heatbox.updateOptions({
+   *   colorMap: 'viridis',
+   *   opacity: 0.9,
+   *   highlightTopN: 50
+   * });
+   * 
+   * @example
+   * // Enable adaptive features / 適応機能を有効化
+   * heatbox.updateOptions({
+   *   adaptiveOutlines: true,
+   *   outlineWidthPreset: 'adaptive-density'
+   * });
+   * 
+   * @since v0.1.0
    */
   updateOptions(newOptions) {
     this.options = validateAndNormalizeOptions({ ...this.options, ...newOptions });
@@ -379,11 +540,80 @@ export class Heatbox {
   }
 
   /**
-   * Fit view to data bounds with smart camera positioning.
-   * データ境界にスマートなカメラ位置でビューをフィットします。
-   * @param {Object} bounds - Target bounds (optional, uses current data bounds if not provided) / 対象境界
-   * @param {Object} options - Fit view options / フィットビューオプション
-   * @returns {Promise} Promise that resolves when camera movement is complete / カメラ移動完了時に解決するPromise
+   * Automatically fit camera view to data bounds with intelligent positioning.
+   * データ境界にインテリジェントな位置決めでカメラビューを自動フィットします。
+   * 
+   * This method calculates optimal camera position and orientation to view the entire
+   * heatmap data with appropriate padding and viewing angle. Uses smart algorithms to
+   * avoid extreme camera positions and ensure good visibility.
+   * 
+   * このメソッドは適切なパディングと視角でヒートマップデータ全体を表示するため、
+   * 最適なカメラ位置と向きを計算します。極端なカメラ位置を避けて良好な視認性を
+   * 確保するスマートアルゴリズムを使用します。
+   * 
+   * @param {Object} [bounds] - Target bounds to fit to (uses current data bounds if omitted) / フィット対象境界（省略時は現在のデータ境界を使用）
+   * @param {number} bounds.minLon - Minimum longitude in degrees / 最小経度（度）
+   * @param {number} bounds.maxLon - Maximum longitude in degrees / 最大経度（度）
+   * @param {number} bounds.minLat - Minimum latitude in degrees / 最小緯度（度）
+   * @param {number} bounds.maxLat - Maximum latitude in degrees / 最大緯度（度）
+   * @param {number} bounds.minAlt - Minimum altitude in meters / 最小高度（メートル）
+   * @param {number} bounds.maxAlt - Maximum altitude in meters / 最大高度（メートル）
+   * @param {Object} [options={}] - Camera positioning options / カメラ位置決めオプション
+   * @param {number} [options.paddingPercent=0.1] - Padding around data as percentage (0-1) / データ周辺パディング（0-1の割合）
+   * @param {number} [options.pitchDegrees=-45] - Camera pitch angle in degrees / カメラピッチ角度（度）
+   * @param {number} [options.headingDegrees=0] - Camera heading angle in degrees / カメラヘディング角度（度）
+   * @param {number} [options.duration=2.0] - Animation duration in seconds / アニメーション時間（秒）
+   * @returns {Promise<void>} Promise that resolves when camera animation completes / カメラアニメーション完了時に解決するPromise
+   * @throws {Error} Throws error if no bounds available for fitting / フィット用境界が利用できない場合はエラーを投げます
+   * 
+   * @example
+   * // Fit to current data bounds / 現在のデータ境界にフィット
+   * await heatbox.fitView();
+   * 
+   * @example
+   * // Custom camera angle and padding / カスタムカメラ角度とパディング  
+   * await heatbox.fitView(null, {
+   *   pitchDegrees: -60,      // 上空60度からの視点
+   *   headingDegrees: 45,     // 北東45度方向
+   *   paddingPercent: 0.2,    // データ周辺に20%マージン
+   *   duration: 3.0           // 3秒でアニメーション
+   * });
+   * 
+   * @example
+   * // Typical fitViewOptions patterns / 典型的なfitViewOptionsパターン
+   * 
+   * // Pattern 1: Top-down view / 真上からの視点
+   * await heatbox.fitView(bounds, {
+   *   pitchDegrees: -90,      // 真下を向く
+   *   headingDegrees: 0,      // 北向き
+   *   paddingPercent: 0.1
+   * });
+   * 
+   * // Pattern 2: Diagonal overview / 斜め俯瞰
+   * await heatbox.fitView(bounds, {
+   *   pitchDegrees: -45,      // 45度斜め
+   *   headingDegrees: 135,    // 南東方向から
+   *   paddingPercent: 0.15
+   * });
+   * 
+   * // Pattern 3: Close inspection / 近接観察
+   * await heatbox.fitView(bounds, {
+   *   pitchDegrees: -30,      // 浅い角度
+   *   headingDegrees: 0,
+   *   paddingPercent: 0.05,   // 狭いマージン
+   *   duration: 1.0           // 素早く移動
+   * });
+   * 
+   * @example
+   * // Fit to specific bounds / 特定の境界にフィット
+   * const customBounds = {
+   *   minLon: 139.7, maxLon: 139.8,
+   *   minLat: 35.6, maxLat: 35.7,
+   *   minAlt: 0, maxAlt: 100
+   * };
+   * await heatbox.fitView(customBounds);
+   * 
+   * @since v0.1.9
    */
   async fitView(bounds = null, options = {}) {
     try {

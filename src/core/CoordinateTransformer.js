@@ -6,15 +6,66 @@ import * as Cesium from 'cesium';
 import { Logger } from '../utils/logger.js';
 
 /**
- * Class providing coordinate transformation utilities.
- * 座標変換機能を提供するクラス。
+ * Comprehensive coordinate transformation utilities for geospatial data processing.
+ * 地理空間データ処理用の包括的座標変換ユーティリティ。
+ * 
+ * This utility class provides essential coordinate transformation and bounds calculation
+ * functions for processing geospatial entity data in CesiumJS environments. Handles
+ * conversions between different coordinate systems, calculates 3D spatial bounds,
+ * and provides robust error handling for invalid coordinate data.
+ * 
+ * このユーティリティクラスは、CesiumJS環境で地理空間エンティティデータを処理するための
+ * 重要な座標変換と境界計算機能を提供します。異なる座標系間の変換を処理し、3D空間境界を
+ * 計算し、無効な座標データに対する堅牢なエラーハンドリングを提供します。
+ * 
+ * @since v0.1.0
+ * @version 1.0.0 - Stable coordinate transformation utilities
  */
 export class CoordinateTransformer {
   /**
-   * Calculate 3D bounds from an entity array.
-   * エンティティ配列から 3D 境界を計算します。
-   * @param {Array} entities - Entity array / エンティティ配列
-   * @returns {Object} Bounds info / 境界情報
+   * Calculate comprehensive 3D spatial bounds from Cesium entity array.
+   * Cesiumエンティティ配列から包括的な3D空間境界を計算します。
+   * 
+   * This method analyzes all provided entities to determine the minimum and maximum
+   * longitude, latitude, and altitude values, creating a bounding box that encompasses
+   * the entire dataset. Handles various entity position formats and provides robust
+   * error handling for invalid or missing position data.
+   * 
+   * このメソッドは提供された全エンティティを分析して最小・最大の経度、緯度、高度値を
+   * 決定し、データセット全体を包含するバウンディングボックスを作成します。様々な
+   * エンティティ位置形式を処理し、無効または欠落している位置データに対する
+   * 堅牢なエラーハンドリングを提供します。
+   * 
+   * @param {Cesium.Entity[]} entities - Array of Cesium entities with position information / 位置情報を持つCesiumエンティティの配列
+   * @returns {Object} Comprehensive bounds information / 包括的な境界情報
+   * @returns {number} returns.minLon - Minimum longitude in degrees / 最小経度（度）
+   * @returns {number} returns.maxLon - Maximum longitude in degrees / 最大経度（度）
+   * @returns {number} returns.minLat - Minimum latitude in degrees / 最小緯度（度）
+   * @returns {number} returns.maxLat - Maximum latitude in degrees / 最大緯度（度）
+   * @returns {number} returns.minAlt - Minimum altitude in meters / 最小高度（メートル）
+   * @returns {number} returns.maxAlt - Maximum altitude in meters / 最大高度（メートル）
+   * @returns {number} returns.validEntityCount - Number of entities with valid positions / 有効な位置を持つエンティティ数
+   * @throws {Error} Throws error if entity array is empty or invalid / エンティティ配列が空または無効な場合はエラーを投げます
+   * 
+   * @example
+   * // Calculate bounds for visualization / 可視化用境界計算
+   * const entities = getAllEntities(viewer);
+   * const bounds = CoordinateTransformer.calculateBounds(entities);
+   * console.log(`Data spans ${bounds.maxLon - bounds.minLon}° longitude`);
+   * 
+   * @example  
+   * // Error handling for invalid data / 無効データのエラーハンドリング
+   * try {
+   *   const bounds = CoordinateTransformer.calculateBounds(entities);
+   *   if (bounds.validEntityCount === 0) {
+   *     console.warn('No entities with valid positions found');
+   *   }
+   * } catch (error) {
+   *   console.error('Failed to calculate bounds:', error);
+   * }
+   * 
+   * @since v0.1.0
+   * @static
    */
   static calculateBounds(entities) {
     if (!Array.isArray(entities) || entities.length === 0) {

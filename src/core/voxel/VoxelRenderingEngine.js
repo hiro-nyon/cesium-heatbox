@@ -13,10 +13,43 @@ import { VoxelEntityFactory } from './VoxelEntityFactory.js';
  * VoxelRenderingEngine handles the main rendering loop and voxel creation.
  * VoxelRenderingEngineはメインの描画ループとボクセル作成を処理します。
  */
+/**
+ * Advanced 3D voxel rendering engine with comprehensive visualization features.
+ * 包括的な可視化機能を備えた高度な3Dボクセルレンダリングエンジン。
+ * 
+ * This specialized rendering engine handles the core voxel rendering pipeline,
+ * including density calculations, color mapping, adaptive outline control,
+ * TopN highlighting, and advanced rendering modes. Separated from VoxelRenderer
+ * as part of ADR-0008 modular architecture for better maintainability.
+ * 
+ * この専門レンダリングエンジンは、密度計算、カラーマッピング、適応的アウトライン制御、
+ * TopN強調、高度なレンダリングモードを含むコアボクセルレンダリングパイプラインを処理します。
+ * 保守性向上のためADR-0008モジュラーアーキテクチャの一部としてVoxelRendererから分離されました。
+ * 
+ * @since v0.1.10
+ * @version 1.0.0 - Initial modular implementation
+ */
 export class VoxelRenderingEngine {
   /**
-   * Constructor
-   * @param {Cesium.Viewer} viewer - CesiumJS Viewer / CesiumJS Viewer
+   * Initialize rendering engine with comprehensive component integration.
+   * 包括的なコンポーネント統合でレンダリングエンジンを初期化します。
+   * 
+   * Creates the core rendering engine that orchestrates voxel visualization
+   * by coordinating entity management, debug rendering, outline control,
+   * and description building components.
+   * 
+   * エンティティ管理、デバッグレンダリング、アウトライン制御、
+   * 説明文構築コンポーネントを調整してボクセル可視化を統括する
+   * コアレンダリングエンジンを作成します。
+   * 
+   * @param {Cesium.Viewer} viewer - CesiumJS Viewer instance / CesiumJSビューアーインスタンス
+   * @param {VoxelEntityManager} entityManager - Entity lifecycle manager / エンティティライフサイクル管理
+   * @param {DebugRenderer} debugRenderer - Debug visualization component / デバッグ可視化コンポーネント
+   * @param {AdaptiveOutlineController} adaptiveOutlineController - Adaptive outline control / 適応的アウトライン制御
+   * @param {OutlineRenderer} outlineRenderer - Specialized outline rendering / 専門アウトラインレンダリング
+   * @param {DescriptionBuilder} descriptionBuilder - InfoBox description generator / InfoBox説明文ジェネレーター
+   * 
+   * @since v0.1.10
    */
   constructor(viewer) {
     this.viewer = viewer;

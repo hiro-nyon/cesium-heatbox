@@ -82,12 +82,12 @@
       const insetDistance = parseFloat(document.getElementById('insetDistance').value);
       const insetMode = document.getElementById('insetMode').value;
 
-      let outlineWidthResolver = null;
+      // v0.1.10: プリセットベース適応制御（ADR-0008 Phase 4）
+      let adaptiveOutlines = false;
+      let outlineWidthPreset = 'uniform';
       if (adaptive && withMitigation) {
-        outlineWidthResolver = ({ normalizedDensity, isTopN }) => {
-          if (isTopN) return 4;
-          return normalizedDensity > 0.7 ? 1 : (normalizedDensity > 0.3 ? 2 : 3);
-        };
+        adaptiveOutlines = true;
+        outlineWidthPreset = 'adaptive-density'; // 密度適応型プリセット
       }
 
       if (!withMitigation) {
@@ -113,7 +113,9 @@
         highlightTopN: 10,
         voxelGap,
         outlineOpacity,
-        outlineWidthResolver,
+        // v0.1.10: 新API（ADR-0008 Phase 4）
+        adaptiveOutlines,
+        outlineWidthPreset,
         // v0.1.6.1: インセット枠線
         outlineInset: insetMode === 'off' ? 0 : insetDistance,
         outlineInsetMode: insetMode === 'off' ? 'all' : insetMode

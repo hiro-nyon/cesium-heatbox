@@ -11,6 +11,23 @@ import { VoxelEntityFactory } from './VoxelEntityFactory.js';
  * VoxelEntityManager handles entity creation, management, and cleanup.
  * VoxelEntityManagerはエンティティの作成、管理、クリーンアップを処理します。
  */
+/**
+ * Specialized manager for Cesium entity lifecycle in voxel rendering.
+ * ボクセルレンダリングにおけるCesiumエンティティライフサイクルの専門マネージャー。
+ * 
+ * This class handles all aspects of voxel entity management including creation,
+ * addition to scene, visibility control, and cleanup. Extracted from VoxelRenderer
+ * as part of ADR-0008 modular refactoring to improve separation of concerns
+ * and maintainability.
+ * 
+ * このクラスは、作成、シーンへの追加、表示制御、クリーンアップを含む
+ * ボクセルエンティティ管理のすべての側面を処理します。懸念の分離と
+ * 保守性向上のためADR-0008モジュラーリファクタリングの一部として
+ * VoxelRendererから抽出されました。
+ * 
+ * @since v0.1.10
+ * @version 1.0.0 - Initial modular implementation (ADR-0008 Phase 3)
+ */
 export class VoxelEntityManager {
   /**
    * Constructor
