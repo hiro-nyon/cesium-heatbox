@@ -145,7 +145,25 @@ export class DeviceTierDetector {
    */
   static _getWebGLInfo() {
     try {
+      // Avoid triggering jsdom's unimplemented getContext error by probing first
+      if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+        return {
+          webgl2: false,
+          maxTextureSize: 0,
+          maxRenderbufferSize: 0
+        };
+      }
+
       const canvas = document.createElement('canvas');
+      const canGetContext = canvas && typeof canvas.getContext === 'function';
+      if (!canGetContext) {
+        return {
+          webgl2: false,
+          maxTextureSize: 0,
+          maxRenderbufferSize: 0
+        };
+      }
+
       const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
       
       if (!gl) {
@@ -157,7 +175,7 @@ export class DeviceTierDetector {
       }
       
       const info = {
-        webgl2: !!canvas.getContext('webgl2'),
+        webgl2: !!canvas.getContext && !!canvas.getContext('webgl2'),
         maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
         maxRenderbufferSize: gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)
       };
