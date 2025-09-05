@@ -20,7 +20,6 @@ export class OutlineRenderer {
    */
   constructor(viewer) {
     this.viewer = viewer;
-    this.entityFactory = new VoxelEntityFactory();
   }
 
   /**
@@ -122,7 +121,7 @@ export class OutlineRenderer {
    * @private
    */
   _renderInsetOutline(voxelInfo, outlineOptions, adaptiveParams) {
-    const { outlineInset, outlineInsetMode } = outlineOptions;
+    const { outlineInset } = outlineOptions;
     
     if (outlineInset <= 0) {
       // No inset, fall back to standard mode / インセットなし、標準モードにフォールバック
@@ -134,8 +133,7 @@ export class OutlineRenderer {
       return this._renderEmulationOutline(voxelInfo, outlineOptions, adaptiveParams);
     }
 
-    // Create inset voxel with reduced dimensions / 縮小された寸法でインセットボクセルを作成
-    const insetVoxelInfo = this._createInsetVoxelInfo(voxelInfo, outlineInset, outlineInsetMode);
+    // Create inset voxel with reduced dimensions (computed inline below)
     
     const outlineWidth = adaptiveParams.outlineWidth || outlineOptions.outlineWidth;
     const outlineOpacity = adaptiveParams.outlineOpacity || 1.0;
