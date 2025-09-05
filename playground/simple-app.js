@@ -6,6 +6,12 @@ let currentEntities = [];
 let currentData = null;
 let hbVisible = true;
 
+// Prevent duplicate script loading
+if (typeof window.simpleAppLoaded !== 'undefined') {
+  throw new Error('Simple app already loaded');
+}
+window.simpleAppLoaded = true;
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
   initializeCesium();
@@ -280,16 +286,19 @@ function initializeEnvironmentInfo() {
   try {
     // Cesium version
     const cesiumVersion = typeof Cesium !== 'undefined' ? Cesium.VERSION : 'Unknown';
-    document.getElementById('cesiumVersion').textContent = cesiumVersion;
+    const cesiumEl = document.getElementById('cesiumVersion');
+    if (cesiumEl) cesiumEl.textContent = cesiumVersion;
     
     // WebGL support
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     const webglSupport = gl ? 'Supported' : 'Not Supported';
-    document.getElementById('webglSupport').textContent = webglSupport;
+    const webglEl = document.getElementById('webglSupport');
+    if (webglEl) webglEl.textContent = webglSupport;
     
     // Heatbox version - will be set when heatbox is initialized
-    document.getElementById('heatboxVersion').textContent = 'Loading...';
+    const heatboxEl = document.getElementById('heatboxVersion');
+    if (heatboxEl) heatboxEl.textContent = 'Loading...';
     
   } catch (error) {
     console.error('Error initializing environment info:', error);
@@ -527,8 +536,8 @@ async function createHeatmap() {
       autoVoxelSize: true,
       autoVoxelSizeMode: 'basic',
       voxelSize: undefined,
-      maxRenderVoxels: 15000,  // Fixed limit to prevent array size errors
-      renderLimitStrategy: 'hybrid',  // Better balance
+      maxRenderVoxels: 3000,  // Very conservative limit for Quick Start
+      renderLimitStrategy: 'density',  // Most stable strategy
       colorMap: 'viridis',
       opacity: wireframe ? 0.0 : 1.0,
       showEmptyVoxels: false,
@@ -539,8 +548,8 @@ async function createHeatmap() {
       outlineInsetMode: 'all',
       outlineOpacity: 1.0,
       outlineWidth: wireframe ? 10 : 2,
-      adaptiveOutlines: wireframe ? false : true,
-      outlineWidthPreset: wireframe ? 'uniform' : 'adaptive-density',
+      adaptiveOutlines: false,  // Disable adaptive for stability
+      outlineWidthPreset: 'uniform',  // Simplest preset
       autoView: autoCamera
     };
     
@@ -558,6 +567,14 @@ async function createHeatmap() {
         : (g && g.CesiumHeatbox && typeof g.CesiumHeatbox.Heatbox === 'function') ? g.CesiumHeatbox.Heatbox
         : null;
       if (!HB) throw new Error('Heatbox constructor not found');
+      
+      // Add debug logging
+      console.log('Creating Heatbox with options:', {
+        maxRenderVoxels: options.maxRenderVoxels,
+        renderLimitStrategy: options.renderLimitStrategy,
+        entityCount: currentEntities.length
+      });
+      
       heatboxInstance = new HB(viewer, options);
       // Update heatbox version info
       const hv = document.getElementById('heatboxVersion');
