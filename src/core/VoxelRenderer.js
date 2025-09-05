@@ -12,6 +12,8 @@ import { ColorMap } from './color/ColorMap.js';
 import { VoxelGeometry } from './voxel/VoxelGeometry.js';
 import { VoxelEntityFactory } from './voxel/VoxelEntityFactory.js';
 import { DebugRenderer } from './voxel/DebugRenderer.js';
+import { AdaptiveOutlineController } from './outline/AdaptiveOutlineController.js';
+import { OutlineRenderer } from './outline/OutlineRenderer.js';
 
 /**
  * Class responsible for 3D voxel rendering.
@@ -60,6 +62,10 @@ export class VoxelRenderer {
     // ADR-0008 Phase 1: Initialize debug renderer / デバッグレンダラーを初期化
     this.debugRenderer = new DebugRenderer(viewer);
     
+    // ADR-0008 Phase 2: Initialize outline components / 枠線コンポーネントを初期化
+    this.adaptiveOutlineController = new AdaptiveOutlineController(this.options.adaptiveParams);
+    this.outlineRenderer = new OutlineRenderer(viewer);
+    
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
 
@@ -87,86 +93,15 @@ export class VoxelRenderer {
    * @private
    */
   _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics) {
-    if (!this.options.adaptiveOutlines) {
-      return {
-        outlineWidth: null,
-        boxOpacity: null,
-        outlineOpacity: null,
-        shouldUseEmulation: false
-      };
-    }
-
-    const { x, y, z, count } = voxelInfo;
-    const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-      (count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-    
-    // 近働密度を計算
-    let neighborhoodDensity = 0;
-    let neighborCount = 0;
-    const radius = Math.max(1, Math.floor(this.options.adaptiveParams.neighborhoodRadius / 20)); // 簡略化
-    
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -radius; dy <= radius; dy++) {
-        for (let dz = -radius; dz <= radius; dz++) {
-          if (dx === 0 && dy === 0 && dz === 0) continue;
-          const neighborKey = `${x + dx},${y + dy},${z + dz}`;
-          const neighbor = voxelData.get(neighborKey);
-          if (neighbor) {
-            neighborhoodDensity += neighbor.count;
-            neighborCount++;
-          }
-        }
-      }
-    }
-    
-    const avgNeighborhoodDensity = neighborCount > 0 ? neighborhoodDensity / neighborCount : 0;
-    const isDenseArea = avgNeighborhoodDensity > this.options.adaptiveParams.densityThreshold;
-    
-    // カメラ距離は簡略化（実装では固定値を使用）
-    const cameraDistance = 1000; // 固定値、実際の実装ではカメラからの距離を取得
-    const cameraFactor = Math.min(1.0, 1000 / cameraDistance) * this.options.adaptiveParams.cameraDistanceFactor;
-    
-    // 重なりリスクの算出
-    const overlapRisk = isDenseArea ? this.options.adaptiveParams.overlapRiskFactor : 0;
-    
-    // プリセットによる調整
-    let adaptiveWidth, adaptiveBoxOpacity, adaptiveOutlineOpacity;
-    
-    switch (this.options.outlineWidthPreset) {
-      case 'adaptive-density':
-        adaptiveWidth = isDenseArea ? 
-          Math.max(0.5, this.options.outlineWidth * (0.5 + normalizedDensity * 0.5)) :
-          this.options.outlineWidth;
-        adaptiveBoxOpacity = isDenseArea ? this.options.opacity * 0.8 : this.options.opacity;
-        adaptiveOutlineOpacity = isDenseArea ? 0.6 : 1.0;
-        break;
-        
-      case 'topn-focus':
-        adaptiveWidth = isTopN ? 
-          this.options.outlineWidth * (1.5 + normalizedDensity * 0.5) :
-          Math.max(0.5, this.options.outlineWidth * 0.7);
-        adaptiveBoxOpacity = isTopN ? this.options.opacity : this.options.opacity * 0.6;
-        adaptiveOutlineOpacity = isTopN ? 1.0 : 0.4;
-        break;
-        
-      case 'uniform':
-      default:
-        adaptiveWidth = this.options.outlineWidth;
-        adaptiveBoxOpacity = this.options.opacity;
-        adaptiveOutlineOpacity = this.options.outlineOpacity || 1.0;
-        break;
-    }
-    
-    // カメラ距離と重なりリスクで調整
-    adaptiveWidth *= cameraFactor;
-    adaptiveOutlineOpacity = Math.max(0.2, adaptiveOutlineOpacity * (1 - overlapRisk));
-    
-    return {
-      outlineWidth: Math.max(0.5, adaptiveWidth),
-      boxOpacity: Math.max(0.1, Math.min(1.0, adaptiveBoxOpacity)),
-      outlineOpacity: Math.max(0.2, Math.min(1.0, adaptiveOutlineOpacity)),
-      shouldUseEmulation: isDenseArea || (adaptiveWidth > 2 && this.options.outlineRenderMode !== 'standard')
-    };
+    // ADR-0008 Phase 2: Delegate to AdaptiveOutlineController
+    return this.adaptiveOutlineController.calculateAdaptiveParams(
+      voxelInfo, 
+      isTopN, 
+      voxelData, 
+      statistics, 
+      this.viewer, 
+      this.options
+    );
   }
 
   /**
@@ -269,8 +204,10 @@ export class VoxelRenderer {
         
         const isTopN = topNVoxels.has(key); // v0.1.5: TopNハイライト判定
         
-        // v0.1.7: 適応的パラメータの計算
-        const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, voxelData, statistics);
+        // 位置を先に計算して適応パラメータに渡す
+        const position = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt);
+        // v0.1.7: 適応的パラメータの計算（位置情報を含めて渡す）
+        const adaptiveParams = this._calculateAdaptiveParams({ ...info, position }, isTopN, voxelData, statistics);
         
         // 密度に応じた色を計算
         let color, opacity;
@@ -353,69 +290,10 @@ export class VoxelRenderer {
           }
         }
 
-        // v0.1.7: 枠線透明度制御（resolver > 適応的 > 固定値）
-        let finalOutlineOpacity;
-        if (this.options.outlineOpacityResolver && typeof this.options.outlineOpacityResolver === 'function') {
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          const resolverCtx = {
-            voxel: { x, y, z, count: info.count },
-            isTopN,
-            normalizedDensity,
-            statistics,
-            adaptiveParams
-          };
-          try {
-            const resolverOpacity = this.options.outlineOpacityResolver(resolverCtx);
-            finalOutlineOpacity = isNaN(resolverOpacity) ? (this.options.outlineOpacity ?? 1.0) : Math.max(0, Math.min(1, resolverOpacity));
-          } catch (e) {
-            Logger.warn('outlineOpacityResolver error, using fallback:', e);
-            finalOutlineOpacity = adaptiveParams.outlineOpacity || (this.options.outlineOpacity ?? 1.0);
-          }
-        } else {
-          finalOutlineOpacity = adaptiveParams.outlineOpacity || (this.options.outlineOpacity ?? 1.0);
-        }
-        
-        const outlineColorWithOpacity = color.withAlpha(finalOutlineOpacity);
+        // Effective adaptive params include resolver-adjusted width
+        const effectiveAdaptive = { ...adaptiveParams, outlineWidth: finalOutlineWidth };
 
-        // v0.1.7: outlineRenderModeによる表示モード制御
-        let shouldShowStandardOutline = true;
-        let shouldShowInsetOutline = false;
-        let shouldUseEmulationOnly = false;
-        
-        switch (this.options.outlineRenderMode) {
-          case 'standard':
-            shouldShowStandardOutline = this.options.showOutline;
-            shouldShowInsetOutline = this.options.outlineInset > 0;
-            break;
-          case 'inset':
-            shouldShowStandardOutline = false; // インセットモードでは標準枠線を無効化
-            shouldShowInsetOutline = true;
-            break;
-          case 'emulation-only':
-            shouldShowStandardOutline = false;
-            shouldShowInsetOutline = false;
-            shouldUseEmulationOnly = true;
-            break;
-        }
-        
-        // v0.1.7: 適応的エミュレーション判定を組み込み
-        let emulateThickForThis = shouldUseEmulationOnly;
-        if (!shouldUseEmulationOnly) {
-          // 従来のoutlineEmulationオプションを尊重
-          if (this.options.outlineEmulation === 'topn') {
-            emulateThickForThis = isTopN && (finalOutlineWidth || 1) > 1;
-          } else if (this.options.outlineEmulation === 'non-topn') {
-            emulateThickForThis = !isTopN && (finalOutlineWidth || 1) > 1;
-          } else if (this.options.outlineEmulation === 'all') {
-            emulateThickForThis = (finalOutlineWidth || 1) > 1;
-          } else if (this.options.adaptiveOutlines && adaptiveParams.shouldUseEmulation) {
-            emulateThickForThis = true;
-          }
-        }
-        
         // ADR-0008 Phase 1: VoxelEntityFactoryでエンティティ作成
-        const position = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt);
         const dimensions = new Cesium.Cartesian3(cellSizeX, cellSizeY, boxHeight);
         
         const entityConfig = VoxelEntityFactory.createBoxEntity({
@@ -425,9 +303,11 @@ export class VoxelRenderer {
           opacity: opacity,
           wireframe: this.options.wireframeOnly,
           outline: {
-            show: shouldShowStandardOutline && !emulateThickForThis,
-            color: outlineColorWithOpacity,
-            width: finalOutlineWidth || 1
+            show: this.options.showOutline === true,
+            color: Cesium.Color.fromBytes(255, 255, 255, 255).withAlpha(
+              (effectiveAdaptive.outlineOpacity != null) ? effectiveAdaptive.outlineOpacity : (this.options.outlineOpacity ?? 1.0)
+            ),
+            width: finalOutlineWidth || this.options.outlineWidth || 1
           },
           properties: {
             key: key,
@@ -444,57 +324,31 @@ export class VoxelRenderer {
         
         this.voxelEntities.push(entity);
 
-        // v0.1.7: インセット枠線の実装（outlineRenderModeに応じて制御）
-        if (shouldShowInsetOutline && this._shouldApplyInsetOutline(isTopN)) {
+        // ADR-0008 Phase 2: Render outline using OutlineRenderer (after box added)
+        if (this.outlineRenderer.shouldRenderOutline(info, this.options)) {
           try {
-            const insetAmount = this.options.outlineInset > 0 ? this.options.outlineInset : 1; // emulation-onlyでは最低1m
-            this._createInsetOutline(
-              centerLon, centerLat, centerAlt,
-              cellSizeX, cellSizeY, boxHeight,
-              outlineColorWithOpacity, Math.max(finalOutlineWidth || 1, 1),
-              key, insetAmount
+            const outlineEntities = this.outlineRenderer.renderOutline(
+              {
+              ...info,
+              key: key,
+              position: position,
+              width: cellSizeX,
+              height: boxHeight,
+              depth: cellSizeY,
+              isTopN: isTopN
+            },
+              this.options,
+              effectiveAdaptive
             );
-          } catch (e) {
-            Logger.warn('Failed to create inset outline:', e);
-          }
-        }
-        
-        // 太線エミュレーション（条件に応じてポリラインでエッジを追加）
-        // 隣接枠線の被りを避けるため、外縁ではなく“インセット後”の寸法でエッジを描く
-        if (emulateThickForThis) {
-          try {
-            const centerCart = entity.position.getValue(Cesium.JulianDate.now());
-
-            const maxInsetX = cellSizeX * 0.2;
-            const maxInsetY = cellSizeY * 0.2;
-            const maxInsetZ = boxHeight * 0.2;
-            const baseInset = (this.options.outlineInset && this.options.outlineInset > 0) ? this.options.outlineInset : 0;
-            const autoInsetX = cellSizeX * 0.05;
-            const autoInsetY = cellSizeY * 0.05;
-            const autoInsetZ = boxHeight * 0.05;
-            const effInsetX = Math.min(baseInset > 0 ? baseInset : autoInsetX, maxInsetX);
-            const effInsetY = Math.min(baseInset > 0 ? baseInset : autoInsetY, maxInsetY);
-            const effInsetZ = Math.min(baseInset > 0 ? baseInset : autoInsetZ, maxInsetZ);
-
-            // 外縁とインセットの“中間”に相当する寸法（片側ぶんだけ縮める）
-            const midSizeX = Math.max(cellSizeX - effInsetX, cellSizeX * 0.1);
-            const midSizeY = Math.max(cellSizeY - effInsetY, cellSizeY * 0.1);
-            const midSizeZ = Math.max(boxHeight - effInsetZ, boxHeight * 0.1);
-
-            // ADR-0008 Phase 1: VoxelEntityFactoryでエッジポリライン作成
-            const edgePolylines = VoxelEntityFactory.createBoxEdgePolylines(
-              centerCart, midSizeX, midSizeY, midSizeZ,
-              outlineColorWithOpacity, Math.max(finalOutlineWidth, 1)
-            );
-            
-            edgePolylines.forEach(polylineConfig => {
-              const polylineEntity = this.viewer.entities.add(polylineConfig);
-              this.voxelEntities.push(polylineEntity);
+            outlineEntities.forEach(outlineEntity => {
+              const outlineEntityAdded = this.viewer.entities.add(outlineEntity);
+              this.voxelEntities.push(outlineEntityAdded);
             });
           } catch (e) {
-            Logger.warn('Failed to add emulated thick outline polylines:', e);
+            Logger.warn('Outline rendering skipped due to error:', e);
           }
         }
+
         renderedCount++;
       } catch (error) {
         Logger.warn('Error rendering voxel:', error);
