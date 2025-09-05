@@ -527,8 +527,8 @@ async function createHeatmap() {
       autoVoxelSize: true,
       autoVoxelSizeMode: 'basic',
       voxelSize: undefined,
-      maxRenderVoxels: 'auto',
-      renderLimitStrategy: 'density',
+      maxRenderVoxels: 15000,  // Fixed limit to prevent array size errors
+      renderLimitStrategy: 'hybrid',  // Better balance
       colorMap: 'viridis',
       opacity: wireframe ? 0.0 : 1.0,
       showEmptyVoxels: false,
@@ -576,10 +576,24 @@ async function createHeatmap() {
     // Create heatmap from Cesium Entities
     if (typeof heatboxInstance.createFromEntities === 'function') {
       await heatboxInstance.createFromEntities(currentEntities);
-    } else {
-      heatboxInstance.setData(currentEntities);
-      if (typeof heatboxInstance.update === 'function') {
-        heatboxInstance.update();
+    } else if (typeof heatboxInstance.setData === 'function') {
+      await heatboxInstance.setData(currentEntities);
+    }
+    
+    // Manual camera fit if enabled
+    if (autoCamera && typeof heatboxInstance.fitView === 'function') {
+      try {
+        const fitOptions = {
+          pitchDegrees: -45,  // Use new API
+          headingDegrees: 0,  // Use new API
+          paddingPercent: 15,
+          duration: 2
+        };
+        await heatboxInstance.fitView(null, fitOptions);
+        console.log('Auto camera fit completed');
+      } catch (fitError) {
+        console.warn('Auto camera fit failed:', fitError);
+        // Non-fatal error
       }
     }
     
