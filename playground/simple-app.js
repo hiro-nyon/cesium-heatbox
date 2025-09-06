@@ -100,6 +100,50 @@ function initializeCesium() {
     } catch (_) {}
 
     updateStatus('Cesium initialized successfully', 'success');
+
+    // Guard: capture Cesium render errors and fallback to safe settings
+    try {
+      viewer.scene.renderError.addEventListener(async (err) => {
+        const msg = String(err && (err.message || err));
+        console.error('[Cesium renderError]', msg);
+        if (/Invalid array length|RangeError/i.test(msg)) {
+          try {
+            const hb = getHB();
+            if (hb) hb.clear();
+            const fallback = {
+              autoVoxelSize: false,
+              voxelSize: 40,
+              maxRenderVoxels: 1000,
+              renderLimitStrategy: 'density',
+              colorMap: 'viridis',
+              opacity: 1.0,
+              showEmptyVoxels: false,
+              emptyOpacity: 0.0,
+              showOutline: false,
+              adaptiveOutlines: false
+            };
+            const g = (typeof window !== 'undefined') ? window : globalThis;
+            const HB = (g && typeof g.CesiumHeatbox === 'function') ? g.CesiumHeatbox
+              : (g && g.CesiumHeatbox && typeof g.CesiumHeatbox.default === 'function') ? g.CesiumHeatbox.default
+              : (g && g.CesiumHeatbox && typeof g.CesiumHeatbox.Heatbox === 'function') ? g.CesiumHeatbox.Heatbox
+              : null;
+            if (!HB) return;
+            setHB(new HB(viewer, fallback));
+            const hb2 = getHB();
+            if (currentEntities && currentEntities.length) {
+              if (typeof hb2.createFromEntities === 'function') {
+                await hb2.createFromEntities(currentEntities);
+              } else if (typeof hb2.setData === 'function') {
+                await hb2.setData(currentEntities);
+              }
+              updateStatus('Recovered with safe fallback settings', 'warning');
+            }
+          } catch (e2) {
+            console.error('Safe fallback failed:', e2);
+          }
+        }
+      });
+    } catch (_) {}
     
   } catch (error) {
     console.error('Failed to initialize Cesium:', error);
@@ -546,22 +590,16 @@ async function createHeatmap() {
 
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     const options = {
-      autoVoxelSize: true,
-      autoVoxelSizeMode: 'occupancy',
-      voxelSize: undefined,
-      // Avoid huge auto budgets that can trigger Cesium RangeError in some environments
-      maxRenderVoxels: 10000,
+      // Safe defaults to avoid large geometry on alpha.3
+      autoVoxelSize: false,
+      voxelSize: 30,
+      maxRenderVoxels: 3000,
       renderLimitStrategy: 'density',
       colorMap: 'viridis',
       opacity: wireframe ? 0.0 : 1.0,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
-      showOutline: wireframe ? true : false,
-      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
-      outlineInset: wireframe ? 2.0 : 0,
-      outlineInsetMode: 'all',
-      outlineOpacity: 1.0,
-      outlineWidth: wireframe ? 8 : 2,
+      showOutline: false,
       adaptiveOutlines: false,
       autoView: autoCamera
     };
