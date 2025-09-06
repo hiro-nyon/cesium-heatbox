@@ -39,6 +39,9 @@ export class Heatbox {
     
     this.viewer = viewer;
     
+    // ユーザーが voxelSize を明示指定したかどうかを保持（デフォルト値と区別するため）
+    this._userProvidedVoxelSize = Object.prototype.hasOwnProperty.call(options || {}, 'voxelSize');
+
     // v0.1.9: Auto Render Budgetの適用
     const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
     this.options = validateAndNormalizeOptions(DeviceTierDetector.applyAutoRenderBudget(mergedOptions));
@@ -110,7 +113,8 @@ export class Heatbox {
       let finalVoxelSize = this.options.voxelSize || DEFAULT_OPTIONS.voxelSize;
       let autoAdjustmentInfo = null;
       
-      if (this.options.autoVoxelSize && !this.options.voxelSize) {
+      // ユーザーが voxelSize を明示指定していない場合に限り、自動決定を適用
+      if (this.options.autoVoxelSize && !this._userProvidedVoxelSize) {
         try {
           Logger.debug('自動ボクセルサイズ調整開始');
           

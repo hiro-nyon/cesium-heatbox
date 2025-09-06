@@ -98,9 +98,10 @@ export class VoxelSizeEstimator {
     
     for (let iteration = 0; iteration < maxIterations; iteration++) {
       // 現在のサイズでの総ボクセル数を計算
-      const numVoxelsX = Math.ceil(dataRange.x / currentSize);
-      const numVoxelsY = Math.ceil(dataRange.y / currentSize);
-      const numVoxelsZ = Math.ceil(dataRange.z / currentSize);
+      const safeSize = Math.max(currentSize, PERFORMANCE_LIMITS.minVoxelSize);
+      const numVoxelsX = Math.max(1, Math.ceil(dataRange.x / safeSize));
+      const numVoxelsY = Math.max(1, Math.ceil(dataRange.y / safeSize));
+      const numVoxelsZ = Math.max(1, Math.ceil(dataRange.z / safeSize));
       const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
       
       // 期待占有セル数の計算: E[occupied] ≈ M × (1 - exp(-N/M))
@@ -119,13 +120,11 @@ export class VoxelSizeEstimator {
       }
       
       // サイズ調整（Newton法的なアプローチ）
-      if (currentFill > targetFill) {
-        // 占有率が高すぎる → サイズを大きくしてボクセル数を減らす
-        currentSize *= Math.pow(currentFill / targetFill, 0.3);
-      } else {
-        // 占有率が低すぎる → サイズを小さくしてボクセル数を増やす
-        currentSize *= Math.pow(currentFill / targetFill, 0.3);
-      }
+      // 数値安定性のため倍率をクランプ（極端な縮小/拡大を防ぐ）
+      const rawRatio = currentFill / targetFill;
+      const clampedRatio = Math.max(0.1, Math.min(10, isFinite(rawRatio) && rawRatio > 0 ? rawRatio : 0.1));
+      const adjust = Math.pow(clampedRatio, 0.3);
+      currentSize *= adjust;
       
       // 制限値内に収める
       currentSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
