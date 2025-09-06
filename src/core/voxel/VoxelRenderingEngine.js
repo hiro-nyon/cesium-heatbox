@@ -71,7 +71,7 @@ export class VoxelRenderingEngine {
    * @param {Object} adaptiveOutlineController - Adaptive outline controller / 適応枠線コントローラー
    * @returns {Array} Created entities / 作成されたエンティティ
    */
-  renderVoxels(displayVoxels, topNVoxels, bounds, grid, statistics, options, calculateAdaptiveParams, outlineRenderer, _adaptiveOutlineController) {
+  renderVoxels(displayVoxels, topNVoxels, bounds, grid, statistics, options, calculateAdaptiveParams, outlineRenderer, adaptiveOutlineController) {
     const entities = [];
     
     Logger.debug(`Rendering ${displayVoxels.length} voxels`);
