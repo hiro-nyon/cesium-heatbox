@@ -1,30 +1,12 @@
 // Cesium Heatbox - Simple App (Quick Start)
-// Guard will run inside DOMContentLoaded to avoid top-level return issues
-
-// Global state accessible to all functions (use var to avoid duplicate-let errors on re-inclusion)
-var viewer = null;
-var heatboxInstance = null;
-var currentEntities = [];
-var currentData = null;
-var hbVisible = true;
-
-// Stable getter/setter to avoid scope issues across handlers
-function getHB() {
-  return heatboxInstance || window.__HB_QS_INSTANCE || null;
-}
-function setHB(inst) {
-  heatboxInstance = inst;
-  try { window.__HB_QS_INSTANCE = inst; } catch (_) {}
-  return inst;
-}
+// Global variables
+let viewer = null;
+let heatboxInstance = null;
+let currentEntities = [];
+let currentData = null;
 
 // Initialize the application
-(function(){
-'use strict';
-
 document.addEventListener('DOMContentLoaded', function() {
-  if (window.__HB_SIMPLE_INITED) return; 
-  window.__HB_SIMPLE_INITED = true;
   initializeCesium();
   setupEventListeners();
   // Quick Start mobile: toggle #toolbar (Playground bottom-sheet styles)
@@ -32,8 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeEnvironmentInfo();
   // setupAutoVoxelSizeToggle(); // QS enforces auto voxel size
 });
-
-})();
 
 // Initialize Cesium viewer
 function initializeCesium() {
@@ -59,10 +39,10 @@ function initializeCesium() {
       // Terrain and imagery (no Ion dependency)
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
       imageryProvider: new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-        subdomains: ['a', 'b', 'c', 'd'],
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        subdomains: 'abcd',
         maximumLevel: 19,
-        credit: '© CARTO © OpenStreetMap contributors'
+        credit: '© OpenStreetMap contributors © CARTO'
       })
     });
 
@@ -82,10 +62,10 @@ function initializeCesium() {
       if (!layers || layers.length === 0 || !layers.get(0)) {
         console.warn('No imagery layer detected at init. Forcing Carto Light add.');
         layers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-          url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-          subdomains: ['a', 'b', 'c', 'd'],
+          url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+          subdomains: 'abcd',
           maximumLevel: 19,
-          credit: '© CARTO © OpenStreetMap contributors'
+          credit: '© OpenStreetMap contributors © CARTO'
         }));
         viewer.scene.requestRender();
       }
@@ -100,50 +80,6 @@ function initializeCesium() {
     } catch (_) {}
 
     updateStatus('Cesium initialized successfully', 'success');
-
-    // Guard: capture Cesium render errors and fallback to safe settings
-    try {
-      viewer.scene.renderError.addEventListener(async (err) => {
-        const msg = String(err && (err.message || err));
-        console.error('[Cesium renderError]', msg);
-        if (/Invalid array length|RangeError/i.test(msg)) {
-          try {
-            const hb = getHB();
-            if (hb) hb.clear();
-            const fallback = {
-              autoVoxelSize: false,
-              voxelSize: 40,
-              maxRenderVoxels: 1000,
-              renderLimitStrategy: 'density',
-              colorMap: 'viridis',
-              opacity: 1.0,
-              showEmptyVoxels: false,
-              emptyOpacity: 0.0,
-              showOutline: false,
-              adaptiveOutlines: false
-            };
-            const g = (typeof window !== 'undefined') ? window : globalThis;
-            const HB = (g && typeof g.CesiumHeatbox === 'function') ? g.CesiumHeatbox
-              : (g && g.CesiumHeatbox && typeof g.CesiumHeatbox.default === 'function') ? g.CesiumHeatbox.default
-              : (g && g.CesiumHeatbox && typeof g.CesiumHeatbox.Heatbox === 'function') ? g.CesiumHeatbox.Heatbox
-              : null;
-            if (!HB) return;
-            setHB(new HB(viewer, fallback));
-            const hb2 = getHB();
-            if (currentEntities && currentEntities.length) {
-              if (typeof hb2.createFromEntities === 'function') {
-                await hb2.createFromEntities(currentEntities);
-              } else if (typeof hb2.setData === 'function') {
-                await hb2.setData(currentEntities);
-              }
-              updateStatus('Recovered with safe fallback settings', 'warning');
-            }
-          } catch (e2) {
-            console.error('Safe fallback failed:', e2);
-          }
-        }
-      });
-    } catch (_) {}
     
   } catch (error) {
     console.error('Failed to initialize Cesium:', error);
@@ -201,27 +137,30 @@ function setupQuickStartMobileMenu() {
   } catch (_) {}
 }
 
-// Re-render heatmap with updated emulation/opacity settings (0.1.10-safe)
+// Re-render heatmap with updated emulation/opacity settings
 function reRenderHeatmap() {
-  const hb = getHB();
-  if (!hb || !currentEntities || currentEntities.length === 0) return;
+  if (!heatboxInstance || !currentEntities || currentEntities.length === 0) return;
   try {
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
-    Object.assign(hb.options || {}, {
+    Object.assign(heatboxInstance.options, {
       showOutline: wireframe ? true : false,
       opacity: wireframe ? 0.0 : 1.0,
-      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
+      boxOpacityResolver: !wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        return 0.05 + nd * 0.95; // 0.05–1.0
+      }) : (() => 0),
+      outlineEmulation: wireframe ? 'all' : 'off',
       outlineInset: wireframe ? 2.0 : 0,
       outlineInsetMode: 'all',
-      outlineOpacity: 1.0,
-      outlineWidth: wireframe ? 8 : 2,
-      adaptiveOutlines: false
+      // Wireframe: solid outline (no density-based opacity), thicker width
+      ...(wireframe ? { outlineOpacity: 1.0, outlineOpacityResolver: undefined, outlineWidth: 10, outlineWidthResolver: undefined } : {})
     });
-    if (typeof hb.createFromEntities === 'function') {
-      hb.createFromEntities(currentEntities);
+    if (typeof heatboxInstance.createFromEntities === 'function') {
+      heatboxInstance.createFromEntities(currentEntities);
     } else {
-      hb.setData(currentEntities);
-      if (typeof hb.update === 'function') hb.update();
+      heatboxInstance.setData(currentEntities);
+      if (typeof heatboxInstance.update === 'function') heatboxInstance.update();
     }
   } catch (e) {
     console.error('Re-render failed:', e);
@@ -300,9 +239,9 @@ function switchBaseMap() {
   switch (selectedValue) {
     case 'carto-dark':
       imageryProvider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
         subdomains: ['a', 'b', 'c', 'd'],
-        credit: '© CARTO © OpenStreetMap contributors'
+        credit: '© CartoDB © OpenStreetMap contributors'
       });
       break;
     case 'osm-standard':
@@ -322,9 +261,9 @@ function switchBaseMap() {
     case 'carto-light':
     default:
       imageryProvider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
         subdomains: ['a', 'b', 'c', 'd'],
-        credit: '© CARTO © OpenStreetMap contributors'
+        credit: '© CartoDB © OpenStreetMap contributors'
       });
       break;
   }
@@ -343,19 +282,16 @@ function initializeEnvironmentInfo() {
   try {
     // Cesium version
     const cesiumVersion = typeof Cesium !== 'undefined' ? Cesium.VERSION : 'Unknown';
-    const cesiumEl = document.getElementById('cesiumVersion');
-    if (cesiumEl) cesiumEl.textContent = cesiumVersion;
+    document.getElementById('cesiumVersion').textContent = cesiumVersion;
     
     // WebGL support
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     const webglSupport = gl ? 'Supported' : 'Not Supported';
-    const webglEl = document.getElementById('webglSupport');
-    if (webglEl) webglEl.textContent = webglSupport;
+    document.getElementById('webglSupport').textContent = webglSupport;
     
     // Heatbox version - will be set when heatbox is initialized
-    const heatboxEl = document.getElementById('heatboxVersion');
-    if (heatboxEl) heatboxEl.textContent = 'Loading...';
+    document.getElementById('heatboxVersion').textContent = 'Loading...';
     
   } catch (error) {
     console.error('Error initializing environment info:', error);
@@ -590,81 +526,69 @@ async function createHeatmap() {
 
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     const options = {
-      // Safe defaults to avoid large geometry on alpha.3
-      autoVoxelSize: false,
-      voxelSize: 30,
-      maxRenderVoxels: 3000,
+      autoVoxelSize: true,
+      autoVoxelSizeMode: 'basic',
+      voxelSize: undefined,
+      maxVoxelSize: 10,
+      targetCells: 3000,
+      maxRenderVoxels: 'auto',
       renderLimitStrategy: 'density',
       colorMap: 'viridis',
+      // Global opacity lets resolver drive contrast more clearly
       opacity: wireframe ? 0.0 : 1.0,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
-      showOutline: false,
-      adaptiveOutlines: false,
+      showOutline: wireframe ? true : false,
+      // Default: density-driven fill shading
+      boxOpacityResolver: !wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5); // stronger gamma for contrast
+        return 0.05 + nd * 0.95; // 0.05–1.0 by density (stronger)
+      }) : (() => 0),
+      // Wireframe emulation (outlines only)
+      outlineEmulation: wireframe ? 'all' : 'off',
+      outlineInset: wireframe ? 2.0 : 0,
+      outlineInsetMode: 'all',
+      outlineOpacityResolver: wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        return 0.05 + nd * 0.95; // match box density mapping (0.05–1.0)
+      }) : undefined,
+      outlineWidthResolver: wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        return 6 + Math.round(nd * 6); // 6–12 px (thicker)
+      }) : undefined,
       autoView: autoCamera
     };
     
     // Clear existing heatmap and apply new options when reusing instance
-    const existing = getHB();
-    if (existing) {
-      existing.clear();
-      try { Object.assign(existing.options || {}, options); } catch (_) {}
+    if (heatboxInstance) {
+      heatboxInstance.clear();
+      try { Object.assign(heatboxInstance.options, options); } catch (_) {}
     }
     
     // Initialize heatbox if needed
-    if (!getHB()) {
+    if (!heatboxInstance) {
       const g = (typeof window !== 'undefined') ? window : globalThis;
       const HB = (g && typeof g.CesiumHeatbox === 'function') ? g.CesiumHeatbox
         : (g && g.CesiumHeatbox && typeof g.CesiumHeatbox.default === 'function') ? g.CesiumHeatbox.default
         : (g && g.CesiumHeatbox && typeof g.CesiumHeatbox.Heatbox === 'function') ? g.CesiumHeatbox.Heatbox
         : null;
       if (!HB) throw new Error('Heatbox constructor not found');
-      
-      // Add debug logging
-      console.log('Creating Heatbox with options:', {
-        maxRenderVoxels: options.maxRenderVoxels,
-        renderLimitStrategy: options.renderLimitStrategy,
-        entityCount: currentEntities.length
-      });
-      
-      setHB(new HB(viewer, options));
+      heatboxInstance = new HB(viewer, options);
       // Update heatbox version info
       const hv = document.getElementById('heatboxVersion');
-      if (hv) {
-        try {
-          const ver = (typeof CesiumHeatbox !== 'undefined' && CesiumHeatbox.VERSION)
-            ? CesiumHeatbox.VERSION
-            : '0.1.10-alpha.2';
-          hv.textContent = ver;
-        } catch (_) {
-          hv.textContent = '0.1.10-alpha.2';
-        }
-      }
+      if (hv) hv.textContent = 'Loaded';
     }
     
     // Create heatmap from Cesium Entities
-    const hb = getHB();
-    if (typeof hb.createFromEntities === 'function') {
-      await hb.createFromEntities(currentEntities);
-    } else if (typeof hb.setData === 'function') {
-      await hb.setData(currentEntities);
-    }
-    
-    // Manual camera fit if enabled
-    const hb2 = getHB();
-    if (autoCamera && hb2 && typeof hb2.fitView === 'function') {
-      try {
-        const fitOptions = {
-          pitchDegrees: -45,
-          headingDegrees: 0,
-          paddingPercent: 0.15,
-          duration: 2
-        };
-        await hb2.fitView(null, fitOptions);
-        console.log('Auto camera fit completed');
-      } catch (fitError) {
-        console.warn('Auto camera fit failed:', fitError);
-        // Non-fatal error
+    if (typeof heatboxInstance.createFromEntities === 'function') {
+      await heatboxInstance.createFromEntities(currentEntities);
+    } else {
+      heatboxInstance.setData(currentEntities);
+      if (typeof heatboxInstance.update === 'function') {
+        heatboxInstance.update();
       }
     }
     
@@ -680,54 +604,16 @@ async function createHeatmap() {
   } catch (error) {
     console.error('Error creating heatmap:', error);
     updateStatus('Error creating heatmap: ' + error.message, 'error');
-    // Fallback: try safer minimal settings to avoid Cesium RangeError
-    try {
-      const msg = String(error && (error.message || error));
-      if (/Invalid array length|RangeError/i.test(msg)) {
-        const hb = getHB();
-        if (hb) hb.clear();
-        const fallback = {
-          autoVoxelSize: false,
-          voxelSize: 40,
-          maxRenderVoxels: 1000,
-          renderLimitStrategy: 'density',
-          colorMap: 'viridis',
-          opacity: 1.0,
-          showEmptyVoxels: false,
-          emptyOpacity: 0.0,
-          showOutline: false,
-          adaptiveOutlines: false,
-          outlineWidthPreset: 'uniform'
-        };
-        const g = (typeof window !== 'undefined') ? window : globalThis;
-        const HB = (g && typeof g.CesiumHeatbox === 'function') ? g.CesiumHeatbox
-          : (g && g.CesiumHeatbox && typeof g.CesiumHeatbox.default === 'function') ? g.CesiumHeatbox.default
-          : (g && g.CesiumHeatbox && typeof g.CesiumHeatbox.Heatbox === 'function') ? g.CesiumHeatbox.Heatbox
-          : null;
-        if (!HB) throw new Error('Heatbox constructor not found');
-        setHB(new HB(viewer, fallback));
-        const hb2 = getHB();
-        if (typeof hb2.createFromEntities === 'function') {
-          await hb2.createFromEntities(currentEntities);
-        } else if (typeof hb2.setData === 'function') {
-          await hb2.setData(currentEntities);
-        }
-        updateStatus('Fallback heatmap created (safe settings)', 'warning');
-      }
-    } catch (fallbackErr) {
-      console.error('Fallback creation failed:', fallbackErr);
-    }
   }
 }
 
 // Clear heatmap
 function clearHeatmap() {
   try {
-    const hb = getHB();
-    if (hb) {
-      hb.clear();
+    if (heatboxInstance) {
+      heatboxInstance.clear();
       // Fully reset instance so next create uses fresh options
-      setHB(null);
+      heatboxInstance = null;
       updateStatus('Heatmap cleared', 'success');
       
       // Update statistics
@@ -747,16 +633,9 @@ function clearHeatmap() {
 // Toggle heatmap visibility
 function toggleVisibility() {
   try {
-    const hb = getHB();
-    if (hb) {
-      hbVisible = !hbVisible;
-      if (typeof hb.setVisible === 'function') {
-        hb.setVisible(hbVisible);
-      } else if (typeof hb.toggleVisibility === 'function') {
-        // Fallback for potential legacy helper
-        hb.toggleVisibility();
-      }
-      updateStatus(`Heatmap ${hbVisible ? 'shown' : 'hidden'}`, 'success');
+    if (heatboxInstance) {
+      heatboxInstance.toggleVisibility();
+      updateStatus('Heatmap visibility toggled', 'success');
     }
   } catch (error) {
     console.error('Error toggling visibility:', error);
