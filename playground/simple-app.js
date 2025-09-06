@@ -531,7 +531,6 @@ async function createHeatmap() {
     const options = {
       autoVoxelSize: true,
       autoVoxelSizeMode: 'basic',
-      voxelSize: undefined,
       maxVoxelSize: 10,
       targetCells: 3000,
       // Avoid auto render budget to prevent oversized geometry

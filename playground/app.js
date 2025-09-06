@@ -2504,7 +2504,7 @@ class HeatboxPlayground {
     const outlineOpacityMode = document.getElementById('outlineOpacityMode')?.value || 'off';
     
     // v0.1.9: 新オプション
-    const autoVoxelSizeMode = document.getElementById('autoVoxelSizeMode')?.value || 'simple';
+    const autoVoxelSizeMode = document.getElementById('autoVoxelSizeMode')?.value || 'basic';
     const maxRenderVoxels = document.getElementById('maxRenderVoxels')?.value || 'auto';
     const renderLimitStrategy = document.getElementById('renderLimitStrategy')?.value || 'hybrid';
     const autoView = document.getElementById('autoView')?.checked || false;
@@ -2520,7 +2520,7 @@ class HeatboxPlayground {
       autoVoxelSize: autoVoxelSize,
       // 手動指定が無効な場合はvoxelSizeを設定しない（自動調整を有効にする）
       // ただし、自動サイズが大きすぎる場合に備えて最大値を制限
-      voxelSize: autoVoxelSize ? undefined : gridSize,
+      // 注意: auto=true の場合は voxelSize プロパティ自体を設定しない
       // 自動サイズの場合は最大ボクセルサイズを制限（密集表示を確保）
       maxVoxelSize: autoVoxelSize ? 10 : undefined,  // さらに小さく（15→10）
       // 目標ボクセル数を増やして密度を上げる
@@ -2591,6 +2591,9 @@ class HeatboxPlayground {
     // v0.1.9: 新機能の追加
     if (autoVoxelSize) {
       options.autoVoxelSizeMode = autoVoxelSizeMode;
+    } else {
+      // 手動指定時のみ voxelSize を設定
+      options.voxelSize = gridSize;
     }
     
     // maxRenderVoxels の設定
@@ -3346,11 +3349,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // CesiumHeatboxの読み込み確認（CDN移行）
   if (typeof CesiumHeatbox === 'undefined') {
     console.error('CesiumHeatbox が読み込まれていません');
-    console.error('期待する読み込み元: unpkg CDN (cesium-heatbox@0.1.10-alpha.2)');
+    console.error('期待する読み込み元: unpkg CDN (cesium-heatbox@0.1.10-alpha.9)');
     document.getElementById('loading').style.display = 'block';
     document.getElementById('loading').innerHTML = '<p>❌ CesiumHeatbox が読み込まれていません</p>' +
       '<p>CDNの読み込み状況を確認してください</p>' +
-      '<p>期待するCDN: https://unpkg.com/cesium-heatbox@next/dist/cesium-heatbox.umd.min.js?v=0.1.10-alpha.8</p>';
+      '<p>期待するCDN: https://unpkg.com/cesium-heatbox@next/dist/cesium-heatbox.umd.min.js?v=0.1.10-alpha.9</p>';
     return;
   }
   
