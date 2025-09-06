@@ -102,12 +102,18 @@ export class VoxelGeometry {
   static calculateVoxelDimensions(grid, normalizedDensity, options = {}) {
     const sizes = VoxelGeometry.calculateVoxelSizes(grid, options);
     const adjustedHeight = VoxelGeometry.calculateAdjustedHeight(
-      sizes.sizeZ, 
-      normalizedDensity, 
+      sizes.sizeZ,
+      normalizedDensity,
       options.heightBased
     );
 
-    return new Cesium.Cartesian3(sizes.sizeX, sizes.sizeY, adjustedHeight);
+    // Defensive clamping: ensure finite, positive dimensions to avoid Cesium geometry errors
+    const fallback = Math.max(grid?.voxelSizeMeters || 1, 1);
+    const safeX = Number.isFinite(sizes.sizeX) && sizes.sizeX > 0 ? sizes.sizeX : fallback;
+    const safeY = Number.isFinite(sizes.sizeY) && sizes.sizeY > 0 ? sizes.sizeY : fallback;
+    const safeZ = Number.isFinite(adjustedHeight) && adjustedHeight > 0 ? adjustedHeight : fallback;
+
+    return new Cesium.Cartesian3(safeX, safeY, safeZ);
   }
 
   /**
