@@ -282,16 +282,19 @@ function initializeEnvironmentInfo() {
   try {
     // Cesium version
     const cesiumVersion = typeof Cesium !== 'undefined' ? Cesium.VERSION : 'Unknown';
-    document.getElementById('cesiumVersion').textContent = cesiumVersion;
+    const cesiumEl = document.getElementById('cesiumVersion');
+    if (cesiumEl) cesiumEl.textContent = cesiumVersion;
     
     // WebGL support
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     const webglSupport = gl ? 'Supported' : 'Not Supported';
-    document.getElementById('webglSupport').textContent = webglSupport;
+    const webglEl = document.getElementById('webglSupport');
+    if (webglEl) webglEl.textContent = webglSupport;
     
     // Heatbox version - will be set when heatbox is initialized
-    document.getElementById('heatboxVersion').textContent = 'Loading...';
+    const heatboxEl = document.getElementById('heatboxVersion');
+    if (heatboxEl) heatboxEl.textContent = 'Loading...';
     
   } catch (error) {
     console.error('Error initializing environment info:', error);
@@ -531,7 +534,8 @@ async function createHeatmap() {
       voxelSize: undefined,
       maxVoxelSize: 10,
       targetCells: 3000,
-      maxRenderVoxels: 'auto',
+      // Avoid auto render budget to prevent oversized geometry
+      maxRenderVoxels: 8000,
       renderLimitStrategy: 'density',
       colorMap: 'viridis',
       // Global opacity lets resolver drive contrast more clearly
