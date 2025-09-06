@@ -528,13 +528,17 @@ async function createHeatmap() {
     const autoCamera = document.getElementById('autoCamera').checked;
 
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
+    // Budget-aware target fill so N << budget won't force tiny voxels
+    const budget = 4000;
+    const n = currentEntities.length;
+    const targetFillEff = Math.min(0.6, Math.max(0.05, n / budget));
     const options = {
       autoVoxelSize: true,
-      // Occupancy mode ties size to maxRenderVoxels for stability
+      // Occupancy mode with effective target fill
       autoVoxelSizeMode: 'occupancy',
-      autoVoxelTargetFill: 0.6,
+      autoVoxelTargetFill: targetFillEff,
       // Avoid auto render budget; keep a conservative cap
-      maxRenderVoxels: 4000,
+      maxRenderVoxels: budget,
       renderLimitStrategy: 'density',
       outlineRenderMode: 'standard',
       enableThickFrames: false,
