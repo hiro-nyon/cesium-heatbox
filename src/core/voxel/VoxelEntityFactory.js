@@ -108,6 +108,10 @@ export class VoxelEntityFactory {
    */
   static createBoxEdgePolylines(centerCart, sizeX, sizeY, sizeZ, color, width) {
     try {
+      if (!(sizeX > 0) || !(sizeY > 0) || !(sizeZ > 0)) {
+        if (Logger && Logger.warn) Logger.warn('Invalid box dimensions for edge polylines:', { sizeX, sizeY, sizeZ });
+        return [];
+      }
       const halfX = sizeX / 2;
       const halfY = sizeY / 2;
       const halfZ = sizeZ / 2;

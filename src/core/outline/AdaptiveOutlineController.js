@@ -172,6 +172,9 @@ export class AdaptiveOutlineController {
    * @private
    */
 _calculateOverlapRisk(voxelInfo, voxelData, _viewer) {
+    if (!voxelData || typeof voxelData.has !== 'function') {
+      return 0;
+    }
     const { x, y, z } = voxelInfo;
     let adjacentCount = 0;
     

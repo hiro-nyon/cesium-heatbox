@@ -190,18 +190,7 @@ export function validateAndNormalizeOptions(options = {}) {
   }
   
 
-  // v0.1.6.1 (ADR-0004): インセット枠線
-  if (normalized.outlineInset !== undefined) {
-    const v = parseFloat(normalized.outlineInset);
-    normalized.outlineInset = isNaN(v) || v < 0 ? 0 : v;
-  }
-  if (normalized.outlineInsetMode !== undefined) {
-    const validModes = ['all', 'topn'];
-    if (!validModes.includes(normalized.outlineInsetMode)) {
-      Logger.warn(`Invalid outlineInsetMode: ${normalized.outlineInsetMode}. Using 'all'.`);
-      normalized.outlineInsetMode = 'all';
-    }
-  }
+  // (duplicate early clamp removed; see stricter clamp below)
 
   // v0.1.6.1: インセット枠線（ADR-0004）
   if (normalized.outlineInset !== undefined) {

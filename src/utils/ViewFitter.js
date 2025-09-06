@@ -48,7 +48,7 @@ export class ViewFitter {
       const dataRange = ViewFitter._calculateDataRange(bounds);
       const maxRange = Math.max(dataRange.x, dataRange.y, dataRange.z);
       
-      if (maxRange < 10) {
+      if (maxRange < 1e-6) {
         return ViewFitter._handleMinimalDataRange(viewer, bounds, fitOptions);
       }
       
