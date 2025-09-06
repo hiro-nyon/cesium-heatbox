@@ -3350,7 +3350,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loading').style.display = 'block';
     document.getElementById('loading').innerHTML = '<p>❌ CesiumHeatbox が読み込まれていません</p>' +
       '<p>CDNの読み込み状況を確認してください</p>' +
-      '<p>期待するCDN: https://cdn.jsdelivr.net/npm/cesium-heatbox@next/dist/cesium-heatbox.umd.min.js?v=0.1.10-alpha.6</p>';
+      '<p>期待するCDN: https://cdn.jsdelivr.net/npm/cesium-heatbox@next/dist/cesium-heatbox.umd.min.js?v=0.1.10-alpha.7</p>';
     return;
   }
   
