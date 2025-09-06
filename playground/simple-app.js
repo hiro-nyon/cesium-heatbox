@@ -528,20 +528,11 @@ async function createHeatmap() {
     const autoCamera = document.getElementById('autoCamera').checked;
 
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
-    // Budget-aware target fill so N << budget won't force tiny voxels
-    const budget = 4000;
-    const n = currentEntities.length;
-    const targetFillEff = Math.min(0.6, Math.max(0.05, n / budget));
     const options = {
       autoVoxelSize: true,
-      // Occupancy mode with effective target fill
-      autoVoxelSizeMode: 'occupancy',
-      autoVoxelTargetFill: targetFillEff,
-      // Avoid auto render budget; keep a conservative cap
-      maxRenderVoxels: budget,
-      renderLimitStrategy: 'density',
-      outlineRenderMode: 'standard',
-      enableThickFrames: false,
+      // Match gh-pages QS: basic mode + auto render budget
+      autoVoxelSizeMode: 'basic',
+      maxRenderVoxels: 'auto',
       colorMap: 'viridis',
       // Global opacity lets resolver drive contrast more clearly
       opacity: wireframe ? 0.0 : 1.0,

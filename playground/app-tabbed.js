@@ -81,7 +81,7 @@ function updateEnvironmentInfo() {
   }
   
   if (heatboxVersion) {
-    heatboxVersion.textContent = typeof window.CesiumHeatbox !== 'undefined' ? '0.1.10-alpha.9' : 'Not loaded';
+    heatboxVersion.textContent = typeof window.CesiumHeatbox !== 'undefined' ? '0.1.9' : 'Not loaded';
   }
   
   if (webglSupport) {
@@ -216,10 +216,10 @@ function createHeatmap() {
     const autoView = document.getElementById('autoView')?.checked || true;
     
     const options = {
-      // 手動グリッドは無効（自動サイズを適用）
+      voxelSize: gridSize,
       heightBased: heightBased,
       autoVoxelSize: true,
-      autoVoxelSizeMode: 'basic',
+      autoVoxelSizeMode: 'simple',
       colorMap: 'viridis',
       showEmptyVoxels: false,
       wireframeOnly: false,

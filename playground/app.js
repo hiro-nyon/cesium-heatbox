@@ -2504,7 +2504,7 @@ class HeatboxPlayground {
     const outlineOpacityMode = document.getElementById('outlineOpacityMode')?.value || 'off';
     
     // v0.1.9: 新オプション
-    const autoVoxelSizeMode = document.getElementById('autoVoxelSizeMode')?.value || 'basic';
+    const autoVoxelSizeMode = document.getElementById('autoVoxelSizeMode')?.value || 'simple';
     const maxRenderVoxels = document.getElementById('maxRenderVoxels')?.value || 'auto';
     const renderLimitStrategy = document.getElementById('renderLimitStrategy')?.value || 'hybrid';
     const autoView = document.getElementById('autoView')?.checked || false;
