@@ -71,7 +71,8 @@ export class VoxelRenderingEngine {
    * @param {Object} adaptiveOutlineController - Adaptive outline controller / 適応枠線コントローラー
    * @returns {Array} Created entities / 作成されたエンティティ
    */
-  renderVoxels(displayVoxels, topNVoxels, bounds, grid, statistics, options, calculateAdaptiveParams, outlineRenderer, adaptiveOutlineController) {
+  // Keep the last arg prefixed with '_' to satisfy eslint unused-args rule
+  renderVoxels(displayVoxels, topNVoxels, bounds, grid, statistics, options, calculateAdaptiveParams, outlineRenderer, _adaptiveOutlineController) {
     const entities = [];
     
     Logger.debug(`Rendering ${displayVoxels.length} voxels`);
