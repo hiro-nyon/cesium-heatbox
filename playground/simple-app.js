@@ -530,12 +530,14 @@ async function createHeatmap() {
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     const options = {
       autoVoxelSize: true,
-      autoVoxelSizeMode: 'basic',
-      maxVoxelSize: 10,
-      targetCells: 3000,
-      // Avoid auto render budget to prevent oversized geometry
-      maxRenderVoxels: 8000,
+      // Occupancy mode ties size to maxRenderVoxels for stability
+      autoVoxelSizeMode: 'occupancy',
+      autoVoxelTargetFill: 0.6,
+      // Avoid auto render budget; keep a conservative cap
+      maxRenderVoxels: 4000,
       renderLimitStrategy: 'density',
+      outlineRenderMode: 'standard',
+      enableThickFrames: false,
       colorMap: 'viridis',
       // Global opacity lets resolver drive contrast more clearly
       opacity: wireframe ? 0.0 : 1.0,
