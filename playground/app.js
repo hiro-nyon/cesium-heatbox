@@ -1032,7 +1032,7 @@ class HeatboxPlayground {
         const options = {
           pitchDegrees: pitch,
           headingDegrees: heading,
-          paddingPercent: 15, // Default padding
+          paddingPercent: 0.15, // Default padding (15%)
           duration: 2 // Default animation duration
         };
         
@@ -3349,8 +3349,8 @@ window.addEventListener('DOMContentLoaded', () => {
     console.error('期待する読み込み元: unpkg CDN (cesium-heatbox@0.1.10-alpha.2)');
     document.getElementById('loading').style.display = 'block';
     document.getElementById('loading').innerHTML = '<p>❌ CesiumHeatbox が読み込まれていません</p>' +
-      '<p>ネットワーク接続とCDNスクリプトの読み込みを確認してください。</p>' +
-      '<p>期待するCDN: https://unpkg.com/cesium-heatbox@0.1.10-alpha.2/dist/cesium-heatbox.umd.min.js</p>';
+      '<p>ライブラリファイルの場所を確認してください</p>' +
+      '<p>期待するパス: ../dist/cesium-heatbox.umd.min.js</p>';
     return;
   }
   
