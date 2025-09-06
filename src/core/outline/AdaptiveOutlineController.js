@@ -118,6 +118,9 @@ export class AdaptiveOutlineController {
    * @private
    */
   _calculateNeighborhoodDensity(x, y, z, voxelData) {
+    if (!voxelData || typeof voxelData.get !== 'function') {
+      return 0;
+    }
     const radius = Math.floor(this.options.neighborhoodRadius / 100); // Convert to grid units
     let totalCount = 0;
     let voxelCount = 0;
