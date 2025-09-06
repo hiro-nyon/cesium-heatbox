@@ -74,6 +74,8 @@ export class VoxelRenderingEngine {
   // Keep the last arg prefixed with '_' to satisfy eslint unused-args rule
   renderVoxels(displayVoxels, topNVoxels, bounds, grid, statistics, options, calculateAdaptiveParams, outlineRenderer, _adaptiveOutlineController) {
     const entities = [];
+    // Build a local map for neighborhood queries to avoid null voxelData in adaptive controller
+    const localVoxelMap = new Map(displayVoxels.map(({ key, info }) => [key, info]));
     
     Logger.debug(`Rendering ${displayVoxels.length} voxels`);
     
@@ -93,7 +95,7 @@ export class VoxelRenderingEngine {
         // 位置を先に計算して適応パラメータに渡す
         const position = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt);
         // v0.1.7: 適応的パラメータの計算（位置情報を含めて渡す）
-        const adaptiveParams = calculateAdaptiveParams({ ...info, position }, isTopN, null, statistics);
+        const adaptiveParams = calculateAdaptiveParams({ ...info, position }, isTopN, localVoxelMap, statistics);
         
         // 密度に応じた色を計算
         let color, opacity;
