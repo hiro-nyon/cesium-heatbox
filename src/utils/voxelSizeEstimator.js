@@ -145,12 +145,25 @@ export class VoxelSizeEstimator {
    * @returns {Object} Data range {x, y, z} in meters / データ範囲（メートル）
    */
   static calculateDataRange(bounds) {
-    const minLon = bounds.west * 180 / Math.PI; // ラジアンから度に変換
-    const maxLon = bounds.east * 180 / Math.PI;
-    const minLat = bounds.south * 180 / Math.PI;
-    const maxLat = bounds.north * 180 / Math.PI;
-    const minAlt = bounds.minimumHeight || 0;
-    const maxAlt = bounds.maximumHeight || 100;
+    // Support both Cesium.Rectangle-like bounds (west/east/south/north in radians)
+    // and library-internal bounds (minLon/maxLon/minLat/maxLat in degrees).
+    const hasDeg = typeof bounds.minLon === 'number' && typeof bounds.maxLon === 'number';
+    const hasRad = typeof bounds.west === 'number' && typeof bounds.east === 'number';
+
+    const minLon = hasDeg
+      ? bounds.minLon
+      : hasRad ? (bounds.west * 180 / Math.PI) : 0;
+    const maxLon = hasDeg
+      ? bounds.maxLon
+      : hasRad ? (bounds.east * 180 / Math.PI) : 0;
+    const minLat = hasDeg
+      ? bounds.minLat
+      : hasRad ? (bounds.south * 180 / Math.PI) : 0;
+    const maxLat = hasDeg
+      ? bounds.maxLat
+      : hasRad ? (bounds.north * 180 / Math.PI) : 0;
+    const minAlt = (typeof bounds.minAlt === 'number') ? bounds.minAlt : (bounds.minimumHeight || 0);
+    const maxAlt = (typeof bounds.maxAlt === 'number') ? bounds.maxAlt : (bounds.maximumHeight || 100);
     
     // 経度・緯度範囲をメートルに概算変換
     // 緯度1度 ≈ 111,000m、経度は緯度により変動するが中央緯度で近似

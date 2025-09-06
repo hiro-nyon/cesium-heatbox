@@ -281,7 +281,7 @@ export function validateAndNormalizeOptions(options = {}) {
     
     // 旧API使用時の移行警告
     if (f.pitch !== undefined || f.heading !== undefined) {
-      Logger.warn('fitViewOptions.pitch/heading は非推奨です。pitchDegrees/headingDegreesを使用してください。');
+      Logger.warn('fitViewOptions.pitch/heading は v0.1.11 で削除予定です。pitchDegrees/headingDegrees を使用してください。');
     }
     
     normalized.fitViewOptions = {
