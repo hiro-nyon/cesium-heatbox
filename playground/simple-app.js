@@ -157,7 +157,7 @@ function setupQuickStartMobileMenu() {
   } catch (_) {}
 }
 
-// Re-render heatmap with updated emulation/opacity settings
+// Re-render heatmap with updated emulation/opacity settings (0.1.10-safe)
 function reRenderHeatmap() {
   const hb = getHB();
   if (!hb || !currentEntities || currentEntities.length === 0) return;
@@ -166,9 +166,12 @@ function reRenderHeatmap() {
     Object.assign(hb.options || {}, {
       showOutline: wireframe ? true : false,
       opacity: wireframe ? 0.0 : 1.0,
-      outlineWidth: wireframe ? 6 : 2,
-      adaptiveOutlines: false,
-      outlineWidthPreset: 'uniform'
+      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
+      outlineInset: wireframe ? 2.0 : 0,
+      outlineInsetMode: 'all',
+      outlineOpacity: 1.0,
+      outlineWidth: wireframe ? 8 : 2,
+      adaptiveOutlines: false
     });
     if (typeof hb.createFromEntities === 'function') {
       hb.createFromEntities(currentEntities);
@@ -544,38 +547,22 @@ async function createHeatmap() {
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     const options = {
       autoVoxelSize: true,
-      autoVoxelSizeMode: 'basic',
+      autoVoxelSizeMode: 'occupancy',
       voxelSize: undefined,
-      maxVoxelSize: 10,
-      targetCells: 3000,
-      maxRenderVoxels: 'auto',
+      // Avoid huge auto budgets that can trigger Cesium RangeError in some environments
+      maxRenderVoxels: 10000,
       renderLimitStrategy: 'density',
       colorMap: 'viridis',
-      // Global opacity lets resolver drive contrast more clearly
       opacity: wireframe ? 0.0 : 1.0,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
       showOutline: wireframe ? true : false,
-      // Default: density-driven fill shading
-      boxOpacityResolver: !wireframe ? (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5); // stronger gamma for contrast
-        return 0.05 + nd * 0.95; // 0.05–1.0 by density (stronger)
-      }) : (() => 0),
-      // Wireframe emulation (outlines only)
-      outlineEmulation: wireframe ? 'all' : 'off',
+      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
       outlineInset: wireframe ? 2.0 : 0,
       outlineInsetMode: 'all',
-      outlineOpacityResolver: wireframe ? (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        return 0.05 + nd * 0.95; // match box density mapping (0.05–1.0)
-      }) : undefined,
-      outlineWidthResolver: wireframe ? (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        return 6 + Math.round(nd * 6); // 6–12 px (thicker)
-      }) : undefined,
+      outlineOpacity: 1.0,
+      outlineWidth: wireframe ? 8 : 2,
+      adaptiveOutlines: false,
       autoView: autoCamera
     };
     
