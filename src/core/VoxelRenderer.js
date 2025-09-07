@@ -243,6 +243,11 @@ export class VoxelRenderer {
     let renderedCount = 0;
 
     // 実際にボクセルを描画
+    // パフォーマンス最適化: Resolver用の一時オブジェクトを再利用してGCを削減
+    const reusableVoxelCtx = { x: 0, y: 0, z: 0, count: 0 };
+    const reusableWidthResolverParams = { voxel: reusableVoxelCtx, isTopN: false, normalizedDensity: 0, statistics, adaptiveParams: null };
+    const reusableOpacityResolverCtx = { voxel: reusableVoxelCtx, isTopN: false, normalizedDensity: 0, statistics, adaptiveParams: null };
+
     displayVoxels.forEach(({ key, info }) => {
       try {
         const { x, y, z } = info;
@@ -254,7 +259,11 @@ export class VoxelRenderer {
         
         const isTopN = topNVoxels.has(key); // v0.1.5: TopNハイライト判定
         
-        // v0.1.7: 適応的パラメータの計算
+        // 事前に正規化密度を一度だけ計算し使い回す
+        const normalizedDensity = statistics.maxCount > statistics.minCount ? 
+          (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
+        
+        // v0.1.7: 適応的パラメータの計算（必要箇所で参照）
         const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, voxelData, statistics);
         
         // 密度に応じた色を計算
@@ -312,26 +321,19 @@ export class VoxelRenderer {
 
         let boxHeight = baseCellSizeZ;
         if (this.options.heightBased && info.count > 0) {
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
           boxHeight = baseCellSizeZ * (0.1 + normalizedDensity * 0.9); // 10%から100%の高さ
         }
         
         // v0.1.7: 動的枠線太さ制御（優先順位：resolver > 適応的 > 固定値）
         let finalOutlineWidth;
         if (this.options.outlineWidthResolver && typeof this.options.outlineWidthResolver === 'function') {
-          // outlineWidthResolver による動的制御
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          const resolverParams = {
-            voxel: { x, y, z, count: info.count },
-            isTopN,
-            normalizedDensity,
-            statistics,
-            adaptiveParams
-          };
+          // outlineWidthResolver による動的制御（再利用オブジェクトで割り当て削減）
+          reusableVoxelCtx.x = x; reusableVoxelCtx.y = y; reusableVoxelCtx.z = z; reusableVoxelCtx.count = info.count;
+          reusableWidthResolverParams.isTopN = isTopN;
+          reusableWidthResolverParams.normalizedDensity = normalizedDensity;
+          reusableWidthResolverParams.adaptiveParams = adaptiveParams;
           try {
-            finalOutlineWidth = this.options.outlineWidthResolver(resolverParams);
+            finalOutlineWidth = this.options.outlineWidthResolver(reusableWidthResolverParams);
             if (isNaN(finalOutlineWidth)) {
               finalOutlineWidth = adaptiveParams.outlineWidth || this.options.outlineWidth;
             }
@@ -353,17 +355,13 @@ export class VoxelRenderer {
         // v0.1.7: 枠線透明度制御（resolver > 適応的 > 固定値）
         let finalOutlineOpacity;
         if (this.options.outlineOpacityResolver && typeof this.options.outlineOpacityResolver === 'function') {
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          const resolverCtx = {
-            voxel: { x, y, z, count: info.count },
-            isTopN,
-            normalizedDensity,
-            statistics,
-            adaptiveParams
-          };
+          // 透明度resolverも同様に再利用オブジェクトで最適化
+          reusableVoxelCtx.x = x; reusableVoxelCtx.y = y; reusableVoxelCtx.z = z; reusableVoxelCtx.count = info.count;
+          reusableOpacityResolverCtx.isTopN = isTopN;
+          reusableOpacityResolverCtx.normalizedDensity = normalizedDensity;
+          reusableOpacityResolverCtx.adaptiveParams = adaptiveParams;
           try {
-            const resolverOpacity = this.options.outlineOpacityResolver(resolverCtx);
+            const resolverOpacity = this.options.outlineOpacityResolver(reusableOpacityResolverCtx);
             finalOutlineOpacity = isNaN(resolverOpacity) ? (this.options.outlineOpacity ?? 1.0) : Math.max(0, Math.min(1, resolverOpacity));
           } catch (e) {
             Logger.warn('outlineOpacityResolver error, using fallback:', e);
