@@ -180,8 +180,8 @@ export class AdaptiveController {
     );
     
     // カメラ距離と重なりリスクで調整
-    let finalWidth = presetResult.adaptiveWidth * cameraFactor;
-    let finalOutlineOpacity = Math.max(0.2, presetResult.adaptiveOutlineOpacity * (1 - overlapRisk));
+    const finalWidth = presetResult.adaptiveWidth * cameraFactor;
+    const finalOutlineOpacity = Math.max(0.2, presetResult.adaptiveOutlineOpacity * (1 - overlapRisk));
     
     return {
       outlineWidth: Math.max(0.5, finalWidth),
