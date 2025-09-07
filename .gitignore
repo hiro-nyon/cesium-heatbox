@@ -43,6 +43,3 @@ coverage/
 *.tmp
 *.temp
 .wiki-tmp/
-
-# Non-source agent docs
-AGENTS.md
