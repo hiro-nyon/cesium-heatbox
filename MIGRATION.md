@@ -1,6 +1,6 @@
 # Migration Guide - v0.1.10 API Changes
 
-**このガイドは ADR-0008 Phase 4 で実装された API 変更（非破壊的）への対応方法を説明します。**
+このガイドは v0.1.10 で導入された非破壊的な API 変更（主に非推奨化と代替の追加）への対応方法を説明します。なお、ADR-0008 は実装上の複雑性により ADR-0009 に置き換えられ、破壊的変更や大規模な構造変更は v0.1.11 以降に段階的に移行されます。
 
 ## 📋 **概要**
 
@@ -196,7 +196,8 @@ fitViewOptions: {
 
 ## 📚 **参考情報**
 
-- [ADR-0008: v0.1.10 API Cleanup](./docs/adr/ADR-0008-v0.1.10-refactor-and-api-cleanup.md)
+- [ADR-0009: VoxelRenderer責任分離とSRP適用](./docs/adr/ADR-0009-voxel-renderer-responsibility-separation.md)
+- [ADR-0008: v0.1.10 API Cleanup（Superseded）](./docs/adr/ADR-0008-v0.1.10-refactor-and-api-cleanup.md)
 - [API Reference](./docs/API.md)
 - [Examples](./examples/)
 

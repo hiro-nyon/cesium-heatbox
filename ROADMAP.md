@@ -51,8 +51,19 @@ Priority: High | Target: 2025-09
   - 選択戦略のばらつき → ハイブリッド（TopK by density + 層化サンプル）で安定化、`debug` で比率を可視化
   - カメラ適合の端ケース → `flyToBoundingSphere` をFallbackに用意
 
-### v0.1.10（リファクタリング・モジュール化）- Refactoring & Modularization
-Priority: High | Target: 2025-10
+### v0.1.10（中止・破棄）- Cancelled
+Status: Cancelled | Reason: ADR-0009 により計画を置換
+
+- 概要
+  - ADR-0009（VoxelRendererの責務分離/SRP適用）の採択に伴い、v0.1.10 で予定していたリファクタリング案（ADR-0008）は方針不一致と判断し中止しました。
+  - v0.1.10 の実装は破棄し、バージョン自体もスキップします。
+  - リファクタリングは v0.1.11 に移管し、以降の 0.1 系計画を1バージョン後ろ倒しにします。
+- 参考
+  - docs/adr/ADR-0008-v0.1.10-refactor-and-api-cleanup.md（Superseded by ADR-0009）
+  - docs/adr/ADR-0009-voxel-renderer-responsibility-separation.md
+
+### v0.1.11（リファクタリング・モジュール化）- Refactoring & Modularization
+Priority: High | Target: 2025-11
 
 - Scope（挙動非変更・内部構造の整理）
   - [ ] 選択戦略の分離: `src/core/selection/` に density/coverage/hybrid を分割しIF化
@@ -77,8 +88,8 @@ Priority: High | Target: 2025-10
   - 大規模移動による衝突 → 小PR分割（戦略→推定→予算→視点の順）と即時レビュー
   - 回帰リスク → 既存Examples/テストでのスナップショット・差分確認を強化
 
-### v0.1.11（APIクリーンアップ＋観測可能性）- API Cleanup & Observability
-Priority: Medium | Target: 2025-11
+### v0.1.12（APIクリーンアップ＋観測可能性）- API Cleanup & Observability
+Priority: Medium | Target: 2026-01
 - Scope
   - [API Cleanup（Breaking含む）]
     - オプション名の統一: `fitViewOptions.pitch`/`heading` → `pitchDegrees`/`headingDegrees`（旧名削除）
@@ -93,7 +104,7 @@ Priority: Medium | Target: 2025-11
   - [ ] 設定プロファイル機能（ユースケース別の推奨セット）
   - [ ] Auto Quality（任意拡張）: `qualityMode: 'manual'|'auto'`, `targetFPS` 等で“選抜側のつまみ（K/比率/戦略）”のみを実測FPSに応じて微調整（グリッド再構築は既定で行わない）
 - Deliverables
-  - [ ] `MIGRATION.md` 更新（0.1.9 → 0.1.10 → 0.1.11）とWiki「Migration」への同期
+  - [ ] `MIGRATION.md` 更新（0.1.9 → 0.1.11 → 0.1.12）とWiki「Migration」への同期
   - [ ] `types/` 更新（削除・名称統一を反映）
   - [ ] `examples/advanced/` にオーバーレイUI（ON/OFF）
   - [ ] `tools/benchmark.js` の改善（集計とCSV/markdownサマリ）
@@ -102,7 +113,7 @@ Priority: Medium | Target: 2025-11
   - [ ] `profile: 'mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data'` を `validateAndNormalizeOptions` でマージ適用（ユーザー設定が最終優先）
   - [ ] Auto Quality連携: `targetFPS` 達成のために `maxRenderVoxels`/`minCoverageRatio`/`renderLimitStrategy` をヒステリシス付きで微調整するサンプル実装
 - Acceptance Criteria
-  - [ ] 0.1.11 API に対して README/型/Wiki が整合し、`MIGRATION.md` に置換表・コード例が掲載
+  - [ ] 0.1.12 API に対して README/型/Wiki が整合し、`MIGRATION.md` に置換表・コード例が掲載
   - [ ] オーバーレイのON/OFFで目視確認でき、描画数とフレーム時間が相関して表示される
   - [ ] ベンチ出力が再現可能で、PRで差分比較が容易
   - [ ] `profile` 指定で、同一データに対し一貫した設定セットが適用される（例: `mobile-fast` で `opacity`/`highlightTopN`/`renderLimitStrategy` が想定値）
@@ -111,8 +122,8 @@ Priority: Medium | Target: 2025-11
 - Risks & Mitigations
   - 計測のばらつき → 複数回平均/サンプル数と偏差の表示
 
-### v0.1.12（適応的表示の核）- 視認性最適化の仕上げ
-Priority: Medium | Target: 2025-12
+### v0.1.13（適応的表示の核）- 視認性最適化の仕上げ
+Priority: Medium | Target: 2026-02
 
 - コア機能（仕上げ・検証）
   - [ ] 適応的制御のパラメータチューニングとデフォルト見直し（`adaptiveParams`/プリセットの係数微調整）

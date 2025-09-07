@@ -1,32 +1,25 @@
 # Cesium Heatbox リリースノート
 
-## バージョン 0.1.10 - モジュラー化とAPI統一（2025-01-XX）
+## バージョン 0.1.10 - 安定化と移行準備（2025-01-XX）
 
-### 🏗️ **主要変更：モジュラーアーキテクチャ**
-- **新設計**: VoxelRenderer を専門モジュールに分離（ADR-0008）
-  - `VoxelRenderingEngine`: 描画パイプライン専門処理 
-  - `VoxelEntityManager`: エンティティ管理専門処理
-  - `DescriptionBuilder`: InfoBox説明文生成専門処理
-- **コードサイズ**: VoxelRenderer.js を 736行 → 284行（61%削減）達成
-- **テスト成功率**: 96% (184/191 テスト通過)
-- **パフォーマンス**: 7.2% 性能向上
+### 🧭 方針転換
+- ADR-0008 の全面的なリファクタリング案は実装複雑性のため中止し、ADR-0009（段階的な責務分離/SRP適用）へ方針転換しました。
+- 本バージョンでは破壊的変更は行わず、非推奨化と代替APIの追加に留めます。
 
-### 🔄 **API統一・クリーンアップ（Phase 4）**
-- **fitViewOptions統一**: `pitch`/`heading` → `pitchDegrees`/`headingDegrees`
-- **削除されたAPI**: 
-  - `outlineEmulation` → `outlineRenderMode` に統合
-  - `outlineWidthResolver`/`boxOpacityResolver`/`outlineOpacityResolver` → プリセットベースに移行
-- **移行ガイド**: 詳細な `MIGRATION.md` を追加
+### 🔄 非破壊のAPI変更（移行準備）
+- `fitViewOptions.pitch`/`heading` の代替として `pitchDegrees`/`headingDegrees` を追加（旧名は存続・警告のみ）
+- `outlineRenderMode`（`standard`/`inset`/`emulation-only`）を追加。既存の `outlineEmulation` は引き続き利用可能（将来削除予定）
+- 適応的制御のプリセット（`outlineWidthPreset` など）を強化。`boxOpacityResolver`/`outlineOpacityResolver` は非推奨化の対象としつつ存続
+- 詳細は MIGRATION.md を参照
 
-### 📚 **ドキュメント整備（Phase 5）**
-- **JSDoc完全整備**: 全APIクラス・メソッドの英日併記ドキュメント
-- **型定義更新**: TypeScript定義ファイル更新
-- **包括的例**: examples/ のサンプルコード新API対応
+### 🧪 品質・その他
+- 安定化・ハードニング（ログ/バリデーションの改善）
+- 既存の Examples/README を v0.1.10 の非破壊変更に追随（順次更新）
 
-### 🔧 **技術改善**
-- **循環依存完全解消**: 新モジュール構造で依存関係クリーンアップ
-- **後方互換性**: 主要APIの後方互換性維持
-- **Lint errors**: 完全解消（0件）
+### 📌 次の予定（v0.1.11 以降）
+- ADR-0009 に基づく段階的な責務分離（ColorCalculator/VoxelSelector/AdaptiveController/GeometryRenderer）
+- 互換性を維持したまま `VoxelRenderer` をオーケストレーション役へ縮減
+- 非推奨APIの削除は v0.1.11+ のメジャーでない範囲内で段階的に実施
 
 ---
 
