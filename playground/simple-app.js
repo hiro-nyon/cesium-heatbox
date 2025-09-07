@@ -282,19 +282,16 @@ function initializeEnvironmentInfo() {
   try {
     // Cesium version
     const cesiumVersion = typeof Cesium !== 'undefined' ? Cesium.VERSION : 'Unknown';
-    const cesiumEl = document.getElementById('cesiumVersion');
-    if (cesiumEl) cesiumEl.textContent = cesiumVersion;
+    document.getElementById('cesiumVersion').textContent = cesiumVersion;
     
     // WebGL support
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     const webglSupport = gl ? 'Supported' : 'Not Supported';
-    const webglEl = document.getElementById('webglSupport');
-    if (webglEl) webglEl.textContent = webglSupport;
+    document.getElementById('webglSupport').textContent = webglSupport;
     
     // Heatbox version - will be set when heatbox is initialized
-    const heatboxEl = document.getElementById('heatboxVersion');
-    if (heatboxEl) heatboxEl.textContent = 'Loading...';
+    document.getElementById('heatboxVersion').textContent = 'Loading...';
     
   } catch (error) {
     console.error('Error initializing environment info:', error);
@@ -530,9 +527,12 @@ async function createHeatmap() {
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     const options = {
       autoVoxelSize: true,
-      // Match gh-pages QS: basic mode + auto render budget
       autoVoxelSizeMode: 'basic',
+      voxelSize: undefined,
+      maxVoxelSize: 10,
+      targetCells: 3000,
       maxRenderVoxels: 'auto',
+      renderLimitStrategy: 'density',
       colorMap: 'viridis',
       // Global opacity lets resolver drive contrast more clearly
       opacity: wireframe ? 0.0 : 1.0,

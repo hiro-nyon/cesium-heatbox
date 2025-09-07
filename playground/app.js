@@ -1017,34 +1017,6 @@ class HeatboxPlayground {
     document.getElementById('toggleVisibility').addEventListener('click', () => {
       this.toggleVisibility();
     });
-
-    // Manual fit view button
-    document.getElementById('manualFitView').addEventListener('click', async () => {
-      try {
-        if (!this.heatbox) {
-          alert('ヒートマップを先に作成してください');
-          return;
-        }
-        
-        const heading = parseFloat(document.getElementById('fitViewHeading')?.value || 0);
-        const pitch = parseFloat(document.getElementById('fitViewPitch')?.value || -45);
-        
-        const options = {
-          pitchDegrees: pitch,
-          headingDegrees: heading,
-          paddingPercent: 0.15, // Default padding (15%)
-          duration: 2 // Default animation duration
-        };
-        
-        console.log('Manual fitView called with options:', options);
-        await this.heatbox.fitView(null, options);
-        console.log('Manual fitView completed');
-        
-      } catch (error) {
-        console.error('Manual fitView error:', error);
-        alert('カメラフィット中にエラーが発生しました: ' + error.message);
-      }
-    });
     
     document.getElementById('exportData').addEventListener('click', () => {
       this.exportData();
@@ -1058,42 +1030,6 @@ class HeatboxPlayground {
     // スライダー
     document.getElementById('gridSize').addEventListener('input', (e) => {
       document.getElementById('gridSizeValue').textContent = e.target.value;
-    });
-    
-    // FitView sliders
-    document.getElementById('fitViewHeading').addEventListener('input', (e) => {
-      document.getElementById('fitViewHeadingValue').textContent = e.target.value;
-    });
-    
-    document.getElementById('fitViewPitch').addEventListener('input', (e) => {
-      document.getElementById('fitViewPitchValue').textContent = e.target.value;
-    });
-    
-    // AutoView checkbox functionality
-    document.getElementById('autoView').addEventListener('change', (e) => {
-      const isEnabled = e.target.checked;
-      const fitViewGroup = document.getElementById('fitViewGroup');
-      const fitViewPitchGroup = document.getElementById('fitViewPitchGroup');
-      const fitViewHeading = document.getElementById('fitViewHeading');
-      const fitViewPitch = document.getElementById('fitViewPitch');
-      
-      if (isEnabled) {
-        // Enable manual fitView controls
-        fitViewGroup.style.opacity = '1';
-        fitViewGroup.style.pointerEvents = 'auto';
-        fitViewPitchGroup.style.opacity = '1';
-        fitViewPitchGroup.style.pointerEvents = 'auto';
-        fitViewHeading.disabled = false;
-        fitViewPitch.disabled = false;
-      } else {
-        // Disable manual fitView controls
-        fitViewGroup.style.opacity = '0.5';
-        fitViewGroup.style.pointerEvents = 'none';
-        fitViewPitchGroup.style.opacity = '0.5';
-        fitViewPitchGroup.style.pointerEvents = 'none';
-        fitViewHeading.disabled = true;
-        fitViewPitch.disabled = true;
-      }
     });
     
     // 高度オフセット・スケールはUI整理で削除
@@ -2511,16 +2447,48 @@ class HeatboxPlayground {
     const fitViewHeading = parseFloat(document.getElementById('fitViewHeading')?.value || '0');
     const fitViewPitch = parseFloat(document.getElementById('fitViewPitch')?.value || '-45');
 
-    // v0.1.10: 枠線太さはプリセット/手動に簡素化（Resolver廃止）
-    let outlineWidthValue = isNaN(outlineWidthManual) ? 2 : outlineWidthManual;
-    if (outlineWidthValue < 1) outlineWidthValue = 1;
+    // v0.1.6: 枠線太さモード
+    let outlineWidthResolver = null;
+    let outlineWidthValue = 2;
+    if (outlineMode === 'adaptive') {
+      outlineWidthResolver = (params) => {
+        const { isTopN, normalizedDensity } = params || {};
+        let width;
+        
+        // 「すべて太線」モードの場合は、すべてを太くする
+        if (outlineEmulationMode === 'all') {
+          if (isTopN) width = 6;           // TopNをさらに強調
+          else width = 4;                  // その他も太線に
+        } else {
+          // 通常のadaptiveモード
+          if (isTopN) width = 6;           // TopNを強調
+          else if (normalizedDensity > 0.7) width = 1; // 高密度は細く
+          else if (normalizedDensity > 0.3) width = 2; // 中密度は標準
+          else width = 3;                  // 低密度は太く
+        }
+        
+        // 統計を記録
+        try { self._recordOutlineResolver(width, params); } catch (_) {}
+        return width;
+      };
+      outlineWidthValue = 2; // ベースライン
+    } else {
+      outlineWidthResolver = null;
+      // 「すべて太線」モードの場合は手動設定でも十分な太さを確保
+      let baseWidth = isNaN(outlineWidthManual) ? 2 : outlineWidthManual;
+      if (outlineEmulationMode === 'all' && baseWidth < 2) {
+        baseWidth = 3; // 太線エミュレーションのため最低3px
+        console.log('「すべて太線」モード：手動モードでの最小太さを3pxに調整');
+      }
+      outlineWidthValue = baseWidth;
+    }
     
     const options = {
       // v0.1.4: 自動ボクセルサイズ機能
       autoVoxelSize: autoVoxelSize,
       // 手動指定が無効な場合はvoxelSizeを設定しない（自動調整を有効にする）
       // ただし、自動サイズが大きすぎる場合に備えて最大値を制限
-      // 注意: auto=true の場合は voxelSize プロパティ自体を設定しない
+      voxelSize: autoVoxelSize ? undefined : gridSize,
       // 自動サイズの場合は最大ボクセルサイズを制限（密集表示を確保）
       maxVoxelSize: autoVoxelSize ? 10 : undefined,  // さらに小さく（15→10）
       // 目標ボクセル数を増やして密度を上げる
@@ -2541,12 +2509,17 @@ class HeatboxPlayground {
       // v0.1.5: 二極性データサポート
       diverging: diverging,
       divergingPivot: diverging ? divergingPivot : undefined,
-      // v0.1.5: TopN強調表示（詳細スタイルは後段で調整）
+      // v0.1.5: TopN強調表示
       highlightTopN: highlightTopN > 0 ? highlightTopN : undefined,
+      // highlightStyle.boostOpacity: 非TopNの不透明度減衰量（v0.1.6 仕様）
+      highlightStyle: highlightTopN > 0 ? { boostOpacity: highlightOpacity } : undefined,
       // v0.1.6: 枠線重なり対策・動的枠線制御
       voxelGap: isNaN(voxelGap) ? 0 : voxelGap,
       outlineOpacity: isNaN(outlineOpacity) ? 1.0 : outlineOpacity,
-      // v0.1.7+ additions
+      outlineWidthResolver: outlineWidthResolver,
+      // v0.1.6+: 太線エミュレーション（WebGL制約の回避）
+      outlineEmulation: outlineEmulationMode,
+      // v0.1.7 additions
       outlineRenderMode: outlineRenderMode,
       adaptiveOutlines: adaptiveOutlines,
       outlineWidthPreset: outlineWidthPreset
@@ -2580,7 +2553,23 @@ class HeatboxPlayground {
     // 厚い枠線表示（フレーム埋め込み）
     options.enableThickFrames = finalEnableThickFrames;
     
-    // v0.1.10: 動的resolverは非推奨/廃止のため未使用。必要に応じてプリセット/ハイライトで代替。
+    // v0.1.7: 透明度resolver（簡易プリセット）
+    if (boxOpacityMode !== 'off') {
+      options.boxOpacityResolver = (ctx) => {
+        const d = Number(ctx.normalizedDensity) || 0;
+        if (boxOpacityMode === 'density') return Math.max(0.2, Math.min(1.0, 0.3 + d * 0.7));
+        if (boxOpacityMode === 'topn') return ctx.isTopN ? 0.95 : 0.5;
+        return undefined;
+      };
+    }
+    if (outlineOpacityMode !== 'off') {
+      options.outlineOpacityResolver = (ctx) => {
+        const d = Number(ctx.normalizedDensity) || 0;
+        if (outlineOpacityMode === 'density') return Math.max(0.2, Math.min(1.0, 0.5 + d * 0.5));
+        if (outlineOpacityMode === 'topn') return ctx.isTopN ? 1.0 : 0.5;
+        return undefined;
+      };
+    }
 
     // カスタムカラーマップの場合のみminColor/maxColorを設定
     if (colorMap === 'custom') {
@@ -2591,9 +2580,6 @@ class HeatboxPlayground {
     // v0.1.9: 新機能の追加
     if (autoVoxelSize) {
       options.autoVoxelSizeMode = autoVoxelSizeMode;
-    } else {
-      // 手動指定時のみ voxelSize を設定
-      options.voxelSize = gridSize;
     }
     
     // maxRenderVoxels の設定
@@ -2606,40 +2592,17 @@ class HeatboxPlayground {
     // Adaptive Rendering Strategy
     options.renderLimitStrategy = renderLimitStrategy;
     
-    // Auto View設定（v0.1.10: pitchDegrees/headingDegrees, paddingPercent）
+    // Auto View設定
     options.autoView = autoView;
     if (autoView) {
       options.fitViewOptions = {
-        headingDegrees: fitViewHeading,
-        pitchDegrees: fitViewPitch,
-        paddingPercent: 0.1
+        heading: fitViewHeading,
+        pitch: fitViewPitch,
+        paddingRatio: 0.1
       };
     }
     
-    // v0.1.10: outlineEmulation → outlineRenderMode の互換マッピング
-    if (outlineEmulationMode && outlineEmulationMode !== 'off') {
-      const map = { 'topn': 'emulation-only', 'non-topn': 'inset', 'all': 'emulation-only' };
-      const mapped = map[outlineEmulationMode];
-      if (mapped) options.outlineRenderMode = mapped;
-    }
-
-    // v0.1.10: 枠線太さモードの最終反映
-    if (outlineMode === 'adaptive') {
-      options.adaptiveOutlines = true;
-      options.outlineWidthPreset = outlineWidthPreset || 'adaptive-density';
-      delete options.outlineWidth;
-    } else {
-      options.adaptiveOutlines = false;
-      options.outlineWidth = outlineWidthValue;
-    }
-
-    // TopN ハイライト（減衰量を簡易マッピング）
-    if (Number.isFinite(highlightTopN) && highlightTopN > 0) {
-      options.highlightTopN = highlightTopN;
-      options.highlightStyle = { boostOpacity: Math.max(0, Math.min(1, 1 - (highlightOpacity || 0.9))) };
-    }
-
-    console.log('Heatbox options (v0.1.10):', options);
+    console.log('Heatbox options (v0.1.9):', options);
     return options;
   }
 
@@ -2756,9 +2719,9 @@ class HeatboxPlayground {
       const pitch = parseFloat(document.getElementById('fitViewPitch').value);
       
       await this.heatbox.fitView(null, {
-        headingDegrees: heading,
-        pitchDegrees: pitch,
-        paddingPercent: 0.1
+        heading: heading,
+        pitch: pitch,
+        paddingRatio: 0.1
       });
       
       console.log('✅ Manual fitView completed successfully');
@@ -3346,14 +3309,12 @@ window.addEventListener('DOMContentLoaded', () => {
     return;
   }
   
-  // CesiumHeatboxの読み込み確認（CDN移行）
+  // CesiumHeatboxの読み込み確認
   if (typeof CesiumHeatbox === 'undefined') {
     console.error('CesiumHeatbox が読み込まれていません');
-    console.error('期待する読み込み元: unpkg CDN (cesium-heatbox@0.1.10-alpha.9)');
+    console.error('ファイルパス確認: ../dist/cesium-heatbox.umd.min.js');
     document.getElementById('loading').style.display = 'block';
-    document.getElementById('loading').innerHTML = '<p>❌ CesiumHeatbox が読み込まれていません</p>' +
-      '<p>CDNの読み込み状況を確認してください</p>' +
-      '<p>期待するCDN: https://unpkg.com/cesium-heatbox@next/dist/cesium-heatbox.umd.min.js?v=0.1.10-alpha.9</p>';
+    document.getElementById('loading').innerHTML = '<p>❌ CesiumHeatbox が読み込まれていません</p><p>ライブラリファイルの場所を確認してください</p><p>期待するパス: ../dist/cesium-heatbox.umd.min.js</p>';
     return;
   }
   

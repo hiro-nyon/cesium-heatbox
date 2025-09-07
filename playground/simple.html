@@ -10,29 +10,20 @@
   
   <!-- Favicon intentionally omitted to avoid emoji usage -->
   
-  <!-- Cesium settings (before loading Cesium) -->
-  <script>
-    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
-  </script>
-  
   <!-- CesiumJS CDN - Version 1.120 -->
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   
-  <!-- Cesium Ion settings (after loading Cesium) -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof Cesium !== 'undefined' && Cesium.Ion) {
-        Cesium.Ion.defaultAccessToken = null;
-        console.log('Cesium Ion disabled, using custom imagery providers');
-      } else {
-        console.warn('Cesium not loaded properly');
-      }
-    });
-  </script>
-  
   <!-- Playground styles -->
   <link href="styles.css" rel="stylesheet">
+  
+  <!-- Cesium settings -->
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
   
   <style>
     :root {
@@ -147,18 +138,9 @@
   </div>
   
 
-  <!-- Debug: Cesium loading check -->
-  <script>
-    if (typeof Cesium === 'undefined') {
-      console.error('❌ Cesium not loaded! Check network connection.');
-      document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">❌ Cesium not loaded<br><small>Check network connection and refresh</small></h1>';
-    } else {
-      console.log('✅ Cesium loaded successfully, version:', Cesium.VERSION);
-    }
-  </script>
-
-  <!-- Heatbox library (CDN from unpkg, v0.1.10-alpha.9) -->
-  <script src="https://unpkg.com/cesium-heatbox@next/dist/cesium-heatbox.umd.min.js?v=0.1.10-alpha.9"></script>
+  <!-- Heatbox library -->
+  <!-- Heatbox library (CDN from unpkg, v0.1.11-alpha.1) -->
+  <script src="https://unpkg.com/cesium-heatbox@0.1.11-alpha.1/dist/cesium-heatbox.umd.min.js?v=0.1.11-alpha.1"></script>
   <script src="simple-app.js"></script>
   <script>
     // Mobile nav dropdown
@@ -233,6 +215,5 @@
       });
     })();
   </script>
-  
 </body>
 </html>

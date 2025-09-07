@@ -75,3 +75,4 @@ coverage/
 .netlify/
 tmp/
 temp/
+AGENTS.md
