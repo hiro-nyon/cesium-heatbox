@@ -146,6 +146,8 @@ function reRenderHeatmap() {
     const updated = {
       showOutline: wireframe ? false : false,
       opacity: wireframe ? 0.0 : 1.0,
+      // Ensure no box fill is rendered in wireframe
+      wireframeOnly: wireframe,
       // ADR-0009 Phase 5: 適応制御オプション
       adaptiveOutlines: true,
       outlineWidthPreset: 'adaptive-density',
@@ -560,8 +562,8 @@ async function createHeatmap() {
     // Quick Start: fixed auto settings (Safe fallback)
     const autoCamera = document.getElementById('autoCamera')?.checked || true;
 
-    const wireframe = document.getElementById('wireframeOnly')?.checked || false;
-    const options = {
+  const wireframe = document.getElementById('wireframeOnly')?.checked || false;
+  const options = {
       autoVoxelSize: true,
       autoVoxelSizeMode: 'basic',
       voxelSize: undefined,
@@ -574,6 +576,7 @@ async function createHeatmap() {
       highlightTopN: 0, // デフォルトで無効
       // Hide box fill in emulation-only (wireframe toggle)
       opacity: wireframe ? 0.0 : 1.0,
+      wireframeOnly: wireframe,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
       // Do not use standard outlines when emulation-only
@@ -679,6 +682,7 @@ function adjustEmulationByDensity() {
     const values = viewer.entities.values;
     const countByKey = new Map();
     let minC = Infinity, maxC = -Infinity;
+    const now = Cesium.JulianDate.now();
     for (let i = 0; i < values.length; i++) {
       const e = values[i];
       const p = e && e.properties;
@@ -710,14 +714,28 @@ function adjustEmulationByDensity() {
       const w = minW + nd * (maxW - minW);
       if (typeof e.polyline.width === 'number') e.polyline.width = w;
       else if (e.polyline.width && typeof e.polyline.width.setValue === 'function') e.polyline.width.setValue(w);
-      // opacity
+      // opacity (preserve base color if available; fallback to black)
       const op = Math.max(0.05, Math.min(1.0, 0.15 + nd * 0.85));
-      const mat = e.polyline.material;
-      if (mat && typeof mat.withAlpha === 'function') {
-        e.polyline.material = mat.withAlpha(op);
-      } else if (window.Cesium && Cesium.Color) {
-        e.polyline.material = Cesium.Color.WHITE.withAlpha(op);
-      }
+      let baseColor = null;
+      try {
+        const mat = e.polyline.material;
+        if (mat) {
+          if (typeof mat.withAlpha === 'function') {
+            // Already a Cesium.Color
+            baseColor = mat;
+          } else if (typeof mat.getValue === 'function') {
+            const val = mat.getValue(now);
+            // ColorMaterialProperty#getValue may return a Color or an object with .color
+            if (val && typeof val.withAlpha === 'function') {
+              baseColor = val;
+            } else if (val && val.color && typeof val.color.withAlpha === 'function') {
+              baseColor = val.color;
+            }
+          }
+        }
+      } catch (_) { /* noop */ }
+      if (!baseColor && window.Cesium && Cesium.Color) baseColor = Cesium.Color.BLACK;
+      if (baseColor) e.polyline.material = baseColor.withAlpha(op);
     }
     try { viewer.scene.requestRender && viewer.scene.requestRender(); } catch (_) {}
   } catch (_) {}
