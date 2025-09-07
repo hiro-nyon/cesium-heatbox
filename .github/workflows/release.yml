@@ -48,7 +48,10 @@ jobs:
       # main のメタデータ処理を採用
       - name: Read package version
         id: meta
-        run: echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+        shell: bash
+        run: >-
+          node -e "const v=require('./package.json').version;
+          require('fs').appendFileSync(process.env.GITHUB_OUTPUT, `version=${v}\n`);"
       
       # main の追加機能（ドキュメント生成）
       - name: Generate docs and sync wiki (stable only)
