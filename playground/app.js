@@ -86,12 +86,13 @@ class HeatboxPlayground {
     let isMenuOpen = false;
     
     const toggleMenu = () => {
+      const L = this._getTranslations()[this._lang] || this._getTranslations().ja;
       isMenuOpen = !isMenuOpen;
       
       if (isMenuOpen) {
         toolbar.classList.add('open');
         mobileToggle.innerHTML = '✕';
-        mobileToggle.setAttribute('aria-label', 'メニューを閉じる');
+        mobileToggle.setAttribute('aria-label', L.aria_nav_close || 'Close navigation');
         mobileToggle.setAttribute('aria-expanded', 'true');
         mobileToggle.setAttribute('aria-controls', 'toolbar');
         // スクロールを一時的に無効化（背景スクロール防止）
@@ -99,7 +100,7 @@ class HeatboxPlayground {
       } else {
         toolbar.classList.remove('open');
         mobileToggle.innerHTML = '☰';
-        mobileToggle.setAttribute('aria-label', 'メニューを開く');
+        mobileToggle.setAttribute('aria-label', L.aria_nav_open || 'Open navigation');
         mobileToggle.setAttribute('aria-expanded', 'false');
         // スクロールを復元
         document.body.style.overflow = '';
@@ -157,21 +158,24 @@ class HeatboxPlayground {
    * デスクトップ向け：左右パネルの折りたたみUI
    */
   _setupDesktopCollapseUI() {
-    const makeBtn = (id, aria) => {
+    const makeBtn = (id, ariaKey) => {
+      const L = this._getTranslations()[this._lang] || this._getTranslations().ja;
       let btn = document.getElementById(id);
       if (!btn) {
         btn = document.createElement('button');
         btn.id = id;
         btn.className = 'collapse-toggle';
         btn.type = 'button';
+        const aria = L[ariaKey] || ariaKey;
         btn.setAttribute('aria-label', aria);
+        btn.setAttribute('data-i18n-aria-label', ariaKey);
         document.body.appendChild(btn);
       }
       return btn;
     };
 
-    const leftBtn = makeBtn('collapseLeft', '左パネルの表示/非表示');
-    const rightBtn = makeBtn('collapseRight', '右パネルの表示/非表示');
+    const leftBtn = makeBtn('collapseLeft', 'aria_collapse_left');
+    const rightBtn = makeBtn('collapseRight', 'aria_collapse_right');
 
     const applyState = () => {
       const isMobile = window.innerWidth <= 768;
@@ -486,6 +490,11 @@ class HeatboxPlayground {
       const key = el.getAttribute('data-i18n-placeholder');
       if (key && L[key]) el.setAttribute('placeholder', L[key]);
     });
+    // ARIAラベル
+    document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+      const key = el.getAttribute('data-i18n-aria-label');
+      if (key && L[key]) el.setAttribute('aria-label', L[key]);
+    });
     // ローディング
     const loadingP = document.querySelector('#loading [data-i18n="loading"]');
     if (loadingP && L.loading) loadingP.textContent = L.loading;
@@ -497,6 +506,25 @@ class HeatboxPlayground {
   _getTranslations() {
     return {
       ja: {
+        // Section summaries
+        sum_rendering: '描画制御',
+        sum_actions: '操作・実行',
+        // Language selector
+        label_language: '言語',
+        lang_ja: '日本語',
+        lang_en: 'English',
+        // Navigation
+        nav_home: 'ホーム',
+        nav_quick: 'クイックスタート',
+        nav_playground: 'プレイグラウンド',
+        nav_docs: 'ドキュメント',
+        nav_github: 'GitHub',
+        nav_menu: 'メニュー',
+        aria_nav_open: 'ナビゲーションを開く',
+        aria_nav_close: 'ナビゲーションを閉じる',
+        aria_menu_toggle: 'メニューを開く',
+        aria_collapse_left: '左パネルの表示/非表示',
+        aria_collapse_right: '右パネルの表示/非表示',
         title_main: 'Cesium Heatbox Playground',
         subtitle: '高度なコントロール',
         sum_data: 'データ読み込み',
@@ -636,6 +664,25 @@ class HeatboxPlayground {
         loading: '処理中...'
       },
       en: {
+        // Section summaries
+        sum_rendering: 'Rendering Control',
+        sum_actions: 'Actions',
+        // Language selector
+        label_language: 'Language',
+        lang_ja: 'Japanese',
+        lang_en: 'English',
+        // Navigation
+        nav_home: 'Home',
+        nav_quick: 'Quick Start',
+        nav_playground: 'Playground',
+        nav_docs: 'Docs',
+        nav_github: 'GitHub',
+        nav_menu: 'Menu',
+        aria_nav_open: 'Open navigation',
+        aria_nav_close: 'Close navigation',
+        aria_menu_toggle: 'Open menu',
+        aria_collapse_left: 'Toggle left panel',
+        aria_collapse_right: 'Toggle right panel',
         title_main: 'Cesium Heatbox Playground',
         subtitle: 'Advanced controls',
         sum_data: 'Data',
