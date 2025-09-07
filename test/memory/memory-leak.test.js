@@ -257,14 +257,14 @@ describe('VoxelRenderer Memory Leak Tests', () => {
         try {
           // Invalid voxel data
           renderer.render(null, createTestBounds(), createTestGrid(), createTestStatistics());
-        } catch (error) {
+        } catch (_e) {
           // Expected error
         }
         
         try {
           // Invalid bounds
           renderer.render(generateVoxelData(50), null, createTestGrid(), createTestStatistics());
-        } catch (error) {
+        } catch (_e) {
           // Expected error
         }
         

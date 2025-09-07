@@ -181,7 +181,7 @@ export class VoxelRenderer {
     // バウンディングボックスのデバッグ表示制御（v0.1.5: debug.showBounds対応）
     const shouldShowBounds = this._shouldShowBounds();
     if (shouldShowBounds) {
-      this._renderBoundingBox(bounds);
+      this.geometryRenderer.renderBoundingBox(bounds);
     }
 
     // 表示するボクセルのリスト
@@ -270,51 +270,7 @@ export class VoxelRenderer {
     return renderedCount;
   }
 
-  /**
-   * バウンディングボックスを描画（デバッグ用）
-   * @param {Object} bounds - 境界情報
-   * @private
-   */
-  _renderBoundingBox(bounds) {
-    if (!bounds) return;
-
-    try {
-      // 中心点
-      const centerLon = (bounds.minLon + bounds.maxLon) / 2;
-      const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-      const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
-      
-      // サイズ計算（概算）
-      const widthMeters = (bounds.maxLon - bounds.minLon) * 111000 * Math.cos(centerLat * Math.PI / 180);
-      const depthMeters = (bounds.maxLat - bounds.minLat) * 111000;
-      const heightMeters = bounds.maxAlt - bounds.minAlt;
-      
-      // 境界ボックスの作成
-      const boundingBox = this.viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
-        box: {
-          dimensions: new Cesium.Cartesian3(widthMeters, depthMeters, heightMeters),
-          material: Cesium.Color.YELLOW.withAlpha(0.1),
-          outline: true,
-          outlineColor: Cesium.Color.YELLOW.withAlpha(0.3),
-          outlineWidth: 2
-        },
-        description: `バウンディングボックス<br>サイズ: ${widthMeters.toFixed(1)} x ${depthMeters.toFixed(1)} x ${heightMeters.toFixed(1)} m`
-      });
-      
-      this.voxelEntities.push(boundingBox);
-      
-      Logger.debug('Debug bounding box added:', {
-        center: { lon: centerLon, lat: centerLat, alt: centerAlt },
-        size: { width: widthMeters, depth: depthMeters, height: heightMeters }
-      });
-      
-    } catch (error) {
-      Logger.warn('Failed to render bounding box:', error);
-    }
-  }
-
-  // v0.1.11-alpha: _addEdgePolylines moved to GeometryRenderer (ADR-0009 Phase 4)
+  // v0.1.11-alpha: _renderBoundingBox/_addEdgePolylines moved to GeometryRenderer (ADR-0009 Phase 4)
 
   /**
    * Render a single voxel with all visual configurations.
@@ -333,11 +289,15 @@ export class VoxelRenderer {
    * @private
    */
   _renderSingleVoxel(key, info, bounds, grid, statistics, topNVoxels, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx) {
-    const { x, y, z } = info;
     const isTopN = topNVoxels.has(key);
     
     // Calculate voxel rendering parameters
     const renderParams = this._calculateVoxelRenderingParams(info, bounds, grid, statistics, isTopN, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx);
+    
+    // 安全性チェック - レンダリングパラメータが無効な場合はスキップ
+    if (!renderParams) {
+      return 0; // Skipped rendering due to invalid parameters
+    }
     
     // Delegate to GeometryRenderer for actual rendering
     this._delegateVoxelRendering(key, renderParams);
@@ -360,6 +320,11 @@ export class VoxelRenderer {
    * @private
    */
   _calculateVoxelRenderingParams(info, bounds, grid, statistics, isTopN, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx) {
+    // 引数の安全性チェック
+    if (!info || !bounds || !grid || !statistics) {
+      return null;
+    }
+    
     const { x, y, z } = info;
     
     // Position calculation
@@ -389,6 +354,7 @@ export class VoxelRenderer {
       color, opacity,
       ...outlineProps,
       voxelInfo: info,
+      isTopN,
       adaptiveParams
     };
   }
@@ -593,7 +559,7 @@ export class VoxelRenderer {
     });
 
     // Inset outline
-    if (params.shouldShowInsetOutline && this.geometryRenderer.shouldApplyInsetOutline(params.voxelInfo.isTopN)) {
+    if (params.shouldShowInsetOutline && this.geometryRenderer.shouldApplyInsetOutline(params.isTopN)) {
       try {
         const insetAmount = this.options.outlineInset > 0 ? this.options.outlineInset : 1;
         this.geometryRenderer.createInsetOutline({
@@ -676,147 +642,7 @@ export class VoxelRenderer {
 
   // v0.1.11-alpha: _createInsetOutline moved to GeometryRenderer (ADR-0009 Phase 4)
 
-  /**
-   * 枠線の厚み部分を視覚化するフレーム構造を作成
-   * メインボックスとインセットボックスの間を12個のボックスで埋める
-   * @param {number} centerLon - 中心経度
-   * @param {number} centerLat - 中心緯度
-   * @param {number} centerAlt - 中心高度
-   * @param {number} outerX - 外側サイズX
-   * @param {number} outerY - 外側サイズY
-   * @param {number} outerZ - 外側サイズZ
-   * @param {number} innerX - 内側サイズX
-   * @param {number} innerY - 内側サイズY
-   * @param {number} innerZ - 内側サイズZ
-   * @param {Cesium.Color} frameColor - フレーム色
-   * @param {string} voxelKey - ボクセルキー
-   * @private
-   */
-  _createThickOutlineFrames(centerLon, centerLat, centerAlt, outerX, outerY, outerZ, innerX, innerY, innerZ, frameColor, voxelKey) {
-    // フレーム厚み計算（外側と内側の差を2で割ったもの）
-    const frameThickX = (outerX - innerX) / 2;
-    const frameThickY = (outerY - innerY) / 2;
-    const frameThickZ = (outerZ - innerZ) / 2;
-    
-    // 境界計算：各軸での内側・外側の境界
-    const outerBoundX = outerX / 2;    // 外側境界（中心からの距離）
-    const outerBoundY = outerY / 2;
-    const outerBoundZ = outerZ / 2;
-    const innerBoundX = innerX / 2;    // 内側境界（中心からの距離）
-    const innerBoundY = innerY / 2;
-    const innerBoundZ = innerZ / 2;
-    
-    Logger.debug(`Frame bounds for ${voxelKey}:`, {
-      frameThick: { x: frameThickX, y: frameThickY, z: frameThickZ },
-      outerBound: { x: outerBoundX, y: outerBoundY, z: outerBoundZ },
-      innerBound: { x: innerBoundX, y: innerBoundY, z: innerBoundZ }
-    });
-    
-    // 12個のフレームボックスを配置（外側と内側の境界間に正確にフィット）
-    const frames = [
-      // 上面の枠線（4つ）- Z軸上側
-      { 
-        pos: [0, (outerBoundY + innerBoundY) / 2, outerBoundZ - frameThickZ / 2], 
-        size: [innerX, frameThickY, frameThickZ], 
-        name: 'top-back' 
-      },
-      { 
-        pos: [0, -(outerBoundY + innerBoundY) / 2, outerBoundZ - frameThickZ / 2], 
-        size: [innerX, frameThickY, frameThickZ], 
-        name: 'top-front' 
-      },
-      { 
-        pos: [(outerBoundX + innerBoundX) / 2, 0, outerBoundZ - frameThickZ / 2], 
-        size: [frameThickX, outerY, frameThickZ], 
-        name: 'top-right' 
-      },
-      { 
-        pos: [-(outerBoundX + innerBoundX) / 2, 0, outerBoundZ - frameThickZ / 2], 
-        size: [frameThickX, outerY, frameThickZ], 
-        name: 'top-left' 
-      },
-      
-      // 下面の枠線（4つ）- Z軸下側
-      { 
-        pos: [0, (outerBoundY + innerBoundY) / 2, -outerBoundZ + frameThickZ / 2], 
-        size: [innerX, frameThickY, frameThickZ], 
-        name: 'bottom-back' 
-      },
-      { 
-        pos: [0, -(outerBoundY + innerBoundY) / 2, -outerBoundZ + frameThickZ / 2], 
-        size: [innerX, frameThickY, frameThickZ], 
-        name: 'bottom-front' 
-      },
-      { 
-        pos: [(outerBoundX + innerBoundX) / 2, 0, -outerBoundZ + frameThickZ / 2], 
-        size: [frameThickX, outerY, frameThickZ], 
-        name: 'bottom-right' 
-      },
-      { 
-        pos: [-(outerBoundX + innerBoundX) / 2, 0, -outerBoundZ + frameThickZ / 2], 
-        size: [frameThickX, outerY, frameThickZ], 
-        name: 'bottom-left' 
-      },
-      
-      // 縦の枠線（4つ）- 角の柱
-      { 
-        pos: [(outerBoundX + innerBoundX) / 2, (outerBoundY + innerBoundY) / 2, 0], 
-        size: [frameThickX, frameThickY, innerZ], 
-        name: 'vertical-back-right' 
-      },
-      { 
-        pos: [(outerBoundX + innerBoundX) / 2, -(outerBoundY + innerBoundY) / 2, 0], 
-        size: [frameThickX, frameThickY, innerZ], 
-        name: 'vertical-front-right' 
-      },
-      { 
-        pos: [-(outerBoundX + innerBoundX) / 2, (outerBoundY + innerBoundY) / 2, 0], 
-        size: [frameThickX, frameThickY, innerZ], 
-        name: 'vertical-back-left' 
-      },
-      { 
-        pos: [-(outerBoundX + innerBoundX) / 2, -(outerBoundY + innerBoundY) / 2, 0], 
-        size: [frameThickX, frameThickY, innerZ], 
-        name: 'vertical-front-left' 
-      }
-    ];
-    
-    // 各フレームボックスを作成
-    frames.forEach(frame => {
-      if (frame.size[0] > 0.1 && frame.size[1] > 0.1 && frame.size[2] > 0.1) {
-        try {
-          // より正確な座標計算：経度・緯度・高度で直接オフセット
-          const DEG_PER_METER_LON = 1 / (111000 * Math.cos(centerLat * Math.PI / 180));
-          const DEG_PER_METER_LAT = 1 / 111000;
-          
-          const frameLon = centerLon + frame.pos[0] * DEG_PER_METER_LON;
-          const frameLat = centerLat + frame.pos[1] * DEG_PER_METER_LAT;
-          const frameAlt = centerAlt + frame.pos[2];
-          
-          const frameEntity = this.viewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(frameLon, frameLat, frameAlt),
-            box: {
-              dimensions: new Cesium.Cartesian3(frame.size[0], frame.size[1], frame.size[2]),
-              material: frameColor.withAlpha(0.8), // 少し透明度を下げて重なりを考慮
-              outline: false, // 内部フレームには枠線なし
-              fill: true
-            },
-            properties: {
-              type: 'voxel-outline-frame',
-              parentKey: voxelKey,
-              frameName: frame.name
-            }
-          });
-          
-          this.voxelEntities.push(frameEntity);
-        } catch (e) {
-          Logger.warn(`Failed to create outline frame ${frame.name}:`, e);
-        }
-      }
-    });
-    
-    Logger.debug(`Thick outline frames created for voxel ${voxelKey}: ${frames.length} frames`);
-  }
+  // Thick outline frame creation is fully handled by GeometryRenderer.
 
   /**
    * Toggle visibility.

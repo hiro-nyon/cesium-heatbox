@@ -52,6 +52,15 @@ export class AdaptiveController {
    * @returns {Object} Neighborhood density result / 近傍密度結果
    */
   calculateNeighborhoodDensity(voxelInfo, voxelData, radius = null) {
+    // voxelDataのnull/undefined安全性チェック
+    if (!voxelData || typeof voxelData.get !== 'function') {
+      return {
+        isDenseArea: false,
+        neighborhoodDensity: 0,
+        neighborCount: 0
+      };
+    }
+
     const { x, y, z } = voxelInfo;
     const searchRadius = radius !== null ? radius : 
       Math.max(1, Math.floor(this.options.adaptiveParams.neighborhoodRadius / 20)); // 簡略化
@@ -145,6 +154,16 @@ export class AdaptiveController {
    * @returns {Object} Adaptive parameters / 適応的パラメータ
    */
   calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, renderOptions) {
+    // 引数の安全性チェック
+    if (!voxelInfo || !statistics || !renderOptions) {
+      return {
+        outlineWidth: null,
+        boxOpacity: null,
+        outlineOpacity: null,
+        shouldUseEmulation: false
+      };
+    }
+    
     // v0.1.11-alpha: 適応制御が無効な場合は早期リターン (ADR-0009 Phase 3)
     if (!renderOptions.adaptiveOutlines) {
       return {

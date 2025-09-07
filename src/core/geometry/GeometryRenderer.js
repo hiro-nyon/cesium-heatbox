@@ -516,6 +516,43 @@ export class GeometryRenderer {
   }
 
   /**
+   * Render a debug bounding box for given bounds
+   * 指定された境界のデバッグ用バウンディングボックスを描画
+   * @param {Object} bounds - {minLon, maxLon, minLat, maxLat, minAlt, maxAlt}
+   */
+  renderBoundingBox(bounds) {
+    if (!bounds) return;
+    try {
+      const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+      const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+      const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
+
+      const widthMeters = (bounds.maxLon - bounds.minLon) * 111000 * Math.cos(centerLat * Math.PI / 180);
+      const depthMeters = (bounds.maxLat - bounds.minLat) * 111000;
+      const heightMeters = bounds.maxAlt - bounds.minAlt;
+
+      const boundingBox = this.viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
+        box: {
+          dimensions: new Cesium.Cartesian3(widthMeters, depthMeters, heightMeters),
+          material: Cesium.Color.YELLOW.withAlpha(0.1),
+          outline: true,
+          outlineColor: Cesium.Color.YELLOW.withAlpha(0.3),
+          outlineWidth: 2
+        },
+        description: `Bounding Box<br>Size: ${widthMeters.toFixed(1)} x ${depthMeters.toFixed(1)} x ${heightMeters.toFixed(1)} m`
+      });
+      this.entities.push(boundingBox);
+      Logger.debug('Debug bounding box added:', {
+        center: { lon: centerLon, lat: centerLat, alt: centerAlt },
+        size: { width: widthMeters, depth: depthMeters, height: heightMeters }
+      });
+    } catch (error) {
+      Logger.warn('Failed to render bounding box:', error);
+    }
+  }
+
+  /**
    * Get entity count
    * エンティティ数を取得
    * 
