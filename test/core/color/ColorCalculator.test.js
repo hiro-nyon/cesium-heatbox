@@ -1,0 +1,320 @@
+/**
+ * @fileoverview Tests for ColorCalculator class
+ * ColorCalculatorクラスのテスト
+ */
+
+import { ColorCalculator } from '../../../src/core/color/ColorCalculator.js';
+import { Logger } from '../../../src/utils/logger.js';
+import * as Cesium from 'cesium';
+
+describe('ColorCalculator', () => {
+  // CI環境でのログ出力制御用
+  let originalWarn;
+  
+  beforeAll(() => {
+    // テスト中はLogger.warnを無効化してCI環境での大量ログ出力を防ぐ
+    originalWarn = Logger.warn;
+    Logger.warn = jest.fn();
+  });
+  
+  afterAll(() => {
+    // テスト終了後は元のLogger.warnに戻す
+    Logger.warn = originalWarn;
+  });
+  describe('calculateColor', () => {
+    test('should calculate linear interpolated color with default options', () => {
+      const color = ColorCalculator.calculateColor(0.5);
+      
+      // Default minColor: [0, 0, 255], maxColor: [255, 0, 0]
+      // At 0.5: [127.5, 0, 127.5] -> rounded to [128, 0, 128]
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      expect(color.red).toBeCloseTo(128/255, 2);
+      expect(color.green).toBeCloseTo(0/255, 2);
+      expect(color.blue).toBeCloseTo(128/255, 2);
+    });
+
+    test('should calculate linear interpolated color with custom colors', () => {
+      const options = {
+        minColor: [255, 255, 255], // white
+        maxColor: [0, 0, 0]        // black
+      };
+      const color = ColorCalculator.calculateColor(0.5, null, options);
+      
+      // At 0.5: [127.5, 127.5, 127.5] -> rounded to [128, 128, 128]
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      expect(color.red).toBeCloseTo(128/255, 2);
+      expect(color.green).toBeCloseTo(128/255, 2);
+      expect(color.blue).toBeCloseTo(128/255, 2);
+    });
+
+    test('should use viridis color map when specified', () => {
+      const options = { colorMap: 'viridis' };
+      const color = ColorCalculator.calculateColor(0, null, options);
+      
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      // First viridis color: [68, 1, 84]
+      expect(color.red).toBeCloseTo(68/255, 2);
+      expect(color.green).toBeCloseTo(1/255, 2);
+      expect(color.blue).toBeCloseTo(84/255, 2);
+    });
+
+    test('should use inferno color map when specified', () => {
+      const options = { colorMap: 'inferno' };
+      const color = ColorCalculator.calculateColor(0, null, options);
+      
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      // First inferno color: [0, 0, 4]
+      expect(color.red).toBeCloseTo(0/255, 2);
+      expect(color.green).toBeCloseTo(0/255, 2);
+      expect(color.blue).toBeCloseTo(4/255, 2);
+    });
+
+    test('should use diverging color scheme when enabled', () => {
+      const options = {
+        diverging: true,
+        divergingPivot: 10
+      };
+      const color = ColorCalculator.calculateColor(0.5, 5, options);
+      
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      // Should use diverging color map for value below pivot
+    });
+
+    test('should fallback to linear interpolation for unknown color map', () => {
+      const options = { colorMap: 'unknown' };
+      const color = ColorCalculator.calculateColor(0.5, null, options);
+      
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      // Should use default linear interpolation
+      expect(color.red).toBeCloseTo(128/255, 2);
+      expect(color.green).toBeCloseTo(0/255, 2);
+      expect(color.blue).toBeCloseTo(128/255, 2);
+    });
+
+    test('should return gray color on error', () => {
+      // Test with invalid input that causes an error
+      const color = ColorCalculator.calculateColor(null, null, null);
+      
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      expect(color).toEqual(Cesium.Color.GRAY);
+    });
+
+    test('should handle invalid normalizedDensity with fallback', () => {
+      // Test with various invalid inputs
+      const color1 = ColorCalculator.calculateColor(NaN);
+      expect(color1).toHaveProperty('red');
+      expect(color1.red).toBeCloseTo(128/255, 2); // Should fallback to 0.5 -> middle of [0,0,255]-[255,0,0]
+      
+      const color2 = ColorCalculator.calculateColor(Infinity);
+      expect(color2).toHaveProperty('red');
+      expect(color2.red).toBeCloseTo(128/255, 2);
+      
+      const color3 = ColorCalculator.calculateColor('invalid');
+      expect(color3).toHaveProperty('red');
+      expect(color3.red).toBeCloseTo(128/255, 2);
+    });
+  });
+
+  describe('interpolateLinear', () => {
+    test('should interpolate between two colors linearly', () => {
+      const minColor = [255, 0, 0]; // red
+      const maxColor = [0, 0, 255]; // blue
+      
+      // At 0.0: should be red
+      const color1 = ColorCalculator.interpolateLinear(0, minColor, maxColor);
+      expect(color1.red).toBeCloseTo(255/255, 2);
+      expect(color1.green).toBeCloseTo(0/255, 2);
+      expect(color1.blue).toBeCloseTo(0/255, 2);
+      
+      // At 1.0: should be blue
+      const color2 = ColorCalculator.interpolateLinear(1, minColor, maxColor);
+      expect(color2.red).toBeCloseTo(0/255, 2);
+      expect(color2.green).toBeCloseTo(0/255, 2);
+      expect(color2.blue).toBeCloseTo(255/255, 2);
+      
+      // At 0.5: should be purple
+      const color3 = ColorCalculator.interpolateLinear(0.5, minColor, maxColor);
+      expect(color3.red).toBeCloseTo(128/255, 2);
+      expect(color3.green).toBeCloseTo(0/255, 2);
+      expect(color3.blue).toBeCloseTo(128/255, 2);
+    });
+
+    test('should clamp values outside 0-1 range', () => {
+      const minColor = [0, 0, 0];
+      const maxColor = [255, 255, 255];
+      
+      // Value below 0 should be clamped to 0
+      const color1 = ColorCalculator.interpolateLinear(-0.5, minColor, maxColor);
+      expect(color1.red).toBeCloseTo(0/255, 2);
+      expect(color1.green).toBeCloseTo(0/255, 2);
+      expect(color1.blue).toBeCloseTo(0/255, 2);
+      
+      // Value above 1 should be clamped to 1
+      const color2 = ColorCalculator.interpolateLinear(1.5, minColor, maxColor);
+      expect(color2.red).toBeCloseTo(255/255, 2);
+      expect(color2.green).toBeCloseTo(255/255, 2);
+      expect(color2.blue).toBeCloseTo(255/255, 2);
+    });
+  });
+
+  describe('interpolateFromColorMap', () => {
+    test('should interpolate from viridis color map', () => {
+      // Test at 0: should be first color
+      const color1 = ColorCalculator.interpolateFromColorMap(0, 'viridis');
+      expect(color1.red).toBeCloseTo(68/255, 2);
+      expect(color1.green).toBeCloseTo(1/255, 2);
+      expect(color1.blue).toBeCloseTo(84/255, 2);
+    });
+
+    test('should interpolate from inferno color map', () => {
+      // Test at 0: should be first color
+      const color1 = ColorCalculator.interpolateFromColorMap(0, 'inferno');
+      expect(color1.red).toBeCloseTo(0/255, 2);
+      expect(color1.green).toBeCloseTo(0/255, 2);
+      expect(color1.blue).toBeCloseTo(4/255, 2);
+    });
+
+    test('should fallback for unknown color map', () => {
+      const color = ColorCalculator.interpolateFromColorMap(0.5, 'unknown');
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      // Should fallback to linear interpolation with default colors
+      expect(color.red).toBeCloseTo(128/255, 2);
+      expect(color.green).toBeCloseTo(0/255, 2);
+      expect(color.blue).toBeCloseTo(128/255, 2);
+    });
+
+    test('should handle values outside 0-1 range', () => {
+      const color1 = ColorCalculator.interpolateFromColorMap(-0.5, 'viridis');
+      expect(color1).toHaveProperty('red');
+      expect(color1).toHaveProperty('green');
+      expect(color1).toHaveProperty('blue');
+      
+      const color2 = ColorCalculator.interpolateFromColorMap(1.5, 'viridis');
+      expect(color2).toHaveProperty('red');
+      expect(color2).toHaveProperty('green');
+      expect(color2).toHaveProperty('blue');
+    });
+    
+    test('should match endpoint colors for normalized=0 and normalized=1', () => {
+      // Test viridis endpoints
+      const viridisStart = ColorCalculator.interpolateFromColorMap(0, 'viridis');
+      expect(viridisStart.red).toBeCloseTo(68/255, 2);
+      expect(viridisStart.green).toBeCloseTo(1/255, 2);  
+      expect(viridisStart.blue).toBeCloseTo(84/255, 2);
+      
+      const viridisEnd = ColorCalculator.interpolateFromColorMap(1, 'viridis');
+      expect(viridisEnd.red).toBeCloseTo(253/255, 2);
+      expect(viridisEnd.green).toBeCloseTo(231/255, 2);
+      expect(viridisEnd.blue).toBeCloseTo(37/255, 2);
+      
+      // Test inferno endpoints  
+      const infernoStart = ColorCalculator.interpolateFromColorMap(0, 'inferno');
+      expect(infernoStart.red).toBeCloseTo(0/255, 2);
+      expect(infernoStart.green).toBeCloseTo(0/255, 2);
+      expect(infernoStart.blue).toBeCloseTo(4/255, 2);
+      
+      const infernoEnd = ColorCalculator.interpolateFromColorMap(1, 'inferno');
+      expect(infernoEnd.red).toBeCloseTo(252/255, 2);
+      expect(infernoEnd.green).toBeCloseTo(255/255, 2);
+      expect(infernoEnd.blue).toBeCloseTo(164/255, 2);
+    });
+  });
+
+  describe('calculateDivergingColor', () => {
+    test('should calculate diverging color for value below pivot (blue side)', () => {
+      const options = { divergingPivot: 10 };
+      const color = ColorCalculator.calculateDivergingColor(5, options);  // 5 < 10, should be blue side
+      
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      
+      // Value 5 with pivot 10 -> normalized to 0.25 (blue side)
+      // Should have more blue than red (blue side of diverging map)
+      expect(color.blue).toBeGreaterThan(color.red);
+    });
+
+    test('should calculate diverging color for value above pivot (red side)', () => {
+      const options = { divergingPivot: 10 };
+      const color = ColorCalculator.calculateDivergingColor(15, options);  // 15 > 10, should be red side
+      
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      
+      // Value 15 with pivot 10 -> normalized to 0.75 (red side)  
+      // Should have more red than blue (red side of diverging map)
+      expect(color.red).toBeGreaterThan(color.blue);
+    });
+
+    test('should handle pivot value correctly (center white)', () => {
+      const options = { divergingPivot: 10 };
+      const color = ColorCalculator.calculateDivergingColor(10, options);  // exactly at pivot
+      
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      
+      // At pivot, should be close to white/neutral (center of diverging map)
+      // All color components should be relatively high and similar
+      expect(color.red).toBeGreaterThan(0.8);
+      expect(color.green).toBeGreaterThan(0.8);
+      expect(color.blue).toBeGreaterThan(0.8);
+    });
+
+    test('should handle zero pivot with sign-based mapping', () => {
+      const options = { divergingPivot: 0 };
+      
+      // Test negative value (should be blue side)
+      const negativeColor = ColorCalculator.calculateDivergingColor(-5, options);
+      expect(negativeColor).toHaveProperty('red');
+      expect(negativeColor).toHaveProperty('green');
+      expect(negativeColor).toHaveProperty('blue');
+      expect(negativeColor.blue).toBeGreaterThan(negativeColor.red);
+      
+      // Test positive value (should be red side)  
+      const positiveColor = ColorCalculator.calculateDivergingColor(5, options);
+      expect(positiveColor.red).toBeGreaterThan(positiveColor.blue);
+      
+      // Test zero value (should be white/neutral)
+      const zeroColor = ColorCalculator.calculateDivergingColor(0, options);
+      expect(zeroColor.red).toBeCloseTo(255/255, 1);
+      expect(zeroColor.green).toBeCloseTo(255/255, 1);
+      expect(zeroColor.blue).toBeCloseTo(255/255, 1);
+    });
+  });
+
+  describe('utility methods', () => {
+    test('should return available color maps', () => {
+      const colorMaps = ColorCalculator.getAvailableColorMaps();
+      
+      expect(colorMaps).toContain('viridis');
+      expect(colorMaps).toContain('inferno');
+      expect(colorMaps).toContain('diverging');
+      expect(colorMaps.length).toBeGreaterThanOrEqual(3);
+    });
+
+    test('should validate color map names', () => {
+      expect(ColorCalculator.isValidColorMap('viridis')).toBe(true);
+      expect(ColorCalculator.isValidColorMap('inferno')).toBe(true);
+      expect(ColorCalculator.isValidColorMap('diverging')).toBe(true);
+      expect(ColorCalculator.isValidColorMap('unknown')).toBe(false);
+    });
+  });
+});
