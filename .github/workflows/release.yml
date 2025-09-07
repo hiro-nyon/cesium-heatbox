@@ -1,9 +1,8 @@
 name: Release
-
 on:
   push:
     tags:
-      - 'v*'  # v0.1.10, v0.1.10-alpha.0 等で発火
+      - 'v*'
   release:
     types: [published]
   workflow_dispatch:
@@ -17,42 +16,66 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      # next の柔軟なチェックアウト戦略を採用
       - name: Checkout (event ref)
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.tag == '' }}
         uses: actions/checkout@v4
         with:
-          # For tag push/release, this resolves to the tag ref
           ref: ${{ github.ref }}
-
       - name: Checkout (specified tag)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.tag != '' }}
         uses: actions/checkout@v4
         with:
           ref: refs/tags/${{ inputs.tag }}
-
+      
+      # 基本セットアップ
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install
+      
+      - name: Install dependencies
         run: npm ci
-
-      - name: Test
-        run: npm test
-
-      - name: Build
+      
+      # main の構造化されたビルドプロセス
+      - name: Build all formats
         run: npm run build
-
+      
+      - name: Run tests
+        run: npm test
+      
+      # main のメタデータ処理を採用
+      - name: Read package version
+        id: meta
+        run: echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+      
+      # main の追加機能（ドキュメント生成）
+      - name: Generate docs and sync wiki (stable only)
+        if: ${{ !contains(steps.meta.outputs.version, '-') }}
+        run: |
+          npm run docs
+          npm run wiki:sync
+      
+      - name: Publish Wiki (stable only)
+        if: ${{ !contains(steps.meta.outputs.version, '-') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          bash tools/wiki/publish-wiki.sh "$OWNER" "$REPO"
+      
+      # next の dry run check（デバッグに有用）
       - name: Dry run (what will be published)
         run: npm pack --dry-run
-
-      - name: Publish with proper dist-tag
+      
+      # 統合されたパブリッシュ処理
+      - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=${{ steps.meta.outputs.version }}
           echo "Publishing version $VERSION"
           if [[ "$VERSION" == *-alpha.* || "$VERSION" == *-beta.* || "$VERSION" == *-rc.* ]]; then
             npm publish --tag next
