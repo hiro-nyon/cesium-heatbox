@@ -6,8 +6,10 @@
 import * as Cesium from 'cesium';
 import { Logger } from '../utils/logger.js';
 import { ColorCalculator } from './color/ColorCalculator.js';
+import { VoxelSelector } from './selection/VoxelSelector.js';
 
 // v0.1.11-alpha: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
+// v0.1.11-alpha: VoxelSelector added (ADR-0009 Phase 2)
 
 /**
  * Class responsible for 3D voxel rendering.
@@ -49,6 +51,10 @@ export class VoxelRenderer {
       ...options
     };
     this.voxelEntities = [];
+    
+    // v0.1.11-alpha: VoxelSelector instantiation (ADR-0009 Phase 2)
+    this.voxelSelector = new VoxelSelector(this.options);
+    this._selectionStats = null;
     
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
@@ -237,6 +243,11 @@ export class VoxelRenderer {
     let renderedCount = 0;
 
     // 実際にボクセルを描画
+    // パフォーマンス最適化: Resolver用の一時オブジェクトを再利用してGCを削減
+    const reusableVoxelCtx = { x: 0, y: 0, z: 0, count: 0 };
+    const reusableWidthResolverParams = { voxel: reusableVoxelCtx, isTopN: false, normalizedDensity: 0, statistics, adaptiveParams: null };
+    const reusableOpacityResolverCtx = { voxel: reusableVoxelCtx, isTopN: false, normalizedDensity: 0, statistics, adaptiveParams: null };
+
     displayVoxels.forEach(({ key, info }) => {
       try {
         const { x, y, z } = info;
@@ -248,7 +259,11 @@ export class VoxelRenderer {
         
         const isTopN = topNVoxels.has(key); // v0.1.5: TopNハイライト判定
         
-        // v0.1.7: 適応的パラメータの計算
+        // 事前に正規化密度を一度だけ計算し使い回す
+        const normalizedDensity = statistics.maxCount > statistics.minCount ? 
+          (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
+        
+        // v0.1.7: 適応的パラメータの計算（必要箇所で参照）
         const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, voxelData, statistics);
         
         // 密度に応じた色を計算
@@ -306,26 +321,19 @@ export class VoxelRenderer {
 
         let boxHeight = baseCellSizeZ;
         if (this.options.heightBased && info.count > 0) {
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
           boxHeight = baseCellSizeZ * (0.1 + normalizedDensity * 0.9); // 10%から100%の高さ
         }
         
         // v0.1.7: 動的枠線太さ制御（優先順位：resolver > 適応的 > 固定値）
         let finalOutlineWidth;
         if (this.options.outlineWidthResolver && typeof this.options.outlineWidthResolver === 'function') {
-          // outlineWidthResolver による動的制御
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          const resolverParams = {
-            voxel: { x, y, z, count: info.count },
-            isTopN,
-            normalizedDensity,
-            statistics,
-            adaptiveParams
-          };
+          // outlineWidthResolver による動的制御（再利用オブジェクトで割り当て削減）
+          reusableVoxelCtx.x = x; reusableVoxelCtx.y = y; reusableVoxelCtx.z = z; reusableVoxelCtx.count = info.count;
+          reusableWidthResolverParams.isTopN = isTopN;
+          reusableWidthResolverParams.normalizedDensity = normalizedDensity;
+          reusableWidthResolverParams.adaptiveParams = adaptiveParams;
           try {
-            finalOutlineWidth = this.options.outlineWidthResolver(resolverParams);
+            finalOutlineWidth = this.options.outlineWidthResolver(reusableWidthResolverParams);
             if (isNaN(finalOutlineWidth)) {
               finalOutlineWidth = adaptiveParams.outlineWidth || this.options.outlineWidth;
             }
@@ -347,17 +355,13 @@ export class VoxelRenderer {
         // v0.1.7: 枠線透明度制御（resolver > 適応的 > 固定値）
         let finalOutlineOpacity;
         if (this.options.outlineOpacityResolver && typeof this.options.outlineOpacityResolver === 'function') {
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          const resolverCtx = {
-            voxel: { x, y, z, count: info.count },
-            isTopN,
-            normalizedDensity,
-            statistics,
-            adaptiveParams
-          };
+          // 透明度resolverも同様に再利用オブジェクトで最適化
+          reusableVoxelCtx.x = x; reusableVoxelCtx.y = y; reusableVoxelCtx.z = z; reusableVoxelCtx.count = info.count;
+          reusableOpacityResolverCtx.isTopN = isTopN;
+          reusableOpacityResolverCtx.normalizedDensity = normalizedDensity;
+          reusableOpacityResolverCtx.adaptiveParams = adaptiveParams;
           try {
-            const resolverOpacity = this.options.outlineOpacityResolver(resolverCtx);
+            const resolverOpacity = this.options.outlineOpacityResolver(reusableOpacityResolverCtx);
             finalOutlineOpacity = isNaN(resolverOpacity) ? (this.options.outlineOpacity ?? 1.0) : Math.max(0, Math.min(1, resolverOpacity));
           } catch (e) {
             Logger.warn('outlineOpacityResolver error, using fallback:', e);
@@ -636,8 +640,8 @@ export class VoxelRenderer {
     
     this.voxelEntities.forEach(entity => {
       try {
-        // isDestroyedのチェックを安全に行う
-        const isDestroyed = typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
+        // entityとisDestroyedのチェックを安全に行う
+        const isDestroyed = entity && typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
         
         if (entity && !isDestroyed) {
           this.viewer.entities.remove(entity);
@@ -931,232 +935,17 @@ export class VoxelRenderer {
    * @private
    */
   _selectVoxelsForRendering(allVoxels, maxCount, bounds, grid) {
-    const strategy = this.options.renderLimitStrategy || 'density';
+    // v0.1.11-alpha: 新しいVoxelSelectorに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 2)
+    const selectionResult = this.voxelSelector.selectVoxels(allVoxels, maxCount, { grid, bounds });
     
-    // TopN強調ボクセルは必ず選択対象に含む
-    const topNVoxels = new Set();
-    if (this.options.highlightTopN && this.options.highlightTopN > 0) {
-      const sortedForTopN = [...allVoxels].sort((a, b) => b.info.count - a.info.count);
-      const topN = sortedForTopN.slice(0, this.options.highlightTopN);
-      topN.forEach(voxel => topNVoxels.add(voxel.key));
-    }
+    // 統計情報の更新
+    this._selectionStats = this.voxelSelector.getLastSelectionStats();
     
-    let selectedVoxels;
-    let clippedCount;
-    let coverageRatio = null;
-    
-    switch (strategy) {
-      case 'coverage': {
-        const coverageResult = this._selectByCoverage(allVoxels, maxCount, grid, topNVoxels);
-        selectedVoxels = coverageResult.selected;
-        clippedCount = allVoxels.length - selectedVoxels.length;
-        break;
-      }
-      
-      case 'hybrid': {
-        const hybridResult = this._selectByHybrid(allVoxels, maxCount, grid, topNVoxels);
-        selectedVoxels = hybridResult.selected;
-        clippedCount = allVoxels.length - selectedVoxels.length;
-        coverageRatio = hybridResult.coverageRatio;
-        break;
-      }
-      
-      case 'density':
-      default: {
-        const densityResult = this._selectByDensity(allVoxels, maxCount, topNVoxels);
-        selectedVoxels = densityResult.selected;
-        clippedCount = allVoxels.length - selectedVoxels.length;
-        break;
-      }
-    }
-    
-    return {
-      selectedVoxels,
-      strategy,
-      clippedNonEmpty: clippedCount,
-      coverageRatio
-    };
+    return selectionResult;
   }
 
-  /**
-   * Select voxels by density (existing algorithm).
-   * 密度による選択（既存アルゴリズム）
-   * @param {Array} allVoxels - All voxels / 全ボクセル
-   * @param {number} maxCount - Maximum count / 最大数
-   * @param {Set} forceInclude - Voxels to force include / 強制包含ボクセル
-   * @returns {Object} Selection result / 選択結果
-   * @private
-   */
-  _selectByDensity(allVoxels, maxCount, forceInclude = new Set()) {
-    // 密度でソートして上位を選択
-    const sorted = [...allVoxels].sort((a, b) => b.info.count - a.info.count);
-    
-    // 強制包含ボクセルを最初に追加
-    const selected = [];
-    const included = new Set();
-    
-    // TopNなど強制包含ボクセルを先に追加
-    sorted.forEach(voxel => {
-      if (forceInclude.has(voxel.key) && selected.length < maxCount) {
-        selected.push(voxel);
-        included.add(voxel.key);
-      }
-    });
-    
-    // 残りを密度順で追加
-    sorted.forEach(voxel => {
-      if (!included.has(voxel.key) && selected.length < maxCount) {
-        selected.push(voxel);
-        included.add(voxel.key);
-      }
-    });
-    
-    return { selected };
-  }
 
-  /**
-   * Select voxels by coverage (stratified sampling).
-   * カバレッジによる選択（層化抽出）
-   * @param {Array} allVoxels - All voxels / 全ボクセル
-   * @param {number} maxCount - Maximum count / 最大数
-   * @param {Object} bounds - Data bounds / データ境界
-   * @param {Set} forceInclude - Voxels to force include / 強制包含ボクセル
-   * @returns {Object} Selection result / 選択結果
-   * @private
-   */
-  _selectByCoverage(allVoxels, maxCount, grid, forceInclude = new Set()) {
-    const selected = [];
-    const included = new Set();
-    
-    // 強制包含ボクセルを先に追加
-    allVoxels.forEach(voxel => {
-      if (forceInclude.has(voxel.key) && selected.length < maxCount) {
-        selected.push(voxel);
-        included.add(voxel.key);
-      }
-    });
-    
-    // 格子分割数の決定
-    const binsXY = this.options.coverageBinsXY === 'auto' 
-      ? Math.ceil(Math.sqrt(maxCount / 4)) // 自動計算: 平均4ボクセル/ビン
-      : this.options.coverageBinsXY;
-    
-    // 空間をグリッド分割
-    const bins = new Map();
-    const remainingVoxels = allVoxels.filter(voxel => !included.has(voxel.key));
-    
-    remainingVoxels.forEach(voxel => {
-      const binX = Math.max(0, Math.min(binsXY - 1, Math.floor((voxel.info.x / Math.max(1, grid.numVoxelsX)) * binsXY)));
-      const binY = Math.max(0, Math.min(binsXY - 1, Math.floor((voxel.info.y / Math.max(1, grid.numVoxelsY)) * binsXY)));
-      const binKey = `${binX},${binY}`;
-      
-      if (!bins.has(binKey)) {
-        bins.set(binKey, []);
-      }
-      bins.get(binKey).push(voxel);
-    });
-    
-    // 各ビンから代表ボクセルを選択
-    const binKeys = Array.from(bins.keys());
-    let binIndex = 0;
-    
-    while (selected.length < maxCount && binIndex < binKeys.length * 10) { // 最大10周
-      const binKey = binKeys[binIndex % binKeys.length];
-      const binVoxels = bins.get(binKey);
-      
-      if (binVoxels && binVoxels.length > 0) {
-        // ビン内で最高密度のボクセルを選択
-        binVoxels.sort((a, b) => b.info.count - a.info.count);
-        const voxel = binVoxels.shift();
-        
-        if (!included.has(voxel.key)) {
-          selected.push(voxel);
-          included.add(voxel.key);
-        }
-        
-        // 空になったビンを削除
-        if (binVoxels.length === 0) {
-          bins.delete(binKey);
-          binKeys.splice(binKeys.indexOf(binKey), 1);
-        }
-      }
-      
-      binIndex++;
-    }
-    
-    return { selected };
-  }
 
-  /**
-   * Select voxels by hybrid strategy (density + coverage).
-   * ハイブリッド戦略による選択（密度 + カバレッジ）
-   * @param {Array} allVoxels - All voxels / 全ボクセル
-   * @param {number} maxCount - Maximum count / 最大数
-   * @param {Object} bounds - Data bounds / データ境界
-   * @param {Set} forceInclude - Voxels to force include / 強制包含ボクセル
-   * @returns {Object} Selection result / 選択結果
-   * @private
-   */
-  _selectByHybrid(allVoxels, maxCount, grid, forceInclude = new Set()) {
-    const minCoverageRatio = this.options.minCoverageRatio || 0.2;
-    
-    const selected = [];
-    const included = new Set();
-    
-    // 強制包含ボクセルを先に追加
-    allVoxels.forEach(voxel => {
-      if (forceInclude.has(voxel.key) && selected.length < maxCount) {
-        selected.push(voxel);
-        included.add(voxel.key);
-      }
-    });
-    
-    const remainingCount = maxCount - selected.length;
-    const adjustedCoverageCount = Math.floor(remainingCount * minCoverageRatio);
-    const adjustedDensityCount = remainingCount - adjustedCoverageCount;
-    
-    // カバレッジ選択（層化抽出）
-    if (adjustedCoverageCount > 0) {
-      const coverageResult = this._selectByCoverage(
-        allVoxels.filter(voxel => !included.has(voxel.key)), 
-        adjustedCoverageCount, 
-        grid, 
-        new Set()
-      );
-      
-      coverageResult.selected.forEach(voxel => {
-        if (selected.length < maxCount && !included.has(voxel.key)) {
-          selected.push(voxel);
-          included.add(voxel.key);
-        }
-      });
-    }
-    
-    // 密度選択（残り）
-    if (adjustedDensityCount > 0) {
-      const densityResult = this._selectByDensity(
-        allVoxels.filter(voxel => !included.has(voxel.key)), 
-        adjustedDensityCount, 
-        new Set()
-      );
-      
-      densityResult.selected.forEach(voxel => {
-        if (selected.length < maxCount && !included.has(voxel.key)) {
-          selected.push(voxel);
-          included.add(voxel.key);
-        }
-      });
-    }
-    
-    // 実際のカバレッジ比率を計算
-    const actualCoverageRatio = adjustedCoverageCount > 0 ? 
-      (selected.length - forceInclude.size - adjustedDensityCount) / (selected.length - forceInclude.size) : 0;
-    
-    return { 
-      selected, 
-      coverageRatio: actualCoverageRatio 
-    };
-  }
 
   /**
    * Get selection statistics.
