@@ -8,10 +8,12 @@ import { Logger } from '../utils/logger.js';
 import { ColorCalculator } from './color/ColorCalculator.js';
 import { VoxelSelector } from './selection/VoxelSelector.js';
 import { AdaptiveController } from './adaptive/AdaptiveController.js';
+import { GeometryRenderer } from './geometry/GeometryRenderer.js';
 
 // v0.1.11-alpha: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
 // v0.1.11-alpha: VoxelSelector added (ADR-0009 Phase 2)
 // v0.1.11-alpha: AdaptiveController added (ADR-0009 Phase 3)
+// v0.1.11-alpha: GeometryRenderer added (ADR-0009 Phase 4)
 
 /**
  * Class responsible for 3D voxel rendering.
@@ -46,7 +48,6 @@ export class VoxelRenderer {
       outlineOpacityResolver: null,
       ...options
     };
-    this.voxelEntities = [];
     
     // v0.1.11-alpha: VoxelSelector instantiation (ADR-0009 Phase 2)
     this.voxelSelector = new VoxelSelector(this.options);
@@ -54,6 +55,16 @@ export class VoxelRenderer {
     
     // v0.1.11-alpha: AdaptiveController instantiation (ADR-0009 Phase 3)
     this.adaptiveController = new AdaptiveController(this.options);
+    
+    // v0.1.11-alpha: GeometryRenderer instantiation (ADR-0009 Phase 4)
+    this.geometryRenderer = new GeometryRenderer(this.viewer, this.options);
+    
+    // Legacy compatibility: voxelEntities now delegates to GeometryRenderer
+    Object.defineProperty(this, 'voxelEntities', {
+      get: () => this.geometryRenderer.entities,
+      enumerable: true,
+      configurable: true
+    });
     
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
@@ -75,6 +86,18 @@ export class VoxelRenderer {
   }
 
   /**
+   * Backward-compatible inset outline decision API.
+   * 後方互換のためのインセット枠線適用判定メソッド。
+   * v0.1.11-alpha: GeometryRenderer に委譲 (ADR-0009 Phase 4)
+   * @param {boolean} isTopN
+   * @returns {boolean}
+   * @private
+   */
+  _shouldApplyInsetOutline(isTopN) {
+    return this.geometryRenderer.shouldApplyInsetOutline(isTopN);
+  }
+
+  /**
    * Render voxel data (simple implementation).
    * ボクセルデータを描画（シンプル実装）。
    * @param {Map} voxelData - Voxel data / ボクセルデータ
@@ -84,7 +107,8 @@ export class VoxelRenderer {
    * @returns {number} Number of rendered voxels / 実際に描画されたボクセル数
    */
   render(voxelData, bounds, grid, statistics) {
-    this.clear();
+    // v0.1.11-alpha: GeometryRendererに委譲してエンティティクリア (ADR-0009 Phase 4)
+    this.geometryRenderer.clear();
     Logger.debug('VoxelRenderer.render - Starting render with simplified approach', {
       voxelDataSize: voxelData.size,
       bounds,
@@ -331,89 +355,46 @@ export class VoxelRenderer {
           }
         }
         
-        // エンティティの設定
-        const entityConfig = {
-          position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
-          box: {
-            dimensions: new Cesium.Cartesian3(
-              cellSizeX,
-              cellSizeY,
-              boxHeight
-            ),
-            outline: shouldShowStandardOutline && !emulateThickForThis,
+        // v0.1.11-alpha: GeometryRendererに委譲してボクセルボックス作成 (ADR-0009 Phase 4)
+        this.geometryRenderer.createVoxelBox({
+          centerLon, centerLat, centerAlt,
+          cellSizeX, cellSizeY, boxHeight,
+          color, opacity,
+          shouldShowOutline: shouldShowStandardOutline,
             outlineColor: outlineColorWithOpacity,
-            outlineWidth: Math.max(finalOutlineWidth || 1, 0) // 負値防止
-          },
-          properties: {
-            type: 'voxel',
-            key: key,
-            count: info.count,
-            x: x,
-            y: y,
-            z: z
-          },
-          description: this.createVoxelDescription(info, key)
-        };
+          outlineWidth: finalOutlineWidth || 1,
+          voxelInfo: info,
+          voxelKey: key,
+          emulateThick: emulateThickForThis
+        });
 
-        // wireframeOnlyモードの場合は透明、そうでなければ通常の材質
-        if (this.options.wireframeOnly) {
-          entityConfig.box.material = Cesium.Color.TRANSPARENT;
-          entityConfig.box.fill = false;
-        } else {
-          entityConfig.box.material = color.withAlpha(opacity);
-          entityConfig.box.fill = true;
-        }
-        
-        // エンティティを作成
-        const entity = this.viewer.entities.add(entityConfig);
-        
-        this.voxelEntities.push(entity);
-
-        // v0.1.7: インセット枠線の実装（outlineRenderModeに応じて制御）
-        if (shouldShowInsetOutline && this._shouldApplyInsetOutline(isTopN)) {
+        // v0.1.11-alpha: GeometryRendererに委譲してインセット枠線作成 (ADR-0009 Phase 4)
+        if (shouldShowInsetOutline && this.geometryRenderer.shouldApplyInsetOutline(isTopN)) {
           try {
             const insetAmount = this.options.outlineInset > 0 ? this.options.outlineInset : 1; // emulation-onlyでは最低1m
-            this._createInsetOutline(
+            this.geometryRenderer.createInsetOutline({
               centerLon, centerLat, centerAlt,
-              cellSizeX, cellSizeY, boxHeight,
-              outlineColorWithOpacity, Math.max(finalOutlineWidth || 1, 1),
-              key, insetAmount
-            );
+              baseSizeX: cellSizeX, baseSizeY: cellSizeY, baseSizeZ: boxHeight,
+              outlineColor: outlineColorWithOpacity,
+              outlineWidth: Math.max(finalOutlineWidth || 1, 1),
+              voxelKey: key,
+              insetAmount
+            });
           } catch (e) {
             Logger.warn('Failed to create inset outline:', e);
           }
         }
         
-        // 太線エミュレーション（条件に応じてポリラインでエッジを追加）
-        // 隣接枠線の被りを避けるため、外縁ではなく“インセット後”の寸法でエッジを描く
+        // v0.1.11-alpha: GeometryRendererに委譲して太線エミュレーション (ADR-0009 Phase 4)
         if (emulateThickForThis) {
           try {
-            const centerCart = entity.position.getValue(Cesium.JulianDate.now());
-
-            const maxInsetX = cellSizeX * 0.2;
-            const maxInsetY = cellSizeY * 0.2;
-            const maxInsetZ = boxHeight * 0.2;
-            const baseInset = (this.options.outlineInset && this.options.outlineInset > 0) ? this.options.outlineInset : 0;
-            const autoInsetX = cellSizeX * 0.05;
-            const autoInsetY = cellSizeY * 0.05;
-            const autoInsetZ = boxHeight * 0.05;
-            const effInsetX = Math.min(baseInset > 0 ? baseInset : autoInsetX, maxInsetX);
-            const effInsetY = Math.min(baseInset > 0 ? baseInset : autoInsetY, maxInsetY);
-            const effInsetZ = Math.min(baseInset > 0 ? baseInset : autoInsetZ, maxInsetZ);
-
-            // 外縁とインセットの“中間”に相当する寸法（片側ぶんだけ縮める）
-            const midSizeX = Math.max(cellSizeX - effInsetX, cellSizeX * 0.1);
-            const midSizeY = Math.max(cellSizeY - effInsetY, cellSizeY * 0.1);
-            const midSizeZ = Math.max(boxHeight - effInsetZ, boxHeight * 0.1);
-
-            this._addEdgePolylines(
-              centerCart,
-              midSizeX,
-              midSizeY,
-              midSizeZ,
-              outlineColorWithOpacity,
-              Math.max(finalOutlineWidth, 1)
-            );
+            this.geometryRenderer.createEdgePolylines({
+              centerLon, centerLat, centerAlt,
+              cellSizeX, cellSizeY, boxHeight,
+              outlineColor: outlineColorWithOpacity,
+              outlineWidth: Math.max(finalOutlineWidth, 1),
+              voxelKey: key
+            });
           } catch (e) {
             Logger.warn('Failed to add emulated thick outline polylines:', e);
           }
@@ -535,45 +516,13 @@ export class VoxelRenderer {
   // v0.1.11-alpha: _interpolateFromColorMap and _interpolateDivergingColor methods 
   // moved to ColorCalculator (ADR-0009 Phase 1)
 
-  /**
-   * Create description HTML for a voxel.
-   * ボクセルの説明文を生成します。
-   * @param {Object} voxelInfo - Voxel info / ボクセル情報
-   * @param {string} voxelKey - Voxel key / ボクセルキー
-   * @returns {string} HTML description / HTML形式の説明文
-   */
-  createVoxelDescription(voxelInfo, voxelKey) {
-    return `
-      <div style="padding: 10px; font-family: Arial, sans-serif;">
-        <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
-        <table style="width: 100%;">
-          <tr><td><b>エンティティ数:</b></td><td>${voxelInfo.count}</td></tr>
-          <tr><td><b>ID:</b></td><td>${voxelKey}</td></tr>
-        </table>
-      </div>
-    `;
-  }
 
   /**
    * 描画されたエンティティを全てクリア
+   * v0.1.11-alpha: GeometryRendererに委譲 (ADR-0009 Phase 4)
    */
   clear() {
-    Logger.debug('VoxelRenderer.clear - Removing', this.voxelEntities.length, 'entities');
-    
-    this.voxelEntities.forEach(entity => {
-      try {
-        // entityとisDestroyedのチェックを安全に行う
-        const isDestroyed = entity && typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
-        
-        if (entity && !isDestroyed) {
-          this.viewer.entities.remove(entity);
-        }
-      } catch (error) {
-        Logger.warn('Entity removal error:', error);
-      }
-    });
-    
-    this.voxelEntities = [];
+    this.geometryRenderer.clear();
   }
 
   /**
@@ -599,22 +548,6 @@ export class VoxelRenderer {
     return false;
   }
 
-  /**
-   * インセット枠線を適用すべきかどうかを判定（ADR-0004）
-   * @param {boolean} isTopN - TopNボクセルかどうか
-   * @returns {boolean} インセット枠線を適用する場合はtrue
-   * @private
-   */
-  _shouldApplyInsetOutline(isTopN) {
-    const mode = this.options.outlineInsetMode || 'all';
-    switch (mode) {
-      case 'topn':
-        return isTopN;
-      case 'all':
-      default:
-        return true;
-    }
-  }
 
   /**
    * インセット枠線用のセカンダリBoxエンティティを作成（ADR-0004）
