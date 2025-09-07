@@ -7,9 +7,11 @@ import * as Cesium from 'cesium';
 import { Logger } from '../utils/logger.js';
 import { ColorCalculator } from './color/ColorCalculator.js';
 import { VoxelSelector } from './selection/VoxelSelector.js';
+import { AdaptiveController } from './adaptive/AdaptiveController.js';
 
 // v0.1.11-alpha: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
 // v0.1.11-alpha: VoxelSelector added (ADR-0009 Phase 2)
+// v0.1.11-alpha: AdaptiveController added (ADR-0009 Phase 3)
 
 /**
  * Class responsible for 3D voxel rendering.
@@ -42,12 +44,6 @@ export class VoxelRenderer {
       outlineWidthPreset: 'uniform',
       boxOpacityResolver: null,
       outlineOpacityResolver: null,
-      adaptiveParams: {
-        neighborhoodRadius: 50,
-        densityThreshold: 5,
-        cameraDistanceFactor: 1.0,
-        overlapRiskFactor: 0.3
-      },
       ...options
     };
     this.voxelEntities = [];
@@ -56,12 +52,16 @@ export class VoxelRenderer {
     this.voxelSelector = new VoxelSelector(this.options);
     this._selectionStats = null;
     
+    // v0.1.11-alpha: AdaptiveController instantiation (ADR-0009 Phase 3)
+    this.adaptiveController = new AdaptiveController(this.options);
+    
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
 
   /**
-   * Compute adaptive outline parameters (v0.1.7).
-   * 適応的枠線パラメータを計算 (v0.1.7)。
+   * Compute adaptive outline parameters (v0.1.11-alpha).
+   * 適応的枠線パラメータを計算 (v0.1.11-alpha)。
+   * v0.1.11-alpha: AdaptiveControllerに委譲 (ADR-0009 Phase 3)
    * @param {Object} voxelInfo - Voxel info / ボクセル情報
    * @param {boolean} isTopN - Whether it is TopN / TopNボクセルかどうか
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
@@ -70,86 +70,8 @@ export class VoxelRenderer {
    * @private
    */
   _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics) {
-    if (!this.options.adaptiveOutlines) {
-      return {
-        outlineWidth: null,
-        boxOpacity: null,
-        outlineOpacity: null,
-        shouldUseEmulation: false
-      };
-    }
-
-    const { x, y, z, count } = voxelInfo;
-    const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-      (count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-    
-    // 近働密度を計算
-    let neighborhoodDensity = 0;
-    let neighborCount = 0;
-    const radius = Math.max(1, Math.floor(this.options.adaptiveParams.neighborhoodRadius / 20)); // 簡略化
-    
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -radius; dy <= radius; dy++) {
-        for (let dz = -radius; dz <= radius; dz++) {
-          if (dx === 0 && dy === 0 && dz === 0) continue;
-          const neighborKey = `${x + dx},${y + dy},${z + dz}`;
-          const neighbor = voxelData.get(neighborKey);
-          if (neighbor) {
-            neighborhoodDensity += neighbor.count;
-            neighborCount++;
-          }
-        }
-      }
-    }
-    
-    const avgNeighborhoodDensity = neighborCount > 0 ? neighborhoodDensity / neighborCount : 0;
-    const isDenseArea = avgNeighborhoodDensity > this.options.adaptiveParams.densityThreshold;
-    
-    // カメラ距離は簡略化（実装では固定値を使用）
-    const cameraDistance = 1000; // 固定値、実際の実装ではカメラからの距離を取得
-    const cameraFactor = Math.min(1.0, 1000 / cameraDistance) * this.options.adaptiveParams.cameraDistanceFactor;
-    
-    // 重なりリスクの算出
-    const overlapRisk = isDenseArea ? this.options.adaptiveParams.overlapRiskFactor : 0;
-    
-    // プリセットによる調整
-    let adaptiveWidth, adaptiveBoxOpacity, adaptiveOutlineOpacity;
-    
-    switch (this.options.outlineWidthPreset) {
-      case 'adaptive-density':
-        adaptiveWidth = isDenseArea ? 
-          Math.max(0.5, this.options.outlineWidth * (0.5 + normalizedDensity * 0.5)) :
-          this.options.outlineWidth;
-        adaptiveBoxOpacity = isDenseArea ? this.options.opacity * 0.8 : this.options.opacity;
-        adaptiveOutlineOpacity = isDenseArea ? 0.6 : 1.0;
-        break;
-        
-      case 'topn-focus':
-        adaptiveWidth = isTopN ? 
-          this.options.outlineWidth * (1.5 + normalizedDensity * 0.5) :
-          Math.max(0.5, this.options.outlineWidth * 0.7);
-        adaptiveBoxOpacity = isTopN ? this.options.opacity : this.options.opacity * 0.6;
-        adaptiveOutlineOpacity = isTopN ? 1.0 : 0.4;
-        break;
-        
-      case 'uniform':
-      default:
-        adaptiveWidth = this.options.outlineWidth;
-        adaptiveBoxOpacity = this.options.opacity;
-        adaptiveOutlineOpacity = this.options.outlineOpacity || 1.0;
-        break;
-    }
-    
-    // カメラ距離と重なりリスクで調整
-    adaptiveWidth *= cameraFactor;
-    adaptiveOutlineOpacity = Math.max(0.2, adaptiveOutlineOpacity * (1 - overlapRisk));
-    
-    return {
-      outlineWidth: Math.max(0.5, adaptiveWidth),
-      boxOpacity: Math.max(0.1, Math.min(1.0, adaptiveBoxOpacity)),
-      outlineOpacity: Math.max(0.2, Math.min(1.0, adaptiveOutlineOpacity)),
-      shouldUseEmulation: isDenseArea || (adaptiveWidth > 2 && this.options.outlineRenderMode !== 'standard')
-    };
+    // v0.1.11-alpha: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
+    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options);
   }
 
   /**
