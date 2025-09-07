@@ -86,6 +86,18 @@ export class VoxelRenderer {
   }
 
   /**
+   * Backward-compatible inset outline decision API.
+   * 後方互換のためのインセット枠線適用判定メソッド。
+   * v0.1.11-alpha: GeometryRenderer に委譲 (ADR-0009 Phase 4)
+   * @param {boolean} isTopN
+   * @returns {boolean}
+   * @private
+   */
+  _shouldApplyInsetOutline(isTopN) {
+    return this.geometryRenderer.shouldApplyInsetOutline(isTopN);
+  }
+
+  /**
    * Render voxel data (simple implementation).
    * ボクセルデータを描画（シンプル実装）。
    * @param {Map} voxelData - Voxel data / ボクセルデータ
@@ -344,7 +356,7 @@ export class VoxelRenderer {
         }
         
         // v0.1.11-alpha: GeometryRendererに委譲してボクセルボックス作成 (ADR-0009 Phase 4)
-        const entity = this.geometryRenderer.createVoxelBox({
+        this.geometryRenderer.createVoxelBox({
           centerLon, centerLat, centerAlt,
           cellSizeX, cellSizeY, boxHeight,
           color, opacity,

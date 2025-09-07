@@ -221,9 +221,7 @@ export class GeometryRenderer {
     const outerBoundX = outerX / 2;    // 外側境界（中心からの距離）
     const outerBoundY = outerY / 2;
     const outerBoundZ = outerZ / 2;
-    const innerBoundX = innerX / 2;    // 内側境界（中心からの距離）
-    const innerBoundY = innerY / 2;
-    const innerBoundZ = innerZ / 2;
+    // 内側境界は以降の処理では直接使用しないため計算を省略
 
     const frameEntities = [];
     
