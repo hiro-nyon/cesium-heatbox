@@ -4,6 +4,7 @@ let viewer = null;
 let heatboxInstance = null;
 let currentEntities = [];
 let currentData = null;
+let isHeatmapVisible = true; // 表示状態を追跡
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -145,6 +146,11 @@ function reRenderHeatmap() {
     const updated = {
       showOutline: wireframe ? false : false,
       opacity: wireframe ? 0.0 : 1.0,
+      // ADR-0009 Phase 5: 適応制御オプション
+      adaptiveOutlines: true,
+      outlineWidthPreset: 'adaptive-density',
+      boxOpacityMode: 'density',
+      outlineOpacityMode: 'density',
       boxOpacityResolver: !wireframe ? (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
         const nd = Math.pow(d, 0.5);
@@ -186,6 +192,12 @@ function reRenderHeatmap() {
     if (wireframe) {
       try { adjustEmulationByDensity(); } catch (_) {}
     }
+    
+    // 重要: 再描画後の即座な画面更新を要求
+    if (viewer && viewer.scene) {
+      viewer.scene.requestRender();
+    }
+    
   } catch (e) {
     console.error('Re-render failed:', e);
   }
@@ -545,8 +557,8 @@ async function createHeatmap() {
   try {
     updateStatus('Creating heatmap...', 'loading');
 
-    // Quick Start: fixed auto settings
-    const autoCamera = document.getElementById('autoCamera').checked;
+    // Quick Start: fixed auto settings (Safe fallback)
+    const autoCamera = document.getElementById('autoCamera')?.checked || true;
 
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     const options = {
@@ -555,9 +567,11 @@ async function createHeatmap() {
       voxelSize: undefined,
       maxVoxelSize: 10,
       targetCells: 3000,
-      maxRenderVoxels: 'auto',
-      renderLimitStrategy: 'density',
+      maxRenderVoxels: 'auto', 
+      renderLimitStrategy: 'hybrid', // バランス重視の戦略
       colorMap: 'viridis',
+      // TopN強調表示 (Quick Start)
+      highlightTopN: 0, // デフォルトで無効
       // Hide box fill in emulation-only (wireframe toggle)
       opacity: wireframe ? 0.0 : 1.0,
       showEmptyVoxels: false,
@@ -575,6 +589,11 @@ async function createHeatmap() {
       outlineEmulation: wireframe ? 'all' : 'off',
       outlineInset: 0,
       outlineInsetMode: 'none',
+      // ADR-0009 Phase 5 対応: 適応的制御を有効化
+      adaptiveOutlines: true,
+      outlineWidthPreset: 'adaptive-density',
+      boxOpacityMode: 'density',
+      outlineOpacityMode: 'density',
       // In wireframe: higher density → thicker and darker (direct mapping)
       outlineOpacityResolver: wireframe ? (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
@@ -587,7 +606,9 @@ async function createHeatmap() {
         const minW = 1.5, maxW = 10; // px
         return minW + nd * (maxW - minW);
       }) : undefined,
-      autoView: autoCamera
+      // Quick Start用設定
+      autoView: autoCamera,
+      debugMode: false // Quick Startはデバッグ無効
     };
     
     // Clear existing heatmap and apply new options when reusing instance
@@ -627,11 +648,23 @@ async function createHeatmap() {
     // Update statistics with heatmap info
     updateStatisticsWithHeatmap(options);
     
+    // 表示状態を初期化
+    isHeatmapVisible = true;
+    
     // Enable additional controls
     document.getElementById('clearHeatmap').disabled = false;
-    document.getElementById('toggleVisibility').disabled = false;
+    const toggleButton = document.getElementById('toggleVisibility');
+    if (toggleButton) {
+      toggleButton.disabled = false;
+      toggleButton.textContent = 'Hide'; // 初期状態は表示中なのでHide
+    }
     
     updateStatus(`Heatmap created successfully with ${currentEntities.length} entities`, 'success');
+    
+    // 重要: ヒートマップ作成後の即座な画面更新を要求
+    if (viewer && viewer.scene) {
+      viewer.scene.requestRender();
+    }
     
   } catch (error) {
     console.error('Error creating heatmap:', error);
@@ -697,15 +730,27 @@ function clearHeatmap() {
       heatboxInstance.clear();
       // Fully reset instance so next create uses fresh options
       heatboxInstance = null;
+      isHeatmapVisible = true; // 表示状態もリセット
       updateStatus('Heatmap cleared', 'success');
       
-      // Update statistics
+      // Update statistics - より完全なリセット
       document.getElementById('voxelCount').textContent = '0';
+      document.getElementById('emptyVoxelCount').textContent = '0';
       document.getElementById('autoSizeInfo').style.display = 'none';
+      document.getElementById('v019Stats').style.display = 'none';
       
-      // Disable controls
+      // Disable controls and reset button text
       document.getElementById('clearHeatmap').disabled = true;
-      document.getElementById('toggleVisibility').disabled = true;
+      const toggleButton = document.getElementById('toggleVisibility');
+      if (toggleButton) {
+        toggleButton.disabled = true;
+        toggleButton.textContent = 'Toggle Visibility'; // デフォルトに戻す
+      }
+      
+      // 重要: 画面の即座な更新を要求
+      if (viewer && viewer.scene) {
+        viewer.scene.requestRender();
+      }
     }
   } catch (error) {
     console.error('Error clearing heatmap:', error);
@@ -717,8 +762,29 @@ function clearHeatmap() {
 function toggleVisibility() {
   try {
     if (heatboxInstance) {
-      heatboxInstance.toggleVisibility();
-      updateStatus('Heatmap visibility toggled', 'success');
+      // ADR-0009 Phase 5: 新しいAPI使用 - setVisible()で状態を手動管理
+      isHeatmapVisible = !isHeatmapVisible;
+      
+      if (typeof heatboxInstance.setVisible === 'function') {
+        heatboxInstance.setVisible(isHeatmapVisible);
+      } else {
+        // フォールバック: visible プロパティを直接設定
+        heatboxInstance.visible = isHeatmapVisible;
+      }
+      
+      const statusText = isHeatmapVisible ? 'Heatmap shown' : 'Heatmap hidden';
+      updateStatus(statusText, 'success');
+      
+      // ボタンのテキストを状態に応じて更新
+      const toggleButton = document.getElementById('toggleVisibility');
+      if (toggleButton) {
+        toggleButton.textContent = isHeatmapVisible ? 'Hide' : 'Show';
+      }
+      
+      // 重要: 表示切替後の即座な画面更新を要求
+      if (viewer && viewer.scene) {
+        viewer.scene.requestRender();
+      }
     }
   } catch (error) {
     console.error('Error toggling visibility:', error);
@@ -740,10 +806,37 @@ function updateStatistics() {
   document.getElementById('minValue').textContent = minValue.toFixed(2);
 }
 
-// Update statistics with heatmap information
+// Update statistics with heatmap information  
 function updateStatisticsWithHeatmap(options) {
   try {
-    // Estimate voxel count (this is an approximation)
+    // ADR-0009 Phase 5: 新しい統計API利用
+    if (heatboxInstance && typeof heatboxInstance.getStats === 'function') {
+      const stats = heatboxInstance.getStats();
+      if (stats) {
+        document.getElementById('voxelCount').textContent = stats.totalVoxels?.toLocaleString() || '0';
+        if (stats.emptyVoxels !== undefined) {
+          document.getElementById('emptyVoxelCount').textContent = stats.emptyVoxels.toLocaleString();
+        }
+        
+        // VoxelSelector統計 (v0.1.11-alpha対応)
+        if (stats.selectionStats && document.getElementById('v019Stats')) {
+          document.getElementById('selectionStrategy').textContent = stats.selectionStats.strategy || '-';
+          document.getElementById('renderedVoxels').textContent = stats.selectionStats.selectedCount?.toLocaleString() || '0';
+          document.getElementById('coverageRatio').textContent = (stats.selectionStats.coverageRatio * 100).toFixed(1) || '0';
+          document.getElementById('v019Stats').style.display = 'block';
+        }
+        
+        // 自動サイズ情報表示
+        if (stats.autoSizeInfo && document.getElementById('autoSizeInfo')) {
+          document.getElementById('autoAdjusted').textContent = stats.autoSizeInfo.adjusted ? 'Yes' : 'No';
+          document.getElementById('sizeInfo').textContent = `${stats.autoSizeInfo.voxelSize}m`;
+          document.getElementById('autoSizeInfo').style.display = 'block';
+        }
+        return; // 新API使用時は以下の推定処理をスキップ
+      }
+    }
+    
+    // Fallback: Estimate voxel count (legacy approximation)
     const autoVoxelSize = options.autoVoxelSize;
     let estimatedVoxels = 0;
     let finalSize = 'N/A';
