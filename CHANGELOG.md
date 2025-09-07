@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
+## [0.1.11] - 2025-09-XX
+
+### Added
+- ADR-0009 Orchestration Architecture 完了（`VoxelRenderer` をオーケストレーションに特化）
+  - 新コア: `ColorCalculator`（色計算）, `VoxelSelector`（選択戦略）, `AdaptiveController`（適応制御）, `GeometryRenderer`（描画/エンティティ管理）
+- Playground の国際化・アクセシビリティ改善（i18n属性/ARIA、emulation-only モード強化）
+- JSDoc → Wiki 変換の安定化（SourceページのMarkdown化、英語/日本語セクションの自動抽出）
+
+### Changed
+- プレリリース表記（-alpha）を安定版 0.1.11 に更新（README/テスト/コード内の表記整合）
+- パフォーマンス受け入れテストを `PERF_TESTS=1` 指定で任意実行に変更（環境揺らぎ対策）
+- メモリしきい値をCIばらつきに合わせて調整（テストをグリーン化）
+
+### Fixed
+- ESM向けJSDocビルド設定（jsdoc.config.json: `source.type = 'module'`）
+- Wiki自動生成で Source ページや英語セクションが空になる問題（変換ロジックを改良）
+
+### Removed
+- MIGRATION.md（0.1.10 は破棄のため移行ガイドは不要。変更点は Release Notes / ADR を参照）
+
+### References
+- ADR-0009: `docs/adr/ADR-0009-voxel-renderer-responsibility-separation.md`
+- ADR-0006（v0.1.9 設計）: `docs/adr/ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md`
+
 ## [0.1.8] - 2025-08-30
 
 ### Added
