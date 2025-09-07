@@ -642,8 +642,8 @@ export class VoxelRenderer {
     
     this.voxelEntities.forEach(entity => {
       try {
-        // isDestroyedのチェックを安全に行う
-        const isDestroyed = typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
+        // entityとisDestroyedのチェックを安全に行う
+        const isDestroyed = entity && typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
         
         if (entity && !isDestroyed) {
           this.viewer.entities.remove(entity);
