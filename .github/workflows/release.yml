@@ -4,13 +4,31 @@ on:
   push:
     tags:
       - 'v*'  # v0.1.10, v0.1.10-alpha.0 等で発火
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g. v0.1.11-alpha.1)'
+        required: false
+        type: string
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout (event ref)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.tag == '' }}
         uses: actions/checkout@v4
+        with:
+          # For tag push/release, this resolves to the tag ref
+          ref: ${{ github.ref }}
+
+      - name: Checkout (specified tag)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.tag != '' }}
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -41,4 +59,3 @@ jobs:
           else
             npm publish
           fi
-
