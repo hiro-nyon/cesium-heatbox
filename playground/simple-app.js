@@ -142,20 +142,40 @@ function reRenderHeatmap() {
   if (!heatboxInstance || !currentEntities || currentEntities.length === 0) return;
   try {
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
-    Object.assign(heatboxInstance.options, {
-      showOutline: wireframe ? true : false,
+    const updated = {
+      showOutline: !!wireframe,
       opacity: wireframe ? 0.0 : 1.0,
       boxOpacityResolver: !wireframe ? (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
         const nd = Math.pow(d, 0.5);
-        return 0.05 + nd * 0.95; // 0.05–1.0
+        return 0.05 + nd * 0.95;
       }) : (() => 0),
       outlineEmulation: wireframe ? 'all' : 'off',
       outlineInset: wireframe ? 2.0 : 0,
-      outlineInsetMode: 'all',
-      // Wireframe: solid outline (no density-based opacity), thicker width
-      ...(wireframe ? { outlineOpacity: 1.0, outlineOpacityResolver: undefined, outlineWidth: 10, outlineWidthResolver: undefined } : {})
-    });
+      outlineInsetMode: 'all'
+    };
+    if (wireframe) {
+      // Inverse density mapping for outlines (thinner/lighter at higher density)
+      updated.outlineOpacity = undefined;
+      updated.outlineOpacityResolver = (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        const op = 0.15 + (1 - nd) * 0.85;
+        return Math.max(0.05, Math.min(1.0, op));
+      });
+      updated.outlineWidth = undefined;
+      updated.outlineWidthResolver = (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        const minW = 1.5, maxW = 10;
+        return minW + (1 - nd) * (maxW - minW);
+      });
+    } else {
+      // Clear resolvers when exiting wireframe
+      updated.outlineOpacityResolver = undefined;
+      updated.outlineWidthResolver = undefined;
+    }
+    Object.assign(heatboxInstance.options, updated);
     if (typeof heatboxInstance.createFromEntities === 'function') {
       heatboxInstance.createFromEntities(currentEntities);
     } else {
@@ -549,15 +569,18 @@ async function createHeatmap() {
       outlineEmulation: wireframe ? 'all' : 'off',
       outlineInset: wireframe ? 2.0 : 0,
       outlineInsetMode: 'all',
+      // In wireframe: higher density → thinner and lighter (inverse mapping)
       outlineOpacityResolver: wireframe ? (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        return 0.05 + nd * 0.95; // match box density mapping (0.05–1.0)
+        const nd = Math.pow(d, 0.5); // emphasize high densities
+        const op = 0.15 + (1 - nd) * 0.85; // 1.0→0.15 as density rises
+        return Math.max(0.05, Math.min(1.0, op));
       }) : undefined,
       outlineWidthResolver: wireframe ? (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
         const nd = Math.pow(d, 0.5);
-        return 6 + Math.round(nd * 6); // 6–12 px (thicker)
+        const minW = 1.5, maxW = 10; // px
+        return minW + (1 - nd) * (maxW - minW);
       }) : undefined,
       autoView: autoCamera
     };
