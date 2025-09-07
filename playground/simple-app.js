@@ -143,24 +143,25 @@ function reRenderHeatmap() {
   try {
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     const updated = {
-      showOutline: !!wireframe,
+      showOutline: wireframe ? false : false,
       opacity: wireframe ? 0.0 : 1.0,
       boxOpacityResolver: !wireframe ? (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
         const nd = Math.pow(d, 0.5);
         return 0.05 + nd * 0.95;
       }) : (() => 0),
+      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
       outlineEmulation: wireframe ? 'all' : 'off',
-      outlineInset: wireframe ? 2.0 : 0,
-      outlineInsetMode: 'all'
+      outlineInset: 0,
+      outlineInsetMode: 'none'
     };
     if (wireframe) {
-      // Inverse density mapping for outlines (thinner/lighter at higher density)
+      // Direct density mapping for outlines (thicker/darker at higher density)
       updated.outlineOpacity = undefined;
       updated.outlineOpacityResolver = (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
         const nd = Math.pow(d, 0.5);
-        const op = 0.15 + (1 - nd) * 0.85;
+        const op = 0.15 + nd * 0.85;
         return Math.max(0.05, Math.min(1.0, op));
       });
       updated.outlineWidth = undefined;
@@ -168,7 +169,7 @@ function reRenderHeatmap() {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
         const nd = Math.pow(d, 0.5);
         const minW = 1.5, maxW = 10;
-        return minW + (1 - nd) * (maxW - minW);
+        return minW + nd * (maxW - minW);
       });
     } else {
       // Clear resolvers when exiting wireframe
@@ -554,33 +555,34 @@ async function createHeatmap() {
       maxRenderVoxels: 'auto',
       renderLimitStrategy: 'density',
       colorMap: 'viridis',
-      // Global opacity lets resolver drive contrast more clearly
+      // Hide box fill in emulation-only (wireframe toggle)
       opacity: wireframe ? 0.0 : 1.0,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
-      showOutline: wireframe ? true : false,
+      // Do not use standard outlines when emulation-only
+      showOutline: wireframe ? false : false,
       // Default: density-driven fill shading
       boxOpacityResolver: !wireframe ? (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
         const nd = Math.pow(d, 0.5); // stronger gamma for contrast
         return 0.05 + nd * 0.95; // 0.05–1.0 by density (stronger)
       }) : (() => 0),
-      // Wireframe emulation (outlines only)
+      // Emulation-only mode (thick edges only)
+      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
       outlineEmulation: wireframe ? 'all' : 'off',
-      outlineInset: wireframe ? 2.0 : 0,
-      outlineInsetMode: 'all',
-      // In wireframe: higher density → thinner and lighter (inverse mapping)
+      outlineInset: 0,
+      outlineInsetMode: 'none',
+      // In wireframe: higher density → thicker and darker (direct mapping)
       outlineOpacityResolver: wireframe ? (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5); // emphasize high densities
-        const op = 0.15 + (1 - nd) * 0.85; // 1.0→0.15 as density rises
-        return Math.max(0.05, Math.min(1.0, op));
+        const nd = Math.pow(d, 0.5);
+        return 0.15 + nd * 0.85; // 0.15→1.0 as density rises
       }) : undefined,
       outlineWidthResolver: wireframe ? (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
         const nd = Math.pow(d, 0.5);
         const minW = 1.5, maxW = 10; // px
-        return minW + (1 - nd) * (maxW - minW);
+        return minW + nd * (maxW - minW);
       }) : undefined,
       autoView: autoCamera
     };
