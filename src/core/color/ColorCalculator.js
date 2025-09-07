@@ -268,6 +268,6 @@ export class ColorCalculator {
    * @returns {boolean} True if color map exists / カラーマップが存在する場合true
    */
   static isValidColorMap(colorMapName) {
-    return COLOR_MAPS.hasOwnProperty(colorMapName);
+    return Object.hasOwn(COLOR_MAPS, colorMapName);
   }
 }
