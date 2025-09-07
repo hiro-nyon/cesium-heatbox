@@ -1,59 +1,84 @@
 name: Release
-
 on:
   push:
-    tags: 
+    tags:
       - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g. v0.1.11-alpha.1)'
+        required: false
+        type: string
 
 jobs:
-  release:
+  publish:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # next の柔軟なチェックアウト戦略を採用
+      - name: Checkout (event ref)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.tag == '' }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Checkout (specified tag)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.tag != '' }}
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
       
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        registry-url: 'https://registry.npmjs.org'
-        
-    - name: Install dependencies
-      run: npm ci
+      # 基本セットアップ
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
       
-    - name: Build all formats
-      run: npm run build
+      - name: Install dependencies
+        run: npm ci
       
-    - name: Run tests
-      run: npm test
+      # main の構造化されたビルドプロセス
+      - name: Build all formats
+        run: npm run build
       
-    - name: Read package version
-      id: meta
-      run: echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
-
-    - name: Generate docs and sync wiki (stable only)
-      if: ${{ !contains(steps.meta.outputs.version, '-') }}
-      run: |
-        npm run docs
-        npm run wiki:sync
-
-    - name: Publish Wiki (stable only)
-      if: ${{ !contains(steps.meta.outputs.version, '-') }}
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        OWNER: ${{ github.repository_owner }}
-        REPO: ${{ github.event.repository.name }}
-      run: |
-        bash tools/wiki/publish-wiki.sh "$OWNER" "$REPO"
-    
-    - name: Publish to npm
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: |
-        VERSION=${{ steps.meta.outputs.version }}
-        if [[ "$VERSION" == *-alpha.* || "$VERSION" == *-beta.* || "$VERSION" == *-rc.* ]]; then
-          npm publish --tag next
-        else
-          npm publish
-        fi
+      - name: Run tests
+        run: npm test
+      
+      # main のメタデータ処理を採用
+      - name: Read package version
+        id: meta
+        run: echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+      
+      # main の追加機能（ドキュメント生成）
+      - name: Generate docs and sync wiki (stable only)
+        if: ${{ !contains(steps.meta.outputs.version, '-') }}
+        run: |
+          npm run docs
+          npm run wiki:sync
+      
+      - name: Publish Wiki (stable only)
+        if: ${{ !contains(steps.meta.outputs.version, '-') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          bash tools/wiki/publish-wiki.sh "$OWNER" "$REPO"
+      
+      # next の dry run check（デバッグに有用）
+      - name: Dry run (what will be published)
+        run: npm pack --dry-run
+      
+      # 統合されたパブリッシュ処理
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION=${{ steps.meta.outputs.version }}
+          echo "Publishing version $VERSION"
+          if [[ "$VERSION" == *-alpha.* || "$VERSION" == *-beta.* || "$VERSION" == *-rc.* ]]; then
+            npm publish --tag next
+          else
+            npm publish
+          fi

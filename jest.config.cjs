@@ -1,13 +1,16 @@
 module.exports = {
   testEnvironment: 'jsdom',
   setupFiles: ['<rootDir>/test/setup.js'],
+  // CI環境でのログ出力制御: console.warn/errorを無効化
+  silent: Boolean(process.env.CI || process.env.GITHUB_ACTIONS),
+  verbose: !Boolean(process.env.CI || process.env.GITHUB_ACTIONS),
   moduleNameMapper: {
     '^@/(.*)': '<rootDir>/src/$1',
     '^cesium$': '<rootDir>/test/__mocks__/cesium.js'
   },
   testPathIgnorePatterns: [
     '/node_modules/',
-    '<rootDir>/test/performance/'
+    '/test/performance/heatbox-v0.1.9-performance.test.js'
   ],
   collectCoverageFrom: [
     'src/**/*.js',

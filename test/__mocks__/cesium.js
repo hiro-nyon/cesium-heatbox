@@ -26,6 +26,7 @@ const mockColor = (r, g, b, a = 1.0) => {
 const Color = {
   fromBytes: (r, g, b, a = 255) => mockColor(r / 255, g / 255, b / 255, a / 255),
   YELLOW: mockColor(1.0, 1.0, 0.0, 1.0),
+  GRAY: mockColor(0.5, 0.5, 0.5, 1.0),
   LIGHTGRAY: mockColor(211 / 255, 211 / 255, 211 / 255, 1.0),
   TRANSPARENT: mockColor(0.0, 0.0, 0.0, 0.0)
 };

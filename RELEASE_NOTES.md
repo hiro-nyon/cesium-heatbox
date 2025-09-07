@@ -1,5 +1,28 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 0.1.10 - 安定化と移行準備（2025-01-XX）
+
+### 🧭 方針転換
+- ADR-0008 の全面的なリファクタリング案は実装複雑性のため中止し、ADR-0009（段階的な責務分離/SRP適用）へ方針転換しました。
+- 本バージョンでは破壊的変更は行わず、非推奨化と代替APIの追加に留めます。
+
+### 🔄 非破壊のAPI変更（移行準備）
+- `fitViewOptions.pitch`/`heading` の代替として `pitchDegrees`/`headingDegrees` を追加（旧名は存続・警告のみ）
+- `outlineRenderMode`（`standard`/`inset`/`emulation-only`）を追加。既存の `outlineEmulation` は引き続き利用可能（将来削除予定）
+- 適応的制御のプリセット（`outlineWidthPreset` など）を強化。`boxOpacityResolver`/`outlineOpacityResolver` は非推奨化の対象としつつ存続
+- 詳細は MIGRATION.md を参照
+
+### 🧪 品質・その他
+- 安定化・ハードニング（ログ/バリデーションの改善）
+- 既存の Examples/README を v0.1.10 の非破壊変更に追随（順次更新）
+
+### 📌 次の予定（v0.1.11 以降）
+- ADR-0009 に基づく段階的な責務分離（ColorCalculator/VoxelSelector/AdaptiveController/GeometryRenderer）
+- 互換性を維持したまま `VoxelRenderer` をオーケストレーション役へ縮減
+- 非推奨APIの削除は v0.1.11+ のメジャーでない範囲内で段階的に実施
+
+---
+
 ## バージョン 0.1.5 - デバッグ/カラーマップ/TopN 強化（2025-08-25）
 
 ### 主要変更

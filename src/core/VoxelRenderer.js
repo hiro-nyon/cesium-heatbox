@@ -1,45 +1,70 @@
 /**
  * Class responsible for rendering 3D voxels.
  * 3Dボクセルの描画を担当するクラス。
- * プロトタイプ実装ベース（シンプル・確実動作重視）
+ * 
+ * v0.1.11-alpha: ADR-0009準拠のアーキテクチャ - Single Responsibility Principle適用
+ * 
+ * **アーキテクチャ概要**:
+ * - **オーケストレーション役**: 各専門クラスを統括し、描画プロセス全体を調整
+ * - **ColorCalculator**: 色計算・カラーマップ処理の専門クラス (Phase 1)
+ * - **VoxelSelector**: ボクセル選択戦略の専門クラス (Phase 2)  
+ * - **AdaptiveController**: 適応制御ロジックの専門クラス (Phase 3)
+ * - **GeometryRenderer**: ジオメトリ作成・エンティティ管理の専門クラス (Phase 4)
+ * - **Phase 5**: 完全オーケストレーション化・性能最適化済み
+ * 
+ * **責任範囲**:
+ * - 描画プロセスの統制・調整
+ * - 各専門クラス間のデータ連携
+ * - 高レベルAPIの提供・後方互換性維持
+ * - エラーハンドリング・ログ管理
  */
 import * as Cesium from 'cesium';
 import { Logger } from '../utils/logger.js';
+import { ColorCalculator } from './color/ColorCalculator.js';
+import { VoxelSelector } from './selection/VoxelSelector.js';
+import { AdaptiveController } from './adaptive/AdaptiveController.js';
+import { GeometryRenderer } from './geometry/GeometryRenderer.js';
 
-// v0.1.5: カラーマップ定義（256段階のLUTテーブル）
-const COLOR_MAPS = {
-  // Viridisカラーマップ（簡略化した16段階）
-  viridis: [
-    [68, 1, 84], [71, 44, 122], [59, 81, 139], [44, 113, 142],
-    [33, 144, 141], [39, 173, 129], [92, 200, 99], [170, 220, 50],
-    [253, 231, 37], [255, 255, 255], [255, 255, 255], [255, 255, 255],
-    [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]
-  ],
-  // Infernoカラーマップ（簡略化した16段階）
-  inferno: [
-    [0, 0, 4], [31, 12, 72], [85, 15, 109], [136, 34, 106],
-    [186, 54, 85], [227, 89, 51], [249, 142, 8], [252, 187, 17],
-    [245, 219, 76], [252, 255, 164], [255, 255, 255], [255, 255, 255],
-    [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]
-  ],
-  // 二極性配色（blue-white-red）
-  diverging: [
-    [0, 0, 255], [32, 64, 255], [64, 128, 255], [96, 160, 255],
-    [128, 192, 255], [160, 224, 255], [192, 240, 255], [224, 248, 255],
-    [255, 255, 255], [255, 248, 224], [255, 240, 192], [255, 224, 160],
-    [255, 192, 128], [255, 160, 96], [255, 128, 64], [255, 64, 32], [255, 0, 0]
-  ]
-};
+// v0.1.11-alpha: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
+// v0.1.11-alpha: VoxelSelector added (ADR-0009 Phase 2)
+// v0.1.11-alpha: AdaptiveController added (ADR-0009 Phase 3)
+// v0.1.11-alpha: GeometryRenderer added (ADR-0009 Phase 4)
 
 /**
- * Class responsible for 3D voxel rendering.
- * 3Dボクセルの描画を担当するクラス。
+ * VoxelRenderer - 3D voxel rendering orchestration class.
+ * 3Dボクセル描画オーケストレーションクラス。
+ * 
+ * v0.1.11-alpha: Refactored for Single Responsibility Principle (ADR-0009).
+ * Now serves as orchestrator delegating specialized tasks to:
+ * ColorCalculator, VoxelSelector, AdaptiveController, and GeometryRenderer.
+ * 
+ * 各専門クラスに特化タスクを委譲するオーケストレーション役に特化。
  */
 export class VoxelRenderer {
   /**
-   * Constructor
-   * @param {Cesium.Viewer} viewer - CesiumJS Viewer / CesiumJS Viewer
+   * Constructor - Initialize VoxelRenderer orchestration system.
+   * VoxelRendererオーケストレーションシステムを初期化します。
+   * 
+   * v0.1.11-alpha: Instantiates specialized classes for delegation:
+   * - VoxelSelector: Voxel selection strategies (density, coverage, hybrid)
+   * - AdaptiveController: Adaptive parameter calculation and preset logic  
+   * - GeometryRenderer: Entity creation and management
+   * - ColorCalculator: Used statically for color computation
+   * 
+   * 各専門クラスをインスタンス化し、委譲体制を構築:
+   * - VoxelSelector: ボクセル選択戦略（密度・カバレッジ・ハイブリッド）
+   * - AdaptiveController: 適応パラメータ計算・プリセットロジック
+   * - GeometryRenderer: エンティティ作成・管理
+   * - ColorCalculator: 色計算用の静的利用
+   * 
+   * @param {Cesium.Viewer} viewer - CesiumJS Viewer instance / CesiumJS Viewerインスタンス
    * @param {Object} options - Rendering options / 描画オプション
+   * @param {Array} [options.minColor=[0,0,255]] - Minimum density color (RGB) / 最小密度色
+   * @param {Array} [options.maxColor=[255,0,0]] - Maximum density color (RGB) / 最大密度色
+   * @param {number} [options.opacity=0.8] - Base opacity / 基本透明度
+   * @param {boolean} [options.showOutline=true] - Show voxel outlines / ボクセル枠線表示
+   * @param {string} [options.voxelSelectionStrategy='density'] - Selection strategy / 選択戦略
+   * @param {boolean} [options.adaptiveOutlines=false] - Enable adaptive outline control / 適応枠線制御
    */
   constructor(viewer, options = {}) {
     this.viewer = viewer;
@@ -62,22 +87,33 @@ export class VoxelRenderer {
       outlineWidthPreset: 'uniform',
       boxOpacityResolver: null,
       outlineOpacityResolver: null,
-      adaptiveParams: {
-        neighborhoodRadius: 50,
-        densityThreshold: 5,
-        cameraDistanceFactor: 1.0,
-        overlapRiskFactor: 0.3
-      },
       ...options
     };
-    this.voxelEntities = [];
+    
+    // v0.1.11-alpha: VoxelSelector instantiation (ADR-0009 Phase 2)
+    this.voxelSelector = new VoxelSelector(this.options);
+    this._selectionStats = null;
+    
+    // v0.1.11-alpha: AdaptiveController instantiation (ADR-0009 Phase 3)
+    this.adaptiveController = new AdaptiveController(this.options);
+    
+    // v0.1.11-alpha: GeometryRenderer instantiation (ADR-0009 Phase 4)
+    this.geometryRenderer = new GeometryRenderer(this.viewer, this.options);
+    
+    // Legacy compatibility: voxelEntities now delegates to GeometryRenderer
+    Object.defineProperty(this, 'voxelEntities', {
+      get: () => this.geometryRenderer.entities,
+      enumerable: true,
+      configurable: true
+    });
     
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
 
   /**
-   * Compute adaptive outline parameters (v0.1.7).
-   * 適応的枠線パラメータを計算 (v0.1.7)。
+   * Compute adaptive outline parameters (v0.1.11-alpha).
+   * 適応的枠線パラメータを計算 (v0.1.11-alpha)。
+   * v0.1.11-alpha: AdaptiveControllerに委譲 (ADR-0009 Phase 3)
    * @param {Object} voxelInfo - Voxel info / ボクセル情報
    * @param {boolean} isTopN - Whether it is TopN / TopNボクセルかどうか
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
@@ -86,99 +122,55 @@ export class VoxelRenderer {
    * @private
    */
   _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics) {
-    if (!this.options.adaptiveOutlines) {
-      return {
-        outlineWidth: null,
-        boxOpacity: null,
-        outlineOpacity: null,
-        shouldUseEmulation: false
-      };
-    }
-
-    const { x, y, z, count } = voxelInfo;
-    const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-      (count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-    
-    // 近働密度を計算
-    let neighborhoodDensity = 0;
-    let neighborCount = 0;
-    const radius = Math.max(1, Math.floor(this.options.adaptiveParams.neighborhoodRadius / 20)); // 簡略化
-    
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -radius; dy <= radius; dy++) {
-        for (let dz = -radius; dz <= radius; dz++) {
-          if (dx === 0 && dy === 0 && dz === 0) continue;
-          const neighborKey = `${x + dx},${y + dy},${z + dz}`;
-          const neighbor = voxelData.get(neighborKey);
-          if (neighbor) {
-            neighborhoodDensity += neighbor.count;
-            neighborCount++;
-          }
-        }
-      }
-    }
-    
-    const avgNeighborhoodDensity = neighborCount > 0 ? neighborhoodDensity / neighborCount : 0;
-    const isDenseArea = avgNeighborhoodDensity > this.options.adaptiveParams.densityThreshold;
-    
-    // カメラ距離は簡略化（実装では固定値を使用）
-    const cameraDistance = 1000; // 固定値、実際の実装ではカメラからの距離を取得
-    const cameraFactor = Math.min(1.0, 1000 / cameraDistance) * this.options.adaptiveParams.cameraDistanceFactor;
-    
-    // 重なりリスクの算出
-    const overlapRisk = isDenseArea ? this.options.adaptiveParams.overlapRiskFactor : 0;
-    
-    // プリセットによる調整
-    let adaptiveWidth, adaptiveBoxOpacity, adaptiveOutlineOpacity;
-    
-    switch (this.options.outlineWidthPreset) {
-      case 'adaptive-density':
-        adaptiveWidth = isDenseArea ? 
-          Math.max(0.5, this.options.outlineWidth * (0.5 + normalizedDensity * 0.5)) :
-          this.options.outlineWidth;
-        adaptiveBoxOpacity = isDenseArea ? this.options.opacity * 0.8 : this.options.opacity;
-        adaptiveOutlineOpacity = isDenseArea ? 0.6 : 1.0;
-        break;
-        
-      case 'topn-focus':
-        adaptiveWidth = isTopN ? 
-          this.options.outlineWidth * (1.5 + normalizedDensity * 0.5) :
-          Math.max(0.5, this.options.outlineWidth * 0.7);
-        adaptiveBoxOpacity = isTopN ? this.options.opacity : this.options.opacity * 0.6;
-        adaptiveOutlineOpacity = isTopN ? 1.0 : 0.4;
-        break;
-        
-      case 'uniform':
-      default:
-        adaptiveWidth = this.options.outlineWidth;
-        adaptiveBoxOpacity = this.options.opacity;
-        adaptiveOutlineOpacity = this.options.outlineOpacity || 1.0;
-        break;
-    }
-    
-    // カメラ距離と重なりリスクで調整
-    adaptiveWidth *= cameraFactor;
-    adaptiveOutlineOpacity = Math.max(0.2, adaptiveOutlineOpacity * (1 - overlapRisk));
-    
-    return {
-      outlineWidth: Math.max(0.5, adaptiveWidth),
-      boxOpacity: Math.max(0.1, Math.min(1.0, adaptiveBoxOpacity)),
-      outlineOpacity: Math.max(0.2, Math.min(1.0, adaptiveOutlineOpacity)),
-      shouldUseEmulation: isDenseArea || (adaptiveWidth > 2 && this.options.outlineRenderMode !== 'standard')
-    };
+    // v0.1.11-alpha: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
+    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options);
   }
 
   /**
-   * Render voxel data (simple implementation).
-   * ボクセルデータを描画（シンプル実装）。
-   * @param {Map} voxelData - Voxel data / ボクセルデータ
-   * @param {Object} bounds - Bounds info / 境界情報
-   * @param {Object} grid - Grid info / グリッド情報
-   * @param {Object} statistics - Statistics / 統計情報
+   * Backward-compatible inset outline decision API.
+   * 後方互換のためのインセット枠線適用判定メソッド。
+   * v0.1.11-alpha: GeometryRenderer に委譲 (ADR-0009 Phase 4)
+   * @param {boolean} isTopN
+   * @returns {boolean}
+   * @private
+   */
+  _shouldApplyInsetOutline(isTopN) {
+    return this.geometryRenderer.shouldApplyInsetOutline(isTopN);
+  }
+
+  /**
+   * Render voxel data - Orchestrated rendering process.
+   * ボクセルデータ描画 - オーケストレーション化された描画プロセス。
+   * 
+   * v0.1.11-alpha: Fully orchestrated implementation (ADR-0009 Phase 5):
+   * 
+   * **Process Flow**:
+   * 1. **GeometryRenderer.clear()** - Clear existing entities
+   * 2. **VoxelSelector.selectVoxels()** - Apply selection strategy if needed
+   * 3. **For each voxel**: Delegate to `_renderSingleVoxel()` for orchestration:
+   *    - **AdaptiveController** - Calculate adaptive parameters
+   *    - **ColorCalculator** - Compute colors based on density  
+   *    - **GeometryRenderer** - Create voxel box, outlines, and polylines
+   * 4. **Return count** - Number of successfully rendered voxels
+   * 
+   * **実行フロー**:
+   * 1. **GeometryRenderer.clear()** - 既存エンティティのクリア
+   * 2. **VoxelSelector.selectVoxels()** - 必要に応じて選択戦略適用
+   * 3. **各ボクセル**: `_renderSingleVoxel()` へのオーケストレーション委譲:
+   *    - **AdaptiveController** - 適応パラメータ計算
+   *    - **ColorCalculator** - 密度ベース色計算
+   *    - **GeometryRenderer** - ボクセルボックス・枠線・ポリライン作成
+   * 4. **カウント返却** - 正常描画されたボクセル数
+   * 
+   * @param {Map} voxelData - Voxel data map / ボクセルデータマップ
+   * @param {Object} bounds - Spatial bounds / 空間境界
+   * @param {Object} grid - Grid configuration / グリッド設定
+   * @param {Object} statistics - Density statistics / 密度統計
    * @returns {number} Number of rendered voxels / 実際に描画されたボクセル数
    */
   render(voxelData, bounds, grid, statistics) {
-    this.clear();
+    // v0.1.11-alpha: GeometryRendererに委譲してエンティティクリア (ADR-0009 Phase 4)
+    this.geometryRenderer.clear();
     Logger.debug('VoxelRenderer.render - Starting render with simplified approach', {
       voxelDataSize: voxelData.size,
       bounds,
@@ -189,7 +181,7 @@ export class VoxelRenderer {
     // バウンディングボックスのデバッグ表示制御（v0.1.5: debug.showBounds対応）
     const shouldShowBounds = this._shouldShowBounds();
     if (shouldShowBounds) {
-      this._renderBoundingBox(bounds);
+      this.geometryRenderer.renderBoundingBox(bounds);
     }
 
     // 表示するボクセルのリスト
@@ -259,262 +251,14 @@ export class VoxelRenderer {
     let renderedCount = 0;
 
     // 実際にボクセルを描画
+    // パフォーマンス最適化: Resolver用の一時オブジェクトを再利用してGCを削減
+    const reusableVoxelCtx = { x: 0, y: 0, z: 0, count: 0 };
+    const reusableWidthResolverParams = { voxel: reusableVoxelCtx, isTopN: false, normalizedDensity: 0, statistics, adaptiveParams: null };
+    const reusableOpacityResolverCtx = { voxel: reusableVoxelCtx, isTopN: false, normalizedDensity: 0, statistics, adaptiveParams: null };
+
     displayVoxels.forEach(({ key, info }) => {
       try {
-        const { x, y, z } = info;
-        
-        // ボクセル中心座標を計算（シンプルな方法）
-        const centerLon = bounds.minLon + (x + 0.5) * (bounds.maxLon - bounds.minLon) / grid.numVoxelsX;
-        const centerLat = bounds.minLat + (y + 0.5) * (bounds.maxLat - bounds.minLat) / grid.numVoxelsY;
-        const centerAlt = bounds.minAlt + (z + 0.5) * (bounds.maxAlt - bounds.minAlt) / grid.numVoxelsZ;
-        
-        const isTopN = topNVoxels.has(key); // v0.1.5: TopNハイライト判定
-        
-        // v0.1.7: 適応的パラメータの計算
-        const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, voxelData, statistics);
-        
-        // 密度に応じた色を計算
-        let color, opacity;
-        
-        if (info.count === 0) {
-          // 空ボクセルの場合
-          color = Cesium.Color.LIGHTGRAY;
-          opacity = this.options.emptyOpacity;
-        } else {
-          // データありボクセルの場合
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          
-          color = this.interpolateColor(normalizedDensity, info.count);
-          
-          // v0.1.7: 透明度resolverの適用（優先順位：resolver > 適応的 > 固定値）
-          if (this.options.boxOpacityResolver && typeof this.options.boxOpacityResolver === 'function') {
-            const resolverCtx = {
-              voxel: { x, y, z, count: info.count },
-              isTopN,
-              normalizedDensity,
-              statistics,
-              adaptiveParams
-            };
-            try {
-              const resolverOpacity = this.options.boxOpacityResolver(resolverCtx);
-              opacity = isNaN(resolverOpacity) ? this.options.opacity : Math.max(0, Math.min(1, resolverOpacity));
-            } catch (e) {
-              Logger.warn('boxOpacityResolver error, using fallback:', e);
-              opacity = adaptiveParams.boxOpacity || this.options.opacity;
-            }
-          } else {
-            opacity = adaptiveParams.boxOpacity || this.options.opacity;
-          }
-          
-          // v0.1.5: TopN強調表示で非TopNボクセルを淡色化（resolver適用後）
-          if (this.options.highlightTopN && !isTopN && !this.options.boxOpacityResolver) {
-            opacity *= (1 - (this.options.highlightStyle?.boostOpacity || 0.2));
-          }
-        }
-        
-        // v0.1.6: ボクセル寸法計算（voxelGap対応）
-        // 各軸のセルサイズ（グリッドが持つ実セルサイズを優先、なければvoxelSizeMetersにフォールバック）
-        let cellSizeX = grid.cellSizeX || (grid.lonRangeMeters ? (grid.lonRangeMeters / grid.numVoxelsX) : grid.voxelSizeMeters);
-        let cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
-        let baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
-
-        // v0.1.6: voxelGap による寸法縮小（枠線重なり対策）
-        if (this.options.voxelGap > 0) {
-          cellSizeX = Math.max(cellSizeX - this.options.voxelGap, cellSizeX * 0.1);
-          cellSizeY = Math.max(cellSizeY - this.options.voxelGap, cellSizeY * 0.1);
-          baseCellSizeZ = Math.max(baseCellSizeZ - this.options.voxelGap, baseCellSizeZ * 0.1);
-        }
-
-        let boxHeight = baseCellSizeZ;
-        if (this.options.heightBased && info.count > 0) {
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          boxHeight = baseCellSizeZ * (0.1 + normalizedDensity * 0.9); // 10%から100%の高さ
-        }
-        
-        // v0.1.7: 動的枠線太さ制御（優先順位：resolver > 適応的 > 固定値）
-        let finalOutlineWidth;
-        if (this.options.outlineWidthResolver && typeof this.options.outlineWidthResolver === 'function') {
-          // outlineWidthResolver による動的制御
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          const resolverParams = {
-            voxel: { x, y, z, count: info.count },
-            isTopN,
-            normalizedDensity,
-            statistics,
-            adaptiveParams
-          };
-          try {
-            finalOutlineWidth = this.options.outlineWidthResolver(resolverParams);
-            if (isNaN(finalOutlineWidth)) {
-              finalOutlineWidth = adaptiveParams.outlineWidth || this.options.outlineWidth;
-            }
-          } catch (e) {
-            Logger.warn('outlineWidthResolver error, using fallback:', e);
-            finalOutlineWidth = adaptiveParams.outlineWidth || this.options.outlineWidth;
-          }
-        } else {
-          // v0.1.7: 適応的パラメータを優先、なければ従来の静的制御
-          if (this.options.adaptiveOutlines && adaptiveParams.outlineWidth !== null) {
-            finalOutlineWidth = adaptiveParams.outlineWidth;
-          } else {
-            finalOutlineWidth = isTopN && this.options.highlightTopN ? 
-              (this.options.highlightStyle?.outlineWidth || this.options.outlineWidth) : 
-              this.options.outlineWidth;
-          }
-        }
-
-        // v0.1.7: 枠線透明度制御（resolver > 適応的 > 固定値）
-        let finalOutlineOpacity;
-        if (this.options.outlineOpacityResolver && typeof this.options.outlineOpacityResolver === 'function') {
-          const normalizedDensity = statistics.maxCount > statistics.minCount ? 
-            (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-          const resolverCtx = {
-            voxel: { x, y, z, count: info.count },
-            isTopN,
-            normalizedDensity,
-            statistics,
-            adaptiveParams
-          };
-          try {
-            const resolverOpacity = this.options.outlineOpacityResolver(resolverCtx);
-            finalOutlineOpacity = isNaN(resolverOpacity) ? (this.options.outlineOpacity ?? 1.0) : Math.max(0, Math.min(1, resolverOpacity));
-          } catch (e) {
-            Logger.warn('outlineOpacityResolver error, using fallback:', e);
-            finalOutlineOpacity = adaptiveParams.outlineOpacity || (this.options.outlineOpacity ?? 1.0);
-          }
-        } else {
-          finalOutlineOpacity = adaptiveParams.outlineOpacity || (this.options.outlineOpacity ?? 1.0);
-        }
-        
-        const outlineColorWithOpacity = color.withAlpha(finalOutlineOpacity);
-
-        // v0.1.7: outlineRenderModeによる表示モード制御
-        let shouldShowStandardOutline = true;
-        let shouldShowInsetOutline = false;
-        let shouldUseEmulationOnly = false;
-        
-        switch (this.options.outlineRenderMode) {
-          case 'standard':
-            shouldShowStandardOutline = this.options.showOutline;
-            shouldShowInsetOutline = this.options.outlineInset > 0;
-            break;
-          case 'inset':
-            shouldShowStandardOutline = false; // インセットモードでは標準枠線を無効化
-            shouldShowInsetOutline = true;
-            break;
-          case 'emulation-only':
-            shouldShowStandardOutline = false;
-            shouldShowInsetOutline = false;
-            shouldUseEmulationOnly = true;
-            break;
-        }
-        
-        // v0.1.7: 適応的エミュレーション判定を組み込み
-        let emulateThickForThis = shouldUseEmulationOnly;
-        if (!shouldUseEmulationOnly) {
-          // 従来のoutlineEmulationオプションを尊重
-          if (this.options.outlineEmulation === 'topn') {
-            emulateThickForThis = isTopN && (finalOutlineWidth || 1) > 1;
-          } else if (this.options.outlineEmulation === 'non-topn') {
-            emulateThickForThis = !isTopN && (finalOutlineWidth || 1) > 1;
-          } else if (this.options.outlineEmulation === 'all') {
-            emulateThickForThis = (finalOutlineWidth || 1) > 1;
-          } else if (this.options.adaptiveOutlines && adaptiveParams.shouldUseEmulation) {
-            emulateThickForThis = true;
-          }
-        }
-        
-        // エンティティの設定
-        const entityConfig = {
-          position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
-          box: {
-            dimensions: new Cesium.Cartesian3(
-              cellSizeX,
-              cellSizeY,
-              boxHeight
-            ),
-            outline: shouldShowStandardOutline && !emulateThickForThis,
-            outlineColor: outlineColorWithOpacity,
-            outlineWidth: Math.max(finalOutlineWidth || 1, 0) // 負値防止
-          },
-          properties: {
-            type: 'voxel',
-            key: key,
-            count: info.count,
-            x: x,
-            y: y,
-            z: z
-          },
-          description: this.createVoxelDescription(info, key)
-        };
-
-        // wireframeOnlyモードの場合は透明、そうでなければ通常の材質
-        if (this.options.wireframeOnly) {
-          entityConfig.box.material = Cesium.Color.TRANSPARENT;
-          entityConfig.box.fill = false;
-        } else {
-          entityConfig.box.material = color.withAlpha(opacity);
-          entityConfig.box.fill = true;
-        }
-        
-        // エンティティを作成
-        const entity = this.viewer.entities.add(entityConfig);
-        
-        this.voxelEntities.push(entity);
-
-        // v0.1.7: インセット枠線の実装（outlineRenderModeに応じて制御）
-        if (shouldShowInsetOutline && this._shouldApplyInsetOutline(isTopN)) {
-          try {
-            const insetAmount = this.options.outlineInset > 0 ? this.options.outlineInset : 1; // emulation-onlyでは最低1m
-            this._createInsetOutline(
-              centerLon, centerLat, centerAlt,
-              cellSizeX, cellSizeY, boxHeight,
-              outlineColorWithOpacity, Math.max(finalOutlineWidth || 1, 1),
-              key, insetAmount
-            );
-          } catch (e) {
-            Logger.warn('Failed to create inset outline:', e);
-          }
-        }
-        
-        // 太線エミュレーション（条件に応じてポリラインでエッジを追加）
-        // 隣接枠線の被りを避けるため、外縁ではなく“インセット後”の寸法でエッジを描く
-        if (emulateThickForThis) {
-          try {
-            const centerCart = entity.position.getValue(Cesium.JulianDate.now());
-
-            const maxInsetX = cellSizeX * 0.2;
-            const maxInsetY = cellSizeY * 0.2;
-            const maxInsetZ = boxHeight * 0.2;
-            const baseInset = (this.options.outlineInset && this.options.outlineInset > 0) ? this.options.outlineInset : 0;
-            const autoInsetX = cellSizeX * 0.05;
-            const autoInsetY = cellSizeY * 0.05;
-            const autoInsetZ = boxHeight * 0.05;
-            const effInsetX = Math.min(baseInset > 0 ? baseInset : autoInsetX, maxInsetX);
-            const effInsetY = Math.min(baseInset > 0 ? baseInset : autoInsetY, maxInsetY);
-            const effInsetZ = Math.min(baseInset > 0 ? baseInset : autoInsetZ, maxInsetZ);
-
-            // 外縁とインセットの“中間”に相当する寸法（片側ぶんだけ縮める）
-            const midSizeX = Math.max(cellSizeX - effInsetX, cellSizeX * 0.1);
-            const midSizeY = Math.max(cellSizeY - effInsetY, cellSizeY * 0.1);
-            const midSizeZ = Math.max(boxHeight - effInsetZ, boxHeight * 0.1);
-
-            this._addEdgePolylines(
-              centerCart,
-              midSizeX,
-              midSizeY,
-              midSizeZ,
-              outlineColorWithOpacity,
-              Math.max(finalOutlineWidth, 1)
-            );
-          } catch (e) {
-            Logger.warn('Failed to add emulated thick outline polylines:', e);
-          }
-        }
-        renderedCount++;
+        renderedCount += this._renderSingleVoxel(key, info, bounds, grid, statistics, topNVoxels, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx);
       } catch (error) {
         Logger.warn('Error rendering voxel:', error);
       }
@@ -526,224 +270,350 @@ export class VoxelRenderer {
     return renderedCount;
   }
 
+  // v0.1.11-alpha: _renderBoundingBox/_addEdgePolylines moved to GeometryRenderer (ADR-0009 Phase 4)
+
   /**
-   * バウンディングボックスを描画（デバッグ用）
-   * @param {Object} bounds - 境界情報
+   * Render a single voxel with all visual configurations.
+   * 単一ボクセルを全ての視覚設定で描画します。
+   * v0.1.11-alpha: Phase5 オーケストレーション最適化 (ADR-0009 Phase 5)
+   * @param {string} key - Voxel key / ボクセルキー
+   * @param {Object} info - Voxel info / ボクセル情報
+   * @param {Object} bounds - Bounds / 境界
+   * @param {Object} grid - Grid / グリッド
+   * @param {Object} statistics - Statistics / 統計
+   * @param {Set} topNVoxels - TopN voxel keys / TopNボクセルキー
+   * @param {Object} reusableVoxelCtx - Reusable context for performance / 再利用コンテキスト
+   * @param {Object} reusableWidthResolverParams - Reusable width resolver params / 再利用太さResolver
+   * @param {Object} reusableOpacityResolverCtx - Reusable opacity resolver context / 再利用透明度Resolver
+   * @returns {number} 1 if rendered successfully, 0 if skipped / 描画成功時1、スキップ時0
    * @private
    */
-  _renderBoundingBox(bounds) {
-    if (!bounds) return;
-
-    try {
-      // 中心点
-      const centerLon = (bounds.minLon + bounds.maxLon) / 2;
-      const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-      const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
-      
-      // サイズ計算（概算）
-      const widthMeters = (bounds.maxLon - bounds.minLon) * 111000 * Math.cos(centerLat * Math.PI / 180);
-      const depthMeters = (bounds.maxLat - bounds.minLat) * 111000;
-      const heightMeters = bounds.maxAlt - bounds.minAlt;
-      
-      // 境界ボックスの作成
-      const boundingBox = this.viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
-        box: {
-          dimensions: new Cesium.Cartesian3(widthMeters, depthMeters, heightMeters),
-          material: Cesium.Color.YELLOW.withAlpha(0.1),
-          outline: true,
-          outlineColor: Cesium.Color.YELLOW.withAlpha(0.3),
-          outlineWidth: 2
-        },
-        description: `バウンディングボックス<br>サイズ: ${widthMeters.toFixed(1)} x ${depthMeters.toFixed(1)} x ${heightMeters.toFixed(1)} m`
-      });
-      
-      this.voxelEntities.push(boundingBox);
-      
-      Logger.debug('Debug bounding box added:', {
-        center: { lon: centerLon, lat: centerLat, alt: centerAlt },
-        size: { width: widthMeters, depth: depthMeters, height: heightMeters }
-      });
-      
-    } catch (error) {
-      Logger.warn('Failed to render bounding box:', error);
+  _renderSingleVoxel(key, info, bounds, grid, statistics, topNVoxels, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx) {
+    const isTopN = topNVoxels.has(key);
+    
+    // Calculate voxel rendering parameters
+    const renderParams = this._calculateVoxelRenderingParams(info, bounds, grid, statistics, isTopN, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx);
+    
+    // 安全性チェック - レンダリングパラメータが無効な場合はスキップ
+    if (!renderParams) {
+      return 0; // Skipped rendering due to invalid parameters
     }
+    
+    // Delegate to GeometryRenderer for actual rendering
+    this._delegateVoxelRendering(key, renderParams);
+    
+    return 1; // Successfully rendered
   }
 
   /**
-   * ボックスのエッジをポリラインで描画（太線エミュレーション）
-   * @param {Cesium.Cartesian3} centerCart - ボックス中心
-   * @param {number} sx - X寸法（m）
-   * @param {number} sy - Y寸法（m）
-   * @param {number} sz - Z寸法（m）
-   * @param {Cesium.Color} color - 線色
-   * @param {number} width - 線幅（px）
+   * Calculate all rendering parameters for a voxel.
+   * ボクセルの全描画パラメータを計算します。
+   * @param {Object} info - Voxel info / ボクセル情報
+   * @param {Object} bounds - Bounds / 境界
+   * @param {Object} grid - Grid / グリッド
+   * @param {Object} statistics - Statistics / 統計
+   * @param {boolean} isTopN - Is TopN voxel / TopNボクセルか
+   * @param {Object} reusableVoxelCtx - Reusable context / 再利用コンテキスト
+   * @param {Object} reusableWidthResolverParams - Width resolver params / 太さResolver
+   * @param {Object} reusableOpacityResolverCtx - Opacity resolver context / 透明度Resolver
+   * @returns {Object} Complete rendering parameters / 完全な描画パラメータ
    * @private
    */
-  _addEdgePolylines(centerCart, sx, sy, sz, color, width) {
-    try {
-      const halfX = sx / 2, halfY = sy / 2, halfZ = sz / 2;
-      const enu = Cesium.Transforms.eastNorthUpToFixedFrame(centerCart);
-      const toWorld = (dx, dy, dz) => {
-        const local = new Cesium.Cartesian3(dx, dy, dz);
-        return Cesium.Matrix4.multiplyByPoint(enu, local, new Cesium.Cartesian3());
-      };
-      const C = [
-        toWorld(-halfX, -halfY, -halfZ),
-        toWorld( halfX, -halfY, -halfZ),
-        toWorld( halfX,  halfY, -halfZ),
-        toWorld(-halfX,  halfY, -halfZ),
-        toWorld(-halfX, -halfY,  halfZ),
-        toWorld( halfX, -halfY,  halfZ),
-        toWorld( halfX,  halfY,  halfZ),
-        toWorld(-halfX,  halfY,  halfZ)
-      ];
-      const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-      edges.forEach(([i, j]) => {
-        const poly = this.viewer.entities.add({
-          polyline: {
-            positions: [C[i], C[j]],
-            width: width,
-            material: color,
-            arcType: Cesium.ArcType.NONE
-          }
+  _calculateVoxelRenderingParams(info, bounds, grid, statistics, isTopN, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx) {
+    // 引数の安全性チェック
+    if (!info || !bounds || !grid || !statistics) {
+      return null;
+    }
+    
+    const { x, y, z } = info;
+    
+    // Position calculation
+    const centerLon = bounds.minLon + (x + 0.5) * (bounds.maxLon - bounds.minLon) / grid.numVoxelsX;
+    const centerLat = bounds.minLat + (y + 0.5) * (bounds.maxLat - bounds.minLat) / grid.numVoxelsY;
+    const centerAlt = bounds.minAlt + (z + 0.5) * (bounds.maxAlt - bounds.minAlt) / grid.numVoxelsZ;
+    
+    // Normalized density
+    const normalizedDensity = statistics.maxCount > statistics.minCount ? 
+      (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
+    
+    // Adaptive parameters
+    const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, null, statistics);
+    
+    // Color and opacity
+    const { color, opacity } = this._calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx);
+    
+    // Dimensions
+    const { cellSizeX, cellSizeY, boxHeight } = this._calculateDimensions(grid, normalizedDensity);
+    
+    // Outline properties
+    const outlineProps = this._calculateOutlineProperties(info, isTopN, normalizedDensity, adaptiveParams, statistics, color, reusableVoxelCtx, reusableWidthResolverParams);
+    
+    return {
+      centerLon, centerLat, centerAlt,
+      cellSizeX, cellSizeY, boxHeight,
+      color, opacity,
+      ...outlineProps,
+      voxelInfo: info,
+      isTopN,
+      adaptiveParams
+    };
+  }
+
+  /**
+   * Calculate color and opacity for a voxel.
+   * ボクセルの色と透明度を計算します。
+   * @param {Object} info - Voxel info / ボクセル情報
+   * @param {number} normalizedDensity - Normalized density / 正規化密度
+   * @param {boolean} isTopN - Is TopN voxel / TopNボクセルか
+   * @param {Object} adaptiveParams - Adaptive params / 適応パラメータ
+   * @param {Object} statistics - Statistics / 統計
+   * @param {Object} reusableVoxelCtx - Reusable context / 再利用コンテキスト
+   * @param {Object} reusableOpacityResolverCtx - Opacity resolver context / 透明度Resolverコンテキスト
+   * @returns {Object} Color and opacity / 色と透明度
+   * @private
+   */
+  _calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx) {
+    let color, opacity;
+    
+    if (info.count === 0) {
+      color = Cesium.Color.LIGHTGRAY;
+      opacity = this.options.emptyOpacity;
+    } else {
+      color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
+      
+      // Opacity calculation with resolver support
+      if (this.options.boxOpacityResolver && typeof this.options.boxOpacityResolver === 'function') {
+        reusableVoxelCtx.x = info.x; reusableVoxelCtx.y = info.y; reusableVoxelCtx.z = info.z; reusableVoxelCtx.count = info.count;
+        reusableOpacityResolverCtx.isTopN = isTopN;
+        reusableOpacityResolverCtx.normalizedDensity = normalizedDensity;
+        reusableOpacityResolverCtx.adaptiveParams = adaptiveParams;
+        try {
+          const resolverOpacity = this.options.boxOpacityResolver(reusableOpacityResolverCtx);
+          opacity = isNaN(resolverOpacity) ? this.options.opacity : Math.max(0, Math.min(1, resolverOpacity));
+        } catch (e) {
+          Logger.warn('boxOpacityResolver error, using fallback:', e);
+          opacity = adaptiveParams.boxOpacity || this.options.opacity;
+        }
+      } else {
+        opacity = adaptiveParams.boxOpacity || this.options.opacity;
+      }
+      
+      // TopN highlight adjustment
+      if (this.options.highlightTopN && !isTopN && !this.options.boxOpacityResolver) {
+        opacity *= (1 - (this.options.highlightStyle?.boostOpacity || 0.2));
+      }
+    }
+    
+    return { color, opacity };
+  }
+
+  /**
+   * Calculate voxel dimensions with gap support.
+   * voxelGap対応のボクセル寸法を計算します。
+   * @param {Object} grid - Grid info / グリッド情報
+   * @param {number} normalizedDensity - Normalized density / 正規化密度
+   * @returns {Object} Dimensions / 寸法
+   * @private
+   */
+  _calculateDimensions(grid, normalizedDensity) {
+    let cellSizeX = grid.cellSizeX || (grid.lonRangeMeters ? (grid.lonRangeMeters / grid.numVoxelsX) : grid.voxelSizeMeters);
+    let cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
+    let baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
+
+    // Apply voxel gap
+    if (this.options.voxelGap > 0) {
+      cellSizeX = Math.max(cellSizeX - this.options.voxelGap, cellSizeX * 0.1);
+      cellSizeY = Math.max(cellSizeY - this.options.voxelGap, cellSizeY * 0.1);
+      baseCellSizeZ = Math.max(baseCellSizeZ - this.options.voxelGap, baseCellSizeZ * 0.1);
+    }
+
+    // Height-based scaling
+    let boxHeight = baseCellSizeZ;
+    if (this.options.heightBased) {
+      boxHeight = baseCellSizeZ * (0.1 + normalizedDensity * 0.9);
+    }
+    
+    return { cellSizeX, cellSizeY, boxHeight };
+  }
+
+  /**
+   * Calculate outline properties with resolver support.
+   * Resolver対応の枠線プロパティを計算します。
+   * @param {Object} info - Voxel info / ボクセル情報
+   * @param {boolean} isTopN - Is TopN voxel / TopNボクセルか
+   * @param {number} normalizedDensity - Normalized density / 正規化密度
+   * @param {Object} adaptiveParams - Adaptive params / 適応パラメータ
+   * @param {Object} statistics - Statistics / 統計
+   * @param {Cesium.Color} color - Base color / ベース色
+   * @param {Object} reusableVoxelCtx - Reusable context / 再利用コンテキスト
+   * @param {Object} reusableWidthResolverParams - Width resolver params / 太さResolverパラメータ
+   * @returns {Object} Outline properties / 枠線プロパティ
+   * @private
+   */
+  _calculateOutlineProperties(info, isTopN, normalizedDensity, adaptiveParams, statistics, color, reusableVoxelCtx, reusableWidthResolverParams) {
+    // Outline width calculation
+    let finalOutlineWidth;
+    if (this.options.outlineWidthResolver && typeof this.options.outlineWidthResolver === 'function') {
+      reusableVoxelCtx.x = info.x; reusableVoxelCtx.y = info.y; reusableVoxelCtx.z = info.z; reusableVoxelCtx.count = info.count;
+      reusableWidthResolverParams.isTopN = isTopN;
+      reusableWidthResolverParams.normalizedDensity = normalizedDensity;
+      reusableWidthResolverParams.adaptiveParams = adaptiveParams;
+      try {
+        finalOutlineWidth = this.options.outlineWidthResolver(reusableWidthResolverParams);
+        if (isNaN(finalOutlineWidth)) {
+          finalOutlineWidth = adaptiveParams.outlineWidth || this.options.outlineWidth;
+        }
+      } catch (e) {
+        Logger.warn('outlineWidthResolver error, using fallback:', e);
+        finalOutlineWidth = adaptiveParams.outlineWidth || this.options.outlineWidth;
+      }
+    } else {
+      if (this.options.adaptiveOutlines && adaptiveParams.outlineWidth !== null) {
+        finalOutlineWidth = adaptiveParams.outlineWidth;
+      } else {
+        finalOutlineWidth = isTopN && this.options.highlightTopN ? 
+          (this.options.highlightStyle?.outlineWidth || this.options.outlineWidth) : 
+          this.options.outlineWidth;
+      }
+    }
+
+    // Outline opacity
+    const finalOutlineOpacity = adaptiveParams.outlineOpacity || (this.options.outlineOpacity ?? 1.0);
+    const outlineColorWithOpacity = color.withAlpha(finalOutlineOpacity);
+
+    // Render mode configuration
+    const renderModeConfig = this._determineRenderModeConfig();
+
+    // Emulation logic
+    let emulateThickForThis = renderModeConfig.shouldUseEmulationOnly;
+    if (!renderModeConfig.shouldUseEmulationOnly) {
+      if (this.options.outlineEmulation === 'topn') {
+        emulateThickForThis = isTopN && (finalOutlineWidth || 1) > 1;
+      } else if (this.options.outlineEmulation === 'non-topn') {
+        emulateThickForThis = !isTopN && (finalOutlineWidth || 1) > 1;
+      } else if (this.options.outlineEmulation === 'all') {
+        emulateThickForThis = (finalOutlineWidth || 1) > 1;
+      } else if (this.options.adaptiveOutlines && adaptiveParams.shouldUseEmulation) {
+        emulateThickForThis = true;
+      }
+    }
+
+    return {
+      shouldShowOutline: renderModeConfig.shouldShowStandardOutline,
+      outlineColor: outlineColorWithOpacity,
+      outlineWidth: finalOutlineWidth || 1,
+      shouldShowInsetOutline: renderModeConfig.shouldShowInsetOutline,
+      emulateThick: emulateThickForThis
+    };
+  }
+
+  /**
+   * Determine render mode configuration.
+   * レンダーモード設定を決定します。
+   * @returns {Object} Render mode config / レンダーモード設定
+   * @private
+   */
+  _determineRenderModeConfig() {
+    let shouldShowStandardOutline = true;
+    let shouldShowInsetOutline = false;
+    let shouldUseEmulationOnly = false;
+    
+    switch (this.options.outlineRenderMode) {
+      case 'standard':
+        shouldShowStandardOutline = this.options.showOutline;
+        shouldShowInsetOutline = this.options.outlineInset > 0;
+        break;
+      case 'inset':
+        shouldShowStandardOutline = false;
+        shouldShowInsetOutline = true;
+        break;
+      case 'emulation-only':
+        shouldShowStandardOutline = false;
+        shouldShowInsetOutline = false;
+        shouldUseEmulationOnly = true;
+        break;
+    }
+    
+    return { shouldShowStandardOutline, shouldShowInsetOutline, shouldUseEmulationOnly };
+  }
+
+  /**
+   * Delegate voxel rendering to GeometryRenderer.
+   * ボクセル描画をGeometryRendererに委譲します。
+   * @param {string} key - Voxel key / ボクセルキー
+   * @param {Object} params - Rendering parameters / 描画パラメータ
+   * @private
+   */
+  _delegateVoxelRendering(key, params) {
+    // Main voxel box
+    this.geometryRenderer.createVoxelBox({
+      centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
+      cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
+      color: params.color, opacity: params.opacity,
+      shouldShowOutline: params.shouldShowOutline,
+      outlineColor: params.outlineColor,
+      outlineWidth: params.outlineWidth,
+      voxelInfo: params.voxelInfo,
+      voxelKey: key,
+      emulateThick: params.emulateThick
+    });
+
+    // Inset outline
+    if (params.shouldShowInsetOutline && this.geometryRenderer.shouldApplyInsetOutline(params.isTopN)) {
+      try {
+        const insetAmount = this.options.outlineInset > 0 ? this.options.outlineInset : 1;
+        this.geometryRenderer.createInsetOutline({
+          centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
+          baseSizeX: params.cellSizeX, baseSizeY: params.cellSizeY, baseSizeZ: params.boxHeight,
+          outlineColor: params.outlineColor,
+          outlineWidth: Math.max(params.outlineWidth, 1),
+          voxelKey: key,
+          insetAmount
         });
-        this.voxelEntities.push(poly);
-      });
-    } catch (error) {
-      Logger.warn('Edge polyline creation failed:', error);
+      } catch (e) {
+        Logger.warn('Failed to create inset outline:', e);
+      }
+    }
+    
+    // Edge polylines for thick emulation
+    if (params.emulateThick) {
+      try {
+        this.geometryRenderer.createEdgePolylines({
+          centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
+          cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
+          outlineColor: params.outlineColor,
+          outlineWidth: Math.max(params.outlineWidth, 1),
+          voxelKey: key
+        });
+      } catch (e) {
+        Logger.warn('Failed to add emulated thick outline polylines:', e);
+      }
     }
   }
 
   /**
    * Interpolate color based on density (v0.1.5: color maps supported).
    * 密度に基づいて色を補間（v0.1.5: カラーマップ対応）。
+   * v0.1.11-alpha: ColorCalculatorに委譲 (ADR-0009 Phase 1)
    * @param {number} normalizedDensity - Normalized density (0-1) / 正規化された密度 (0-1)
    * @param {number} [rawValue] - Raw value for diverging scheme / 生値（二極性配色用）
    * @returns {Cesium.Color} Calculated color / 計算された色
    */
   interpolateColor(normalizedDensity, rawValue = null) {
-    // v0.1.5: 二極性配色対応（pivot<=0 の場合は安全にフォールバック）
-    if (this.options.diverging && rawValue !== null) {
-      const pivot = typeof this.options.divergingPivot === 'number' ? this.options.divergingPivot : 0;
-      if (pivot > 0) {
-        return this._interpolateDivergingColor(rawValue);
-      }
-      // pivot が 0 以下の場合は従来の補間にフォールバック
-    }
-    
-    // v0.1.5: カラーマップ対応
-    if (this.options.colorMap && this.options.colorMap !== 'custom') {
-      return this._interpolateFromColorMap(normalizedDensity, this.options.colorMap);
-    }
-    
-    // 従来のmin/max色補間（後方互換）
-    const [minR, minG, minB] = this.options.minColor;
-    const [maxR, maxG, maxB] = this.options.maxColor;
-    
-    const r = Math.round(minR + (maxR - minR) * normalizedDensity);
-    const g = Math.round(minG + (maxG - minG) * normalizedDensity);
-    const b = Math.round(minB + (maxB - minB) * normalizedDensity);
-    
-    return Cesium.Color.fromBytes(r, g, b);
+    // v0.1.11-alpha: 新しいColorCalculatorに委譲
+    return ColorCalculator.calculateColor(normalizedDensity, rawValue, this.options);
   }
   
-  /**
-   * Interpolate color from a color map.
-   * カラーマップから色を補間します。
-   * @param {number} normalizedValue - Normalized value (0-1) / 正規化された値 (0-1)
-   * @param {string} colorMapName - Color map name / カラーマップ名
-   * @returns {Cesium.Color} Calculated color / 計算された色
-   * @private
-   */
-  _interpolateFromColorMap(normalizedValue, colorMapName) {
-    const colorMap = COLOR_MAPS[colorMapName];
-    if (!colorMap) {
-      Logger.warn(`Unknown color map: ${colorMapName}. Falling back to custom.`);
-      return this.interpolateColor(normalizedValue);
-    }
-    
-    // マップインデックスを計算
-    const scaledValue = normalizedValue * (colorMap.length - 1);
-    const lowerIndex = Math.floor(scaledValue);
-    const upperIndex = Math.min(lowerIndex + 1, colorMap.length - 1);
-    const fraction = scaledValue - lowerIndex;
-    
-    // 線形補間
-    const [r1, g1, b1] = colorMap[lowerIndex];
-    const [r2, g2, b2] = colorMap[upperIndex];
-    
-    const r = Math.round(r1 + (r2 - r1) * fraction);
-    const g = Math.round(g1 + (g2 - g1) * fraction);
-    const b = Math.round(b1 + (b2 - b1) * fraction);
-    
-    return Cesium.Color.fromBytes(r, g, b);
-  }
-  
-  /**
-   * Interpolate diverging (blue-white-red) color.
-   * 二極性配色（blue-white-red）で色を補間します。
-   * @param {number} rawValue - Raw value / 生値
-   * @returns {Cesium.Color} Calculated color / 計算された色
-   * @private
-   */
-  _interpolateDivergingColor(rawValue) {
-    const pivot = this.options.divergingPivot || 0;
-    
-    // ピボットからの偏差を正規化
-    let normalizedValue;
-    if (rawValue <= pivot) {
-      // 青い側 (0 to 0.5)
-      normalizedValue = 0.5 * (rawValue / pivot);
-      normalizedValue = Math.max(0, Math.min(0.5, normalizedValue));
-    } else {
-      // 赤い側 (0.5 to 1)
-      normalizedValue = 0.5 + 0.5 * ((rawValue - pivot) / pivot);
-      normalizedValue = Math.max(0.5, Math.min(1, normalizedValue));
-    }
-    
-    return this._interpolateFromColorMap(normalizedValue, 'diverging');
-  }
+  // v0.1.11-alpha: _interpolateFromColorMap and _interpolateDivergingColor methods 
+  // moved to ColorCalculator (ADR-0009 Phase 1)
 
-  /**
-   * Create description HTML for a voxel.
-   * ボクセルの説明文を生成します。
-   * @param {Object} voxelInfo - Voxel info / ボクセル情報
-   * @param {string} voxelKey - Voxel key / ボクセルキー
-   * @returns {string} HTML description / HTML形式の説明文
-   */
-  createVoxelDescription(voxelInfo, voxelKey) {
-    return `
-      <div style="padding: 10px; font-family: Arial, sans-serif;">
-        <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
-        <table style="width: 100%;">
-          <tr><td><b>エンティティ数:</b></td><td>${voxelInfo.count}</td></tr>
-          <tr><td><b>ID:</b></td><td>${voxelKey}</td></tr>
-        </table>
-      </div>
-    `;
-  }
 
   /**
    * 描画されたエンティティを全てクリア
+   * v0.1.11-alpha: GeometryRendererに委譲 (ADR-0009 Phase 4)
    */
   clear() {
-    Logger.debug('VoxelRenderer.clear - Removing', this.voxelEntities.length, 'entities');
-    
-    this.voxelEntities.forEach(entity => {
-      try {
-        // isDestroyedのチェックを安全に行う
-        const isDestroyed = typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
-        
-        if (entity && !isDestroyed) {
-          this.viewer.entities.remove(entity);
-        }
-      } catch (error) {
-        Logger.warn('Entity removal error:', error);
-      }
-    });
-    
-    this.voxelEntities = [];
+    this.geometryRenderer.clear();
   }
 
   /**
@@ -769,250 +639,22 @@ export class VoxelRenderer {
     return false;
   }
 
-  /**
-   * インセット枠線を適用すべきかどうかを判定（ADR-0004）
-   * @param {boolean} isTopN - TopNボクセルかどうか
-   * @returns {boolean} インセット枠線を適用する場合はtrue
-   * @private
-   */
-  _shouldApplyInsetOutline(isTopN) {
-    const mode = this.options.outlineInsetMode || 'all';
-    switch (mode) {
-      case 'topn':
-        return isTopN;
-      case 'all':
-      default:
-        return true;
-    }
-  }
 
-  /**
-   * インセット枠線用のセカンダリBoxエンティティを作成（ADR-0004）
-   * @param {number} centerLon - 中心経度
-   * @param {number} centerLat - 中心緯度  
-   * @param {number} centerAlt - 中心高度
-   * @param {number} baseSizeX - 基本サイズX
-   * @param {number} baseSizeY - 基本サイズY
-   * @param {number} baseSizeZ - 基本サイズZ
-   * @param {Cesium.Color} outlineColor - 枠線色
-   * @param {number} outlineWidth - 枠線太さ
-   * @param {string} voxelKey - ボクセルキー
-   * @param {number} [insetAmount] - v0.1.7: インセット量のオーバーライド
-   * @private
-   */
-  _createInsetOutline(centerLon, centerLat, centerAlt, baseSizeX, baseSizeY, baseSizeZ, outlineColor, outlineWidth, voxelKey, insetAmount = null) {
-    // インセット距離の適用（ADR-0004の境界条件：両側合計で各軸寸法の最大40%まで＝片側20%）
-    // 片側20%までに制限することで、最終寸法は元の60%以上を保証する
-    const maxInsetX = baseSizeX * 0.2;
-    const maxInsetY = baseSizeY * 0.2;
-    const maxInsetZ = baseSizeZ * 0.2;
-    
-    const baseInset = insetAmount !== null ? insetAmount : this.options.outlineInset;
-    const effectiveInsetX = Math.min(baseInset, maxInsetX);
-    const effectiveInsetY = Math.min(baseInset, maxInsetY);  
-    const effectiveInsetZ = Math.min(baseInset, maxInsetZ);
-    
-    // インセット後の寸法計算（各軸から2倍のインセットを引く）
-    const insetSizeX = Math.max(baseSizeX - (effectiveInsetX * 2), baseSizeX * 0.1);
-    const insetSizeY = Math.max(baseSizeY - (effectiveInsetY * 2), baseSizeY * 0.1);
-    const insetSizeZ = Math.max(baseSizeZ - (effectiveInsetZ * 2), baseSizeZ * 0.1);
-    
-    // セカンダリBoxエンティティの設定（枠線のみ、塗りなし）
-    const insetEntity = this.viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
-      box: {
-        dimensions: new Cesium.Cartesian3(insetSizeX, insetSizeY, insetSizeZ),
-        fill: false,
-        outline: true,
-        outlineColor: outlineColor,
-        outlineWidth: Math.max(outlineWidth || 1, 0)
-      },
-      properties: {
-        type: 'voxel-inset-outline',
-        parentKey: voxelKey,
-        insetSize: { x: insetSizeX, y: insetSizeY, z: insetSizeZ }
-      }
-    });
-    
-    this.voxelEntities.push(insetEntity);
-    
-    // 枠線の厚み部分を視覚化（WebGL 1px制限の回避）
-    if (this.options.enableThickFrames && (effectiveInsetX > 0.1 || effectiveInsetY > 0.1 || effectiveInsetZ > 0.1)) {
-      this._createThickOutlineFrames(
-        centerLon, centerLat, centerAlt,
-        baseSizeX, baseSizeY, baseSizeZ,
-        insetSizeX, insetSizeY, insetSizeZ,
-        outlineColor, voxelKey
-      );
-    }
-    
-    Logger.debug(`Inset outline created for voxel ${voxelKey}:`, {
-      originalSize: { x: baseSizeX, y: baseSizeY, z: baseSizeZ },
-      insetSize: { x: insetSizeX, y: insetSizeY, z: insetSizeZ },
-      effectiveInset: { x: effectiveInsetX, y: effectiveInsetY, z: effectiveInsetZ }
-    });
-  }
+  // v0.1.11-alpha: _createInsetOutline moved to GeometryRenderer (ADR-0009 Phase 4)
 
-  /**
-   * 枠線の厚み部分を視覚化するフレーム構造を作成
-   * メインボックスとインセットボックスの間を12個のボックスで埋める
-   * @param {number} centerLon - 中心経度
-   * @param {number} centerLat - 中心緯度
-   * @param {number} centerAlt - 中心高度
-   * @param {number} outerX - 外側サイズX
-   * @param {number} outerY - 外側サイズY
-   * @param {number} outerZ - 外側サイズZ
-   * @param {number} innerX - 内側サイズX
-   * @param {number} innerY - 内側サイズY
-   * @param {number} innerZ - 内側サイズZ
-   * @param {Cesium.Color} frameColor - フレーム色
-   * @param {string} voxelKey - ボクセルキー
-   * @private
-   */
-  _createThickOutlineFrames(centerLon, centerLat, centerAlt, outerX, outerY, outerZ, innerX, innerY, innerZ, frameColor, voxelKey) {
-    // フレーム厚み計算（外側と内側の差を2で割ったもの）
-    const frameThickX = (outerX - innerX) / 2;
-    const frameThickY = (outerY - innerY) / 2;
-    const frameThickZ = (outerZ - innerZ) / 2;
-    
-    // 境界計算：各軸での内側・外側の境界
-    const outerBoundX = outerX / 2;    // 外側境界（中心からの距離）
-    const outerBoundY = outerY / 2;
-    const outerBoundZ = outerZ / 2;
-    const innerBoundX = innerX / 2;    // 内側境界（中心からの距離）
-    const innerBoundY = innerY / 2;
-    const innerBoundZ = innerZ / 2;
-    
-    Logger.debug(`Frame bounds for ${voxelKey}:`, {
-      frameThick: { x: frameThickX, y: frameThickY, z: frameThickZ },
-      outerBound: { x: outerBoundX, y: outerBoundY, z: outerBoundZ },
-      innerBound: { x: innerBoundX, y: innerBoundY, z: innerBoundZ }
-    });
-    
-    // 12個のフレームボックスを配置（外側と内側の境界間に正確にフィット）
-    const frames = [
-      // 上面の枠線（4つ）- Z軸上側
-      { 
-        pos: [0, (outerBoundY + innerBoundY) / 2, outerBoundZ - frameThickZ / 2], 
-        size: [innerX, frameThickY, frameThickZ], 
-        name: 'top-back' 
-      },
-      { 
-        pos: [0, -(outerBoundY + innerBoundY) / 2, outerBoundZ - frameThickZ / 2], 
-        size: [innerX, frameThickY, frameThickZ], 
-        name: 'top-front' 
-      },
-      { 
-        pos: [(outerBoundX + innerBoundX) / 2, 0, outerBoundZ - frameThickZ / 2], 
-        size: [frameThickX, outerY, frameThickZ], 
-        name: 'top-right' 
-      },
-      { 
-        pos: [-(outerBoundX + innerBoundX) / 2, 0, outerBoundZ - frameThickZ / 2], 
-        size: [frameThickX, outerY, frameThickZ], 
-        name: 'top-left' 
-      },
-      
-      // 下面の枠線（4つ）- Z軸下側
-      { 
-        pos: [0, (outerBoundY + innerBoundY) / 2, -outerBoundZ + frameThickZ / 2], 
-        size: [innerX, frameThickY, frameThickZ], 
-        name: 'bottom-back' 
-      },
-      { 
-        pos: [0, -(outerBoundY + innerBoundY) / 2, -outerBoundZ + frameThickZ / 2], 
-        size: [innerX, frameThickY, frameThickZ], 
-        name: 'bottom-front' 
-      },
-      { 
-        pos: [(outerBoundX + innerBoundX) / 2, 0, -outerBoundZ + frameThickZ / 2], 
-        size: [frameThickX, outerY, frameThickZ], 
-        name: 'bottom-right' 
-      },
-      { 
-        pos: [-(outerBoundX + innerBoundX) / 2, 0, -outerBoundZ + frameThickZ / 2], 
-        size: [frameThickX, outerY, frameThickZ], 
-        name: 'bottom-left' 
-      },
-      
-      // 縦の枠線（4つ）- 角の柱
-      { 
-        pos: [(outerBoundX + innerBoundX) / 2, (outerBoundY + innerBoundY) / 2, 0], 
-        size: [frameThickX, frameThickY, innerZ], 
-        name: 'vertical-back-right' 
-      },
-      { 
-        pos: [(outerBoundX + innerBoundX) / 2, -(outerBoundY + innerBoundY) / 2, 0], 
-        size: [frameThickX, frameThickY, innerZ], 
-        name: 'vertical-front-right' 
-      },
-      { 
-        pos: [-(outerBoundX + innerBoundX) / 2, (outerBoundY + innerBoundY) / 2, 0], 
-        size: [frameThickX, frameThickY, innerZ], 
-        name: 'vertical-back-left' 
-      },
-      { 
-        pos: [-(outerBoundX + innerBoundX) / 2, -(outerBoundY + innerBoundY) / 2, 0], 
-        size: [frameThickX, frameThickY, innerZ], 
-        name: 'vertical-front-left' 
-      }
-    ];
-    
-    // 各フレームボックスを作成
-    frames.forEach(frame => {
-      if (frame.size[0] > 0.1 && frame.size[1] > 0.1 && frame.size[2] > 0.1) {
-        try {
-          // より正確な座標計算：経度・緯度・高度で直接オフセット
-          const DEG_PER_METER_LON = 1 / (111000 * Math.cos(centerLat * Math.PI / 180));
-          const DEG_PER_METER_LAT = 1 / 111000;
-          
-          const frameLon = centerLon + frame.pos[0] * DEG_PER_METER_LON;
-          const frameLat = centerLat + frame.pos[1] * DEG_PER_METER_LAT;
-          const frameAlt = centerAlt + frame.pos[2];
-          
-          const frameEntity = this.viewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(frameLon, frameLat, frameAlt),
-            box: {
-              dimensions: new Cesium.Cartesian3(frame.size[0], frame.size[1], frame.size[2]),
-              material: frameColor.withAlpha(0.8), // 少し透明度を下げて重なりを考慮
-              outline: false, // 内部フレームには枠線なし
-              fill: true
-            },
-            properties: {
-              type: 'voxel-outline-frame',
-              parentKey: voxelKey,
-              frameName: frame.name
-            }
-          });
-          
-          this.voxelEntities.push(frameEntity);
-        } catch (e) {
-          Logger.warn(`Failed to create outline frame ${frame.name}:`, e);
-        }
-      }
-    });
-    
-    Logger.debug(`Thick outline frames created for voxel ${voxelKey}: ${frames.length} frames`);
-  }
+  // Thick outline frame creation is fully handled by GeometryRenderer.
 
   /**
    * Toggle visibility.
    * 表示/非表示を切り替えます。
+   * v0.1.11-alpha: GeometryRendererに委譲 (ADR-0009 Phase 5)
    * @param {boolean} show - true to show / 表示する場合は true
    */
   setVisible(show) {
     Logger.debug('VoxelRenderer.setVisible:', show);
-    
     this.voxelEntities.forEach(entity => {
-      try {
-        // isDestroyedのチェックを安全に行う
-        const isDestroyed = typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
-        
-        if (entity && !isDestroyed) {
-          entity.show = show;
-        }
-      } catch (error) {
-        Logger.warn('Entity visibility error:', error);
+      if (entity && (!entity.isDestroyed || !entity.isDestroyed())) {
+        entity.show = show;
       }
     });
   }
@@ -1027,232 +669,17 @@ export class VoxelRenderer {
    * @private
    */
   _selectVoxelsForRendering(allVoxels, maxCount, bounds, grid) {
-    const strategy = this.options.renderLimitStrategy || 'density';
+    // v0.1.11-alpha: 新しいVoxelSelectorに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 2)
+    const selectionResult = this.voxelSelector.selectVoxels(allVoxels, maxCount, { grid, bounds });
     
-    // TopN強調ボクセルは必ず選択対象に含む
-    const topNVoxels = new Set();
-    if (this.options.highlightTopN && this.options.highlightTopN > 0) {
-      const sortedForTopN = [...allVoxels].sort((a, b) => b.info.count - a.info.count);
-      const topN = sortedForTopN.slice(0, this.options.highlightTopN);
-      topN.forEach(voxel => topNVoxels.add(voxel.key));
-    }
+    // 統計情報の更新
+    this._selectionStats = this.voxelSelector.getLastSelectionStats();
     
-    let selectedVoxels;
-    let clippedCount;
-    let coverageRatio = null;
-    
-    switch (strategy) {
-      case 'coverage': {
-        const coverageResult = this._selectByCoverage(allVoxels, maxCount, grid, topNVoxels);
-        selectedVoxels = coverageResult.selected;
-        clippedCount = allVoxels.length - selectedVoxels.length;
-        break;
-      }
-      
-      case 'hybrid': {
-        const hybridResult = this._selectByHybrid(allVoxels, maxCount, grid, topNVoxels);
-        selectedVoxels = hybridResult.selected;
-        clippedCount = allVoxels.length - selectedVoxels.length;
-        coverageRatio = hybridResult.coverageRatio;
-        break;
-      }
-      
-      case 'density':
-      default: {
-        const densityResult = this._selectByDensity(allVoxels, maxCount, topNVoxels);
-        selectedVoxels = densityResult.selected;
-        clippedCount = allVoxels.length - selectedVoxels.length;
-        break;
-      }
-    }
-    
-    return {
-      selectedVoxels,
-      strategy,
-      clippedNonEmpty: clippedCount,
-      coverageRatio
-    };
+    return selectionResult;
   }
 
-  /**
-   * Select voxels by density (existing algorithm).
-   * 密度による選択（既存アルゴリズム）
-   * @param {Array} allVoxels - All voxels / 全ボクセル
-   * @param {number} maxCount - Maximum count / 最大数
-   * @param {Set} forceInclude - Voxels to force include / 強制包含ボクセル
-   * @returns {Object} Selection result / 選択結果
-   * @private
-   */
-  _selectByDensity(allVoxels, maxCount, forceInclude = new Set()) {
-    // 密度でソートして上位を選択
-    const sorted = [...allVoxels].sort((a, b) => b.info.count - a.info.count);
-    
-    // 強制包含ボクセルを最初に追加
-    const selected = [];
-    const included = new Set();
-    
-    // TopNなど強制包含ボクセルを先に追加
-    sorted.forEach(voxel => {
-      if (forceInclude.has(voxel.key) && selected.length < maxCount) {
-        selected.push(voxel);
-        included.add(voxel.key);
-      }
-    });
-    
-    // 残りを密度順で追加
-    sorted.forEach(voxel => {
-      if (!included.has(voxel.key) && selected.length < maxCount) {
-        selected.push(voxel);
-        included.add(voxel.key);
-      }
-    });
-    
-    return { selected };
-  }
 
-  /**
-   * Select voxels by coverage (stratified sampling).
-   * カバレッジによる選択（層化抽出）
-   * @param {Array} allVoxels - All voxels / 全ボクセル
-   * @param {number} maxCount - Maximum count / 最大数
-   * @param {Object} bounds - Data bounds / データ境界
-   * @param {Set} forceInclude - Voxels to force include / 強制包含ボクセル
-   * @returns {Object} Selection result / 選択結果
-   * @private
-   */
-  _selectByCoverage(allVoxels, maxCount, grid, forceInclude = new Set()) {
-    const selected = [];
-    const included = new Set();
-    
-    // 強制包含ボクセルを先に追加
-    allVoxels.forEach(voxel => {
-      if (forceInclude.has(voxel.key) && selected.length < maxCount) {
-        selected.push(voxel);
-        included.add(voxel.key);
-      }
-    });
-    
-    // 格子分割数の決定
-    const binsXY = this.options.coverageBinsXY === 'auto' 
-      ? Math.ceil(Math.sqrt(maxCount / 4)) // 自動計算: 平均4ボクセル/ビン
-      : this.options.coverageBinsXY;
-    
-    // 空間をグリッド分割
-    const bins = new Map();
-    const remainingVoxels = allVoxels.filter(voxel => !included.has(voxel.key));
-    
-    remainingVoxels.forEach(voxel => {
-      const binX = Math.max(0, Math.min(binsXY - 1, Math.floor((voxel.info.x / Math.max(1, grid.numVoxelsX)) * binsXY)));
-      const binY = Math.max(0, Math.min(binsXY - 1, Math.floor((voxel.info.y / Math.max(1, grid.numVoxelsY)) * binsXY)));
-      const binKey = `${binX},${binY}`;
-      
-      if (!bins.has(binKey)) {
-        bins.set(binKey, []);
-      }
-      bins.get(binKey).push(voxel);
-    });
-    
-    // 各ビンから代表ボクセルを選択
-    const binKeys = Array.from(bins.keys());
-    let binIndex = 0;
-    
-    while (selected.length < maxCount && binIndex < binKeys.length * 10) { // 最大10周
-      const binKey = binKeys[binIndex % binKeys.length];
-      const binVoxels = bins.get(binKey);
-      
-      if (binVoxels && binVoxels.length > 0) {
-        // ビン内で最高密度のボクセルを選択
-        binVoxels.sort((a, b) => b.info.count - a.info.count);
-        const voxel = binVoxels.shift();
-        
-        if (!included.has(voxel.key)) {
-          selected.push(voxel);
-          included.add(voxel.key);
-        }
-        
-        // 空になったビンを削除
-        if (binVoxels.length === 0) {
-          bins.delete(binKey);
-          binKeys.splice(binKeys.indexOf(binKey), 1);
-        }
-      }
-      
-      binIndex++;
-    }
-    
-    return { selected };
-  }
 
-  /**
-   * Select voxels by hybrid strategy (density + coverage).
-   * ハイブリッド戦略による選択（密度 + カバレッジ）
-   * @param {Array} allVoxels - All voxels / 全ボクセル
-   * @param {number} maxCount - Maximum count / 最大数
-   * @param {Object} bounds - Data bounds / データ境界
-   * @param {Set} forceInclude - Voxels to force include / 強制包含ボクセル
-   * @returns {Object} Selection result / 選択結果
-   * @private
-   */
-  _selectByHybrid(allVoxels, maxCount, grid, forceInclude = new Set()) {
-    const minCoverageRatio = this.options.minCoverageRatio || 0.2;
-    
-    const selected = [];
-    const included = new Set();
-    
-    // 強制包含ボクセルを先に追加
-    allVoxels.forEach(voxel => {
-      if (forceInclude.has(voxel.key) && selected.length < maxCount) {
-        selected.push(voxel);
-        included.add(voxel.key);
-      }
-    });
-    
-    const remainingCount = maxCount - selected.length;
-    const adjustedCoverageCount = Math.floor(remainingCount * minCoverageRatio);
-    const adjustedDensityCount = remainingCount - adjustedCoverageCount;
-    
-    // カバレッジ選択（層化抽出）
-    if (adjustedCoverageCount > 0) {
-      const coverageResult = this._selectByCoverage(
-        allVoxels.filter(voxel => !included.has(voxel.key)), 
-        adjustedCoverageCount, 
-        grid, 
-        new Set()
-      );
-      
-      coverageResult.selected.forEach(voxel => {
-        if (selected.length < maxCount && !included.has(voxel.key)) {
-          selected.push(voxel);
-          included.add(voxel.key);
-        }
-      });
-    }
-    
-    // 密度選択（残り）
-    if (adjustedDensityCount > 0) {
-      const densityResult = this._selectByDensity(
-        allVoxels.filter(voxel => !included.has(voxel.key)), 
-        adjustedDensityCount, 
-        new Set()
-      );
-      
-      densityResult.selected.forEach(voxel => {
-        if (selected.length < maxCount && !included.has(voxel.key)) {
-          selected.push(voxel);
-          included.add(voxel.key);
-        }
-      });
-    }
-    
-    // 実際のカバレッジ比率を計算
-    const actualCoverageRatio = adjustedCoverageCount > 0 ? 
-      (selected.length - forceInclude.size - adjustedDensityCount) / (selected.length - forceInclude.size) : 0;
-    
-    return { 
-      selected, 
-      coverageRatio: actualCoverageRatio 
-    };
-  }
 
   /**
    * Get selection statistics.

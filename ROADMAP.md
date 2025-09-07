@@ -23,7 +23,7 @@ Priority: High | Target: 2025-09
     - `occupancy` は期待占有セル数 E[occupied] ≈ M·(1-exp(-N/M)) を用い、`maxRenderVoxels` と `targetFill`（デフォルト: 0.6）に整合するサイズを反復近似。
     - 責務分離: 自動ボクセルサイズは「初期グリッド決定専用」。既定ではグリッド再構築は行わず、可視化の適応は“選抜（renderLimitStrategy）側”で行う。
   - [ ] スマート視覚化支援（オプトイン）
-    - 実装: `autoView: false` と `fitView(options)` を公開。`fitView` はデータ境界に対し、ピッチ/視野角を考慮した高度を自動計算（もしくは `Camera.flyToBoundingSphere` を利用）。
+    - 実装: `autoView: false` と `fitView(bounds, options)` を公開。`fitView` はデータ境界に対し、ピッチ/視野角を考慮した高度を自動計算（もしくは `Camera.flyToBoundingSphere` を利用）。
   - [ ] 端末依存の自動レンダリング上限（Auto Render Budget）
     - 実装: `maxRenderVoxels: number|'auto'`（または `renderBudgetMode: 'manual'|'auto'`）。
     - 指標: WebGL対応/上限、`navigator.deviceMemory`（Chrome系のみ）/`hardwareConcurrency`/`devicePixelRatio` などから端末ティア（低/中/高）を推定。`deviceMemory` 未対応時は `hardwareConcurrency` と画面解像度を主指標とするフォールバック。
@@ -34,7 +34,7 @@ Priority: High | Target: 2025-09
 - Deliverables
   - [ ] `renderLimitStrategy` + `minCoverageRatio` + `coverageBinsXY`（後方互換: 既定は従来通り）
   - [ ] `autoVoxelSizeMode: 'occupancy'` + `autoVoxelTargetFill`（推奨値0.6）
-  - [ ] `Heatbox.fitView(bounds, { paddingMeters, pitch, heading, altitudeStrategy })` と `options.autoView`
+  - [ ] `Heatbox.fitView(bounds, { paddingPercent, pitch, heading, altitudeStrategy })` と `options.autoView`
   - [ ] Auto Render Budget: `maxRenderVoxels: 'auto'`（または `renderBudgetMode: 'auto'`）で端末ティア別の初期上限を自動設定
   - [ ] Debug/統計: `selectionStrategy`, `clippedNonEmpty`, `coverageRatio` に加え、`renderBudgetTier`, `autoMaxRenderVoxels` を `getStatistics()` に追加
   - [ ] Docs: Playground既知課題と解法（設定例つき）をチューニングFAQへ追記
@@ -51,13 +51,24 @@ Priority: High | Target: 2025-09
   - 選択戦略のばらつき → ハイブリッド（TopK by density + 層化サンプル）で安定化、`debug` で比率を可視化
   - カメラ適合の端ケース → `flyToBoundingSphere` をFallbackに用意
 
-### v0.1.10（リファクタリング・モジュール化）- Refactoring & Modularization
-Priority: High | Target: 2025-10
+### v0.1.10（中止・破棄）- Cancelled
+Status: Cancelled | Reason: ADR-0009 により計画を置換
+
+- 概要
+  - ADR-0009（VoxelRendererの責務分離/SRP適用）の採択に伴い、v0.1.10 で予定していたリファクタリング案（ADR-0008）は方針不一致と判断し中止しました。
+  - v0.1.10 の実装は破棄し、バージョン自体もスキップします。
+  - リファクタリングは v0.1.11 に移管し、以降の 0.1 系計画を1バージョン後ろ倒しにします。
+- 参考
+  - docs/adr/ADR-0008-v0.1.10-refactor-and-api-cleanup.md（Superseded by ADR-0009）
+  - docs/adr/ADR-0009-voxel-renderer-responsibility-separation.md
+
+### v0.1.11（リファクタリング・モジュール化）- Refactoring & Modularization
+Priority: High | Target: 2025-11
 
 - Scope（挙動非変更・内部構造の整理）
   - [ ] 選択戦略の分離: `src/core/selection/` に density/coverage/hybrid を分割しIF化
   - [ ] 近似/推定の分離: `src/utils/voxelSizeEstimator.js`（basic/occupancy）を新設
-  - [ ] 端末ティア検出の分離: `src/utils/deviceTierDetector.js`（Auto Render Budget計算）
+  - [ ] 端末ティア検出の分離: 既存の `src/utils/deviceTierDetector.js`（Auto Render Budget計算）のI/F整備と再利用
   - [ ] 視点合わせの分離: `src/utils/viewFit.js` と `Heatbox.fitView()` の連携
   - [ ] options正規化の抽出（任意）: `src/utils/options/normalize.js` に新オプション検証を移管
   - [ ] 既存API/挙動は不変（Public API/既存オプション名は変更しない）
@@ -77,15 +88,24 @@ Priority: High | Target: 2025-10
   - 大規模移動による衝突 → 小PR分割（戦略→推定→予算→視点の順）と即時レビュー
   - 回帰リスク → 既存Examples/テストでのスナップショット・差分確認を強化
 
-### v0.1.11（観測可能性・プロファイル）- Observability & Profiles
-Priority: Medium | Target: 2025-11
+### v0.1.12（APIクリーンアップ＋観測可能性）- API Cleanup & Observability
+Priority: Medium | Target: 2026-01
 - Scope
+  - [API Cleanup（Breaking含む）]
+    - オプション名の統一: `fitViewOptions.pitch`/`heading` → `pitchDegrees`/`headingDegrees`（旧名削除）
+    - `outlineEmulation` → `outlineRenderMode: 'emulation-only'` に集約
+    - Resolver系の削除: `outlineWidthResolver`/`outlineOpacityResolver`/`boxOpacityResolver`
+    - 代替: `outlineWidthPreset` + `adaptiveOutlines` + `adaptiveParams`
+    - `types/` と README/Wiki の更新、`MIGRATION.md` に移行手順を掲載
+  - [Observability/Profiles]
   - [ ] Advanced に簡易パフォーマンスオーバーレイ（描画数/TopN比率/平均密度/フレーム時間）
   - [ ] ベンチ計測の整備（`npm run benchmark` の出力整形としきい値表示）
   - [ ] Docs: チューニングFAQの追補（計測の読み方/指標の目安）
   - [ ] 設定プロファイル機能（ユースケース別の推奨セット）
   - [ ] Auto Quality（任意拡張）: `qualityMode: 'manual'|'auto'`, `targetFPS` 等で“選抜側のつまみ（K/比率/戦略）”のみを実測FPSに応じて微調整（グリッド再構築は既定で行わない）
 - Deliverables
+  - [ ] `MIGRATION.md` 更新（0.1.9 → 0.1.11 → 0.1.12）とWiki「Migration」への同期
+  - [ ] `types/` 更新（削除・名称統一を反映）
   - [ ] `examples/advanced/` にオーバーレイUI（ON/OFF）
   - [ ] `tools/benchmark.js` の改善（集計とCSV/markdownサマリ）
   - [ ] ドキュメント: パフォーマンスの見方/ボトルネック傾向
@@ -93,6 +113,7 @@ Priority: Medium | Target: 2025-11
   - [ ] `profile: 'mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data'` を `validateAndNormalizeOptions` でマージ適用（ユーザー設定が最終優先）
   - [ ] Auto Quality連携: `targetFPS` 達成のために `maxRenderVoxels`/`minCoverageRatio`/`renderLimitStrategy` をヒステリシス付きで微調整するサンプル実装
 - Acceptance Criteria
+  - [ ] 0.1.12 API に対して README/型/Wiki が整合し、`MIGRATION.md` に置換表・コード例が掲載
   - [ ] オーバーレイのON/OFFで目視確認でき、描画数とフレーム時間が相関して表示される
   - [ ] ベンチ出力が再現可能で、PRで差分比較が容易
   - [ ] `profile` 指定で、同一データに対し一貫した設定セットが適用される（例: `mobile-fast` で `opacity`/`highlightTopN`/`renderLimitStrategy` が想定値）
@@ -101,8 +122,8 @@ Priority: Medium | Target: 2025-11
 - Risks & Mitigations
   - 計測のばらつき → 複数回平均/サンプル数と偏差の表示
 
-### v0.1.12（適応的表示の核）- 視認性最適化の仕上げ
-Priority: Medium | Target: 2025-12
+### v0.1.13（適応的表示の核）- 視認性最適化の仕上げ
+Priority: Medium | Target: 2026-02
 
 - コア機能（仕上げ・検証）
   - [ ] 適応的制御のパラメータチューニングとデフォルト見直し（`adaptiveParams`/プリセットの係数微調整）
@@ -176,6 +197,9 @@ Priority: Medium | Target: 2026-02
 - [ ] 描画優先度制御（重要ボクセル優先）
 - [ ] 動的LoD（Level of Detail）
 - [ ] ビューポートカリング最適化
+- [ ] ADR-0003 受け入れ基準の再達成（動的太さ制御のオーバーヘッド ≤ 5%）
+- [ ] 大規模データ時のヒープ増分最適化（レンダ/クリア反復での増分 ≤ 20MB 目安）
+- [ ] VoxelRenderer 行数の追加削減（≤ 300 行目標、パラメータ計算のヘルパー化）
 - 互換性: 変更なし（内部最適化）。
 
 ---

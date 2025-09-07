@@ -10,6 +10,9 @@ build/
 coverage/
 types/
 
+# Generated documentation
+docs/api/
+
 # Development
 .env
 .env.local

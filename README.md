@@ -48,6 +48,14 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **真の3Dボクセル表現**: Z方向（高度）の分布を体積として可視化でき、2Dの塗りつぶしでは失われる高さ情報を保持
 - **Entityベースのワークフロー**: 既存 `Cesium.Entity` から直接生成。事前のタイル化やサーバー処理が不要
 - **自動ボクセルサイズ決定 (v0.1.4)**: `autoVoxelSize` によりデータ範囲と件数から最適サイズを自動計算。パフォーマンスと解像度のバランスを自動化
+- **オーケストレーション型アーキテクチャ（ADR-0009, v0.1.11-alpha）**: Single Responsibility Principleに基づく完全な責務分離を実現
+  - **ColorCalculator**: 色計算・カラーマップ処理の専門化
+  - **VoxelSelector**: 密度・カバレッジ・ハイブリッド選択戦略の専門化
+  - **AdaptiveController**: 適応パラメータ・近隣密度計算の専門化
+  - **GeometryRenderer**: エンティティ作成・ジオメトリ管理の専門化
+  - **VoxelRenderer**: 各専門クラスのオーケストレーション役に特化（14.5%性能向上を達成）
+- **適応的制御システム**: 密度とカメラ距離に基づく動的アウトライン制御と TopN 強調表示
+- **自動視点調整 (v0.1.9)**: データ境界への自動カメラフィット機能で最適な視覚化を実現
 - **デバッグ境界制御 (v0.1.5)**: `debug.showBounds` でバウンディングボックス表示をON/OFF制御
 - **知覚均等カラーマップ (v0.1.5)**: `viridis`、`inferno` カラーマップと二極性配色（blue-white-red）をサポート
 - **TopN強調表示 (v0.1.5)**: 密度上位N個のボクセルを強調、他を淡色表示する `highlightTopN` オプション

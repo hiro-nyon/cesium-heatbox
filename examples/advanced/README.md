@@ -94,7 +94,7 @@ const report = perfDemo.generatePerformanceReport();
 
 - `voxelGap` によるボクセル寸法の縮小（重なり軽減）
 - `outlineOpacity` による枠線透明度制御
-- `outlineWidthResolver` による密度連動の枠線太さ調整（TopN強調対応）
+- 適応的枠線プリセット (`adaptiveOutlines` + `outlineWidthPreset`) による密度連動の枠線太さ調整（TopN強調対応）
 
 UMDビルドを参照するため、ファイルをそのままブラウザで開けます。
 Baseline（対策なし）と Mitigated（対策あり）をワンクリックで比較できます。
