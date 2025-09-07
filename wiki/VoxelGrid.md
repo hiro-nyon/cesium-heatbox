@@ -1,61 +1,96 @@
 # Class: VoxelGrid（VoxelGridクラス）
 
-**English** | [日本語](#日本語)
+[English](#english) | [日本語](#日本語)
 
-Class that manages 3D voxel grids for spatial data organization and indexing.
+## English
 
-3Dボクセルグリッドを管理し、空間データの整理とインデックス化を行うクラス。
+Class for managing 3D voxel grids.
 
-## Constructor / コンストラクタ
+### Constructor
 
-### new VoxelGrid()
+#### new VoxelGrid()
 
-Creates a new VoxelGrid instance for 3D spatial grid management.
+### Methods
 
-3D空間グリッド管理のための新しいVoxelGridインスタンスを作成します。
+#### (static) createGrid(bounds, voxelSizeMeters) → {Object}
 
-## Methods / メソッド
-
-### (static) createGrid(bounds, voxelSizeMeters) → {Object}
-
-Creates a grid from boundary information and voxel size (simplified version).
-
-境界情報とボクセルサイズからグリッドを作成します（シンプル版）。
+Create a grid from bounds and voxel size (simple version).
 
 | Name | Type | Description |
 |---|---|---|
-| bounds | Object | 境界情報 |
-| voxelSizeMeters | number | 目標ボクセルサイズ（メートル）。実セルサイズは各軸で範囲/分割数。 |
+| bounds | Object | Bounds info / 境界情報 |
+| voxelSizeMeters | number | Target voxel size in meters (actual cell size is range/divisions per axis) / 目標ボクセルサイズ（メートル）。実セルサイズは各軸で範囲/分割数。 |
 
-### (static) getVoxelKey(x, y, z) → {string}
+#### (static) getVoxelKey(x, y, z) → {string}
 
-Generates a key string from voxel indices.
-
-ボクセルインデックスからキーを生成
+Generate a key from voxel indices.
 
 | Name | Type | Description |
 |---|---|---|
-| x | number | X軸インデックス |
-| y | number | Y軸インデックス |
-| z | number | Z軸インデックス |
+| x | number | X index / X軸インデックス |
+| y | number | Y index / Y軸インデックス |
+| z | number | Z index / Z軸インデックス |
 
-### (static) iterateAllVoxels(grid, callback)
+#### (static) iterateAllVoxels(grid, callback)
 
-Iterates all voxels in the grid and invokes the callback per voxel.
-
-グリッド内の全ボクセルを反復処理
+Iterate all voxels and invoke callback per cell.
 
 | Name | Type | Description |
 |---|---|---|
-| grid | Object | グリッド情報 |
-| callback | function | 各ボクセルに対するコールバック関数 |
+| grid | Object | Grid info / グリッド情報 |
+| callback | function | Callback per voxel / 各ボクセルに対するコールバック関数 |
 
-### (static) parseVoxelKey(key) → {Object}
+#### (static) parseVoxelKey(key) → {Object}
 
-Parses a voxel key string into indices.
-
-ボクセルキーからインデックスを解析
+Parse voxel key into indices.
 
 | Name | Type | Description |
 |---|---|---|
-| key | string | ボクセルキー |
+| key | string | Voxel key / ボクセルキー |
+
+
+## 日本語
+
+3Dボクセルグリッドを管理するクラス。
+
+### コンストラクタ
+
+#### new VoxelGrid()
+
+### メソッド
+
+#### (static) createGrid(bounds, voxelSizeMeters) → {Object}
+
+境界情報とボクセルサイズからグリッドを作成（シンプル版）。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| bounds | Object | Bounds info / 境界情報 |
+| voxelSizeMeters | number | Target voxel size in meters (actual cell size is range/divisions per axis) / 目標ボクセルサイズ（メートル）。実セルサイズは各軸で範囲/分割数。 |
+
+#### (static) getVoxelKey(x, y, z) → {string}
+
+ボクセルインデックスからキーを生成します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| x | number | X index / X軸インデックス |
+| y | number | Y index / Y軸インデックス |
+| z | number | Z index / Z軸インデックス |
+
+#### (static) iterateAllVoxels(grid, callback)
+
+グリッド内の全ボクセルを反復処理します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| grid | Object | Grid info / グリッド情報 |
+| callback | function | Callback per voxel / 各ボクセルに対するコールバック関数 |
+
+#### (static) parseVoxelKey(key) → {Object}
+
+ボクセルキーからインデックスを解析します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| key | string | Voxel key / ボクセルキー |

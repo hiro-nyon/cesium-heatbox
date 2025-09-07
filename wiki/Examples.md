@@ -133,6 +133,29 @@ const heatbox = new Heatbox(viewer, {
 });
 ```
 
+### v0.1.11 エミュレーション専用（太線のみ）と密度連動
+```js
+const heatbox = new Heatbox(viewer, {
+  // エミュレーション専用モード: 標準枠線/インセットを使わずエッジで太線を表現
+  outlineRenderMode: 'emulation-only',
+  outlineEmulation: 'all',
+  showOutline: false,
+  opacity: 0.0,
+  // 密度が高いほど “太く/濃く”
+  outlineWidthResolver: ({ normalizedDensity }) => {
+    const d = Math.max(0, Math.min(1, normalizedDensity || 0));
+    const nd = Math.pow(d, 0.5);
+    const minW = 1.5, maxW = 10;
+    return minW + nd * (maxW - minW);
+  },
+  outlineOpacityResolver: ({ normalizedDensity }) => {
+    const d = Math.max(0, Math.min(1, normalizedDensity || 0));
+    const nd = Math.pow(d, 0.5);
+    return Math.max(0.15, Math.min(1.0, 0.15 + nd * 0.85));
+  }
+});
+```
+
 優先順位:
 - 1) `outlineWidthResolver` が定義されていれば最優先
 - 2) なければ `highlightTopN` の TopN に `highlightStyle.outlineWidth`、以外は `outlineWidth`

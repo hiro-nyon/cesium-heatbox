@@ -6,6 +6,13 @@
 
 ## 日本語
 
+## 0.1.11 (2025-09-XX)
+- ADR-0009 に基づく責務分離を完了（`VoxelRenderer` をオーケストレーションに特化）
+- 新コア: `ColorCalculator` / `VoxelSelector` / `AdaptiveController` / `GeometryRenderer`
+- Playground: i18n とアクセシビリティの改善、emulation-only モードの整備
+- ドキュメント: API/Wiki 自動生成の安定化、Source ページもMarkdown化
+- テスト: パフォーマンス受入は `PERF_TESTS=1` で任意実行、メモリの閾値調整（CIばらつき対策）
+
 ## 0.1.5 (2025-08-25)
 - デバッグ: `debug.showBounds` で境界ボックス表示を明示的に制御（`debug` は boolean | object）
 - カラーマップ: `colorMap: 'viridis' | 'inferno'`、発散配色 `diverging`/`divergingPivot`
@@ -66,6 +73,13 @@ npm run build:umd
 > 詳細は `CHANGELOG.md` を参照してください。
 
 ## English
+
+### v0.1.11 (2025-09-XX)
+- Completed responsibility separation per ADR-0009 (`VoxelRenderer` acts as orchestrator)
+- New core modules: `ColorCalculator`, `VoxelSelector`, `AdaptiveController`, `GeometryRenderer`
+- Playground: i18n & accessibility improvements; refined emulation-only mode
+- Docs: Stable API/Wiki generation, including Source pages to Markdown
+- Tests: Gate perf acceptance with `PERF_TESTS=1`; relaxed memory thresholds for CI variance
 
 Please refer to the repository's `CHANGELOG.md` for the latest changes. Here we extract major topics.
 

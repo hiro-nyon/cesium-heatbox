@@ -64,7 +64,7 @@ import Heatbox from 'cesium-heatbox';
 // 1) Cesium Viewer の用意
 const viewer = new Cesium.Viewer('cesiumContainer');
 
-// 2) Heatbox を初期化（v0.1.5）
+// 2) Heatbox を初期化（v0.1.11）
 const heatbox = new Heatbox(viewer, {
   // v0.1.4: voxelSize を省略して autoVoxelSize で自動決定も可能
   // voxelSize: 20,      // 明示指定する場合はコメント解除
@@ -105,7 +105,7 @@ import Heatbox from 'cesium-heatbox';
 // 1) Prepare a Cesium Viewer
 const viewer = new Cesium.Viewer('cesiumContainer');
 
-// 2) Initialize Heatbox (v0.1.5)
+// 2) Initialize Heatbox (v0.1.11)
 const heatbox = new Heatbox(viewer, {
   // v0.1.4: You can omit voxelSize and use autoVoxelSize
   // voxelSize: 20,      // Uncomment to explicitly set

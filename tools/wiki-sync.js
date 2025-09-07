@@ -41,9 +41,43 @@ function convertHtmlToMarkdown(htmlContent, filename) {
   // 言語判定の簡易関数
   const isJapanese = (text) => /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(text || '');
 
+  // Sourceページ（core_*.js.html など）の場合はソースをコードブロックとして出力
+  if (/^Source:\s*/i.test(pageTitle)) {
+    const codeNode = main.querySelector('pre.prettyprint.source');
+    const code = codeNode ? codeNode.textContent : '';
+    // クラス名推定（ColorCalculator.js → ColorCalculator）
+    let classLink = '';
+    try {
+      const m = pageTitle.match(/Source:\s*.+\/(.+?)\.js/i);
+      if (m && m[1]) classLink = m[1];
+    } catch (_) {}
+    let md = `# ${makeBilingualTitle(pageTitle)}\n\n`;
+    md += `[English](#english) | [日本語](#日本語)\n\n`;
+    md += `## English\n\n`;
+    if (classLink) md += `See also: [Class: ${classLink}](${classLink})\n\n`;
+    if (code) md += '```javascript\n' + code + '\n```\n\n';
+    md += `## 日本語\n\n`;
+    if (classLink) md += `関連: [${classLink}クラス](${classLink})\n\n`;
+    if (code && !code.includes('\t')) {
+      // そのまま同じコードを掲載（重複でも構成上OK）
+      md += '```javascript\n' + code + '\n```\n';
+    }
+    return md.trim() + '\n';
+  }
+
   // 構造化抽出
   const classDesc = main.querySelector('.class-description');
   const classDescText = classDesc ? classDesc.textContent.trim() : '';
+
+  // 簡易言語分離: 日本語を含む行と含まない行を分離
+  const splitByLanguage = (text) => {
+    if (!text) return { en: '', ja: '' };
+    const lines = text.split(/\r?\n/).map(l => l.trim());
+    const enLines = lines.filter(l => l && !isJapanese(l));
+    const jaLines = lines.filter(l => l && isJapanese(l));
+    return { en: enLines.join('\n'), ja: jaLines.join('\n') || text };
+  };
+  const classDescParts = splitByLanguage(classDescText);
 
   const ctorHeader = main.querySelector('h2 + h4.name') || main.querySelector('h4.name');
   const ctorParamsTable = ctorHeader?.nextElementSibling?.tagName === 'TABLE' ? ctorHeader.nextElementSibling : null;
@@ -82,10 +116,10 @@ function convertHtmlToMarkdown(htmlContent, filename) {
   let en = '';
   en += `## English\n\n`;
   if (classDescText) {
-    if (isJapanese(classDescText)) {
-      en += `> English translation pending. See Japanese section below.\n\n`;
+    if (classDescParts.en) {
+      en += `${classDescParts.en}\n\n`;
     } else {
-      en += `${classDescText}\n\n`;
+      en += `> English translation pending. See Japanese section below.\n\n`;
     }
   }
   if (ctorHeader) {
@@ -100,11 +134,9 @@ function convertHtmlToMarkdown(htmlContent, filename) {
     for (const m of methods) {
       en += `#### ${m.title}\n\n`;
       if (m.descText) {
-        if (isJapanese(m.descText)) {
-          en += `> English translation pending. See Japanese section below.\n\n`;
-        } else {
-          en += `${m.descText}\n\n`;
-        }
+        const parts = splitByLanguage(m.descText);
+        if (parts.en) en += `${parts.en}\n\n`;
+        else en += `> English translation pending. See Japanese section below.\n\n`;
       }
       if (m.tableNode) en += convertTableToMarkdown(m.tableNode, 'en');
     }
@@ -118,7 +150,7 @@ function convertHtmlToMarkdown(htmlContent, filename) {
   // 日本語セクションの描画
   let ja = '';
   ja += `## 日本語\n\n`;
-  if (classDescText) ja += `${classDescText}\n\n`;
+  if (classDescText) ja += `${classDescParts.ja || classDescText}\n\n`;
   if (ctorHeader) {
     ja += `### コンストラクタ\n\n`;
     ja += `#### ${ctorHeader.textContent.trim()}\n\n`;
@@ -130,7 +162,10 @@ function convertHtmlToMarkdown(htmlContent, filename) {
     ja += `### メソッド\n\n`;
     for (const m of methods) {
       ja += `#### ${m.title}\n\n`;
-      if (m.descText) ja += `${m.descText}\n\n`;
+      if (m.descText) {
+        const parts = splitByLanguage(m.descText);
+        ja += `${parts.ja || m.descText}\n\n`;
+      }
       if (m.tableNode) ja += convertTableToMarkdown(m.tableNode, 'ja');
     }
   }
@@ -308,7 +343,18 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 `;
 
-  const classes = ['Heatbox', 'VoxelRenderer', 'VoxelGrid', 'DataProcessor', 'CoordinateTransformer'];
+  const classes = [
+    'Heatbox',
+    'VoxelRenderer',
+    'VoxelGrid',
+    'DataProcessor',
+    'CoordinateTransformer',
+    // New orchestrated components (ADR-0009)
+    'ColorCalculator',
+    'VoxelSelector',
+    'AdaptiveController',
+    'GeometryRenderer'
+  ];
   classes.forEach(className => {
     const file = htmlFiles.find(f => f.includes(className));
     if (file) {

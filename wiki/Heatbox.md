@@ -1,107 +1,95 @@
 # Class: Heatbox（Heatboxクラス）
 
-**English** | [日本語](#日本語)
+[English](#english) | [日本語](#日本語)
 
-CesiumJS Heatbox main class that provides 3D voxel-based heatmap visualization.
+## English
 
-CesiumJS Heatbox メインクラス。3Dボクセルベースのヒートマップ可視化を提供します。
+Main class of CesiumJS Heatbox.
+Provides 3D voxel-based heatmap visualization in CesiumJS environments.
 
-## Constructor / コンストラクタ
+### Constructor
 
-### new Heatbox(viewer, options)
+#### new Heatbox(viewer, options)
 
-Creates a new Heatbox instance for 3D voxel-based heatmap visualization.
+### Methods
 
-3Dボクセルベースのヒートマップ可視化のための新しいHeatboxインスタンスを作成します。
+#### clear()
 
-## Methods / メソッド
+Clear the heatmap and internal state.
 
-### clear()
+#### (async) createFromEntities(entities) → {Promise.<Object>}
 
-Clears the heatmap and removes all rendered voxels.
-
-ヒートマップをクリアし、描画されたすべてのボクセルを削除します。
-
-### (async) createFromEntities(entities) → {Promise.<Object>}
-
-Creates a heatmap from entities (asynchronous API).
-
-エンティティからヒートマップを作成します（非同期API）。
+Create heatmap from entities (async).
 
 | Name | Type | Description |
 |---|---|---|
-| entities | Array.<Cesium.Entity> | 対象エンティティ配列 |
+| entities | Array.<Cesium.Entity> | Target entities array / 対象エンティティ配列 |
 
-### destroy()
+#### destroy()
 
-Destroys the instance and releases event listeners.
+Destroy the instance and release event listeners.
 
-インスタンスを破棄し、イベントリスナーを解放
+#### dispose()
 
-### getBounds() → {Object|null}
+Alias for destroy() to match examples and tests.
 
-Gets current bounds information.
+#### (async) fitView(bounds, options) → {Promise}
 
-境界情報を取得
+Fit view to data bounds with smart camera positioning.
 
-### getDebugInfo() → {Object}
+| Name | Type | Default | Description |
+|---|---|---|---|
+| bounds | Object | null | Target bounds (optional, uses current data bounds if not provided) / 対象境界 |
+| options | Object |  | Fit view options / フィットビューオプション |
 
-Returns debug information.
+#### getBounds() → {Object|null}
 
-デバッグ情報を取得
+Get bounds info if available.
 
-### getOptions() → {Object}
+#### getDebugInfo() → {Object}
 
-Returns current options.
+Get debug information.
 
-現在のオプションを取得
+#### getOptions() → {Object}
 
-### getStatistics() → {Object|null}
+Get current options.
 
-Returns statistics, or null if not created.
+#### getStatistics() → {Object|null}
 
-統計情報を取得
+Get statistics information.
 
-### setData(entities)
+#### (async) setData(entities)
 
-Sets heatmap data and triggers rendering.
-
-ヒートマップデータを設定し、描画を実行
-
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | 対象エンティティ配列 |
-
-### setVisible(show)
-
-Toggles visibility.
-
-表示/非表示を切り替え
+Set heatmap data and render.
 
 | Name | Type | Description |
 |---|---|---|
-| show | boolean | 表示する場合はtrue |
+| entities | Array.<Cesium.Entity> | Target entities array / 対象エンティティ配列 |
 
-### updateOptions(newOptions)
+#### setVisible(show)
 
-Updates options.
-
-オプションを更新
+Toggle visibility.
 
 | Name | Type | Description |
 |---|---|---|
-| newOptions | Object | 新しいオプション |
+| show | boolean | true to show / 表示する場合は true |
 
-### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
+#### updateOptions(newOptions)
 
-Filters an entity array with a predicate (utility static method).
-
-エンティティ配列をフィルタ（ユーティリティ, 静的メソッド）
+Update options and re-render if applicable.
 
 | Name | Type | Description |
 |---|---|---|
-| entities | Array.<Cesium.Entity> | エンティティ配列 |
-| predicate | function | フィルタ関数 |
+| newOptions | Object | New options / 新しいオプション |
+
+#### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
+
+Filter entity array (utility static method).
+
+| Name | Type | Description |
+|---|---|---|
+| entities | Array.<Cesium.Entity> | Entity array / エンティティ配列 |
+| predicate | function | Predicate function / フィルタ関数 |
 
 
 ## Quick Start Example
@@ -133,3 +121,92 @@ const options = {
   outlineOpacity: 0.8   // Outline transparency
 };
 ```
+
+## 日本語
+
+CesiumJS Heatbox メインクラス。
+CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提供します。
+
+### コンストラクタ
+
+#### new Heatbox(viewer, options)
+
+### メソッド
+
+#### clear()
+
+ヒートマップと内部状態をクリアします。
+
+#### (async) createFromEntities(entities) → {Promise.<Object>}
+
+エンティティからヒートマップを作成（非同期 API）。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| entities | Array.<Cesium.Entity> | Target entities array / 対象エンティティ配列 |
+
+#### destroy()
+
+インスタンスを破棄し、イベントリスナーを解放します。
+
+#### dispose()
+
+互換性のための別名。destroy() を呼び出します。
+
+#### (async) fitView(bounds, options) → {Promise}
+
+データ境界にスマートなカメラ位置でビューをフィットします。
+
+| 名前 | 型 | 既定値 | 説明 |
+|---|---|---|---|
+| bounds | Object | null | Target bounds (optional, uses current data bounds if not provided) / 対象境界 |
+| options | Object |  | Fit view options / フィットビューオプション |
+
+#### getBounds() → {Object|null}
+
+境界情報を取得します（未作成の場合は null）。
+
+#### getDebugInfo() → {Object}
+
+デバッグ情報を取得します。
+
+#### getOptions() → {Object}
+
+現在のオプションを取得します。
+
+#### getStatistics() → {Object|null}
+
+統計情報を取得します（未作成の場合は null）。
+
+#### (async) setData(entities)
+
+ヒートマップデータを設定し、描画を実行します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| entities | Array.<Cesium.Entity> | Target entities array / 対象エンティティ配列 |
+
+#### setVisible(show)
+
+表示/非表示を切り替えます。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| show | boolean | true to show / 表示する場合は true |
+
+#### updateOptions(newOptions)
+
+オプションを更新し、必要に応じて再描画します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| newOptions | Object | New options / 新しいオプション |
+
+#### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
+
+エンティティ配列をフィルタします（ユーティリティ・静的メソッド）。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| entities | Array.<Cesium.Entity> | Entity array / エンティティ配列 |
+| predicate | function | Predicate function / フィルタ関数 |

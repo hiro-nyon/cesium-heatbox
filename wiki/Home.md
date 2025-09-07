@@ -7,6 +7,11 @@
 
 CesiumJS Heatbox は、CesiumJS 上の既存 Entity を対象に、3D ボクセルで密度を可視化するヒートマップライブラリです。エンティティ分布から自動で範囲を推定し、設定した `voxelSize` と描画上限（`maxRenderVoxels`）で効率よく描画します。v0.1.4 からは `autoVoxelSize: true` でボクセルサイズの自動決定に対応しています。
 
+### v0.1.11（重要）
+- ADR-0009 に基づく責務分離を完了し、`VoxelRenderer` はオーケストレーションに特化
+- 新コア: `ColorCalculator` / `VoxelSelector` / `AdaptiveController` / `GeometryRenderer`
+- Playground の i18n・アクセシビリティ改善、ドキュメント自動生成の更新
+
 ## English
 
 CesiumJS Heatbox is a heatmap library that visualizes density using 3D voxels for existing entities on CesiumJS. It automatically estimates ranges from entity distribution and renders efficiently using the configured `voxelSize` and draw limits (`maxRenderVoxels`). From v0.1.4, auto voxel-size determination is available via `autoVoxelSize: true` when `voxelSize` is omitted.

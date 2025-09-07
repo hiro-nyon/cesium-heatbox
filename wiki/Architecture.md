@@ -2,37 +2,34 @@
 
 **日本語** | [English](#english)
 
-本ライブラリは 4 つの中核コンポーネントで構成されています（v0.1.7で適応的制御を強化）。
+本ライブラリは v0.1.11 で ADR-0009 に基づく責務分離を完了し、`VoxelRenderer` は各専門コンポーネントを統括するオーケストレーションに特化しました。
 
 ## 日本語
 
-### コンポーネント
-- `CoordinateTransformer` **（v0.1.2: シンプル化）**
-  - エンティティからの位置取得、境界計算、ボクセル座標への変換を担当。
-  - 複雑なメソッドを削除し、直接的なアプローチに変更。
-- `VoxelGrid` **（v0.1.2: 軽量化）**
-  - 範囲とボクセルサイズからグリッドを生成、インデックス/キー計算を提供。
-  - 隣接ボクセル取得等の高度な機能を削除。
-- `DataProcessor` **（v0.1.2: 堅牢化）**
-  - エンティティをボクセルへ分類、統計値（min/max/avg 等）を算出。
-  - エラーハンドリングを強化し、安全なエンティティ処理を実装。
-- `VoxelRenderer` **（v0.1.2: Entity ベース）**
-  - Cesium Entity を用いてボクセルを描画（Primitiveから変更）。
-  - wireframeOnly・heightBased等の新機能を追加。
+### コンポーネント（v0.1.11）
+- `VoxelRenderer`（Orchestrator）
+  - 下記 4 コンポーネントを統括し、描画フローを制御
+  - 公開APIの互換維持、エラーハンドリングとログの一元化
+- `ColorCalculator`（色計算）
+  - 線形補間/カラーマップ/発散配色の純粋関数群
+- `VoxelSelector`（選択戦略）
+  - density/coverage/hybrid の戦略と TopN 強調、統計収集
+- `AdaptiveController`（適応制御）
+  - 近傍密度・カメラ要素・重なりリスクを踏まえたパラメータ決定
+- `GeometryRenderer`（描画/エンティティ管理）
+  - ボックス/インセット枠線/ポリライン等の生成とライフサイクル管理（Cesium依存）
 
-### 処理フロー（v0.1.2）
-1. **境界計算**: `CoordinateTransformer.calculateBounds(entities)` - 直接的な座標範囲計算
-2. **グリッド生成**: `VoxelGrid.createGrid(bounds, voxelSize)` - シンプルなグリッド作成
-3. **分類/集計**: `DataProcessor.classifyEntitiesIntoVoxels(...)` - 安全なエンティティ処理
-4. **統計算出**: `DataProcessor.calculateStatistics(...)` - 基本統計の計算
-5. **描画**: `VoxelRenderer.render(...)` - Entity ベースの描画
+### 処理フロー（v0.1.11）
+1. **境界計算**: `CoordinateTransformer.calculateBounds(entities)`
+2. **グリッド生成**: `VoxelGrid.createGrid(bounds, voxelSize)`
+3. **分類/集計**: `DataProcessor.classifyEntitiesIntoVoxels(...)` → `calculateStatistics(...)`
+4. **オーケストレーション**: `VoxelRenderer.render(...)`
+   - `VoxelSelector` で選抜 → `AdaptiveController` でパラメータ → `ColorCalculator` で色 → `GeometryRenderer` で描画
 
-### v0.1.7 の特徴
-- **適応的枠線制御**: 近傍密度・カメラ距離・重なりリスクに応じた自動調整
-- **表示モード拡張**: standard/inset/emulation-only の描画方式切替
-- **透明度resolver**: カスタム透明度制御機能
-- **インセット枠線**: 内側オフセット表示による視認性向上（v0.1.6.1）
-- **エラーハンドリング**: 堅牢なエンティティ処理とresolver例外処理
+### v0.1.11 のポイント
+- **責務分離**: SRPに基づく明確な分離でテスト/拡張容易性が向上（ADR-0009）
+- **依存境界**: {Selector, Adaptive, Color} → GeometryRenderer への逆参照禁止、Cesium依存はGeometryRendererに限定
+- **互換性維持**: 公開APIは継続、内部刷新のみ（Examples/Quick-Start はそのまま動作）
 
 ### v0.1.7 新機能オプション
 ```javascript
@@ -82,12 +79,10 @@ This library consists of 4 core components (enhanced with adaptive control in v0
 4. **Statistics Calculation**: `DataProcessor.calculateStatistics(...)` - Basic statistics calculation
 5. **Rendering**: `VoxelRenderer.render(...)` - Entity-based rendering
 
-### v0.1.2 Features
+### 互換性・依存
 - **Entity-based Rendering**: Changed from Primitive to Entity for improved stability
-- **Visibility Improvement**: wireframeOnly makes overlapping voxels easier to see
-- **Height-based Representation**: heightBased provides intuitive density understanding
-- **Error Handling**: Robust entity processing
-- **Performance**: Render count limitation with maxRenderVoxels (recommended ~300)
+- Cesium: ^1.120.0（peer）/ Node.js: >=18
+- Auto Render Budget / fitView 等は v0.1.9 の設計（ADR-0006）を継承
 
 ### New Feature Options
 ```javascript
