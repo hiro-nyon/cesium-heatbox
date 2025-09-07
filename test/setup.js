@@ -64,10 +64,14 @@ global.testUtils = {
   }
 };
 
-// Reduce test log noise by setting logger to WARN unless explicitly enabled by tests
+// CI環境対応: テスト中のLogger.warnを完全無効化してログ出力問題を防ぐ
 try {
   const { Logger } = require('../src/utils/logger.js');
   Logger.setLogLevel({ debug: false });
+  // Jest実行環境またはCI環境でLogger.warnを無効化
+  if (typeof global.jest !== 'undefined' || process.env.CI || process.env.GITHUB_ACTIONS) {
+    Logger.warn = jest.fn(); // すべてのconsole.warn出力を無効化
+  }
 } catch (_) {
   // ignore if logger is not loadable in this context
 }

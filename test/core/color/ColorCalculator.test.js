@@ -4,9 +4,23 @@
  */
 
 import { ColorCalculator } from '../../../src/core/color/ColorCalculator.js';
+import { Logger } from '../../../src/utils/logger.js';
 import * as Cesium from 'cesium';
 
 describe('ColorCalculator', () => {
+  // CI環境でのログ出力制御用
+  let originalWarn;
+  
+  beforeAll(() => {
+    // テスト中はLogger.warnを無効化してCI環境での大量ログ出力を防ぐ
+    originalWarn = Logger.warn;
+    Logger.warn = jest.fn();
+  });
+  
+  afterAll(() => {
+    // テスト終了後は元のLogger.warnに戻す
+    Logger.warn = originalWarn;
+  });
   describe('calculateColor', () => {
     test('should calculate linear interpolated color with default options', () => {
       const color = ColorCalculator.calculateColor(0.5);

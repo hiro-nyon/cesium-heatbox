@@ -4,10 +4,22 @@
  */
 
 import { VoxelRenderer } from '../../src/core/VoxelRenderer.js';
+import { Logger } from '../../src/utils/logger.js';
 const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
 describe('outlineWidthResolver Performance', () => {
-  let viewer, mockCesium;
+  let viewer, mockCesium, originalWarn;
+  
+  beforeAll(() => {
+    // CI環境でのログ出力制御用
+    originalWarn = Logger.warn;
+    Logger.warn = jest.fn();
+  });
+  
+  afterAll(() => {
+    // テスト終了後は元のLogger.warnに戻す
+    Logger.warn = originalWarn;
+  });
 
   beforeEach(() => {
     // Cesiumモック
