@@ -52,7 +52,7 @@ function convertHtmlToMarkdown(htmlContent, filename) {
       if (m && m[1]) classLink = m[1];
     } catch (_) {}
     let md = `# ${makeBilingualTitle(pageTitle)}\n\n`;
-    md += `[English](#english) | [日本語](#日本語)\n\n`;
+    md += `**日本語** | [English](#english)\n\n`;
     md += `## English\n\n`;
     if (classLink) md += `See also: [Class: ${classLink}](${classLink})\n\n`;
     if (code) md += '```javascript\n' + code + '\n```\n\n';
@@ -172,7 +172,7 @@ function convertHtmlToMarkdown(htmlContent, filename) {
 
   // 仕上げ: タイトル + 言語スイッチ + 言語順に結合（英語→日本語）
   let md = `# ${makeBilingualTitle(pageTitle)}\n\n`;
-  md += `[English](#english) | [日本語](#日本語)\n\n`;
+  md += `**日本語** | [English](#english)\n\n`;
   md += en + '\n' + ja + '\n';
 
   return md.trim() + '\n';
@@ -333,7 +333,7 @@ function generateApiIndex(htmlFiles) {
   const version = getVersion();
   let indexContent = `# API Reference（APIリファレンス）
 
-[English](#english) | [日本語](#日本語)
+**日本語** | [English](#english)
 
 ## English
 
@@ -355,11 +355,26 @@ This documentation is auto-generated from JSDoc comments in the source code.
     'AdaptiveController',
     'GeometryRenderer'
   ];
+  // 簡易サマリ抽出
+  function extractSummary(fileName) {
+    try {
+      const html = fs.readFileSync(path.join(API_DOCS_DIR, fileName), 'utf8');
+      const dom = new JSDOM(html);
+      const main = dom.window.document.querySelector('#main') || dom.window.document.body;
+      const desc = main.querySelector('.class-description');
+      const text = (desc && desc.textContent.trim()) || '';
+      if (!text) return '';
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const enLine = lines.find(l => !(/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(l)));
+      const picked = enLine || lines[0] || '';
+      return picked.replace(/\s+/g, ' ');
+    } catch (_) { return ''; }
+  }
   classes.forEach(className => {
-    const file = htmlFiles.find(f => f.includes(className));
+    const file = htmlFiles.find(f => f === `${className}.html`);
     if (file) {
-      // GitHub Wikiはページ名でリンクされるため拡張子は不要
-      indexContent += `- [${className}](${className})\n`;
+      const summary = extractSummary(file);
+      indexContent += summary ? `- [${className}](${className}) — ${summary}\n` : `- [${className}](${className})\n`;
     }
   });
 
@@ -385,9 +400,10 @@ This documentation is auto-generated from JSDoc comments in the source code.
 `;
 
   classes.forEach(className => {
-    const file = htmlFiles.find(f => f.includes(className));
+    const file = htmlFiles.find(f => f === `${className}.html`);
     if (file) {
-      indexContent += `- [${className}](${className})\n`;
+      const summary = extractSummary(file);
+      indexContent += summary ? `- [${className}](${className}) — ${summary}\n` : `- [${className}](${className})\n`;
     }
   });
 
