@@ -1,6 +1,6 @@
 # Source: utils/deviceTierDetector.js
 
-[English](#english) | [日本語](#日本語)
+**日本語** | [English](#english)
 
 ## English
 

@@ -1,6 +1,6 @@
 # Source: core/geometry/GeometryRenderer.js
 
-[English](#english) | [日本語](#日本語)
+**日本語** | [English](#english)
 
 ## English
 
