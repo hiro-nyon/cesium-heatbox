@@ -31,6 +31,9 @@ export const DEFAULT_OPTIONS = {
   // v0.1.6: 枠線重なり対策・柔軟化
   voxelGap: 0, // ボクセル間ギャップ（メートル）
   outlineOpacity: 1.0, // 枠線透明度（0-1）
+  outlineWidthResolver: null, // 関数: (params) => number で動的太さ制御
+  // 実質的な太さ表現のための代替描画（WebGLの線幅制限回避用）
+  outlineEmulation: 'off', // 'off' | 'topn' | 'non-topn' | 'all'（ポリラインで太線エミュレーション：TopNのみ | TopN以外のみ | すべて）
   // v0.1.6.1: インセット枠線（ADR-0004）
   outlineInset: 0, // インセット枠線のオフセット距離（メートル、0で無効）
   outlineInsetMode: 'all', // インセット枠線の適用範囲：'all'（全体） | 'topn'（TopNのみ）
@@ -41,6 +44,9 @@ export const DEFAULT_OPTIONS = {
   adaptiveOutlines: false, // 適応的枠線制御を有効化（オプトイン）
   outlineWidthPreset: 'uniform', // 'adaptive-density' | 'topn-focus' | 'uniform' プリセット
   
+  // v0.1.7: 透明度resolver
+  boxOpacityResolver: null, // 関数: (ctx) => number(0-1) でボックス透明度制御
+  outlineOpacityResolver: null, // 関数: (ctx) => number(0-1) で枠線透明度制御
   
   // v0.1.7: 適応的制御パラメータ
   adaptiveParams: {
@@ -66,8 +72,8 @@ export const DEFAULT_OPTIONS = {
   autoView: false, // 自動視点調整有効化
   fitViewOptions: {
     paddingPercent: 0.1, // データ範囲の10%パディング
-    pitchDegrees: -30, // ピッチ角度（度）
-    headingDegrees: 0, // ヘディング角度（度）
+    pitch: -30, // ピッチ角度（度）
+    heading: 0, // ヘディング角度（度）
     altitudeStrategy: 'auto' // 'auto' | 'manual' 高度計算戦略
   }
 };

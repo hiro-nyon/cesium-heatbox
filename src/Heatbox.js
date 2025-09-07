@@ -8,16 +8,15 @@ import {
   isValidEntities,
   validateAndNormalizeOptions,
   validateVoxelCount,
+  estimateInitialVoxelSize,
   calculateDataRange
 } from './utils/validation.js';
-import { DeviceTierDetector } from './utils/deviceTierDetector.js';
-import { VoxelSizeEstimator } from './utils/voxelSizeEstimator.js';
+import { applyAutoRenderBudget } from './utils/deviceTierDetector.js';
 import { Logger } from './utils/logger.js';
 import { CoordinateTransformer } from './core/CoordinateTransformer.js';
 import { VoxelGrid } from './core/VoxelGrid.js';
 import { DataProcessor } from './core/DataProcessor.js';
 import { VoxelRenderer } from './core/VoxelRenderer.js';
-import { ViewFitter } from './utils/ViewFitter.js';
 
 /**
  * Main class of CesiumJS Heatbox.
@@ -39,17 +38,13 @@ export class Heatbox {
     
     this.viewer = viewer;
     
-    // ユーザーが voxelSize を明示指定したかどうかを保持（デフォルト値と区別するため）
-    this._userProvidedVoxelSize = Object.prototype.hasOwnProperty.call(options || {}, 'voxelSize');
-
     // v0.1.9: Auto Render Budgetの適用
     const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
-    this.options = validateAndNormalizeOptions(DeviceTierDetector.applyAutoRenderBudget(mergedOptions));
+    this.options = validateAndNormalizeOptions(applyAutoRenderBudget(mergedOptions));
     
     // ログレベルをオプションに基づいて設定
     Logger.setLogLevel(this.options);
     this.renderer = new VoxelRenderer(this.viewer, this.options);
-    this.viewFitter = new ViewFitter(this.viewer);
     
     this._bounds = null;
     this._grid = null;
@@ -61,34 +56,9 @@ export class Heatbox {
   }
 
   /**
-   * Set heatmap data and render 3D voxel visualization.
-   * ヒートマップデータを設定し、3Dボクセル可視化を描画します。
-   * 
-   * This method processes the provided entity array, calculates optimal voxel grid,
-   * and renders 3D voxel-based heatmap visualization in the Cesium viewer.
-   * 
-   * このメソッドは提供されたエンティティ配列を処理し、最適なボクセルグリッドを計算して、
-   * Cesiumビューアーで3Dボクセルベースのヒートマップ可視化を描画します。
-   * 
-   * @param {Cesium.Entity[]} entities - Array of Cesium entities with position information / 位置情報を持つCesiumエンティティの配列
-   * @throws {Error} Throws error if entities array is invalid / エンティティ配列が無効な場合はエラーを投げます
-   * @returns {Promise<void>} Promise that resolves when rendering is complete / 描画完了時に解決するPromise
-   * 
-   * @example
-   * // Basic usage / 基本使用法
-   * const entities = generateTestEntities(viewer, bounds, 1000);
-   * await heatbox.setData(entities);
-   * 
-   * @example  
-   * // With error handling / エラーハンドリング付き
-   * try {
-   *   await heatbox.setData(entities);
-   *   console.log('Heatmap rendered successfully');
-   * } catch (error) {
-   *   console.error('Failed to render heatmap:', error);
-   * }
-   * 
-   * @since v0.1.0
+   * Set heatmap data and render.
+   * ヒートマップデータを設定し、描画を実行します。
+   * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
    */
   async setData(entities) {
     if (!isValidEntities(entities)) {
@@ -113,8 +83,7 @@ export class Heatbox {
       let finalVoxelSize = this.options.voxelSize || DEFAULT_OPTIONS.voxelSize;
       let autoAdjustmentInfo = null;
       
-      // ユーザーが voxelSize を明示指定していない場合に限り、自動決定を適用
-      if (this.options.autoVoxelSize && !this._userProvidedVoxelSize) {
+      if (this.options.autoVoxelSize && !this.options.voxelSize) {
         try {
           Logger.debug('自動ボクセルサイズ調整開始');
           
@@ -125,7 +94,7 @@ export class Heatbox {
             maxRenderVoxels: this.options.maxRenderVoxels
           };
           
-          const estimatedSize = VoxelSizeEstimator.estimate(entities, this._bounds, this.options.autoVoxelSizeMode, sizeOptions);
+          const estimatedSize = estimateInitialVoxelSize(this._bounds, entities.length, sizeOptions);
           const tempGrid = VoxelGrid.createGrid(this._bounds, estimatedSize);
           const validation = validateVoxelCount(tempGrid.totalVoxels, estimatedSize);
           
@@ -218,47 +187,10 @@ export class Heatbox {
   }
 
   /**
-   * Create heatmap from entities and return detailed statistics.
-   * エンティティからヒートマップを作成し、詳細統計情報を返します。
-   * 
-   * This method is equivalent to calling setData() followed by getStatistics().
-   * It processes the entity array to create voxel-based heatmap visualization
-   * and returns comprehensive statistics about the rendered result.
-   * 
-   * このメソッドは setData() に続けて getStatistics() を呼び出すことと同等です。
-   * エンティティ配列を処理してボクセルベースのヒートマップ可視化を作成し、
-   * レンダリング結果に関する包括的な統計情報を返します。
-   * 
-   * @param {Cesium.Entity[]} entities - Array of Cesium entities to process / 処理するCesiumエンティティの配列
-   * @returns {Promise<Object>} Detailed rendering statistics / 詳細なレンダリング統計情報
-   * @returns {Promise<number>} returns.totalVoxels - Total number of voxels in grid / グリッド内の総ボクセル数
-   * @returns {Promise<number>} returns.renderedVoxels - Number of actually rendered voxels / 実際にレンダリングされたボクセル数
-   * @returns {Promise<number>} returns.nonEmptyVoxels - Number of voxels containing data / データを含むボクセル数
-   * @returns {Promise<number>} returns.minCount - Minimum entity count in any voxel / 任意のボクセル内の最小エンティティ数
-   * @returns {Promise<number>} returns.maxCount - Maximum entity count in any voxel / 任意のボクセル内の最大エンティティ数
-   * @returns {Promise<number>} returns.averageCount - Average entity count per non-empty voxel / 非空ボクセルあたりの平均エンティティ数
-   * @throws {Error} Throws error if entities array is empty or invalid / エンティティ配列が空または無効な場合はエラーを投げます
-   * 
-   * @example
-   * // Create heatmap and get statistics / ヒートマップ作成と統計取得
-   * const entities = generateTestEntities(viewer, bounds, 1000);
-   * const stats = await heatbox.createFromEntities(entities);
-   * console.log(`Rendered ${stats.renderedVoxels} out of ${stats.totalVoxels} voxels`);
-   * 
-   * @example
-   * // Error handling with statistics / 統計情報付きエラーハンドリング
-   * try {
-   *   const stats = await heatbox.createFromEntities(entities);
-   *   if (stats.renderedVoxels === 0) {
-   *     console.warn('No voxels were rendered - check data distribution');
-   *   }
-   * } catch (error) {
-   *   console.error('Failed to create heatmap:', error);
-   * }
-   * 
-   * @since v0.1.0
-   * @see {@link setData} For data processing without returning statistics
-   * @see {@link getStatistics} For retrieving statistics after rendering
+   * Create heatmap from entities (async).
+   * エンティティからヒートマップを作成（非同期 API）。
+   * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
+   * @returns {Promise<Object>} Statistics info / 統計情報
    */
   async createFromEntities(entities) {
     if (!isValidEntities(entities)) {
@@ -269,83 +201,17 @@ export class Heatbox {
   }
 
   /**
-   * Control heatmap visibility without clearing data or re-rendering.
-   * データやレンダリングをクリアすることなくヒートマップの表示を制御します。
-   * 
-   * This method efficiently toggles the visibility of all rendered voxels
-   * by setting the 'show' property on Cesium entities. The underlying data
-   * and voxel grid remain intact, allowing for fast show/hide operations.
-   * 
-   * このメソッドはCesiumエンティティの'show'プロパティを設定することで、
-   * レンダリングされた全ボクセルの表示を効率的に切り替えます。基盤データと
-   * ボクセルグリッドはそのまま保持され、高速な表示/非表示操作が可能です。
-   * 
-   * @param {boolean} show - Whether to show the heatmap (true) or hide it (false) / ヒートマップを表示する（true）か隠す（false）か
-   * @returns {void}
-   * 
-   * @example
-   * // Show heatmap / ヒートマップを表示
-   * heatbox.setVisible(true);
-   * 
-   * @example
-   * // Hide heatmap temporarily / 一時的にヒートマップを隠す
-   * heatbox.setVisible(false);
-   * // ... other operations ...
-   * heatbox.setVisible(true); // Show again quickly
-   * 
-   * @example
-   * // Toggle visibility based on user interaction / ユーザー操作に基づく表示切り替え
-   * const toggleButton = document.getElementById('toggleHeatmap');
-   * let isVisible = true;
-   * toggleButton.onclick = () => {
-   *   isVisible = !isVisible;
-   *   heatbox.setVisible(isVisible);
-   *   toggleButton.textContent = isVisible ? 'Hide' : 'Show';
-   * };
-   * 
-   * @since v0.1.0
-   * @see {@link clear} For permanently removing the heatmap
+   * Toggle visibility.
+   * 表示/非表示を切り替えます。
+   * @param {boolean} show - true to show / 表示する場合は true
    */
   setVisible(show) {
     this.renderer.setVisible(show);
   }
 
   /**
-   * Completely clear heatmap visualization and reset internal state.
-   * ヒートマップ可視化を完全にクリアし、内部状態をリセットします。
-   * 
-   * This method removes all rendered voxel entities from the Cesium viewer and
-   * resets all internal data structures (bounds, grid, voxel data, statistics).
-   * After calling this method, the Heatbox instance returns to its initial state
-   * and is ready to process new data.
-   * 
-   * このメソッドは、レンダリングされた全ボクセルエンティティをCesiumビューアーから削除し、
-   * 全ての内部データ構造（境界、グリッド、ボクセルデータ、統計）をリセットします。
-   * このメソッドを呼び出した後、Heatboxインスタンスは初期状態に戻り、新しいデータを処理する準備ができます。
-   * 
-   * @returns {void}
-   * 
-   * @example
-   * // Clear current heatmap before loading new data / 新しいデータを読み込む前に現在のヒートマップをクリア
-   * heatbox.clear();
-   * await heatbox.setData(newEntities);
-   * 
-   * @example
-   * // Clean up when component is destroyed / コンポーネント破棄時のクリーンアップ
-   * const cleanup = () => {
-   *   heatbox.clear();
-   *   heatbox.destroy(); // Final cleanup
-   * };
-   * 
-   * @example
-   * // Reset to initial state for reuse / 再利用のため初期状態にリセット
-   * heatbox.clear();
-   * console.log(heatbox.getBounds()); // null - no data loaded
-   * console.log(heatbox.getStatistics()); // null - no statistics available
-   * 
-   * @since v0.1.0
-   * @see {@link setVisible} For temporary hiding without clearing data
-   * @see {@link destroy} For final cleanup including event handlers
+   * Clear the heatmap and internal state.
+   * ヒートマップと内部状態をクリアします。
    */
   clear() {
     this.renderer.clear();
@@ -385,42 +251,9 @@ export class Heatbox {
   }
 
   /**
-   * Update heatbox configuration options and automatically re-render if data exists.
-   * ヒートボックスの設定オプションを更新し、データが存在する場合は自動的に再描画します。
-   * 
-   * This method merges new options with existing configuration and triggers 
-   * automatic re-rendering when data is already loaded. Options are validated
-   * and normalized before application.
-   * 
-   * このメソッドは新しいオプションを既存の設定とマージし、データが既にロードされている場合は
-   * 自動的な再描画をトリガーします。オプションは適用前に検証・正規化されます。
-   * 
-   * @param {Object} newOptions - Configuration options to update / 更新する設定オプション
-   * @param {number} [newOptions.voxelSize] - Voxel size in meters / ボクセルサイズ（メートル）
-   * @param {number} [newOptions.opacity] - Base opacity (0-1) / 基本不透明度（0-1）
-   * @param {boolean} [newOptions.showOutline] - Whether to show voxel outlines / ボクセル輪郭の表示
-   * @param {string} [newOptions.colorMap] - Color map type ('custom', 'viridis', 'inferno') / カラーマップタイプ
-   * @param {number} [newOptions.highlightTopN] - Number of top voxels to highlight / 強調表示するトップボクセル数
-   * @param {boolean} [newOptions.adaptiveOutlines] - Enable adaptive outline control / 適応的輪郭制御を有効化
-   * @throws {Error} Throws error if options validation fails / オプション検証が失敗した場合はエラーを投げます
-   * @returns {void}
-   * 
-   * @example
-   * // Update color settings / 色設定の更新
-   * heatbox.updateOptions({
-   *   colorMap: 'viridis',
-   *   opacity: 0.9,
-   *   highlightTopN: 50
-   * });
-   * 
-   * @example
-   * // Enable adaptive features / 適応機能を有効化
-   * heatbox.updateOptions({
-   *   adaptiveOutlines: true,
-   *   outlineWidthPreset: 'adaptive-density'
-   * });
-   * 
-   * @since v0.1.0
+   * Update options and re-render if applicable.
+   * オプションを更新し、必要に応じて再描画します。
+   * @param {Object} newOptions - New options / 新しいオプション
    */
   updateOptions(newOptions) {
     this.options = validateAndNormalizeOptions({ ...this.options, ...newOptions });
@@ -544,80 +377,11 @@ export class Heatbox {
   }
 
   /**
-   * Automatically fit camera view to data bounds with intelligent positioning.
-   * データ境界にインテリジェントな位置決めでカメラビューを自動フィットします。
-   * 
-   * This method calculates optimal camera position and orientation to view the entire
-   * heatmap data with appropriate padding and viewing angle. Uses smart algorithms to
-   * avoid extreme camera positions and ensure good visibility.
-   * 
-   * このメソッドは適切なパディングと視角でヒートマップデータ全体を表示するため、
-   * 最適なカメラ位置と向きを計算します。極端なカメラ位置を避けて良好な視認性を
-   * 確保するスマートアルゴリズムを使用します。
-   * 
-   * @param {Object} [bounds] - Target bounds to fit to (uses current data bounds if omitted) / フィット対象境界（省略時は現在のデータ境界を使用）
-   * @param {number} bounds.minLon - Minimum longitude in degrees / 最小経度（度）
-   * @param {number} bounds.maxLon - Maximum longitude in degrees / 最大経度（度）
-   * @param {number} bounds.minLat - Minimum latitude in degrees / 最小緯度（度）
-   * @param {number} bounds.maxLat - Maximum latitude in degrees / 最大緯度（度）
-   * @param {number} bounds.minAlt - Minimum altitude in meters / 最小高度（メートル）
-   * @param {number} bounds.maxAlt - Maximum altitude in meters / 最大高度（メートル）
-   * @param {Object} [options={}] - Camera positioning options / カメラ位置決めオプション
-   * @param {number} [options.paddingPercent=0.1] - Padding around data as percentage (0-1) / データ周辺パディング（0-1の割合）
-   * @param {number} [options.pitchDegrees=-45] - Camera pitch angle in degrees / カメラピッチ角度（度）
-   * @param {number} [options.headingDegrees=0] - Camera heading angle in degrees / カメラヘディング角度（度）
-   * @param {number} [options.duration=2.0] - Animation duration in seconds / アニメーション時間（秒）
-   * @returns {Promise<void>} Promise that resolves when camera animation completes / カメラアニメーション完了時に解決するPromise
-   * @throws {Error} Throws error if no bounds available for fitting / フィット用境界が利用できない場合はエラーを投げます
-   * 
-   * @example
-   * // Fit to current data bounds / 現在のデータ境界にフィット
-   * await heatbox.fitView();
-   * 
-   * @example
-   * // Custom camera angle and padding / カスタムカメラ角度とパディング  
-   * await heatbox.fitView(null, {
-   *   pitchDegrees: -60,      // 上空60度からの視点
-   *   headingDegrees: 45,     // 北東45度方向
-   *   paddingPercent: 0.2,    // データ周辺に20%マージン
-   *   duration: 3.0           // 3秒でアニメーション
-   * });
-   * 
-   * @example
-   * // Typical fitViewOptions patterns / 典型的なfitViewOptionsパターン
-   * 
-   * // Pattern 1: Top-down view / 真上からの視点
-   * await heatbox.fitView(bounds, {
-   *   pitchDegrees: -90,      // 真下を向く
-   *   headingDegrees: 0,      // 北向き
-   *   paddingPercent: 0.1
-   * });
-   * 
-   * // Pattern 2: Diagonal overview / 斜め俯瞰
-   * await heatbox.fitView(bounds, {
-   *   pitchDegrees: -45,      // 45度斜め
-   *   headingDegrees: 135,    // 南東方向から
-   *   paddingPercent: 0.15
-   * });
-   * 
-   * // Pattern 3: Close inspection / 近接観察
-   * await heatbox.fitView(bounds, {
-   *   pitchDegrees: -30,      // 浅い角度
-   *   headingDegrees: 0,
-   *   paddingPercent: 0.05,   // 狭いマージン
-   *   duration: 1.0           // 素早く移動
-   * });
-   * 
-   * @example
-   * // Fit to specific bounds / 特定の境界にフィット
-   * const customBounds = {
-   *   minLon: 139.7, maxLon: 139.8,
-   *   minLat: 35.6, maxLat: 35.7,
-   *   minAlt: 0, maxAlt: 100
-   * };
-   * await heatbox.fitView(customBounds);
-   * 
-   * @since v0.1.9
+   * Fit view to data bounds with smart camera positioning.
+   * データ境界にスマートなカメラ位置でビューをフィットします。
+   * @param {Object} bounds - Target bounds (optional, uses current data bounds if not provided) / 対象境界
+   * @param {Object} options - Fit view options / フィットビューオプション
+   * @returns {Promise} Promise that resolves when camera movement is complete / カメラ移動完了時に解決するPromise
    */
   async fitView(bounds = null, options = {}) {
     try {
@@ -627,7 +391,12 @@ export class Heatbox {
         return;
       }
 
-      // Merge with default fit view options
+      // 境界の妥当性チェック
+      if (!this._isValidBounds(targetBounds)) {
+        Logger.warn('Invalid bounds provided to fitView:', targetBounds);
+        return;
+      }
+
       const fitOptions = {
         ...this.options.fitViewOptions,
         ...options
@@ -635,19 +404,249 @@ export class Heatbox {
 
       Logger.debug('fitView called with bounds:', targetBounds, 'options:', fitOptions);
 
-      // Map option names and delegate to ViewFitter
-      const mapped = {
-        paddingPercent: fitOptions.paddingPercent,
-        pitchDegrees: fitOptions.pitch ?? fitOptions.pitchDegrees,
-        headingDegrees: fitOptions.heading ?? fitOptions.headingDegrees,
-        duration: fitOptions.duration,
-        maximumHeight: fitOptions.maximumHeight,
-        minimumHeight: fitOptions.minimumHeight
-      };
-      return await ViewFitter.fitToBounds(this.viewer, targetBounds, mapped);
+      // データ境界の中心とサイズを計算
+      const centerLon = (targetBounds.minLon + targetBounds.maxLon) / 2;
+      const centerLat = (targetBounds.minLat + targetBounds.maxLat) / 2;
+      const centerAlt = (targetBounds.minAlt + targetBounds.maxAlt) / 2;
+
+      // データ範囲の計算（極端なケースの処理）
+      const dataRange = calculateDataRange(targetBounds);
+      const maxRange = Math.max(dataRange.x, dataRange.y, dataRange.z);
+      
+      // 極小データの保護
+      if (maxRange < 10) {
+        Logger.debug('Very small data range detected, applying minimum scale');
+        return this._handleMinimalDataRange(centerLon, centerLat, centerAlt, fitOptions);
+      }
+      
+      // 極大データの保護
+      if (maxRange > 100000) {
+        Logger.debug('Very large data range detected, applying maximum scale');
+        return this._handleLargeDataRange(targetBounds, fitOptions);
+      }
+
+      // パディングの計算（範囲制限）
+      const paddingPercent = Math.max(0.05, Math.min(0.5, fitOptions.paddingPercent));
+      const paddingMeters = paddingPercent * maxRange;
+      
+      // カメラ高度の計算（ピッチと視野角を考慮）
+      const cameraHeight = this._calculateOptimalCameraHeight(
+        maxRange, 
+        paddingMeters, 
+        fitOptions
+      );
+
+      // カメラ移動の実行
+      return this._executeCameraMovement(
+        centerLon, 
+        centerLat, 
+        centerAlt, 
+        cameraHeight, 
+        fitOptions,
+        maxRange,
+        paddingMeters
+      );
 
     } catch (error) {
       Logger.error('fitView failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate bounds object.
+   * 境界オブジェクトの妥当性をチェックします。
+   * @param {Object} bounds - Bounds to validate / 検証する境界
+   * @returns {boolean} True if valid / 有効な場合true
+   * @private
+   */
+  _isValidBounds(bounds) {
+    return bounds &&
+           typeof bounds.minLon === 'number' && !isNaN(bounds.minLon) &&
+           typeof bounds.maxLon === 'number' && !isNaN(bounds.maxLon) &&
+           typeof bounds.minLat === 'number' && !isNaN(bounds.minLat) &&
+           typeof bounds.maxLat === 'number' && !isNaN(bounds.maxLat) &&
+           typeof bounds.minAlt === 'number' && !isNaN(bounds.minAlt) &&
+           typeof bounds.maxAlt === 'number' && !isNaN(bounds.maxAlt) &&
+           bounds.minLon <= bounds.maxLon &&
+           bounds.minLat <= bounds.maxLat &&
+           bounds.minAlt <= bounds.maxAlt;
+  }
+
+  /**
+   * Handle minimal data range case.
+   * 極小データ範囲の場合の処理
+   * @param {number} centerLon - Center longitude / 中心経度
+   * @param {number} centerLat - Center latitude / 中心緯度
+   * @param {number} centerAlt - Center altitude / 中心高度
+   * @param {Object} fitOptions - Fit options / フィットオプション
+   * @returns {Promise} Camera movement promise / カメラ移動Promise
+   * @private
+   */
+  async _handleMinimalDataRange(centerLon, centerLat, centerAlt, fitOptions) {
+    Logger.debug('Handling minimal data range');
+    
+    const destination = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt + 2000);
+    const heading = Cesium.Math.toRadians(fitOptions.heading);
+    const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+    
+    return this.viewer.camera.flyTo({
+      destination,
+      orientation: { heading, pitch, roll: 0 },
+      duration: 1.5
+    });
+  }
+
+  /**
+   * Handle large data range case.
+   * 極大データ範囲の場合の処理
+   * @param {Object} bounds - Target bounds / 対象境界
+   * @param {Object} fitOptions - Fit options / フィットオプション
+   * @returns {Promise} Camera movement promise / カメラ移動Promise
+   * @private
+   */
+  async _handleLargeDataRange(bounds, fitOptions) {
+    Logger.debug('Handling large data range with bounding sphere');
+    
+    const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+    const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
+    
+    const dataRange = calculateDataRange(bounds);
+    const maxRange = Math.max(dataRange.x, dataRange.y, dataRange.z);
+    
+    const boundingSphere = new Cesium.BoundingSphere(
+      Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
+      maxRange / 2
+    );
+    
+    const heading = Cesium.Math.toRadians(fitOptions.heading);
+    const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+    
+    return this.viewer.camera.flyToBoundingSphere(boundingSphere, {
+      duration: 2.5,
+      offset: new Cesium.HeadingPitchRange(heading, pitch, 0)
+    });
+  }
+
+  /**
+   * Calculate optimal camera height.
+   * 最適なカメラ高度を計算します。
+   * @param {number} maxRange - Maximum data range / 最大データ範囲
+   * @param {number} paddingMeters - Padding in meters / パディング（メートル）
+   * @param {Object} fitOptions - Fit options / フィットオプション
+   * @returns {number} Optimal camera height / 最適なカメラ高度
+   * @private
+   */
+  _calculateOptimalCameraHeight(maxRange, paddingMeters, fitOptions) {
+    if (fitOptions.altitudeStrategy !== 'auto') {
+      return fitOptions.altitude || 5000;
+    }
+
+    try {
+      const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+      const fov = this.viewer.camera.frustum.fovy || Cesium.Math.toRadians(60);
+      
+      // 幾何学的計算: データがフレームに収まる高度を計算
+      const adjustedRange = maxRange + paddingMeters;
+      const baseCameraHeight = adjustedRange / (2 * Math.tan(fov / 2));
+      
+      // ピッチ補正（斜め視点での見え方調整）
+      const absPitch = Math.abs(pitch);
+      const pitchFactor = Math.max(0.5, Math.sin(Math.PI/2 - absPitch) + 0.3);
+      let cameraHeight = baseCameraHeight * pitchFactor;
+      
+      // アスペクト比補正（極端に細長いデータの場合）
+      const aspectRatio = maxRange / Math.min(maxRange, 100);
+      if (aspectRatio > 5) {
+        cameraHeight *= Math.log10(aspectRatio) + 1;
+      }
+      
+      // 制限値適用（データ範囲に基づく適応的制限）
+      const minHeight = Math.max(500, maxRange * 0.1);
+      const maxHeight = Math.min(100000, maxRange * 10);
+      cameraHeight = Math.max(minHeight, Math.min(maxHeight, cameraHeight));
+      
+      Logger.debug(`Camera height calculated: ${cameraHeight.toFixed(0)}m (range: ${maxRange.toFixed(0)}m, pitch: ${fitOptions.pitch}°)`);
+      return cameraHeight;
+      
+    } catch (error) {
+      Logger.warn('Camera height calculation failed, using fallback:', error);
+      return Math.max(2000, maxRange * 2);
+    }
+  }
+
+  /**
+   * Execute camera movement.
+   * カメラ移動を実行します。
+   * @param {number} centerLon - Center longitude / 中心経度
+   * @param {number} centerLat - Center latitude / 中心緯度
+   * @param {number} centerAlt - Center altitude / 中心高度
+   * @param {number} cameraHeight - Camera height / カメラ高度
+   * @param {Object} fitOptions - Fit options / フィットオプション
+   * @param {number} maxRange - Maximum range / 最大範囲
+   * @param {number} paddingMeters - Padding meters / パディング（メートル）
+   * @returns {Promise} Camera movement promise / カメラ移動Promise
+   * @private
+   */
+  async _executeCameraMovement(centerLon, centerLat, centerAlt, cameraHeight, fitOptions, maxRange, paddingMeters) {
+    try {
+      // 目標カメラ位置
+      const destination = Cesium.Cartesian3.fromDegrees(
+        centerLon, 
+        centerLat, 
+        centerAlt + cameraHeight
+      );
+
+      // カメラの向き設定
+      const heading = Cesium.Math.toRadians(fitOptions.heading);
+      const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+      const roll = 0;
+
+      const orientation = {
+        heading,
+        pitch,
+        roll
+      };
+
+      Logger.debug(`Camera target: position=${centerLon.toFixed(6)},${centerLat.toFixed(6)},${(centerAlt + cameraHeight).toFixed(0)}, heading=${fitOptions.heading}°, pitch=${fitOptions.pitch}°`);
+
+      // 距離に応じた移動時間の調整
+      const duration = Math.max(1.0, Math.min(3.0, Math.log10(maxRange) * 0.8));
+
+      // プライマリ: flyTo を使用
+      const flyPromise = this.viewer.camera.flyTo({
+        destination,
+        orientation,
+        duration,
+        complete: () => {
+          Logger.debug('fitView camera movement completed');
+        },
+        cancel: () => {
+          Logger.debug('fitView camera movement cancelled');
+        }
+      });
+
+      // flyToが利用できない場合のフォールバック
+      if (!flyPromise) {
+        Logger.debug('Using fallback: flyToBoundingSphere');
+        const boundingSphere = new Cesium.BoundingSphere(
+          Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
+          maxRange / 2 + paddingMeters
+        );
+        
+        await this.viewer.camera.flyToBoundingSphere(boundingSphere, {
+          duration,
+          offset: new Cesium.HeadingPitchRange(heading, pitch, 0)
+        });
+      } else {
+        await flyPromise;
+      }
+
+      Logger.info('fitView completed successfully');
+      
+    } catch (error) {
+      Logger.error('Camera movement execution failed:', error);
       throw error;
     }
   }
