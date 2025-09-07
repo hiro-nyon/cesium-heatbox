@@ -17,11 +17,12 @@
 - `playground/styles.css` … Liquid Glass UI / レイアウト
 - `playground/app.js` … Playground ロジック
 - `playground/simple-app.js` … Quick Start ロジック
-- Heatbox ライブラリは CDN（unpkg）から読込（`0.1.11-alpha.1`）
 
 ## 主要な仕様メモ
 - CesiumJS 1.120 を CDN から読込。Cesium Ion は未使用。
 - Heatbox は unpkg CDN（`cesium-heatbox@next`）から読込。
+
+
 - 背景地図は UrlTemplateImageryProvider（Carto/OSM）。地形は `EllipsoidTerrainProvider`。
 - Quick Start:
   - 極力シンプル（CartoDB Light 固定、Auto voxel sizing）
@@ -38,7 +39,7 @@
 - 公開: `gh-pages`（GitHub Pages の公開元）
 - デプロイ手順:
   1. `gh-pages-alpha` に変更を入れる
-  2. `gh-pages` にマージ（この README は `gh-pages` に pull される前提で記述）
+  2. `gh-pages` にマージ
   3. `git push origin gh-pages`
 - 反映には 1–3 分かかることがあります
 
@@ -55,5 +56,6 @@
 - このリポジトリは GitHub プロジェクトページ配下（`/cesium-heatbox/`）で公開されます。相対パスで動作するよう構成済みです。
 - 外部リソースは HTTPS のみ使用。
 - CDN のバージョンを変更する場合は、`playground/index.html` と `playground/simple.html` の Heatbox `<script>` を更新してください。
+
 
 問題・要望は Issue にてお知らせください。Thanks!
