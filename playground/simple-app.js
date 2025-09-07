@@ -183,6 +183,9 @@ function reRenderHeatmap() {
       heatboxInstance.setData(currentEntities);
       if (typeof heatboxInstance.update === 'function') heatboxInstance.update();
     }
+    if (wireframe) {
+      try { adjustEmulationByDensity(); } catch (_) {}
+    }
   } catch (e) {
     console.error('Re-render failed:', e);
   }
@@ -616,6 +619,10 @@ async function createHeatmap() {
         heatboxInstance.update();
       }
     }
+    // Post-adjust emulation polylines by density when wireframe is enabled
+    if (wireframe) {
+      try { adjustEmulationByDensity(); } catch (_) {}
+    }
     
     // Update statistics with heatmap info
     updateStatisticsWithHeatmap(options);
@@ -630,6 +637,57 @@ async function createHeatmap() {
     console.error('Error creating heatmap:', error);
     updateStatus('Error creating heatmap: ' + error.message, 'error');
   }
+}
+
+// Post-process polyline emulation (opacity/width) by density using rendered entities
+function adjustEmulationByDensity() {
+  try {
+    if (!viewer || !viewer.entities || !viewer.entities.values) return;
+    const values = viewer.entities.values;
+    const countByKey = new Map();
+    let minC = Infinity, maxC = -Infinity;
+    for (let i = 0; i < values.length; i++) {
+      const e = values[i];
+      const p = e && e.properties;
+      if (!p) continue;
+      const type = p.type && (p.type.getValue ? p.type.getValue() : p.type);
+      if (type === 'voxel') {
+        const key = p.key && (p.key.getValue ? p.key.getValue() : p.key);
+        const c = p.count && (p.count.getValue ? p.count.getValue() : p.count);
+        if (key != null && Number.isFinite(c)) {
+          countByKey.set(key, c);
+          if (c < minC) minC = c;
+          if (c > maxC) maxC = c;
+        }
+      }
+    }
+    if (countByKey.size === 0 || !Number.isFinite(minC) || !Number.isFinite(maxC) || maxC === minC) return;
+    const minW = 1.5, maxW = 10;
+    for (let i = 0; i < values.length; i++) {
+      const e = values[i];
+      const p = e && e.properties;
+      if (!p || !e.polyline) continue;
+      const type = p.type && (p.type.getValue ? p.type.getValue() : p.type);
+      if (type !== 'voxel-edge-polyline') continue;
+      const parentKey = p.parentKey && (p.parentKey.getValue ? p.parentKey.getValue() : p.parentKey);
+      const c = countByKey.get(parentKey);
+      if (!Number.isFinite(c)) continue;
+      const nd = Math.max(0, Math.min(1, (c - minC) / (maxC - minC)));
+      // width
+      const w = minW + nd * (maxW - minW);
+      if (typeof e.polyline.width === 'number') e.polyline.width = w;
+      else if (e.polyline.width && typeof e.polyline.width.setValue === 'function') e.polyline.width.setValue(w);
+      // opacity
+      const op = Math.max(0.05, Math.min(1.0, 0.15 + nd * 0.85));
+      const mat = e.polyline.material;
+      if (mat && typeof mat.withAlpha === 'function') {
+        e.polyline.material = mat.withAlpha(op);
+      } else if (window.Cesium && Cesium.Color) {
+        e.polyline.material = Cesium.Color.WHITE.withAlpha(op);
+      }
+    }
+    try { viewer.scene.requestRender && viewer.scene.requestRender(); } catch (_) {}
+  } catch (_) {}
 }
 
 // Clear heatmap
