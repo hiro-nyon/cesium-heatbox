@@ -8,7 +8,7 @@
 - Quick Start: https://hiro-nyon.github.io/cesium-heatbox/playground/simple.html
 
 現在のデモは Heatbox を CDN から読み込みます。
-- Heatbox CDN: https://unpkg.com/cesium-heatbox@0.1.11-alpha.1/dist/cesium-heatbox.umd.min.js
+- Heatbox CDN: https://unpkg.com/cesium-heatbox@next/dist/cesium-heatbox.umd.min.js
 
 ## 構成（主要ファイル）
 - `index.html` … Home（概要・リンク）
@@ -21,7 +21,7 @@
 
 ## 主要な仕様メモ
 - CesiumJS 1.120 を CDN から読込。Cesium Ion は未使用。
-- Heatbox は unpkg CDN（`cesium-heatbox@0.1.11-alpha.1`）から読込。
+- Heatbox は unpkg CDN（`cesium-heatbox@next`）から読込。
 - 背景地図は UrlTemplateImageryProvider（Carto/OSM）。地形は `EllipsoidTerrainProvider`。
 - Quick Start:
   - 極力シンプル（CartoDB Light 固定、Auto voxel sizing）
