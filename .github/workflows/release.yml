@@ -49,9 +49,9 @@ jobs:
       - name: Read package version
         id: meta
         shell: bash
-        run: >-
-          node -e "const v=require('./package.json').version;
-          require('fs').appendFileSync(process.env.GITHUB_OUTPUT, `version=${v}\n`);"
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       
       # main の追加機能（ドキュメント生成）
       - name: Generate docs and sync wiki (stable only)
