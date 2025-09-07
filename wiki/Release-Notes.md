@@ -6,12 +6,31 @@
 
 ## 日本語
 
-## 0.1.11 (2025-09-XX)
+## 0.1.11 (2025-09-08)
 - ADR-0009 に基づく責務分離を完了（`VoxelRenderer` をオーケストレーションに特化）
 - 新コア: `ColorCalculator` / `VoxelSelector` / `AdaptiveController` / `GeometryRenderer`
 - Playground: i18n とアクセシビリティの改善、emulation-only モードの整備
 - ドキュメント: API/Wiki 自動生成の安定化、Source ページもMarkdown化
 - テスト: パフォーマンス受入は `PERF_TESTS=1` で任意実行、メモリの閾値調整（CIばらつき対策）
+
+参考: ADR-0009（VoxelRenderer責任分離） `docs/adr/ADR-0009-voxel-renderer-responsibility-separation.md`
+
+## 0.1.10 (2025-09-04)
+- 内部リファクタリング・モジュール化の段階実施。公開APIは互換維持。
+  - 選択戦略/推定/視点調整の外部化とI/F明確化、`VoxelRenderer`の役割縮小の準備
+- ドキュメント: ADR-0007/0008 を追加（最終的に 0009 に置換）。MIGRATION 計画を文書化（実運用は 0.1.11 へ統合）。
+
+参考: ADR-0007（v0.1.10 リファクタ） `docs/adr/ADR-0007-v0.1.10-refactoring-modularization.md`  /  ADR-0008（API整理案） `docs/adr/ADR-0008-v0.1.10-refactor-and-api-cleanup.md`
+
+## 0.1.9 (2025-08-30)
+- 適応的レンダリング制限（選抜戦略の拡張）
+  - `renderLimitStrategy: 'density'|'coverage'|'hybrid'`
+  - `minCoverageRatio`, `coverageBinsXY('auto'|number)`
+- 自動ボクセルサイズ強化（占有率ベース）: `autoVoxelSizeMode: 'occupancy'`, `autoVoxelTargetFill`
+- Auto Render Budget: `renderBudgetMode: 'auto'|'manual'`（端末ティアに応じて上限を初期化）
+- スマート視覚化支援: `autoView: true`, `fitView(bounds, options)` 公開
+
+参考: ADR-0006（v0.1.9） `docs/adr/ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md`
 
 ## 0.1.5 (2025-08-25)
 - デバッグ: `debug.showBounds` で境界ボックス表示を明示的に制御（`debug` は boolean | object）
@@ -74,12 +93,31 @@ npm run build:umd
 
 ## English
 
-### v0.1.11 (2025-09-XX)
+### v0.1.11 (2025-09-08)
 - Completed responsibility separation per ADR-0009 (`VoxelRenderer` acts as orchestrator)
 - New core modules: `ColorCalculator`, `VoxelSelector`, `AdaptiveController`, `GeometryRenderer`
 - Playground: i18n & accessibility improvements; refined emulation-only mode
 - Docs: Stable API/Wiki generation, including Source pages to Markdown
 - Tests: Gate perf acceptance with `PERF_TESTS=1`; relaxed memory thresholds for CI variance
+
+Ref: ADR-0009 `docs/adr/ADR-0009-voxel-renderer-responsibility-separation.md`
+
+### v0.1.10 (2025-09-04)
+- Incremental refactoring/modularization with API compatibility preserved.
+  - Extracted selection/estimation/view-fitting concerns, prepared `VoxelRenderer` for orchestration role
+- Docs: Added ADR-0007/0008 (superseded by 0009). Migration plan documented (operationalized in 0.1.11).
+
+Refs: ADR-0007 `docs/adr/ADR-0007-v0.1.10-refactoring-modularization.md` / ADR-0008 `docs/adr/ADR-0008-v0.1.10-refactor-and-api-cleanup.md`
+
+### v0.1.9 (2025-08-30)
+- Adaptive rendering limits (selection strategies)
+  - `renderLimitStrategy: 'density'|'coverage'|'hybrid'`
+  - `minCoverageRatio`, `coverageBinsXY('auto'|number)`
+- Occupancy-based auto voxel size: `autoVoxelSizeMode: 'occupancy'`, `autoVoxelTargetFill`
+- Auto Render Budget: `renderBudgetMode: 'auto'|'manual'`
+- Smart view assistance: `autoView: true`, `fitView(bounds, options)`
+
+Ref: ADR-0006 `docs/adr/ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md`
 
 Please refer to the repository's `CHANGELOG.md` for the latest changes. Here we extract major topics.
 

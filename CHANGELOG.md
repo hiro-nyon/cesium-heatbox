@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
-## [0.1.11] - 2025-09-XX
+## [0.1.11] - 2025-09-08
 
 ### Added
 - ADR-0009 Orchestration Architecture 完了（`VoxelRenderer` をオーケストレーションに特化）
@@ -32,6 +32,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### References
 - ADR-0009: `docs/adr/ADR-0009-voxel-renderer-responsibility-separation.md`
 - ADR-0006（v0.1.9 設計）: `docs/adr/ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md`
+
+## [0.1.10] - 2025-09-04
+
+> 内部リファクタリングおよびモジュール化の段階実施版。最終設計は 0.1.11 の ADR-0009 で確定。
+
+### Changed
+- モジュール分割の準備と段階導入（描画周辺の責務整理）
+  - 選択戦略・推定・視点調整の外部化とI/F明確化（テスト整備）
+  - `VoxelRenderer` の責務を縮小しやすい構造へ移行（オーケストレーション化の前段）
+- 公開APIは互換維持（Breakingは見送り、0.1.11で最終化）
+
+### Docs
+- ADR更新（ADR-0007/0008 の策定と置換関係の明記）
+- MIGRATION計画を文書化（実運用は 0.1.11 に統合）
+
+### References
+- ADR-0007: `docs/adr/ADR-0007-v0.1.10-refactoring-modularization.md`
+- ADR-0008: `docs/adr/ADR-0008-v0.1.10-refactor-and-api-cleanup.md`
+
+## [0.1.9] - 2025-08-30
+
+### Added
+- 適応的レンダリング制限（選抜戦略の拡張）
+  - `renderLimitStrategy: 'density'|'coverage'|'hybrid'`
+  - `minCoverageRatio`（hybrid用の層化抽出比率）、`coverageBinsXY`（層化ビン数 `'auto'` | number）
+- 自動ボクセルサイズ強化（占有率ベース）
+  - `autoVoxelSizeMode: 'basic'|'occupancy'`, `autoVoxelTargetFill`
+- 端末ティアに応じたレンダリング上限（Auto Render Budget）
+  - `renderBudgetMode: 'auto'|'manual'`（端末に応じて `maxRenderVoxels` を初期化）
+- スマート視覚化支援
+  - `autoView: true` で自動視点調整を有効化、`fitView(bounds, options)` を公開
+
+### Enhanced
+- `getStatistics()` に選抜戦略やクリップ数などの統計を拡充
+- 疎密混在データでの視覚的カバレッジを改善（hybrid/coverage 戦略）
+
+### Docs
+- チューニング指針（戦略/比率/上限の目安）をドキュメント/Examples/Wikiに追記
+
+### References
+- ADR-0006: `docs/adr/ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md`
 
 ## [0.1.8] - 2025-08-30
 
