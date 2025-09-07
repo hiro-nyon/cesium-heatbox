@@ -184,24 +184,45 @@ describe('ColorCalculator', () => {
   });
 
   describe('calculateDivergingColor', () => {
-    test('should calculate diverging color for value below pivot', () => {
+    test('should calculate diverging color for value below pivot (blue side)', () => {
       const options = { divergingPivot: 10 };
-      const color = ColorCalculator.calculateDivergingColor(5, options);
+      const color = ColorCalculator.calculateDivergingColor(5, options);  // 5 < 10, should be blue side
       
       expect(color).toHaveProperty('red');
       expect(color).toHaveProperty('green');
       expect(color).toHaveProperty('blue');
-      // Should be from the blue side of diverging color map
+      
+      // Value 5 with pivot 10 -> normalized to 0.25 (blue side)
+      // Should have more blue than red (blue side of diverging map)
+      expect(color.blue).toBeGreaterThan(color.red);
     });
 
-    test('should calculate diverging color for value above pivot', () => {
+    test('should calculate diverging color for value above pivot (red side)', () => {
       const options = { divergingPivot: 10 };
-      const color = ColorCalculator.calculateDivergingColor(15, options);
+      const color = ColorCalculator.calculateDivergingColor(15, options);  // 15 > 10, should be red side
       
       expect(color).toHaveProperty('red');
       expect(color).toHaveProperty('green');
       expect(color).toHaveProperty('blue');
-      // Should be from the red side of diverging color map
+      
+      // Value 15 with pivot 10 -> normalized to 0.75 (red side)  
+      // Should have more red than blue (red side of diverging map)
+      expect(color.red).toBeGreaterThan(color.blue);
+    });
+
+    test('should handle pivot value correctly (center white)', () => {
+      const options = { divergingPivot: 10 };
+      const color = ColorCalculator.calculateDivergingColor(10, options);  // exactly at pivot
+      
+      expect(color).toHaveProperty('red');
+      expect(color).toHaveProperty('green');
+      expect(color).toHaveProperty('blue');
+      
+      // At pivot, should be close to white/neutral (center of diverging map)
+      // All color components should be relatively high and similar
+      expect(color.red).toBeGreaterThan(0.8);
+      expect(color.green).toBeGreaterThan(0.8);
+      expect(color.blue).toBeGreaterThan(0.8);
     });
 
     test('should handle zero pivot', () => {
@@ -211,6 +232,8 @@ describe('ColorCalculator', () => {
       expect(color).toHaveProperty('red');
       expect(color).toHaveProperty('green');
       expect(color).toHaveProperty('blue');
+      // With pivot=0, any positive value will be on red side
+      expect(color.red).toBeGreaterThan(0);
     });
   });
 

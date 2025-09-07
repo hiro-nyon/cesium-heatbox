@@ -12,22 +12,38 @@ import * as Cesium from 'cesium';
 import { Logger } from '../../utils/logger.js';
 
 // カラーマップ定義（VoxelRendererから抽出）
+// 科学的可視化用の標準カラーマップから簡略化
 const COLOR_MAPS = {
-  // Viridisカラーマップ（簡略化した16段階）
+  // Viridisカラーマップ（10段階、重複削除済み）
+  // 紫→青→緑→黄の滑らかなグラデーション
   viridis: [
-    [68, 1, 84], [71, 44, 122], [59, 81, 139], [44, 113, 142],
-    [33, 144, 141], [39, 173, 129], [92, 200, 99], [170, 220, 50],
-    [253, 231, 37], [255, 255, 255], [255, 255, 255], [255, 255, 255],
-    [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]
+    [68, 1, 84],     // Dark purple
+    [72, 40, 120],   // Purple
+    [62, 74, 137],   // Blue-purple  
+    [49, 104, 142],  // Blue
+    [38, 130, 142],  // Blue-teal
+    [31, 158, 137],  // Teal
+    [53, 183, 121],  // Green-teal
+    [109, 205, 89],  // Green
+    [180, 222, 44],  // Yellow-green
+    [253, 231, 37]   // Bright yellow
   ],
-  // Infernoカラーマップ（簡略化した16段階）
+  // Infernoカラーマップ（10段階、重複削除済み）
+  // 黒→紫→赤→オレンジ→黄の熱マップ風
   inferno: [
-    [0, 0, 4], [31, 12, 72], [85, 15, 109], [136, 34, 106],
-    [186, 54, 85], [227, 89, 51], [249, 142, 8], [252, 187, 17],
-    [245, 219, 76], [252, 255, 164], [255, 255, 255], [255, 255, 255],
-    [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]
+    [0, 0, 4],       // Near black
+    [31, 12, 72],    // Dark purple
+    [85, 15, 109],   // Purple
+    [136, 34, 106],  // Red-purple
+    [186, 54, 85],   // Red
+    [227, 89, 51],   // Orange-red
+    [249, 142, 8],   // Orange
+    [252, 187, 17],  // Yellow-orange
+    [245, 219, 76],  // Yellow
+    [252, 255, 164]  // Light yellow
   ],
-  // 二極性配色（blue-white-red）
+  // 二極性配色（blue-white-red、17段階）
+  // データの正負を表現するための対称配色
   diverging: [
     [0, 0, 255], [32, 64, 255], [64, 128, 255], [96, 160, 255],
     [128, 192, 255], [160, 224, 255], [192, 240, 255], [224, 248, 255],
@@ -63,6 +79,16 @@ export class ColorCalculator {
    * @param {string} [options.colorMap] - Color map name (viridis|inferno|custom) / カラーマップ名
    * @param {boolean} [options.diverging=false] - Use diverging color scheme / 二極性配色を使用
    * @param {number} [options.divergingPivot=0] - Pivot value for diverging scheme / 二極性配色のピボット値
+   * 
+   * @description Diverging Color Behavior / 二極性配色の動作:
+   * - When diverging=true AND divergingPivot > 0: Uses diverging color scheme with rawValue
+   * - When diverging=true BUT divergingPivot ≤ 0: Falls back to standard color map or linear interpolation
+   * - This ensures safe operation when pivot is invalid or zero
+   * 
+   * 二極性配色=true かつ ピボット > 0: rawValueを使用して二極性配色
+   * 二極性配色=true だが ピボット ≤ 0: 標準カラーマップまたは線形補間にフォールバック
+   * これにより、ピボットが無効または0の場合でも安全に動作
+   * 
    * @returns {Cesium.Color} Calculated color / 計算された色
    */
   static calculateColor(normalizedDensity, rawValue = null, options = {}) {
