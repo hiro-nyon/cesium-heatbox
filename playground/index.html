@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#0e1b22">
   <title>Cesium Heatbox Playground</title>
   <!-- Favicon intentionally omitted to avoid emoji usage -->
-  <!-- CesiumJS CDN - バージョン 1.120 -->
+  <!-- CesiumJS CDN - Version 1.120 -->
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   
@@ -19,7 +19,7 @@
   <script>
     window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
     if (typeof Cesium !== 'undefined' && Cesium.Ion) {
-      Cesium.Ion.defaultAccessToken = null; // 明示的にIonを無効化
+      Cesium.Ion.defaultAccessToken = null; // Explicitly disable Ion
     }
   </script>
   
@@ -31,7 +31,7 @@
   </style>
 </head>
 <body>
-  <!-- 統一されたナビゲーションバー -->
+  <!-- Unified navigation bar -->
   <nav class="hb-nav">
     <div class="hb-nav-content">
       <div class="hb-nav-left">
@@ -48,10 +48,10 @@
       </div>
       
       <div class="hb-nav-right">
-        <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank"><span>GitHub</span></a>
+        <a href="https://github.com/hiro-nyon/cesium-heatbox" class="hb-nav-link" target="_blank">GitHub</a>
         <button id="navDropdownToggle" class="liquid-glass-hamburger" aria-label="Open navigation">
           <span id="navDropdownLabel">Playground</span>
-          <span style="margin-left: 4px;">▾</span>
+          <span id="navCaret" style="margin-left: 4px;">▾</span>
         </button>
         <div id="navDropdownMenu" class="hb-dropdown liquid-glass-dark">
           <a href="../">Home</a>
@@ -61,92 +61,92 @@
           <a href="https://github.com/hiro-nyon/cesium-heatbox" target="_blank">GitHub</a>
           <div class="nav-dropdown-divider"></div>
           <div class="nav-dropdown-stats">
-            <div class="nav-stats-header" id="navStatsTitle" data-i18n="nav_stats_title">統計情報</div>
+            <div class="nav-stats-header" id="navStatsTitle" data-i18n="nav_stats_title">Statistics</div>
             <!-- Quick summary (4 items) -->
             <div class="nav-stats-grid">
               <div class="nav-stat-item">
-                <span class="nav-stat-label" id="navLabelDataCount" data-i18n="nav_label_dataCount">データ点数:</span>
+                <span class="nav-stat-label" id="navLabelDataCount" data-i18n="nav_label_dataCount">Data</span>
                 <span class="nav-stat-value" id="navDataCount">0</span>
               </div>
               <div class="nav-stat-item">
-                <span class="nav-stat-label" id="navLabelVoxelCount" data-i18n="nav_label_voxelCount">ボクセル数:</span>
+                <span class="nav-stat-label" id="navLabelVoxelCount" data-i18n="nav_label_voxelCount">Voxels</span>
                 <span class="nav-stat-value" id="navVoxelCount">0</span>
               </div>
               <div class="nav-stat-item">
-                <span class="nav-stat-label" id="navLabelMaxValue" data-i18n="nav_label_maxValue">最大値:</span>
+                <span class="nav-stat-label" id="navLabelMaxValue" data-i18n="nav_label_maxValue">Max</span>
                 <span class="nav-stat-value" id="navMaxValue">-</span>
               </div>
               <div class="nav-stat-item">
-                <span class="nav-stat-label" id="navLabelMinValue" data-i18n="nav_label_minValue">最小値:</span>
+                <span class="nav-stat-label" id="navLabelMinValue" data-i18n="nav_label_minValue">Min</span>
                 <span class="nav-stat-value" id="navMinValue">-</span>
               </div>
             </div>
             <!-- Structured stats (mobile/tablet) -->
             <div class="nav-extended-stats">
-              <!-- 詳細統計 -->
+              <!-- Detail statistics -->
               <div class="nav-ext-section" id="navDetailStats" style="font-size:11px;">
-                <div class="nav-ext-subheader" data-i18n="detail_title">詳細統計</div>
-                <div class="nav-ext-row"><span data-i18n="label_emptyVoxel">空ボクセル:</span> <strong id="navEmptyVoxelCount">-</strong></div>
-                <div class="nav-ext-row"><span data-i18n="label_avg">平均値:</span> <strong id="navAvgValue">-</strong></div>
+                <div class="nav-ext-subheader" data-i18n="detail_title">Details</div>
+                <div class="nav-ext-row"><span data-i18n="label_emptyVoxel">Empty Voxels</span> <strong id="navEmptyVoxelCount">-</strong></div>
+                <div class="nav-ext-row"><span data-i18n="label_avg">Average</span> <strong id="navAvgValue">-</strong></div>
               </div>
-              <!-- 自動サイズ -->
+              <!-- Auto size -->
               <div class="nav-ext-section" style="margin-top:10px; font-size:11px;">
-                <div class="nav-ext-subheader" data-i18n="autosize_title">自動サイズ</div>
+                <div class="nav-ext-subheader" data-i18n="autosize_title">Auto Size</div>
                 <div class="nav-ext-rows" id="navAutoSizeInfo" style="display:none; opacity:0.9;">
-                  <div class="nav-ext-row"><span data-i18n="autosize_adjusted">自動調整:</span> <strong id="navAutoAdjusted">-</strong></div>
-                  <div class="nav-ext-row"><span data-i18n="autosize_size">ボクセルサイズ:</span> <strong id="navSizeInfo">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="autosize_adjusted">Adjusted</span> <strong id="navAutoAdjusted">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="autosize_size">Size</span> <strong id="navSizeInfo">-</strong></div>
                 </div>
               </div>
-              <!-- レンダリング情報 -->
+              <!-- Rendering info -->
               <div class="nav-ext-section" style="margin-top:10px; font-size:11px;">
-                <div class="nav-ext-subheader" data-i18n="render_title">レンダリング情報</div>
+                <div class="nav-ext-subheader" data-i18n="render_title">Rendering</div>
                 <div class="nav-ext-rows" id="navV019Stats" style="display:none; opacity:0.9;">
-                  <div class="nav-ext-row"><span data-i18n="nav_strategy">選択戦略:</span> <strong id="navSelectionStrategy">-</strong></div>
-                  <div class="nav-ext-row"><span data-i18n="nav_rendered">描画ボクセル:</span> <strong id="navRenderedVoxels">-</strong></div>
-                  <div class="nav-ext-row"><span data-i18n="nav_tier">デバイスティア:</span> <strong id="navDeviceTier">-</strong></div>
-                  <div class="nav-ext-row"><span data-i18n="nav_coverage">カバレッジ(%):</span> <strong id="navCoverageRatio">-</strong>%</div>
+                  <div class="nav-ext-row"><span data-i18n="nav_strategy">Strategy</span> <strong id="navSelectionStrategy">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="nav_rendered">Rendered</span> <strong id="navRenderedVoxels">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="nav_tier">Device Tier</span> <strong id="navDeviceTier">-</strong></div>
+                  <div class="nav-ext-row"><span data-i18n="nav_coverage">Coverage</span> <strong id="navCoverageRatio">-</strong>%</div>
                 </div>
               </div>
-              <!-- 環境情報 -->
+              <!-- Environment info -->
               <div class="nav-ext-section" id="navEnvInfo" style="margin-top:10px;">
-                <div class="nav-ext-subheader" data-i18n="env_title">環境情報</div>
+                <div class="nav-ext-subheader" data-i18n="env_title">Environment</div>
                 <div class="nav-env-grid">
                   <div class="nav-stat-item">
-                    <span class="nav-stat-label" data-i18n="label_cesium">Cesium:</span>
+                    <span class="nav-stat-label" data-i18n="label_cesium">Cesium</span>
                     <span class="nav-stat-value" id="navCesiumVersion">-</span>
                   </div>
                   <div class="nav-stat-item">
-                    <span class="nav-stat-label" data-i18n="label_heatbox">Heatbox:</span>
+                    <span class="nav-stat-label" data-i18n="label_heatbox">Heatbox</span>
                     <span class="nav-stat-value" id="navHeatboxVersion">-</span>
                   </div>
                   <div class="nav-stat-item">
-                    <span class="nav-stat-label" data-i18n="label_webgl">WebGL:</span>
+                    <span class="nav-stat-label" data-i18n="label_webgl">WebGL</span>
                     <span class="nav-stat-value" id="navWebglSupport">-</span>
                   </div>
                 </div>
               </div>
-              <!-- アウトライン統計 -->
+              <!-- Outline statistics -->
               <div class="nav-ext-section" id="navOutlineStats" style="margin-top:10px;">
-                <div class="nav-ext-subheader" data-i18n="or_title">Outline Resolver 統計</div>
+                <div class="nav-ext-subheader" data-i18n="or_title">Outline Stats</div>
                 <div class="nav-outline-grid">
                   <div class="nav-stat-item">
-                    <span class="nav-stat-label" data-i18n="or_calls">呼び出し:</span>
+                    <span class="nav-stat-label" data-i18n="or_calls">Calls</span>
                     <span class="nav-stat-value" id="navOrCalls">0</span>
                   </div>
                   <div class="nav-stat-item">
-                    <span class="nav-stat-label" data-i18n="or_avg">平均太さ:</span>
+                    <span class="nav-stat-label" data-i18n="or_avg">Avg</span>
                     <span class="nav-stat-value" id="navOrAvg">-</span>
                   </div>
                   <div class="nav-stat-item">
-                    <span class="nav-stat-label" data-i18n="or_minmax">太さ範囲:</span>
+                    <span class="nav-stat-label" data-i18n="or_minmax">Min/Max</span>
                     <span class="nav-stat-value nav-stat-range"><span id="navOrMin">-</span>/<span id="navOrMax">-</span></span>
                   </div>
                   <div class="nav-stat-item">
-                    <span class="nav-stat-label" data-i18n="or_dminmax">密度範囲:</span>
+                    <span class="nav-stat-label" data-i18n="or_dminmax">D-Min/Max</span>
                     <span class="nav-stat-value nav-stat-range"><span id="navOrDMin">-</span>/<span id="navOrDMax">-</span></span>
                   </div>
                   <div class="nav-stat-item">
-                    <span class="nav-stat-label" data-i18n="or_topn">TopN対象:</span>
+                    <span class="nav-stat-label" data-i18n="or_topn">Top-N</span>
                     <span class="nav-stat-value" id="navOrTopN">0</span>
                   </div>
                 </div>
@@ -160,37 +160,43 @@
 
   <div id="cesiumContainer"></div>
   
-  <!-- モバイル向けハンバーガーメニューボタン -->
-  <button id="mobileMenuToggle" class="liquid-glass-hamburger" aria-label="メニューを開く">☰</button>
+  <!-- Mobile hamburger menu button -->
+  <button id="mobileMenuToggle" class="liquid-glass-hamburger" data-i18n-aria-label="aria_menu_toggle" aria-label="Toggle menu">☰</button>
   
   <div id="toolbar" class="liquid-glass-dark">
     <div class="section">
-      <h3 id="i18n-title">Cesium Heatbox Playground</h3>
+      <h3 id="i18n-title" data-i18n="playground_title">Cesium Heatbox Playground</h3>
       <p style="font-size: 11px; margin: 5px 0;" data-i18n="subtitle">Advanced controls</p>
       <div class="control-group">
-        <label id="i18n-lang-label" for="langSelect">言語</label>
+        <label id="i18n-lang-label" for="langSelect" data-i18n="label_language">Language</label>
         <select id="langSelect">
-          <option value="ja">日本語</option>
-          <option value="en">English</option>
+          <option value="ja" data-i18n="lang_ja">日本語</option>
+          <option value="en" data-i18n="lang_en">English</option>
         </select>
       </div>
     </div>
     
+    <!-- 1. Data Source -->
     <details class="section" open>
-      <summary id="i18n-sum-data">データ読み込み</summary>
+      <summary data-i18n="sum_data">Data Source</summary>
       <div class="section-content">
-        <input type="file" id="fileInput" accept=".json,.geojson,.czml" />
-        <button id="loadSampleData" data-i18n="btn_load_sample">サンプルデータを読み込み</button>
-        <button id="generateTestData" data-i18n="btn_generate_test">テストデータを生成</button>
+        <div class="control-group">
+          <label data-i18n="label_dataSource">Data Source</label>
+          <input type="file" id="fileInput" accept=".json,.geojson,.czml" style="margin-bottom: 8px;" />
+        </div>
+        <div class="control-group" style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="loadSampleData" data-i18n="btn_load_sample">Load Sample Data</button>
+          <button id="generateTestData" data-i18n="btn_generate_test">Generate Test Data</button>
+        </div>
       </div>
     </details>
     
-    <!-- Base Map -->
+    <!-- 2. Basic Configuration -->
     <details class="section" open>
-      <summary id="i18n-sum-basemap">Base Map</summary>
+      <summary data-i18n="sum_basic">Basic Configuration</summary>
       <div class="controls section-content">
         <div class="control-group">
-          <label data-i18n="label_baseMap">背景地図:</label>
+          <label data-i18n="label_baseMap">Base Map</label>
           <select id="baseMap">
             <option value="carto-light" selected>CartoDB Light (Positron)</option>
             <option value="carto-dark">CartoDB Dark Matter</option>
@@ -198,387 +204,374 @@
             <option value="osm-humanitarian">OSM Humanitarian</option>
           </select>
         </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="autoView" />
+            <span data-i18n="chk_autoView">Auto View</span>
+          </label>
+        </div>
+        <div class="control-group" id="fitViewGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_fitViewHeading">Fit View Heading</label>
+          <input type="range" id="fitViewHeading" min="0" max="360" step="15" value="0" disabled />
+          <span id="fitViewHeadingValue">0</span>
+        </div>
+        <div class="control-group" id="fitViewPitchGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_fitViewPitch">Fit View Pitch</label>
+          <input type="range" id="fitViewPitch" min="-90" max="0" step="5" value="-45" disabled />
+          <span id="fitViewPitchValue">-45</span>
+        </div>
+        <div class="control-group">
+          <button id="manualFitView" data-i18n="btn_fitView">Fit View</button>
+        </div>
       </div>
     </details>
 
-    <!-- Voxel Sizing & Rendering -->
+    <!-- 3. Voxel Configuration -->
     <details class="section" open>
-      <summary id="i18n-sum-voxel">Voxel Sizing & Rendering</summary>
+      <summary data-i18n="sum_voxel">Voxel Configuration</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>
             <input type="checkbox" id="autoVoxelSize" />
-            <span data-i18n="chk_autoVoxel">自動サイズ決定（v0.1.4新機能）</span>
+            <span data-i18n="chk_autoVoxel">Auto Voxel Size</span>
           </label>
         </div>
         <div class="control-group" id="autoVoxelModeGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_autoVoxelMode">自動サイズモード:</label>
+          <label data-i18n="label_autoVoxelMode">Auto Voxel Mode</label>
           <select id="autoVoxelSizeMode" disabled>
-            <option value="simple" data-i18n="opt_autoVoxel_simple">Simple（v0.1.8）</option>
-            <option value="occupancy" data-i18n="opt_autoVoxel_occupancy">Occupancy（v0.1.9新）</option>
+            <option value="simple" data-i18n="opt_autoVoxel_simple">Simple</option>
+            <option value="occupancy" data-i18n="opt_autoVoxel_occupancy">Occupancy</option>
           </select>
         </div>
         <div class="control-group" id="manualSizeGroup">
-          <label data-i18n="label_gridSize">グリッドサイズ（手動）:</label>
+          <label data-i18n="label_gridSize">Grid Size</label>
           <input type="range" id="gridSize" min="10" max="100" value="20" />
           <span id="gridSizeValue">20</span>
         </div>
         <div class="control-group">
           <label>
             <input type="checkbox" id="heightBased" />
-            <span data-i18n="chk_heightBased">高さベース表現</span>
+            <span data-i18n="chk_heightBased">Height Based</span>
+          </label>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="wireframeOnly" />
+            <span data-i18n="chk_wireframeOnly">Wireframe Only</span>
           </label>
         </div>
         <div class="control-group">
           <label>
             <input type="checkbox" id="showEmptyVoxels" />
-            <span data-i18n="chk_showEmpty">空のボクセルを表示</span>
+            <span data-i18n="chk_showEmpty">Show Empty Voxels</span>
           </label>
         </div>
         <div class="control-group" id="emptyOpacityGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_emptyOpacity">空ボクセル透明度:</label>
+          <label data-i18n="label_emptyOpacity">Empty Opacity</label>
           <input type="range" id="emptyOpacity" min="0" max="1" step="0.05" value="0.1" disabled />
           <span id="emptyOpacityValue">0.1</span>
-        </div>
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="wireframeOnly" />
-            <span data-i18n="chk_wireframeOnly">枠線のみ表示</span>
-          </label>
         </div>
       </div>
     </details>
 
+    <!-- 4. Color & Appearance -->
     <details class="section">
-      <summary id="i18n-sum-color">色設定</summary>
+      <summary data-i18n="sum_color">Color & Appearance</summary>
       <div class="controls section-content">
         <div class="control-group">
-          <label data-i18n="label_colorMap">カラーマップ:</label>
+          <label data-i18n="label_colorMap">Color Map</label>
           <select id="colorMap">
-            <option value="custom" data-i18n="opt_color_custom">カスタム（従来）</option>
-            <option value="viridis" selected data-i18n="opt_color_viridis">Viridis（科学的）</option>
-            <option value="inferno" data-i18n="opt_color_inferno">Inferno（科学的）</option>
+            <option value="custom" data-i18n="opt_color_custom">Custom</option>
+            <option value="viridis" selected data-i18n="opt_color_viridis">Viridis</option>
+            <option value="inferno" data-i18n="opt_color_inferno">Inferno</option>
           </select>
         </div>
         <div class="control-group" id="customColorGroup">
-          <label data-i18n="label_customColor">カスタム色:</label>
+          <label data-i18n="label_customColor">Custom Color</label>
           <select id="customColorTheme">
-            <option value="heat" data-i18n="opt_theme_heat">ヒート（青→赤）</option>
-            <option value="cool" data-i18n="opt_theme_cool">クール（青→マゼンタ）</option>
-            <option value="rainbow" data-i18n="opt_theme_rainbow">レインボー</option>
+            <option value="heat" data-i18n="opt_theme_heat">Heat</option>
+            <option value="cool" data-i18n="opt_theme_cool">Cool</option>
+            <option value="rainbow" data-i18n="opt_theme_rainbow">Rainbow</option>
           </select>
         </div>
         <div class="control-group">
           <label>
             <input type="checkbox" id="diverging" />
-            <span data-i18n="chk_diverging">二極性データ（blue-white-red）</span>
+            <span data-i18n="chk_diverging">Diverging</span>
           </label>
         </div>
         <div class="control-group" id="divergingPivotGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_divergingPivot">二極性中心値:</label>
+          <label data-i18n="label_divergingPivot">Diverging Pivot</label>
           <input type="number" id="divergingPivot" value="0" step="0.1" disabled />
         </div>
       </div>
     </details>
 
+    <!-- 5. Rendering Control -->
     <details class="section">
-      <summary id="i18n-sum-outline">枠線・見た目</summary>
+      <summary data-i18n="sum_rendering">Rendering Control</summary>
       <div class="controls section-content">
         <div class="control-group">
-          <label data-i18n="label_outlineRenderMode">描画モード:</label>
-          <select id="outlineRenderMode">
-            <option value="standard" selected data-i18n="opt_render_standard">標準</option>
-            <option value="inset" data-i18n="opt_render_inset">インセット主体</option>
-            <option value="emulation-only" data-i18n="opt_render_emulation">エミュレーションのみ</option>
-          </select>
-        </div>
-        <!-- v0.1.6.1: インセット枠線（ADR-0004） -->
-        <div class="control-group">
-          <label data-i18n="label_outlineInset">インセット枠線 (m):</label>
-          <input type="range" id="outlineInset" min="0" max="20" step="0.5" value="0" />
-          <span id="outlineInsetValue">0.0</span>
-        </div>
-        <div class="control-group">
-          <label data-i18n="label_outlineInsetMode">インセット適用範囲:</label>
-          <select id="outlineInsetMode">
-            <option value="off" data-i18n="opt_inset_off">OFF（無効）</option>
-            <option value="topn" data-i18n="opt_inset_topn">TopN のみ</option>
-            <option value="all" selected data-i18n="opt_inset_all">全体</option>
-          </select>
-        </div>
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="enableThickFrames" />
-            <span data-i18n="chk_thickFrames">厚い枠線表示（フレーム埋め込み）</span>
-          </label>
-        </div>
-        <!-- v0.1.6: 枠線重なり対策（ボクセル間ギャップ） -->
-        <div class="control-group">
-          <label data-i18n="label_voxelGap">ボクセル間ギャップ (m):</label>
-          <input type="range" id="voxelGap" min="0" max="20" step="0.5" value="0" />
-          <span id="voxelGapValue">0.0</span>
-        </div>
-        <!-- v0.1.6: 枠線透明度制御 -->
-        <div class="control-group">
-          <label data-i18n="label_outlineOpacity">枠線透明度:</label>
-          <input type="range" id="outlineOpacity" min="0" max="1" step="0.1" value="1" />
-          <span id="outlineOpacityValue">1.0</span>
-        </div>
-        <!-- v0.1.6: 枠線太さモード -->
-        <div class="control-group">
-          <label data-i18n="label_outlineMode">枠線太さモード:</label>
-          <select id="outlineMode">
-            <option value="adaptive" selected data-i18n="opt_outline_adaptive">自動（密度に応じて調整）</option>
-            <option value="manual" data-i18n="opt_outline_manual">手動（固定太さ）</option>
-          </select>
-        </div>
-        <div class="control-group" id="manualOutlineWidthGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_outlineWidth">枠線太さ (px):</label>
-          <input type="range" id="outlineWidth" min="0" max="8" step="1" value="2" disabled />
-          <span id="outlineWidthValue">2</span>
-        </div>
-        <div class="control-group">
-          <label data-i18n="label_outlineEmulation">太線エミュレーション:</label>
-          <select id="outlineEmulationMode">
-            <option value="off" data-i18n="opt_emul_off">無効</option>
-            <option value="topn" data-i18n="opt_emul_topn">TopNのみ</option>
-            <option value="non-topn" data-i18n="opt_emul_non_topn">TopN以外のみ</option>
-            <option value="all" data-i18n="opt_emul_all">すべて太線（自動インセット適用）</option>
-          </select>
-        </div>
-      </div>
-    </details>
-
-    <details class="section">
-      <summary id="i18n-sum-adaptive">適応表示</summary>
-      <div class="controls section-content">
-        <div class="control-group">
-          <label data-i18n="label_maxRenderVoxels">最大レンダーボクセル数:</label>
+          <label data-i18n="label_maxRenderVoxels">Max Render Voxels</label>
           <select id="maxRenderVoxels">
-            <option value="auto" selected data-i18n="opt_budget_auto">Auto Budget（自動）</option>
-            <option value="3000" data-i18n="opt_budget_3k">3,000（軽量）</option>
-            <option value="8000" data-i18n="opt_budget_8k">8,000（標準）</option>
-            <option value="15000" data-i18n="opt_budget_15k">15,000（高性能）</option>
-            <option value="50000" data-i18n="opt_budget_50k">50,000（最大）</option>
+            <option value="auto" selected data-i18n="opt_budget_auto">Auto</option>
+            <option value="3000" data-i18n="opt_budget_3k">3,000</option>
+            <option value="8000" data-i18n="opt_budget_8k">8,000</option>
+            <option value="15000" data-i18n="opt_budget_15k">15,000</option>
+            <option value="50000" data-i18n="opt_budget_50k">50,000</option>
           </select>
         </div>
         <div class="control-group">
-          <label data-i18n="label_renderStrategy">レンダリング戦略:</label>
+          <label data-i18n="label_renderStrategy">Render Strategy</label>
           <select id="renderLimitStrategy">
-            <option value="density" data-i18n="opt_strategy_density">Density（密度重視）</option>
-            <option value="coverage" data-i18n="opt_strategy_coverage">Coverage（範囲重視）</option>
-            <option value="hybrid" selected data-i18n="opt_strategy_hybrid">Hybrid（バランス）</option>
-          </select>
-        </div>
-        <!-- moved to View section -->
-        <!-- moved to View section -->
-      </div>
-    </details>
-
-    <details class="section">
-      <summary id="i18n-sum-legacy-adaptive">Adaptive (Legacy)</summary>
-      <div class="controls section-content">
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="adaptiveOutlines" />
-            <span data-i18n="chk_adaptiveOutlines">適応的枠線制御を有効化</span>
-          </label>
-        </div>
-        <div class="control-group">
-          <label data-i18n="label_outlinePreset">枠線プリセット:</label>
-          <select id="outlineWidthPreset">
-            <option value="uniform" selected data-i18n="opt_preset_uniform">均一</option>
-            <option value="adaptive-density" data-i18n="opt_preset_density">密度適応</option>
-            <option value="topn-focus" data-i18n="opt_preset_topn">TopN重視</option>
+            <option value="density" data-i18n="opt_strategy_density">Density</option>
+            <option value="coverage" data-i18n="opt_strategy_coverage">Coverage</option>
+            <option value="hybrid" selected data-i18n="opt_strategy_hybrid">Hybrid</option>
           </select>
         </div>
         <div class="control-group">
-          <label data-i18n="label_boxOpacityMode">ボックス透明度:</label>
-          <select id="boxOpacityMode">
-            <option value="off" selected data-i18n="opt_opacity_off">固定（従来）</option>
-            <option value="density" data-i18n="opt_opacity_density">密度ベース</option>
-            <option value="topn" data-i18n="opt_opacity_topn">TopNベース</option>
-          </select>
-        </div>
-        <div class="control-group">
-          <label data-i18n="label_outlineOpacityMode">枠線透明度:</label>
-          <select id="outlineOpacityMode">
-            <option value="off" selected data-i18n="opt_opacity_off">固定（従来）</option>
-            <option value="density" data-i18n="opt_opacity_density">密度ベース</option>
-            <option value="topn" data-i18n="opt_opacity_topn">TopNベース</option>
-          </select>
-        </div>
-      </div>
-    </details>
-
-    <!-- View -->
-    <details class="section">
-      <summary id="i18n-sum-view">View</summary>
-      <div class="controls section-content">
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="autoView" />
-            <span data-i18n="chk_autoView">自動カメラ位置調整</span>
-          </label>
-        </div>
-        <div class="control-group" id="fitViewGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_fitViewHeading">カメラ方向（度）:</label>
-          <input type="range" id="fitViewHeading" min="0" max="360" step="15" value="0" disabled />
-          <span id="fitViewHeadingValue">0</span>
-        </div>
-        <div class="control-group" id="fitViewPitchGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_fitViewPitch">カメラ角度（度）:</label>
-          <input type="range" id="fitViewPitch" min="-90" max="0" step="5" value="-45" disabled />
-          <span id="fitViewPitchValue">-45</span>
-        </div>
-        <button id="manualFitView" data-i18n="btn_fitView">手動カメラフィット</button>
-      </div>
-    </details>
-
-    <details class="section">
-      <summary id="i18n-sum-highlight">強調表示</summary>
-      <div class="controls section-content">
-        <div class="control-group">
-          <label data-i18n="label_highlightTopN">TopN強調表示:</label>
-          <input type="number" id="highlightTopN" min="0" max="50" value="0" placeholder="0=無効" data-i18n-placeholder="ph_highlightTopN" />
+          <label data-i18n="label_highlightTopN">Highlight Top N</label>
+          <input type="number" id="highlightTopN" min="0" max="50" value="0" placeholder="" data-i18n-placeholder="ph_highlightTopN" />
         </div>
         <div class="control-group" id="highlightStyleGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_highlightOpacity">非TopNの減衰量:</label>
+          <label data-i18n="label_highlightOpacity">Non-TopN Attenuation</label>
           <input type="range" id="highlightOpacity" min="0.1" max="1" step="0.1" value="0.9" disabled />
           <span id="highlightOpacityValue">0.9</span>
         </div>
       </div>
     </details>
 
+    <!-- 6. Outline & Visual Effects -->
     <details class="section">
-      <summary id="i18n-sum-advanced">詳細設定</summary>
+      <summary data-i18n="sum_outline">Outline & Visual Effects</summary>
       <div class="controls section-content">
+        
+        <!-- A. Basic outline settings -->
+        <div class="sub-section" style="margin-bottom: 16px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #90caf9;" data-i18n="h4_outline_basic">Basic Settings</h4>
+          <div class="control-group">
+            <label data-i18n="label_outlineMode">Outline Control</label>
+            <select id="outlineMode">
+              <option value="manual" data-i18n="opt_outline_manual">Manual (Fixed)</option>
+              <option value="adaptive" selected data-i18n="opt_outline_adaptive">Adaptive (Density Linked)</option>
+            </select>
+          </div>
+          <div class="control-group" id="manualOutlineWidthGroup" style="opacity: 0.5; pointer-events: none;">
+            <label data-i18n="label_outlineWidth">Outline Width (px)</label>
+            <input type="range" id="outlineWidth" min="0" max="8" step="1" value="2" disabled />
+            <span id="outlineWidthValue">2</span>
+          </div>
+          <div class="control-group">
+            <label data-i18n="label_outlineOpacity">Outline Opacity</label>
+            <input type="range" id="outlineOpacity" min="0" max="1" step="0.1" value="1" />
+            <span id="outlineOpacityValue">1.0</span>
+          </div>
+        </div>
+
+        <!-- B. Inset outline -->
+        <div class="sub-section" style="margin-bottom: 16px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #81c784;" data-i18n="h4_outline_inset">Inset Outline (Inner Offset)</h4>
+          <div class="control-group">
+            <label data-i18n="label_outlineInset">Inset Distance (m)</label>
+            <input type="range" id="outlineInset" min="0" max="20" step="0.5" value="0" />
+            <span id="outlineInsetValue">0.0</span>
+          </div>
+          <div class="control-group">
+            <label data-i18n="label_outlineInsetMode">Application Target</label>
+            <select id="outlineInsetMode">
+              <option value="off" data-i18n="opt_inset_off">Disabled</option>
+              <option value="topn" data-i18n="opt_inset_topn">Top-N Only</option>
+              <option value="all" selected data-i18n="opt_inset_all">All Voxels</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>
+              <input type="checkbox" id="enableThickFrames" />
+              <span data-i18n="chk_thickFrames">Thick Frame Rendering</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- C. Emulation (WebGL constraint workaround) -->
+        <div class="sub-section" style="margin-bottom: 16px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #ffb74d;" data-i18n="h4_outline_emulation">Thick Line Emulation (WebGL Constraint Workaround)</h4>
+          <div class="control-group">
+            <label data-i18n="label_outlineEmulation">Emulation Target</label>
+            <select id="outlineEmulationMode">
+              <option value="off" data-i18n="opt_emul_off">Disabled</option>
+              <option value="topn" data-i18n="opt_emul_topn">Top-N Only</option>
+              <option value="non-topn" data-i18n="opt_emul_non_topn">Non-TopN Only</option>
+              <option value="all" data-i18n="opt_emul_all">All Voxels</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label data-i18n="label_outlineRenderMode">Render Mode</label>
+            <select id="outlineRenderMode">
+              <option value="standard" selected data-i18n="opt_render_standard">Standard</option>
+              <option value="inset" data-i18n="opt_render_inset">Inset Priority</option>
+              <option value="emulation-only" data-i18n="opt_render_emulation">Emulation Only</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- D. Advanced adjustments -->
+        <div class="sub-section" style="margin-bottom: 16px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #f48fb1;" data-i18n="h4_outline_details">Detailed Adjustments</h4>
+          <div class="control-group">
+            <label data-i18n="label_voxelGap">Voxel Gap (m)</label>
+            <input type="range" id="voxelGap" min="0" max="20" step="0.5" value="0" />
+            <span id="voxelGapValue">0.0</span>
+            <small style="display: block; color: #aaa; font-size: 10px;" data-i18n="help_voxel_gap">Overlap Prevention</small>
+          </div>
+        </div>
+
+      </div>
+    </details>
+
+    <!-- 7. Advanced Settings -->
+    <details class="section">
+      <summary data-i18n="sum_advanced">Advanced Settings</summary>
+      <div class="controls section-content">
+        
+        <!-- Adaptive Control -->
+        <div class="sub-section" style="margin-bottom: 16px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #ce93d8;" data-i18n="h4_adaptive_control">Adaptive Control</h4>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="adaptiveOutlines" />
+            <span data-i18n="chk_adaptiveOutlines">Enable Adaptive Outline Control</span>
+          </label>
+        </div>
+        <div class="control-group">
+          <label data-i18n="label_outlinePreset">Outline Preset</label>
+          <select id="outlineWidthPreset">
+            <option value="uniform" selected data-i18n="opt_preset_uniform">Uniform</option>
+            <option value="adaptive-density" data-i18n="opt_preset_density">Density Adaptive</option>
+            <option value="topn-focus" data-i18n="opt_preset_topn">Top-N Focus</option>
+          </select>
+        </div>
+        <div class="control-group">
+            <label data-i18n="label_boxOpacityMode">Box Opacity Control</label>
+          <select id="boxOpacityMode">
+            <option value="off" selected data-i18n="opt_opacity_off">Fixed (Legacy)</option>
+            <option value="density" data-i18n="opt_opacity_density">Density Based</option>
+            <option value="topn" data-i18n="opt_opacity_topn">Top-N Based</option>
+          </select>
+        </div>
+        <div class="control-group">
+            <label data-i18n="label_outlineOpacityMode">Outline Opacity Control</label>
+          <select id="outlineOpacityMode">
+            <option value="off" selected data-i18n="opt_opacity_off">Fixed (Legacy)</option>
+            <option value="density" data-i18n="opt_opacity_density">Density Based</option>
+            <option value="topn" data-i18n="opt_opacity_topn">Top-N Based</option>
+          </select>
+        </div>
+      </div>
+
+        <!-- Debug & Development -->
+        <div class="sub-section" style="margin-bottom: 16px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #ffab91;" data-i18n="h4_debug_dev">Debug & Development</h4>
         <div class="control-group">
           <label>
             <input type="checkbox" id="debugMode" />
-            <span data-i18n="chk_debugMode">デバッグモード（ログ出力）</span>
+            <span data-i18n="chk_debugMode">Debug Mode (Log Output)</span>
           </label>
         </div>
         <div class="control-group">
           <label>
             <input type="checkbox" id="showBounds" />
-            <span data-i18n="chk_showBounds">境界ボックス表示</span>
+            <span data-i18n="chk_showBounds">Show Boundary Boxes</span>
           </label>
         </div>
-        <button id="testHeatbox" data-i18n="btn_testHeatbox">Heatboxテスト</button>
+          <div class="control-group">
+        <button id="testHeatbox" data-i18n="btn_testHeatbox">Test Heatbox</button>
+          </div>
+        </div>
+
       </div>
     </details>
     
-    <div class="section">
-      <h3 id="i18n-ops-title">操作</h3>
-      <button id="createHeatmap" data-i18n="btn_create">ヒートマップ作成</button>
-      <button id="clearHeatmap" data-i18n="btn_clear">クリア</button>
-      <button id="toggleVisibility" data-i18n="btn_toggle">表示/非表示</button>
-      <button id="exportData" data-i18n="btn_export">データ出力</button>
+    
+    <!-- 8. Actions -->
+    <details class="section" open>
+      <summary data-i18n="sum_actions">Actions</summary>
+      <div class="section-content">
+        <div class="control-group" style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button id="createHeatmap" data-i18n="btn_create">Create Heatmap</button>
+      <button id="clearHeatmap" data-i18n="btn_clear">Clear</button>
+      <button id="toggleVisibility" data-i18n="btn_toggle">Toggle Visibility</button>
+      <button id="exportData" data-i18n="btn_export">Export Data</button>
     </div>
+      </div>
+    </details>
   </div>
   
   <div id="info" class="liquid-glass-dark">
     <div class="section">
-      <h3 id="i18n-stats-title">統計情報</h3>
+      <h3 id="i18n-stats-title" data-i18n="h3_stats_title">Statistics</h3>
       <div id="statistics">
-        <p><span id="i18n-label-dataCount">データ点数:</span> <span id="dataCount">0</span></p>
-        <p><span id="i18n-label-voxelCount">ボクセル数:</span> <span id="voxelCount">0</span></p>
-        <p><span id="i18n-label-emptyVoxel">空ボクセル:</span> <span id="emptyVoxelCount">0</span></p>
-        <p><span id="i18n-label-max">最大値:</span> <span id="maxValue">-</span></p>
-        <p><span id="i18n-label-min">最小値:</span> <span id="minValue">-</span></p>
-        <p><span id="i18n-label-avg">平均値:</span> <span id="avgValue">-</span></p>
+        <p><span id="i18n-label-dataCount" data-i18n="label_dataCount">Data Count</span> <span id="dataCount">0</span></p>
+        <p><span id="i18n-label-voxelCount" data-i18n="label_voxelCount">Voxel Count</span> <span id="voxelCount">0</span></p>
+        <p><span id="i18n-label-emptyVoxel" data-i18n="label_emptyVoxel">Empty Voxels</span> <span id="emptyVoxelCount">0</span></p>
+        <p><span id="i18n-label-max" data-i18n="label_max">Max Value</span> <span id="maxValue">-</span></p>
+        <p><span id="i18n-label-min" data-i18n="label_min">Min Value</span> <span id="minValue">-</span></p>
+        <p><span id="i18n-label-avg" data-i18n="label_avg">Average</span> <span id="avgValue">-</span></p>
         <div id="autoSizeInfo" style="font-size: 10px; color: #aaa; margin-top: 5px; display: none;">
-          <p><span id="i18n-autosize-adjusted">自動調整:</span> <span id="autoAdjusted">-</span></p>
-          <p><span id="i18n-autosize-size">サイズ:</span> <span id="sizeInfo">-</span></p>
+          <p><span id="i18n-autosize-adjusted" data-i18n="autosize_adjusted">Adjusted</span> <span id="autoAdjusted">-</span></p>
+          <p><span id="i18n-autosize-size" data-i18n="autosize_size">Size</span> <span id="sizeInfo">-</span></p>
         </div>
         <div id="v019Stats" style="font-size: 10px; color: #90a4ae; margin-top: 5px; display: none;">
-          <p><span id="i18n-v019-strategy">戦略:</span> <span id="selectionStrategy">-</span></p>
-          <p><span id="i18n-v019-rendered">レンダー数:</span> <span id="renderedVoxels">-</span></p>
-          <p><span id="i18n-v019-tier">デバイス:</span> <span id="deviceTier">-</span></p>
-          <p><span id="i18n-v019-coverage">カバレッジ:</span> <span id="coverageRatio">-</span>%</p>
+          <p><span id="i18n-v019-strategy" data-i18n="v019_strategy">Strategy</span> <span id="selectionStrategy">-</span></p>
+          <p><span id="i18n-v019-rendered" data-i18n="v019_rendered">Rendered</span> <span id="renderedVoxels">-</span></p>
+          <p><span id="i18n-v019-tier" data-i18n="v019_tier">Device Tier</span> <span id="deviceTier">-</span></p>
+          <p><span id="i18n-v019-coverage" data-i18n="v019_coverage">Coverage</span> <span id="coverageRatio">-</span>%</p>
         </div>
       </div>
     </div>
     
     <div class="section">
-      <h3 id="i18n-env-title">環境情報</h3>
+      <h3 id="i18n-env-title" data-i18n="h3_env_title">Environment</h3>
       <div id="environmentInfo">
-        <p><span id="i18n-label-cesium">Cesium:</span> <span id="cesiumVersion">-</span></p>
-        <p><span id="i18n-label-heatbox">Heatbox:</span> <span id="heatboxVersion">-</span></p>
-        <p><span id="i18n-label-webgl">WebGL:</span> <span id="webglSupport">-</span></p>
+        <p><span id="i18n-label-cesium" data-i18n="label_cesium">Cesium</span> <span id="cesiumVersion">-</span></p>
+        <p><span id="i18n-label-heatbox" data-i18n="label_heatbox">Heatbox</span> <span id="heatboxVersion">-</span></p>
+        <p><span id="i18n-label-webgl" data-i18n="label_webgl">WebGL</span> <span id="webglSupport">-</span></p>
       </div>
     </div>
 
     <div class="section">
-      <h3 id="i18n-or-title">Outline Resolver 統計</h3>
+      <h3 id="i18n-or-title" data-i18n="or_title">Outline Statistics</h3>
       <div id="outlineStats" style="font-size: 12px;">
-        <p><span id="i18n-label-or-calls">呼び出し回数:</span> <span id="or_calls">0</span></p>
-        <p><span id="i18n-label-or-avg">平均太さ:</span> <span id="or_avg">-</span> px</p>
-        <p><span id="i18n-label-or-minmax">太さ min/max:</span> <span id="or_min">-</span> / <span id="or_max">-</span> px</p>
-        <p><span id="i18n-label-or-dminmax">密度 min/max:</span> <span id="or_dmin">-</span> / <span id="or_dmax">-</span></p>
-        <p><span id="i18n-label-or-topn">TopN対象:</span> <span id="or_topn">0</span></p>
+        <p><span id="i18n-label-or-calls" data-i18n="or_calls">Calls</span> <span id="or_calls">0</span></p>
+        <p><span id="i18n-label-or-avg" data-i18n="or_avg">Average</span> <span id="or_avg">-</span> px</p>
+        <p><span id="i18n-label-or-minmax" data-i18n="or_minmax">Min/Max</span> <span id="or_min">-</span> / <span id="or_max">-</span> px</p>
+        <p><span id="i18n-label-or-dminmax" data-i18n="or_dminmax">D-Min/Max</span> <span id="or_dmin">-</span> / <span id="or_dmax">-</span></p>
+        <p><span id="i18n-label-or-topn" data-i18n="or_topn">Top-N</span> <span id="or_topn">0</span></p>
       </div>
     </div>
   </div>
   
   <div id="loading">
-    <p data-i18n="loading">処理中...</p>
+    <p data-i18n="loading">Loading...</p>
   </div>
   
-  <!-- Heatbox ライブラリ -->
+  <!-- Heatbox library -->
   <!-- Heatbox library (CDN from unpkg, v0.1.11-alpha.1) -->
   <script src="https://unpkg.com/cesium-heatbox@next/dist/cesium-heatbox.umd.min.js?v=next"></script>
   <script src="app.js"></script>
   <script>
-    // Mobile nav dropdown
+    // Mobile nav dropdown (caret only; label is provided by i18n)
     (function(){
       var toggle = document.getElementById('navDropdownToggle');
       var menu = document.getElementById('navDropdownMenu');
-      var labelEl = document.getElementById('navDropdownLabel');
+      var caretEl = document.getElementById('navCaret');
       if (!toggle || !menu) return;
-      
-      function currentLabel(){
-        var p = location.pathname;
-        if (/\/playground\/(index\.html)?$/.test(p) || /\/playground\/$/.test(p)) return 'Playground';
-        if (/\/playground\/simple\.html$/.test(p)) return 'Quick Start';
-        if (/(^|\/)index\.html$/.test(p) || /\/$/.test(p)) return 'Home';
-        return 'Menu';
-      }
-      
+
       function updateButton(open){
         var caret = open ? '▴' : '▾';
-        var currentText = currentLabel();
-        
-        // ボタンの内容を完全に置き換え
-        toggle.innerHTML = '';
-        
-        // ラベル要素を作成
-        var label = document.createElement('span');
-        label.id = 'navDropdownLabel';
-        label.textContent = currentText;
-        label.style.flex = '1';
-        label.style.textAlign = 'left';
-        label.style.overflow = 'hidden';
-        label.style.textOverflow = 'ellipsis';
-        label.style.color = '#ffffff';
-        label.style.fontSize = 'inherit';
-        label.style.fontWeight = 'inherit';
-        
-        // キャレット要素を作成
-        var caretSpan = document.createElement('span');
-        caretSpan.textContent = caret;
-        caretSpan.style.marginLeft = '4px';
-        caretSpan.style.color = '#ffffff';
-        
-        // ボタンに追加
-        toggle.appendChild(label);
-        toggle.appendChild(caretSpan);
-        
-        labelEl = label;
+        if (caretEl) caretEl.textContent = caret;
       }
       
-      // 初期化
+      // Initialize
       updateButton(false);
       
       toggle.addEventListener('click', function(e){ 
