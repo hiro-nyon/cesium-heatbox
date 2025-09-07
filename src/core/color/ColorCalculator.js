@@ -13,10 +13,11 @@ import { Logger } from '../../utils/logger.js';
 
 // カラーマップ定義（VoxelRendererから抽出）
 // 科学的可視化用の標準カラーマップから簡略化
-const COLOR_MAPS = {
+// Object.freezeで不変性を保証（誤変更防止）
+const COLOR_MAPS = Object.freeze({
   // Viridisカラーマップ（10段階、重複削除済み）
   // 紫→青→緑→黄の滑らかなグラデーション
-  viridis: [
+  viridis: Object.freeze([
     [68, 1, 84],     // Dark purple
     [72, 40, 120],   // Purple
     [62, 74, 137],   // Blue-purple  
@@ -27,10 +28,10 @@ const COLOR_MAPS = {
     [109, 205, 89],  // Green
     [180, 222, 44],  // Yellow-green
     [253, 231, 37]   // Bright yellow
-  ],
+  ]),
   // Infernoカラーマップ（10段階、重複削除済み）
   // 黒→紫→赤→オレンジ→黄の熱マップ風
-  inferno: [
+  inferno: Object.freeze([
     [0, 0, 4],       // Near black
     [31, 12, 72],    // Dark purple
     [85, 15, 109],   // Purple
@@ -41,16 +42,16 @@ const COLOR_MAPS = {
     [252, 187, 17],  // Yellow-orange
     [245, 219, 76],  // Yellow
     [252, 255, 164]  // Light yellow
-  ],
+  ]),
   // 二極性配色（blue-white-red、17段階）
   // データの正負を表現するための対称配色
-  diverging: [
+  diverging: Object.freeze([
     [0, 0, 255], [32, 64, 255], [64, 128, 255], [96, 160, 255],
     [128, 192, 255], [160, 224, 255], [192, 240, 255], [224, 248, 255],
     [255, 255, 255], [255, 248, 224], [255, 240, 192], [255, 224, 160],
     [255, 192, 128], [255, 160, 96], [255, 128, 64], [255, 64, 32], [255, 0, 0]
-  ]
-};
+  ])
+});
 
 /**
  * Color calculator class for voxel rendering.
@@ -81,18 +82,26 @@ export class ColorCalculator {
    * @param {number} [options.divergingPivot=0] - Pivot value for diverging scheme / 二極性配色のピボット値
    * 
    * @description Diverging Color Behavior / 二極性配色の動作:
-   * - When diverging=true AND divergingPivot > 0: Uses diverging color scheme with rawValue
-   * - When diverging=true BUT divergingPivot ≤ 0: Falls back to standard color map or linear interpolation
-   * - This ensures safe operation when pivot is invalid or zero
+   * - When diverging=true: Always uses diverging color scheme with rawValue, regardless of pivot value
+   * - When divergingPivot > 0: Standard deviation-based normalization around the pivot
+   * - When divergingPivot = 0: Sign-based mapping (negative→blue, positive→red, zero→white)  
+   * - This ensures consistent diverging behavior across all pivot values
    * 
-   * 二極性配色=true かつ ピボット > 0: rawValueを使用して二極性配色
-   * 二極性配色=true だが ピボット ≤ 0: 標準カラーマップまたは線形補間にフォールバック
-   * これにより、ピボットが無効または0の場合でも安全に動作
+   * 二極性配色=true: ピボット値に関わらず常にrawValueを使用して二極性配色
+   * ピボット > 0: ピボット中心の標準偏差ベース正規化
+   * ピボット = 0: 符号ベースマッピング（負→青、正→赤、0→白）
+   * これにより全てのピボット値で一貫した二極性動作を保証
    * 
    * @returns {Cesium.Color} Calculated color / 計算された色
    */
   static calculateColor(normalizedDensity, rawValue = null, options = {}) {
     try {
+      // 入力バリデーション（早期エラー回避）
+      if (!Number.isFinite(normalizedDensity)) {
+        Logger.warn(`Invalid normalizedDensity: ${normalizedDensity}. Using 0.5 as fallback.`);
+        normalizedDensity = 0.5;
+      }
+      
       // デフォルト値の設定
       const {
         minColor = [0, 0, 255],
@@ -102,16 +111,14 @@ export class ColorCalculator {
         divergingPivot = 0
       } = options;
 
-      // 二極性配色対応（pivot>0 の場合のみ）
+      // 二極性配色対応（pivot値に関わらず統一的に処理）
       if (diverging && rawValue !== null) {
         const pivot = typeof divergingPivot === 'number' ? divergingPivot : 0;
-        if (pivot > 0) {
-          return ColorCalculator.calculateDivergingColor(rawValue, { divergingPivot: pivot });
-        }
-        // pivot が 0 以下の場合は従来の補間にフォールバック
+        return ColorCalculator.calculateDivergingColor(rawValue, { divergingPivot: pivot });
       }
       
       // カラーマップ対応
+      // 'custom'は将来の拡張用予約語（現在は未実装でlinear interpolationにフォールバック）
       if (colorMap && colorMap !== 'custom') {
         return ColorCalculator.interpolateFromColorMap(normalizedDensity, colorMap);
       }
@@ -192,6 +199,14 @@ export class ColorCalculator {
    * @param {number} rawValue - Raw value / 生値
    * @param {Object} options - Diverging color options / 二極性配色オプション
    * @param {number} [options.divergingPivot=0] - Pivot value / ピボット値
+   * 
+   * @description Pivot=0 Handling / Pivot=0時の処理:
+   * When pivot=0: negative values → blue side (0-0.5), positive values → red side (0.5-1), zero → white (0.5)
+   * When pivot>0: standard deviation-based normalization around the pivot
+   * 
+   * Pivot=0時: 負値→青側(0-0.5)、正値→赤側(0.5-1)、0→白(0.5)
+   * Pivot>0時: ピボット中心の標準的な偏差ベース正規化
+   * 
    * @returns {Cesium.Color} Calculated diverging color / 計算された二極性色
    */
   static calculateDivergingColor(rawValue, options = {}) {
@@ -201,14 +216,35 @@ export class ColorCalculator {
     // ピボットからの偏差を正規化
     let normalizedValue;
     
-    if (rawValue <= pivot) {
-      // 青い側 (0 to 0.5)
-      normalizedValue = pivot === 0 ? 0.5 : 0.5 * (rawValue / pivot);
-      normalizedValue = Math.max(0, Math.min(0.5, normalizedValue));
+    if (pivot === 0) {
+      // Special handling for pivot=0: use sign-based mapping
+      // pivot=0の特別処理: 符号ベースマッピング
+      if (rawValue < 0) {
+        // 負値: 青い側 (0 to 0.5), より負の値ほど濃い青
+        // Use logarithmic scale for better spread: -inf to 0 maps to 0 to 0.5
+        normalizedValue = 0.5 * (1 / (1 - rawValue));
+        normalizedValue = Math.max(0, Math.min(0.5, normalizedValue));
+      } else if (rawValue > 0) {
+        // 正値: 赤い側 (0.5 to 1), より正の値ほど濃い赤
+        // Use logarithmic scale for better spread: 0 to +inf maps to 0.5 to 1
+        normalizedValue = 0.5 + 0.5 * (rawValue / (1 + rawValue));
+        normalizedValue = Math.max(0.5, Math.min(1, normalizedValue));
+      } else {
+        // rawValue === 0: 中央の白
+        normalizedValue = 0.5;
+      }
     } else {
-      // 赤い側 (0.5 to 1)
-      normalizedValue = pivot === 0 ? 0.5 : 0.5 + 0.5 * ((rawValue - pivot) / pivot);
-      normalizedValue = Math.max(0.5, Math.min(1, normalizedValue));
+      // Standard pivot-based normalization for pivot > 0
+      // pivot > 0の標準ピボットベース正規化
+      if (rawValue <= pivot) {
+        // 青い側 (0 to 0.5)
+        normalizedValue = 0.5 * (rawValue / pivot);
+        normalizedValue = Math.max(0, Math.min(0.5, normalizedValue));
+      } else {
+        // 赤い側 (0.5 to 1)
+        normalizedValue = 0.5 + 0.5 * ((rawValue - pivot) / pivot);
+        normalizedValue = Math.max(0.5, Math.min(1, normalizedValue));
+      }
     }
     
     return ColorCalculator.interpolateFromColorMap(normalizedValue, 'diverging');
