@@ -174,7 +174,7 @@ describe('VoxelSelector', () => {
     
     test('Should store correct statistics', () => {
       const voxels = createMockVoxels(20);
-      const result = selector.selectVoxels(voxels, 10, { grid: createMockGrid() });
+      selector.selectVoxels(voxels, 10, { grid: createMockGrid() });
       
       const stats = selector.getLastSelectionStats();
       expect(stats.strategy).toBe('density');
@@ -290,7 +290,7 @@ describe('VoxelSelector', () => {
     
     test('Should store hybrid statistics correctly', () => {
       const voxels = createMockVoxels(30);
-      const result = selector.selectVoxels(voxels, 15, { grid: createMockGrid() });
+      selector.selectVoxels(voxels, 15, { grid: createMockGrid() });
       
       const stats = selector.getLastSelectionStats();
       expect(stats.strategy).toBe('hybrid');
@@ -388,7 +388,6 @@ describe('VoxelSelector', () => {
       
       // Should fallback and mark error in stats
       const result = selector.selectVoxels(invalidVoxels, 1, { grid: createMockGrid() });
-      const stats = selector.getLastSelectionStats();
       
       // Either successful with empty result or error marked
       expect(result.selectedVoxels).toBeDefined();
@@ -402,7 +401,7 @@ describe('VoxelSelector', () => {
       const selector = new VoxelSelector({ renderLimitStrategy: 'hybrid' });
       const voxels = createMockVoxels(25);
       
-      const result = selector.selectVoxels(voxels, 10, { grid: createMockGrid() });
+      selector.selectVoxels(voxels, 10, { grid: createMockGrid() });
       const stats = selector.getLastSelectionStats();
       
       expect(stats).toHaveProperty('strategy');
