@@ -37,7 +37,8 @@ Accepted / Deprecated / Superseded by ADR-YYYY
 | [ADR-0005](ADR-0005-adaptive-outlines-and-emulation-only.md) | 適応的枠線制御とエミュレーション専用表示モード | Proposed | 2025-08-26 |
 | [ADR-0006](ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md) | v0.1.9 適応的レンダリング制限とスマート視覚化支援 | Proposed | 2025-08-30 |
 | [ADR-0007](ADR-0007-v0.1.10-refactoring-modularization.md) | v0.1.10 リファクタリング・モジュール化 | Superseded by ADR-0008 | 2025-09-04 |
-| [ADR-0008](ADR-0008-v0.1.10-refactor-and-api-cleanup.md) | v0.1.10 モジュール分割とAPIクリーンアップ（互換性見直し） | Accepted | 2025-09-04 |
+| [ADR-0008](ADR-0008-v0.1.10-refactor-and-api-cleanup.md) | v0.1.10 モジュール分割とAPIクリーンアップ（互換性見直し） | Superseded by ADR-0009 | 2025-09-04 |
+| [ADR-0009](ADR-0009-voxel-renderer-responsibility-separation.md) | VoxelRenderer責任分離とSingle Responsibility Principle適用 | Accepted | 2025-09-07 |
 
 ## 参考資料
 
