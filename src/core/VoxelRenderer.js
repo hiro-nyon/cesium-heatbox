@@ -5,31 +5,9 @@
  */
 import * as Cesium from 'cesium';
 import { Logger } from '../utils/logger.js';
+import { ColorCalculator } from './color/ColorCalculator.js';
 
-// v0.1.5: カラーマップ定義（256段階のLUTテーブル）
-const COLOR_MAPS = {
-  // Viridisカラーマップ（簡略化した16段階）
-  viridis: [
-    [68, 1, 84], [71, 44, 122], [59, 81, 139], [44, 113, 142],
-    [33, 144, 141], [39, 173, 129], [92, 200, 99], [170, 220, 50],
-    [253, 231, 37], [255, 255, 255], [255, 255, 255], [255, 255, 255],
-    [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]
-  ],
-  // Infernoカラーマップ（簡略化した16段階）
-  inferno: [
-    [0, 0, 4], [31, 12, 72], [85, 15, 109], [136, 34, 106],
-    [186, 54, 85], [227, 89, 51], [249, 142, 8], [252, 187, 17],
-    [245, 219, 76], [252, 255, 164], [255, 255, 255], [255, 255, 255],
-    [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]
-  ],
-  // 二極性配色（blue-white-red）
-  diverging: [
-    [0, 0, 255], [32, 64, 255], [64, 128, 255], [96, 160, 255],
-    [128, 192, 255], [160, 224, 255], [192, 240, 255], [224, 248, 255],
-    [255, 255, 255], [255, 248, 224], [255, 240, 192], [255, 224, 160],
-    [255, 192, 128], [255, 160, 96], [255, 128, 64], [255, 64, 32], [255, 0, 0]
-  ]
-};
+// v0.1.11-alpha: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
 
 /**
  * Class responsible for 3D voxel rendering.
@@ -618,92 +596,18 @@ export class VoxelRenderer {
   /**
    * Interpolate color based on density (v0.1.5: color maps supported).
    * 密度に基づいて色を補間（v0.1.5: カラーマップ対応）。
+   * v0.1.11-alpha: ColorCalculatorに委譲 (ADR-0009 Phase 1)
    * @param {number} normalizedDensity - Normalized density (0-1) / 正規化された密度 (0-1)
    * @param {number} [rawValue] - Raw value for diverging scheme / 生値（二極性配色用）
    * @returns {Cesium.Color} Calculated color / 計算された色
    */
   interpolateColor(normalizedDensity, rawValue = null) {
-    // v0.1.5: 二極性配色対応（pivot<=0 の場合は安全にフォールバック）
-    if (this.options.diverging && rawValue !== null) {
-      const pivot = typeof this.options.divergingPivot === 'number' ? this.options.divergingPivot : 0;
-      if (pivot > 0) {
-        return this._interpolateDivergingColor(rawValue);
-      }
-      // pivot が 0 以下の場合は従来の補間にフォールバック
-    }
-    
-    // v0.1.5: カラーマップ対応
-    if (this.options.colorMap && this.options.colorMap !== 'custom') {
-      return this._interpolateFromColorMap(normalizedDensity, this.options.colorMap);
-    }
-    
-    // 従来のmin/max色補間（後方互換）
-    const [minR, minG, minB] = this.options.minColor;
-    const [maxR, maxG, maxB] = this.options.maxColor;
-    
-    const r = Math.round(minR + (maxR - minR) * normalizedDensity);
-    const g = Math.round(minG + (maxG - minG) * normalizedDensity);
-    const b = Math.round(minB + (maxB - minB) * normalizedDensity);
-    
-    return Cesium.Color.fromBytes(r, g, b);
+    // v0.1.11-alpha: 新しいColorCalculatorに委譲
+    return ColorCalculator.calculateColor(normalizedDensity, rawValue, this.options);
   }
   
-  /**
-   * Interpolate color from a color map.
-   * カラーマップから色を補間します。
-   * @param {number} normalizedValue - Normalized value (0-1) / 正規化された値 (0-1)
-   * @param {string} colorMapName - Color map name / カラーマップ名
-   * @returns {Cesium.Color} Calculated color / 計算された色
-   * @private
-   */
-  _interpolateFromColorMap(normalizedValue, colorMapName) {
-    const colorMap = COLOR_MAPS[colorMapName];
-    if (!colorMap) {
-      Logger.warn(`Unknown color map: ${colorMapName}. Falling back to custom.`);
-      return this.interpolateColor(normalizedValue);
-    }
-    
-    // マップインデックスを計算
-    const scaledValue = normalizedValue * (colorMap.length - 1);
-    const lowerIndex = Math.floor(scaledValue);
-    const upperIndex = Math.min(lowerIndex + 1, colorMap.length - 1);
-    const fraction = scaledValue - lowerIndex;
-    
-    // 線形補間
-    const [r1, g1, b1] = colorMap[lowerIndex];
-    const [r2, g2, b2] = colorMap[upperIndex];
-    
-    const r = Math.round(r1 + (r2 - r1) * fraction);
-    const g = Math.round(g1 + (g2 - g1) * fraction);
-    const b = Math.round(b1 + (b2 - b1) * fraction);
-    
-    return Cesium.Color.fromBytes(r, g, b);
-  }
-  
-  /**
-   * Interpolate diverging (blue-white-red) color.
-   * 二極性配色（blue-white-red）で色を補間します。
-   * @param {number} rawValue - Raw value / 生値
-   * @returns {Cesium.Color} Calculated color / 計算された色
-   * @private
-   */
-  _interpolateDivergingColor(rawValue) {
-    const pivot = this.options.divergingPivot || 0;
-    
-    // ピボットからの偏差を正規化
-    let normalizedValue;
-    if (rawValue <= pivot) {
-      // 青い側 (0 to 0.5)
-      normalizedValue = 0.5 * (rawValue / pivot);
-      normalizedValue = Math.max(0, Math.min(0.5, normalizedValue));
-    } else {
-      // 赤い側 (0.5 to 1)
-      normalizedValue = 0.5 + 0.5 * ((rawValue - pivot) / pivot);
-      normalizedValue = Math.max(0.5, Math.min(1, normalizedValue));
-    }
-    
-    return this._interpolateFromColorMap(normalizedValue, 'diverging');
-  }
+  // v0.1.11-alpha: _interpolateFromColorMap and _interpolateDivergingColor methods 
+  // moved to ColorCalculator (ADR-0009 Phase 1)
 
   /**
    * Create description HTML for a voxel.
