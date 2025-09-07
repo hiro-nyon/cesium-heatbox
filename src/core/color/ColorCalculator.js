@@ -5,7 +5,7 @@
  * This class implements color interpolation logic extracted from VoxelRenderer
  * as part of the Single Responsibility Principle refactoring (ADR-0009 Phase 1).
  * 
- * @version 0.1.11-alpha
+ * @version 0.1.11
  * @author Cesium Heatbox Team
  */
 import * as Cesium from 'cesium';

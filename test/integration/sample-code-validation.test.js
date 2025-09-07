@@ -1,8 +1,7 @@
 /**
  * Sample code validation tests
  * サンプルコードの動作検証テスト
- * 
- * v0.1.11-alpha: Ensures backward compatibility after ADR-0009 orchestration refactoring
+ * v0.1.11: Ensures backward compatibility after ADR-0009 orchestration refactoring
  */
 
 import { Heatbox } from '../../src/index.js';

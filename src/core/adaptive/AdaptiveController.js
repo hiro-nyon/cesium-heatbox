@@ -11,7 +11,7 @@ import { Logger } from '../../utils/logger.js';
  * - カメラ距離・重なりリスク調整 (Camera distance & overlap risk adjustment)
  * 
  * ADR-0009 Phase 3: VoxelRenderer responsibility separation
- * @version 0.1.11-alpha
+ * @version 0.1.11
  */
 export class AdaptiveController {
   /**
@@ -246,7 +246,7 @@ export class AdaptiveController {
   getConfiguration() {
     return {
       ...this.options,
-      version: '0.1.11-alpha',
+      version: '0.1.11',
       phase: 'ADR-0009 Phase 3'
     };
   }

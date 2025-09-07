@@ -12,7 +12,7 @@ import { Logger } from '../../utils/logger.js';
  * - エンティティライフサイクル管理 (Entity lifecycle management)
  * 
  * ADR-0009 Phase 4: VoxelRenderer responsibility separation
- * @version 0.1.11-alpha
+ * @version 0.1.11
  */
 export class GeometryRenderer {
   /**
@@ -466,7 +466,7 @@ export class GeometryRenderer {
           <tr><td><b>座標:</b></td><td>X=${voxelInfo.x}, Y=${voxelInfo.y}, Z=${voxelInfo.z}</td></tr>
         </table>
         <p style="margin-bottom: 0;">
-          <small>v0.1.11-alpha GeometryRenderer</small>
+          <small>v0.1.11 GeometryRenderer</small>
         </p>
       </div>
     `;
@@ -587,7 +587,7 @@ export class GeometryRenderer {
     return {
       ...this.options,
       entityCount: this.entities.length,
-      version: '0.1.11-alpha',
+      version: '0.1.11',
       phase: 'ADR-0009 Phase 4'
     };
   }

@@ -1,7 +1,8 @@
 {
   "source": {
     "include": ["src"],
-    "includePattern": ".+\\.js(doc|x)?$"
+    "includePattern": ".+\\.js(doc|x)?$",
+    "type": "module"
   },
   "opts": {
     "destination": "docs/api",
@@ -10,4 +11,3 @@
   },
   "plugins": []
 }
-

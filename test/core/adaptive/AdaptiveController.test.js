@@ -3,7 +3,7 @@
  * AdaptiveController単体テスト
  * 
  * ADR-0009 Phase 3: VoxelRenderer責任分離 - 適応制御ロジック
- * @version 0.1.11-alpha
+ * @version 0.1.11
  */
 
 import { jest } from '@jest/globals';
@@ -458,7 +458,7 @@ describe('AdaptiveController', () => {
       
       const config = controller.getConfiguration();
 
-      expect(config.version).toBe('0.1.11-alpha');
+      expect(config.version).toBe('0.1.11');
       expect(config.phase).toBe('ADR-0009 Phase 3');
       expect(config.testOption).toBe('test');
       expect(config.adaptiveParams).toBeDefined();
