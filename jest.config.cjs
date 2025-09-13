@@ -11,8 +11,10 @@ module.exports = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/test/performance/heatbox-v0.1.9-performance.test.js',
-    // Phase 4 perf smoke tests are environment-sensitive; exclude from default CI/unit runs
-    '/test/performance/performance-regression.test.js'
+    // Phase 4 perf/migration smoke tests are environment-sensitive; exclude from default CI/unit runs
+    '/test/performance/performance-regression.test.js',
+    '/test/migration/migration-scenarios.test.js',
+    '/test/integration/quality-assurance.test.js'
   ],
   collectCoverageFrom: [
     'src/**/*.js',

@@ -50,6 +50,10 @@ Get bounds info if available.
 
 Get debug information.
 
+#### getEffectiveOptions() → {Object}
+
+Get effective normalized options snapshot.
+
 #### getOptions() → {Object}
 
 Get current options.
@@ -57,6 +61,10 @@ Get current options.
 #### getStatistics() → {Object|null}
 
 Get statistics information.
+
+#### hidePerformanceOverlay()
+
+Hide performance overlay
 
 #### (async) setData(entities)
 
@@ -66,6 +74,15 @@ Set heatmap data and render.
 |---|---|---|
 | entities | Array.<Cesium.Entity> | Target entities array / 対象エンティティ配列 |
 
+#### setPerformanceOverlayEnabled(enabled, optionsopt) → {boolean}
+
+Enable or disable performance overlay at runtime.
+
+| Name | Type | Attributes | Description |
+|---|---|---|---|
+| enabled | boolean |  | true to enable, false to disable |
+| options | Object | <optional> | Optional overlay options to apply |
+
 #### setVisible(show)
 
 Toggle visibility.
@@ -73,6 +90,14 @@ Toggle visibility.
 | Name | Type | Description |
 |---|---|---|
 | show | boolean | true to show / 表示する場合は true |
+
+#### showPerformanceOverlay()
+
+Show performance overlay
+
+#### togglePerformanceOverlay() → {boolean}
+
+Toggle performance overlay visibility
 
 #### updateOptions(newOptions)
 
@@ -90,6 +115,18 @@ Filter entity array (utility static method).
 |---|---|---|
 | entities | Array.<Cesium.Entity> | Entity array / エンティティ配列 |
 | predicate | function | Predicate function / フィルタ関数 |
+
+#### (static) getProfileDetails(profileName) → {Object|null}
+
+Get configuration profile details
+
+| Name | Type | Description |
+|---|---|---|
+| profileName | string | Profile name / プロファイル名 |
+
+#### (static) listProfiles() → {Array.<string>}
+
+Get list of available configuration profiles
 
 
 ## Quick Start Example
@@ -170,6 +207,10 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 
 デバッグ情報を取得します。
 
+#### getEffectiveOptions() → {Object}
+
+正規化済みオプションのスナップショットを取得します。
+
 #### getOptions() → {Object}
 
 現在のオプションを取得します。
@@ -177,6 +218,10 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 #### getStatistics() → {Object|null}
 
 統計情報を取得します（未作成の場合は null）。
+
+#### hidePerformanceOverlay()
+
+パフォーマンスオーバーレイを非表示
 
 #### (async) setData(entities)
 
@@ -186,6 +231,15 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 |---|---|---|
 | entities | Array.<Cesium.Entity> | Target entities array / 対象エンティティ配列 |
 
+#### setPerformanceOverlayEnabled(enabled, optionsopt) → {boolean}
+
+実行時にパフォーマンスオーバーレイを有効/無効化します。
+
+| 名前 | 型 | 属性 | 説明 |
+|---|---|---|---|
+| enabled | boolean |  | true to enable, false to disable |
+| options | Object | <optional> | Optional overlay options to apply |
+
 #### setVisible(show)
 
 表示/非表示を切り替えます。
@@ -193,6 +247,14 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 | 名前 | 型 | 説明 |
 |---|---|---|
 | show | boolean | true to show / 表示する場合は true |
+
+#### showPerformanceOverlay()
+
+パフォーマンスオーバーレイを表示
+
+#### togglePerformanceOverlay() → {boolean}
+
+パフォーマンスオーバーレイの表示/非表示切り替え
 
 #### updateOptions(newOptions)
 
@@ -210,3 +272,15 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 |---|---|---|
 | entities | Array.<Cesium.Entity> | Entity array / エンティティ配列 |
 | predicate | function | Predicate function / フィルタ関数 |
+
+#### (static) getProfileDetails(profileName) → {Object|null}
+
+設定プロファイルの詳細を取得
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| profileName | string | Profile name / プロファイル名 |
+
+#### (static) listProfiles() → {Array.<string>}
+
+利用可能な設定プロファイルの一覧を取得

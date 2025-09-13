@@ -92,10 +92,9 @@ export class VoxelRenderer {
       outlineInsetMode: 'all', // インセット枠線適用範囲
       // v0.1.7: 新オプション
       outlineRenderMode: 'standard',
+      emulationScope: 'off', // v0.1.12: emulation scope control
       adaptiveOutlines: false,
-      outlineWidthPreset: 'uniform',
-      boxOpacityResolver: null,
-      outlineOpacityResolver: null,
+      outlineWidthPreset: 'medium', // v0.1.12: updated default
       ...options
     };
     
@@ -407,8 +406,8 @@ export class VoxelRenderer {
         opacity = adaptiveParams.boxOpacity || this.options.opacity;
       }
       
-      // TopN highlight adjustment
-      if (this.options.highlightTopN && !isTopN && !this.options.boxOpacityResolver) {
+      // TopN highlight adjustment 
+      if (this.options.highlightTopN && !isTopN) {
         opacity *= (1 - (this.options.highlightStyle?.boostOpacity || 0.2));
       }
     }
@@ -496,11 +495,13 @@ export class VoxelRenderer {
     // Emulation logic
     let emulateThickForThis = renderModeConfig.shouldUseEmulationOnly;
     if (!renderModeConfig.shouldUseEmulationOnly) {
-      if (this.options.outlineEmulation === 'topn') {
+      // v0.1.12: Use new emulationScope instead of deprecated outlineEmulation  
+      const scope = this.options.emulationScope || 'off';
+      if (scope === 'topn') {
         emulateThickForThis = isTopN && (finalOutlineWidth || 1) > 1;
-      } else if (this.options.outlineEmulation === 'non-topn') {
+      } else if (scope === 'non-topn') {
         emulateThickForThis = !isTopN && (finalOutlineWidth || 1) > 1;
-      } else if (this.options.outlineEmulation === 'all') {
+      } else if (scope === 'all') {
         emulateThickForThis = (finalOutlineWidth || 1) > 1;
       } else if (this.options.adaptiveOutlines && adaptiveParams.shouldUseEmulation) {
         emulateThickForThis = true;
@@ -792,10 +793,9 @@ export class VoxelRenderer {
       outlineInsetMode: 'all', // インセット枠線適用範囲
       // v0.1.7: 新オプション
       outlineRenderMode: 'standard',
+      emulationScope: 'off', // v0.1.12: emulation scope control
       adaptiveOutlines: false,
-      outlineWidthPreset: 'uniform',
-      boxOpacityResolver: null,
-      outlineOpacityResolver: null,
+      outlineWidthPreset: 'medium', // v0.1.12: updated default
       ...options
     };
     
@@ -1107,8 +1107,8 @@ export class VoxelRenderer {
         opacity = adaptiveParams.boxOpacity || this.options.opacity;
       }
       
-      // TopN highlight adjustment
-      if (this.options.highlightTopN && !isTopN && !this.options.boxOpacityResolver) {
+      // TopN highlight adjustment 
+      if (this.options.highlightTopN && !isTopN) {
         opacity *= (1 - (this.options.highlightStyle?.boostOpacity || 0.2));
       }
     }
@@ -1196,11 +1196,13 @@ export class VoxelRenderer {
     // Emulation logic
     let emulateThickForThis = renderModeConfig.shouldUseEmulationOnly;
     if (!renderModeConfig.shouldUseEmulationOnly) {
-      if (this.options.outlineEmulation === 'topn') {
+      // v0.1.12: Use new emulationScope instead of deprecated outlineEmulation  
+      const scope = this.options.emulationScope || 'off';
+      if (scope === 'topn') {
         emulateThickForThis = isTopN && (finalOutlineWidth || 1) > 1;
-      } else if (this.options.outlineEmulation === 'non-topn') {
+      } else if (scope === 'non-topn') {
         emulateThickForThis = !isTopN && (finalOutlineWidth || 1) > 1;
-      } else if (this.options.outlineEmulation === 'all') {
+      } else if (scope === 'all') {
         emulateThickForThis = (finalOutlineWidth || 1) > 1;
       } else if (this.options.adaptiveOutlines && adaptiveParams.shouldUseEmulation) {
         emulateThickForThis = true;

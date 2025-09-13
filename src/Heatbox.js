@@ -17,7 +17,7 @@ import { CoordinateTransformer } from './core/CoordinateTransformer.js';
 import { VoxelGrid } from './core/VoxelGrid.js';
 import { DataProcessor } from './core/DataProcessor.js';
 import { VoxelRenderer } from './core/VoxelRenderer.js';
-import { getProfileNames, getProfile } from './utils/profiles.js';
+import { getProfileNames, getProfile, applyProfile } from './utils/profiles.js';
 import { PerformanceOverlay } from './utils/performanceOverlay.js';
 
 /**
@@ -70,7 +70,14 @@ export class Heatbox {
     this.viewer = viewer;
     
     // v0.1.9: Auto Render Budgetの適用
-    const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
+    // Phase 4: Ensure profile and legacy migration are applied before merging defaults
+    let userOptions = { ...(options || {}) };
+    // Apply profile before merging defaults (defaults <- profile <- user)
+    if (userOptions.profile && getProfileNames().includes(userOptions.profile)) {
+      userOptions = applyProfile(userOptions.profile, userOptions);
+      delete userOptions.profile;
+    }
+    const mergedOptions = { ...DEFAULT_OPTIONS, ...userOptions };
     this.options = validateAndNormalizeOptions(applyAutoRenderBudget(mergedOptions));
     
     // ログレベルをオプションに基づいて設定
