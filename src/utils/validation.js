@@ -118,7 +118,16 @@ export function validateVoxelCount(totalVoxels, voxelSize) {
   if (totalVoxels > PERFORMANCE_LIMITS.maxVoxels) {
     result.valid = false;
     result.error = ERROR_MESSAGES.VOXEL_LIMIT_EXCEEDED;
-    result.recommendedSize = Math.ceil(voxelSize * Math.pow(totalVoxels / PERFORMANCE_LIMITS.maxVoxels, 1/3));
+    
+    // Safe calculation with bounds checking
+    const ratio = totalVoxels / PERFORMANCE_LIMITS.maxVoxels;
+    const scaleFactor = Math.pow(Math.max(1, Math.min(1000, ratio)), 1/3);
+    const calculatedSize = voxelSize * scaleFactor;
+    
+    result.recommendedSize = Math.ceil(
+      Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+               Math.min(PERFORMANCE_LIMITS.maxVoxelSize, calculatedSize))
+    );
   } else if (totalVoxels > PERFORMANCE_LIMITS.warningThreshold) {
     result.warning = true;
     result.error = ERROR_MESSAGES.MEMORY_WARNING;
@@ -461,11 +470,26 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
   Logger.debug(`Starting occupancy-based estimation: N=${entityCount}, target=${targetFill}, maxVoxels=${maxRenderVoxels}`);
   
   for (let iteration = 0; iteration < maxIterations; iteration++) {
-    // 現在のサイズでの総ボクセル数を計算
-    const numVoxelsX = Math.ceil(dataRange.x / currentSize);
-    const numVoxelsY = Math.ceil(dataRange.y / currentSize);
-    const numVoxelsZ = Math.ceil(dataRange.z / currentSize);
+    // Safe bounds checking for currentSize
+    if (!Number.isFinite(currentSize) || currentSize <= 0) {
+      Logger.warn(`Invalid currentSize detected: ${currentSize}, using fallback`);
+      currentSize = estimateVoxelSizeBasic(bounds, entityCount);
+      if (!Number.isFinite(currentSize) || currentSize <= 0) {
+        currentSize = PERFORMANCE_LIMITS.minVoxelSize;
+      }
+    }
+    
+    // 現在のサイズでの総ボクセル数を計算（安全性チェック付き）
+    const numVoxelsX = Math.max(1, Math.ceil(Math.max(0, dataRange.x) / currentSize));
+    const numVoxelsY = Math.max(1, Math.ceil(Math.max(0, dataRange.y) / currentSize));
+    const numVoxelsZ = Math.max(1, Math.ceil(Math.max(0, dataRange.z) / currentSize));
     const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
+    
+    // Safeguard against overflow
+    if (!Number.isFinite(totalVoxels) || totalVoxels <= 0 || totalVoxels > 1e9) {
+      Logger.warn(`Invalid totalVoxels calculated: ${totalVoxels}, breaking iteration`);
+      break;
+    }
     
     // 期待占有セル数の計算: E[occupied] ≈ M × (1 - exp(-N/M))
     const expectedOccupied = totalVoxels * (1 - Math.exp(-entityCount / totalVoxels));
@@ -482,13 +506,16 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
       break;
     }
     
-    // サイズ調整（Newton法的なアプローチ）
+    // サイズ調整（Newton法的なアプローチ）- 安全な計算
+    const fillRatio = Math.max(0.1, Math.min(10.0, currentFill / targetFill));
+    const adjustmentFactor = Math.pow(fillRatio, 0.3);
+    
     if (currentFill > targetFill) {
       // 占有率が高すぎる → サイズを大きくしてボクセル数を減らす
-      currentSize *= Math.pow(currentFill / targetFill, 0.3);
+      currentSize *= adjustmentFactor;
     } else {
       // 占有率が低すぎる → サイズを小さくしてボクセル数を増やす
-      currentSize *= Math.pow(currentFill / targetFill, 0.3);
+      currentSize *= adjustmentFactor;
     }
     
     // 制限値内に収める
@@ -509,18 +536,39 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
  */
 export function calculateDataRange(bounds) {
   try {
-    // 緯度経度をメートルに変換（簡易変換）
-    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-    const cosLat = Math.cos(centerLat * Math.PI / 180);
+    // Validate bounds input
+    const validBounds = {
+      minLat: Number.isFinite(bounds.minLat) ? Math.max(-90, Math.min(90, bounds.minLat)) : 0,
+      maxLat: Number.isFinite(bounds.maxLat) ? Math.max(-90, Math.min(90, bounds.maxLat)) : 0.1,
+      minLon: Number.isFinite(bounds.minLon) ? Math.max(-180, Math.min(180, bounds.minLon)) : 0,
+      maxLon: Number.isFinite(bounds.maxLon) ? Math.max(-180, Math.min(180, bounds.maxLon)) : 0.1,
+      minAlt: Number.isFinite(bounds.minAlt) ? bounds.minAlt : 0,
+      maxAlt: Number.isFinite(bounds.maxAlt) ? bounds.maxAlt : 100
+    };
     
-    const lonRangeMeters = (bounds.maxLon - bounds.minLon) * 111000 * cosLat;
-    const latRangeMeters = (bounds.maxLat - bounds.minLat) * 111000;
-    const altRangeMeters = Math.max(bounds.maxAlt - bounds.minAlt, 1); // 最小1m
+    // Ensure valid ranges
+    if (validBounds.maxLat <= validBounds.minLat) {
+      validBounds.maxLat = validBounds.minLat + 0.001; // ~100m
+    }
+    if (validBounds.maxLon <= validBounds.minLon) {
+      validBounds.maxLon = validBounds.minLon + 0.001; // ~100m at equator
+    }
+    if (validBounds.maxAlt <= validBounds.minAlt) {
+      validBounds.maxAlt = validBounds.minAlt + 1; // 1m minimum
+    }
+    
+    // 緯度経度をメートルに変換（簡易変換）- 安全な計算
+    const centerLat = (validBounds.minLat + validBounds.maxLat) / 2;
+    const cosLat = Math.cos(Math.max(-Math.PI/2, Math.min(Math.PI/2, centerLat * Math.PI / 180)));
+    
+    const lonRangeMeters = Math.abs(validBounds.maxLon - validBounds.minLon) * 111000 * Math.abs(cosLat);
+    const latRangeMeters = Math.abs(validBounds.maxLat - validBounds.minLat) * 111000;
+    const altRangeMeters = Math.abs(validBounds.maxAlt - validBounds.minAlt);
     
     return {
-      x: Math.max(lonRangeMeters, 1),
-      y: Math.max(latRangeMeters, 1),
-      z: altRangeMeters
+      x: Math.max(1, Math.min(1e6, lonRangeMeters)), // 1m to 1000km bounds
+      y: Math.max(1, Math.min(1e6, latRangeMeters)), 
+      z: Math.max(1, Math.min(1e4, altRangeMeters))  // 1m to 10km altitude range
     };
     
   } catch (error) {
