@@ -21,6 +21,35 @@ import { getProfileNames, getProfile } from './utils/profiles.js';
 import { PerformanceOverlay } from './utils/performanceOverlay.js';
 
 /**
+ * @typedef {('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data')} ProfileName
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {('standard'|'inset'|'emulation-only')} OutlineRenderMode
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {('off'|'topn'|'non-topn'|'all')} EmulationScope
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {('thin'|'medium'|'thick'|'adaptive')} OutlineWidthPreset
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {Object} PerformanceOverlayConfig
+ * @property {boolean} [enabled=false] - Enable performance overlay
+ * @property {('top-left'|'top-right'|'bottom-left'|'bottom-right')} [position='top-right'] - Overlay position
+ * @property {boolean} [autoShow=false] - Show overlay automatically
+ * @property {number} [updateIntervalMs=500] - Update interval in milliseconds
+ * @since 0.1.12
+ */
+
+/**
  * Main class of CesiumJS Heatbox.
  * Provides 3D voxel-based heatmap visualization in CesiumJS environments.
  *

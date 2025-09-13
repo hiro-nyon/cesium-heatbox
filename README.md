@@ -51,7 +51,9 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **オーケストレーション型アーキテクチャ（ADR-0009, v0.1.11）**: Single Responsibility Principleに基づく完全な責務分離を実現
 - **設定プロファイル機能 (v0.1.12)**: `mobile-fast`、`desktop-balanced`、`dense-data`、`sparse-data` で環境別最適化
 - **パフォーマンス監視 (v0.1.12)**: リアルタイムオーバーレイでFPS、描画時間、メモリ使用量を可視化
-- **API一貫性向上 (v0.1.12)**: 命名規則統一（`pitchDegrees`/`headingDegrees`）と適応制御システム統合
+- **API一貫性向上 (v0.1.12)**: 命名規則統一（`pitchDegrees`/`headingDegrees`）、`outlineRenderMode`/`emulationScope`統合
+- **適応制御システム統合 (v0.1.12)**: Resolver廃止による`adaptiveParams`システムへの一本化
+- **デバッグ支援強化 (v0.1.12)**: `getEffectiveOptions()`による設定確認とプロファイル詳細取得
   - **ColorCalculator**: 色計算・カラーマップ処理の専門化
   - **VoxelSelector**: 密度・カバレッジ・ハイブリッド選択戦略の専門化
   - **AdaptiveController**: 適応パラメータ・近隣密度計算の専門化

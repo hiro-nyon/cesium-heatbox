@@ -156,6 +156,70 @@ const stats = heatbox.getStatistics();
 console.log(stats.renderTimeMs);  // 新規追加
 ```
 
+## オプション対応表（クイックリファレンス）
+
+下記の表は、v0.1.11からv0.1.12への主要なオプション変更を示します。
+
+| カテゴリ | v0.1.11（廃止予定） | v0.1.12（推奨） | 備考 |
+|---------|---------------------|-----------------|------|
+| **ビューフィット角度** | `fitViewOptions.pitch` | `fitViewOptions.pitchDegrees` | 命名統一 |
+|  | `fitViewOptions.heading` | `fitViewOptions.headingDegrees` | 命名統一 |
+| **動的制御** | `outlineWidthResolver` | `adaptiveParams.outlineWidthRange` + `adaptiveOutlines: true` | Resolver廃止 |
+|  | `outlineOpacityResolver` | `adaptiveParams.outlineOpacityRange` + `adaptiveOutlines: true` | Resolver廃止 |
+|  | `boxOpacityResolver` | `adaptiveParams.boxOpacityRange` + `adaptiveOutlines: true` | Resolver廃止 |
+| **レンダリング制御** | `outlineEmulation: true` | `outlineRenderMode: 'emulation-only'`, `emulationScope: 'all'` | 統一制御 |
+|  | `outlineEmulation: 'topn'` | `outlineRenderMode: 'standard'`, `emulationScope: 'topn'` | 統一制御 |
+|  | `outlineEmulation: 'non-topn'` | `outlineRenderMode: 'standard'`, `emulationScope: 'non-topn'` | 統一制御 |
+|  | `outlineEmulation: false` | `outlineRenderMode: 'standard'`, `emulationScope: 'off'` | 統一制御 |
+| **プリセット名** | `outlineWidthPreset: 'uniform'` | `outlineWidthPreset: 'medium'` | 名前統一 |
+|  | `outlineWidthPreset: 'adaptive-density'` | `outlineWidthPreset: 'adaptive'` | 名前統一 |
+|  | `outlineWidthPreset: 'topn-focus'` | `outlineWidthPreset: 'thick'` | 名前統一 |
+| **新機能** | N/A | `profile: 'mobile-fast'` など | 環境別最適化 |
+|  | N/A | `performanceOverlay: { enabled: true }` | 性能監視 |
+|  | N/A | `heatbox.getEffectiveOptions()` | デバッグ支援 |
+
+### 完全なマッピング辞書
+
+```javascript
+// v0.1.11 → v0.1.12 オプション変換例
+const migrationMap = {
+  // ビューフィット
+  'fitViewOptions.pitch': 'fitViewOptions.pitchDegrees',
+  'fitViewOptions.heading': 'fitViewOptions.headingDegrees',
+  
+  // Resolver廃止（適応制御への移行）
+  'outlineWidthResolver': {
+    replacement: 'adaptiveParams.outlineWidthRange + adaptiveOutlines: true',
+    action: 'migrate_to_adaptive_system'
+  },
+  'outlineOpacityResolver': {
+    replacement: 'adaptiveParams.outlineOpacityRange + adaptiveOutlines: true', 
+    action: 'migrate_to_adaptive_system'
+  },
+  'boxOpacityResolver': {
+    replacement: 'adaptiveParams.boxOpacityRange + adaptiveOutlines: true',
+    action: 'migrate_to_adaptive_system'
+  },
+  
+  // エミュレーション統一
+  'outlineEmulation': {
+    true: { outlineRenderMode: 'emulation-only', emulationScope: 'all' },
+    false: { outlineRenderMode: 'standard', emulationScope: 'off' },
+    'off': { outlineRenderMode: 'standard', emulationScope: 'off' },
+    'all': { outlineRenderMode: 'emulation-only', emulationScope: 'all' },
+    'topn': { outlineRenderMode: 'standard', emulationScope: 'topn' },
+    'non-topn': { outlineRenderMode: 'standard', emulationScope: 'non-topn' }
+  },
+  
+  // プリセット名統一
+  'outlineWidthPreset': {
+    'uniform': 'medium',
+    'adaptive-density': 'adaptive',
+    'topn-focus': 'thick'
+  }
+};
+```
+
 ### Migration Steps
 
 #### Step 1: 廃止予定警告の確認
