@@ -55,6 +55,9 @@ export class Heatbox {
     this._eventHandler = null;
     this._performanceOverlay = null;
     this._lastRenderTime = null;
+    this._overlayLastUpdate = 0;
+    this._postRenderListener = null;
+    this._prevFrameTimestamp = null;
 
     this._initializeEventListeners();
     
@@ -119,6 +122,7 @@ export class Heatbox {
       position: 'top-right',
       fpsAveragingWindowMs: 1000,
       autoUpdate: true,
+      updateIntervalMs: 500,
       ...this.options.performanceOverlay
     };
 
@@ -130,6 +134,9 @@ export class Heatbox {
     }
 
     Logger.debug('Performance overlay initialized');
+
+    // Hook postRender to provide real-time updates with low overhead
+    this._hookPerformanceOverlayUpdates();
   }
 
   /**
@@ -172,6 +179,41 @@ export class Heatbox {
   }
 
   /**
+   * Enable or disable performance overlay at runtime.
+   * 実行時にパフォーマンスオーバーレイを有効/無効化します。
+   * @param {boolean} enabled - true to enable, false to disable
+   * @param {Object} [options] - Optional overlay options to apply
+   * @returns {boolean} Current enabled state
+   * @since 0.1.12
+   */
+  setPerformanceOverlayEnabled(enabled, options = {}) {
+    if (enabled) {
+      if (!this._performanceOverlay) {
+        // Initialize with given options overriding existing config
+        this.options.performanceOverlay = { enabled: true, ...(this.options.performanceOverlay || {}), ...options };
+        this._initializePerformanceOverlay();
+      } else {
+        // Apply options if provided
+        if (options && Object.keys(options).length > 0) {
+          this._performanceOverlay.options = { ...this._performanceOverlay.options, ...options };
+        }
+        this._performanceOverlay.show();
+      }
+      return true;
+    }
+
+    // Disable and cleanup listener
+    if (this._performanceOverlay) {
+      this._performanceOverlay.hide();
+    }
+    if (this._postRenderListener) {
+      try { this.viewer.scene.postRender.removeEventListener(this._postRenderListener); } catch (_) { Logger.debug('postRender listener removal failed (non-fatal)'); }
+      this._postRenderListener = null;
+    }
+    return false;
+  }
+
+  /**
    * Estimate memory usage for performance monitoring
    * パフォーマンス監視用のメモリ使用量推定
    * @private
@@ -180,7 +222,8 @@ export class Heatbox {
   _estimateMemoryUsage() {
     try {
       // Rough estimation based on rendered entities and data
-      const entityCount = this.renderer?.entities?.length || 0;
+      const entityCount = (this.renderer?.geometryRenderer?.entities?.length) 
+        || (this.renderer?.voxelEntities?.length) || 0;
       const voxelDataSize = this._voxelData ? Object.keys(this._voxelData).length : 0;
       
       // Estimate: ~1KB per entity + ~100B per voxel data entry
@@ -293,12 +336,16 @@ export class Heatbox {
         this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
       }
       
-      // 5. 描画
+      // 5. 描画（レンダリング時間の計測）
       Logger.debug('Step 5: 描画');
+      const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
       const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+      const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      this._lastRenderTime = Math.max(0, t1 - t0);
       
       // 統計情報に実際の描画数を反映
       this._statistics.renderedVoxels = renderedVoxelCount;
+      this._statistics.renderTimeMs = this._lastRenderTime;
       Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
       
       // v0.1.9: 自動視点調整
@@ -314,6 +361,14 @@ export class Heatbox {
       }
       
       Logger.debug('Heatbox.setData - 処理完了');
+      
+      // Update overlay immediately after render if available
+      if (this._performanceOverlay && this._performanceOverlay.isVisible) {
+        const stats = this.getStatistics() || {};
+        stats.renderTimeMs = this._lastRenderTime;
+        stats.memoryUsageMB = this._estimateMemoryUsage();
+        this._performanceOverlay.update(stats, undefined);
+      }
       
     } catch (error) {
       Logger.error('ヒートマップ作成エラー:', error);
@@ -365,6 +420,15 @@ export class Heatbox {
     this.clear();
     if (this._eventHandler && !this._eventHandler.isDestroyed()) {
       this._eventHandler.destroy();
+    }
+    // Remove overlay listener and destroy overlay
+    if (this._postRenderListener) {
+      try { this.viewer.scene.postRender.removeEventListener(this._postRenderListener); } catch (_) { Logger.debug('postRender listener removal failed (non-fatal)'); }
+      this._postRenderListener = null;
+    }
+    if (this._performanceOverlay) {
+      try { this._performanceOverlay.destroy(); } catch (_) { Logger.debug('overlay destroy failed (non-fatal)'); }
+      this._performanceOverlay = null;
     }
     this._eventHandler = null;
   }
@@ -510,6 +574,51 @@ export class Heatbox {
     }
     
     return baseInfo;
+  }
+
+  /**
+   * Hook viewer postRender to feed overlay with periodic updates.
+   * viewer の postRender にフックし、オーバーレイへ定期更新を供給します。
+   * @private
+   */
+  _hookPerformanceOverlayUpdates() {
+    if (!this._performanceOverlay || this._postRenderListener) return;
+
+    const interval = this._performanceOverlay.options?.updateIntervalMs ?? 500;
+    this._postRenderListener = () => {
+      // Skip if overlay not visible
+      if (!this._performanceOverlay || !this._performanceOverlay.isVisible) return;
+
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+
+      // Calculate frame time from previous timestamp
+      let frameTime;
+      if (this._prevFrameTimestamp != null) {
+        frameTime = Math.max(0, now - this._prevFrameTimestamp);
+      }
+      this._prevFrameTimestamp = now;
+
+      // Throttle updates
+      if (now - this._overlayLastUpdate < interval) return;
+      this._overlayLastUpdate = now;
+
+      const stats = this.getStatistics() || {};
+      // Attach last render time and estimated memory usage
+      if (this._lastRenderTime != null) stats.renderTimeMs = this._lastRenderTime;
+      stats.memoryUsageMB = this._estimateMemoryUsage();
+
+      try {
+        this._performanceOverlay.update(stats, frameTime);
+      } catch (_e) {
+        // Ignore overlay update errors to avoid impacting render loop
+      }
+    };
+
+    try {
+      this.viewer.scene.postRender.addEventListener(this._postRenderListener);
+    } catch (_e) {
+      // No-op if event registration fails
+    }
   }
 
   /**
