@@ -224,14 +224,15 @@ export function validateAndNormalizeOptions(options = {}) {
   }
 
   // v0.1.12: outlineEmulation deprecation and migration to outlineRenderMode  
-  if (normalized.outlineEmulation !== undefined && normalized.outlineRenderMode === undefined) {
+  if (normalized.outlineEmulation !== undefined && (normalized.outlineRenderMode === undefined || normalized.outlineRenderMode === 'standard')) {
     warnOnce('outlineEmulation',
       '[Heatbox][DEPRECATION][v0.2.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.');
     
     const v = normalized.outlineEmulation;
     if (v === false || v === 'off') {
-      // outlineEmulation: false/off → standard mode
+      // outlineEmulation: false/off → standard mode + explicit off scope
       normalized.outlineRenderMode = 'standard';
+      normalized.emulationScope = 'off';
     } else if (v === true || v === 'all') {
       // outlineEmulation: true/all → emulation-only mode
       normalized.outlineRenderMode = 'emulation-only';

@@ -133,12 +133,11 @@ const heatbox = new Heatbox(viewer, {
 });
 ```
 
-### v0.1.11 エミュレーション専用（太線のみ）と密度連動
+### v0.1.12 エミュレーション専用（太線のみ）と密度連動
 ```js
 const heatbox = new Heatbox(viewer, {
   // エミュレーション専用モード: 標準枠線/インセットを使わずエッジで太線を表現
   outlineRenderMode: 'emulation-only',
-  outlineEmulation: 'all',
   showOutline: false,
   opacity: 0.0,
   // 密度が高いほど “太く/濃く”
@@ -178,11 +177,12 @@ await heatbox.createFromEntities(viewer.entities.values);
 - 塗り (`opacity`) が 1.0 だと内側線は見えにくくなるため、0.6〜0.9 程度を推奨。`wireframeOnly: true` なら最も視認性が高いです。
  - 塗り (`opacity`) が 1.0 だと内側線は見えにくくなるため、0.6〜0.9 程度を推奨。`wireframeOnly: true` なら最も視認性が高いです。
 
-### v0.1.6+ 太線エミュレーション（重なりに強い強調表示）
+### v0.1.12+ 太線エミュレーション（重なりに強い強調表示）
 ```js
 const heatbox = new Heatbox(viewer, {
-  // TopNのみ太線をポリラインで描画（WebGL線幅制限の回避）
-  outlineEmulation: 'topn',
+  // TopN のみ太線をポリラインで重ねる（標準モードに部分エミュを重ねる）
+  outlineRenderMode: 'standard',
+  emulationScope: 'topn',
   highlightTopN: 20,
   outlineWidth: 4,
   // 併用: インセットがあれば中間位置に太線を描いて隣接との重なりを軽減

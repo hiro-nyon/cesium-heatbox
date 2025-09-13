@@ -24,6 +24,37 @@ import { CoordinateTransformer } from './core/CoordinateTransformer.js';
 import { VoxelGrid } from './core/VoxelGrid.js';
 import { DataProcessor } from './core/DataProcessor.js';
 import { VoxelRenderer } from './core/VoxelRenderer.js';
+import { getProfileNames, getProfile } from './utils/profiles.js';
+import { PerformanceOverlay } from './utils/performanceOverlay.js';
+
+/**
+ * @typedef {('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data')} ProfileName
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {('standard'|'inset'|'emulation-only')} OutlineRenderMode
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {('off'|'topn'|'non-topn'|'all')} EmulationScope
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {('thin'|'medium'|'thick'|'adaptive')} OutlineWidthPreset
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {Object} PerformanceOverlayConfig
+ * @property {boolean} [enabled=false] - Enable performance overlay
+ * @property {('top-left'|'top-right'|'bottom-left'|'bottom-right')} [position='top-right'] - Overlay position
+ * @property {boolean} [autoShow=false] - Show overlay automatically
+ * @property {number} [updateIntervalMs=500] - Update interval in milliseconds
+ * @since 0.1.12
+ */
 
 /**
  * Main class of CesiumJS Heatbox.
@@ -58,8 +89,185 @@ export class Heatbox {
     this._voxelData = null;
     this._statistics = null;
     this._eventHandler = null;
+    this._performanceOverlay = null;
+    this._lastRenderTime = null;
+    this._overlayLastUpdate = 0;
+    this._postRenderListener = null;
+    this._prevFrameTimestamp = null;
 
     this._initializeEventListeners();
+    
+    // v0.1.12: Initialize performance overlay if enabled
+    if (this.options.performanceOverlay && this.options.performanceOverlay.enabled) {
+      this._initializePerformanceOverlay();
+    }
+  }
+
+  /**
+   * Get effective normalized options snapshot.
+   * 正規化済みオプションのスナップショットを取得します。
+   * @returns {Object} options snapshot
+   */
+  getEffectiveOptions() {
+    try {
+      return JSON.parse(JSON.stringify(this.options));
+    } catch (_) {
+      // Fallback shallow copy
+      return { ...this.options };
+    }
+  }
+
+  /**
+   * Get list of available configuration profiles
+   * 利用可能な設定プロファイルの一覧を取得
+   * 
+   * @returns {string[]} Array of profile names / プロファイル名の配列
+   * @static
+   * @since 0.1.12
+   */
+  static listProfiles() {
+    return getProfileNames();
+  }
+
+  /**
+   * Get configuration profile details
+   * 設定プロファイルの詳細を取得
+   * 
+   * @param {string} profileName - Profile name / プロファイル名
+   * @returns {Object|null} Profile configuration with description / 説明付きプロファイル設定
+   * @static
+   * @since 0.1.12
+   */
+  static getProfileDetails(profileName) {
+    return getProfile(profileName);
+  }
+
+  /**
+   * Initialize performance overlay
+   * パフォーマンスオーバーレイを初期化
+   * @private
+   * @since 0.1.12
+   */
+  _initializePerformanceOverlay() {
+    if (typeof window === 'undefined') {
+      Logger.warn('Performance overlay requires browser environment');
+      return;
+    }
+
+    const overlayOptions = {
+      position: 'top-right',
+      fpsAveragingWindowMs: 1000,
+      autoUpdate: true,
+      updateIntervalMs: 500,
+      ...this.options.performanceOverlay
+    };
+
+    this._performanceOverlay = new PerformanceOverlay(overlayOptions);
+    
+    // Show immediately if configured
+    if (overlayOptions.autoShow) {
+      this._performanceOverlay.show();
+    }
+
+    Logger.debug('Performance overlay initialized');
+
+    // Hook postRender to provide real-time updates with low overhead
+    this._hookPerformanceOverlayUpdates();
+  }
+
+  /**
+   * Toggle performance overlay visibility
+   * パフォーマンスオーバーレイの表示/非表示切り替え
+   * 
+   * @returns {boolean} New visibility state / 新しい表示状態
+   * @since 0.1.12
+   */
+  togglePerformanceOverlay() {
+    if (!this._performanceOverlay) {
+      Logger.warn('Performance overlay not initialized. Set performanceOverlay.enabled: true in options.');
+      return false;
+    }
+    
+    this._performanceOverlay.toggle();
+    return this._performanceOverlay.isVisible;
+  }
+
+  /**
+   * Show performance overlay
+   * パフォーマンスオーバーレイを表示
+   * @since 0.1.12
+   */
+  showPerformanceOverlay() {
+    if (this._performanceOverlay) {
+      this._performanceOverlay.show();
+    }
+  }
+
+  /**
+   * Hide performance overlay
+   * パフォーマンスオーバーレイを非表示
+   * @since 0.1.12
+   */
+  hidePerformanceOverlay() {
+    if (this._performanceOverlay) {
+      this._performanceOverlay.hide();
+    }
+  }
+
+  /**
+   * Enable or disable performance overlay at runtime.
+   * 実行時にパフォーマンスオーバーレイを有効/無効化します。
+   * @param {boolean} enabled - true to enable, false to disable
+   * @param {Object} [options] - Optional overlay options to apply
+   * @returns {boolean} Current enabled state
+   * @since 0.1.12
+   */
+  setPerformanceOverlayEnabled(enabled, options = {}) {
+    if (enabled) {
+      if (!this._performanceOverlay) {
+        // Initialize with given options overriding existing config
+        this.options.performanceOverlay = { enabled: true, ...(this.options.performanceOverlay || {}), ...options };
+        this._initializePerformanceOverlay();
+      } else {
+        // Apply options if provided
+        if (options && Object.keys(options).length > 0) {
+          this._performanceOverlay.options = { ...this._performanceOverlay.options, ...options };
+        }
+        this._performanceOverlay.show();
+      }
+      return true;
+    }
+
+    // Disable and cleanup listener
+    if (this._performanceOverlay) {
+      this._performanceOverlay.hide();
+    }
+    if (this._postRenderListener) {
+      try { this.viewer.scene.postRender.removeEventListener(this._postRenderListener); } catch (_) { Logger.debug('postRender listener removal failed (non-fatal)'); }
+      this._postRenderListener = null;
+    }
+    return false;
+  }
+
+  /**
+   * Estimate memory usage for performance monitoring
+   * パフォーマンス監視用のメモリ使用量推定
+   * @private
+   * @since 0.1.12
+   */
+  _estimateMemoryUsage() {
+    try {
+      // Rough estimation based on rendered entities and data
+      const entityCount = (this.renderer?.geometryRenderer?.entities?.length) 
+        || (this.renderer?.voxelEntities?.length) || 0;
+      const voxelDataSize = this._voxelData ? Object.keys(this._voxelData).length : 0;
+      
+      // Estimate: ~1KB per entity + ~100B per voxel data entry
+      const estimated = (entityCount * 1024 + voxelDataSize * 100) / (1024 * 1024);
+      return Math.max(0.1, estimated);
+    } catch (_error) {
+      return 0;
+    }
   }
 
   /**
@@ -164,12 +372,16 @@ export class Heatbox {
         this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
       }
       
-      // 5. 描画
+      // 5. 描画（レンダリング時間の計測）
       Logger.debug('Step 5: 描画');
+      const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
       const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+      const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      this._lastRenderTime = Math.max(0, t1 - t0);
       
       // 統計情報に実際の描画数を反映
       this._statistics.renderedVoxels = renderedVoxelCount;
+      this._statistics.renderTimeMs = this._lastRenderTime;
       Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
       
       // v0.1.9: 自動視点調整
@@ -185,6 +397,14 @@ export class Heatbox {
       }
       
       Logger.debug('Heatbox.setData - 処理完了');
+      
+      // Update overlay immediately after render if available
+      if (this._performanceOverlay && this._performanceOverlay.isVisible) {
+        const stats = this.getStatistics() || {};
+        stats.renderTimeMs = this._lastRenderTime;
+        stats.memoryUsageMB = this._estimateMemoryUsage();
+        this._performanceOverlay.update(stats, undefined);
+      }
       
     } catch (error) {
       Logger.error('ヒートマップ作成エラー:', error);
@@ -236,6 +456,15 @@ export class Heatbox {
     this.clear();
     if (this._eventHandler && !this._eventHandler.isDestroyed()) {
       this._eventHandler.destroy();
+    }
+    // Remove overlay listener and destroy overlay
+    if (this._postRenderListener) {
+      try { this.viewer.scene.postRender.removeEventListener(this._postRenderListener); } catch (_) { Logger.debug('postRender listener removal failed (non-fatal)'); }
+      this._postRenderListener = null;
+    }
+    if (this._performanceOverlay) {
+      try { this._performanceOverlay.destroy(); } catch (_) { Logger.debug('overlay destroy failed (non-fatal)'); }
+      this._performanceOverlay = null;
     }
     this._eventHandler = null;
   }
@@ -384,6 +613,51 @@ export class Heatbox {
   }
 
   /**
+   * Hook viewer postRender to feed overlay with periodic updates.
+   * viewer の postRender にフックし、オーバーレイへ定期更新を供給します。
+   * @private
+   */
+  _hookPerformanceOverlayUpdates() {
+    if (!this._performanceOverlay || this._postRenderListener) return;
+
+    const interval = this._performanceOverlay.options?.updateIntervalMs ?? 500;
+    this._postRenderListener = () => {
+      // Skip if overlay not visible
+      if (!this._performanceOverlay || !this._performanceOverlay.isVisible) return;
+
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+
+      // Calculate frame time from previous timestamp
+      let frameTime;
+      if (this._prevFrameTimestamp != null) {
+        frameTime = Math.max(0, now - this._prevFrameTimestamp);
+      }
+      this._prevFrameTimestamp = now;
+
+      // Throttle updates
+      if (now - this._overlayLastUpdate < interval) return;
+      this._overlayLastUpdate = now;
+
+      const stats = this.getStatistics() || {};
+      // Attach last render time and estimated memory usage
+      if (this._lastRenderTime != null) stats.renderTimeMs = this._lastRenderTime;
+      stats.memoryUsageMB = this._estimateMemoryUsage();
+
+      try {
+        this._performanceOverlay.update(stats, frameTime);
+      } catch (_e) {
+        // Ignore overlay update errors to avoid impacting render loop
+      }
+    };
+
+    try {
+      this.viewer.scene.postRender.addEventListener(this._postRenderListener);
+    } catch (_e) {
+      // No-op if event registration fails
+    }
+  }
+
+  /**
    * Fit view to data bounds with smart camera positioning.
    * データ境界にスマートなカメラ位置でビューをフィットします。
    * @param {Object} bounds - Target bounds (optional, uses current data bounds if not provided) / 対象境界
@@ -494,8 +768,8 @@ export class Heatbox {
     Logger.debug('Handling minimal data range');
     
     const destination = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt + 2000);
-    const heading = Cesium.Math.toRadians(fitOptions.heading);
-    const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+    const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
+    const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
     
     return this.viewer.camera.flyTo({
       destination,
@@ -527,8 +801,8 @@ export class Heatbox {
       maxRange / 2
     );
     
-    const heading = Cesium.Math.toRadians(fitOptions.heading);
-    const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+    const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
+    const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
     
     return this.viewer.camera.flyToBoundingSphere(boundingSphere, {
       duration: 2.5,
@@ -551,7 +825,7 @@ export class Heatbox {
     }
 
     try {
-      const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+      const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
       const fov = this.viewer.camera.frustum.fovy || Cesium.Math.toRadians(60);
       
       // 幾何学的計算: データがフレームに収まる高度を計算
@@ -574,7 +848,7 @@ export class Heatbox {
       const maxHeight = Math.min(100000, maxRange * 10);
       cameraHeight = Math.max(minHeight, Math.min(maxHeight, cameraHeight));
       
-      Logger.debug(`Camera height calculated: ${cameraHeight.toFixed(0)}m (range: ${maxRange.toFixed(0)}m, pitch: ${fitOptions.pitch}°)`);
+      Logger.debug(`Camera height calculated: ${cameraHeight.toFixed(0)}m (range: ${maxRange.toFixed(0)}m, pitch: ${fitOptions.pitchDegrees || fitOptions.pitch}°)`);
       return cameraHeight;
       
     } catch (error) {
@@ -606,8 +880,8 @@ export class Heatbox {
       );
 
       // カメラの向き設定
-      const heading = Cesium.Math.toRadians(fitOptions.heading);
-      const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+      const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
+      const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
       const roll = 0;
 
       const orientation = {
@@ -616,7 +890,7 @@ export class Heatbox {
         roll
       };
 
-      Logger.debug(`Camera target: position=${centerLon.toFixed(6)},${centerLat.toFixed(6)},${(centerAlt + cameraHeight).toFixed(0)}, heading=${fitOptions.heading}°, pitch=${fitOptions.pitch}°`);
+      Logger.debug(`Camera target: position=${centerLon.toFixed(6)},${centerLat.toFixed(6)},${(centerAlt + cameraHeight).toFixed(0)}, heading=${fitOptions.headingDegrees || fitOptions.heading}°, pitch=${fitOptions.pitchDegrees || fitOptions.pitch}°`);
 
       // 距離に応じた移動時間の調整
       const duration = Math.max(1.0, Math.min(3.0, Math.log10(maxRange) * 0.8));
@@ -695,6 +969,37 @@ import { CoordinateTransformer } from './core/CoordinateTransformer.js';
 import { VoxelGrid } from './core/VoxelGrid.js';
 import { DataProcessor } from './core/DataProcessor.js';
 import { VoxelRenderer } from './core/VoxelRenderer.js';
+import { getProfileNames, getProfile } from './utils/profiles.js';
+import { PerformanceOverlay } from './utils/performanceOverlay.js';
+
+/**
+ * @typedef {('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data')} ProfileName
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {('standard'|'inset'|'emulation-only')} OutlineRenderMode
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {('off'|'topn'|'non-topn'|'all')} EmulationScope
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {('thin'|'medium'|'thick'|'adaptive')} OutlineWidthPreset
+ * @since 0.1.12
+ */
+
+/**
+ * @typedef {Object} PerformanceOverlayConfig
+ * @property {boolean} [enabled=false] - Enable performance overlay
+ * @property {('top-left'|'top-right'|'bottom-left'|'bottom-right')} [position='top-right'] - Overlay position
+ * @property {boolean} [autoShow=false] - Show overlay automatically
+ * @property {number} [updateIntervalMs=500] - Update interval in milliseconds
+ * @since 0.1.12
+ */
 
 /**
  * Main class of CesiumJS Heatbox.
@@ -729,8 +1034,185 @@ export class Heatbox {
     this._voxelData = null;
     this._statistics = null;
     this._eventHandler = null;
+    this._performanceOverlay = null;
+    this._lastRenderTime = null;
+    this._overlayLastUpdate = 0;
+    this._postRenderListener = null;
+    this._prevFrameTimestamp = null;
 
     this._initializeEventListeners();
+    
+    // v0.1.12: Initialize performance overlay if enabled
+    if (this.options.performanceOverlay && this.options.performanceOverlay.enabled) {
+      this._initializePerformanceOverlay();
+    }
+  }
+
+  /**
+   * Get effective normalized options snapshot.
+   * 正規化済みオプションのスナップショットを取得します。
+   * @returns {Object} options snapshot
+   */
+  getEffectiveOptions() {
+    try {
+      return JSON.parse(JSON.stringify(this.options));
+    } catch (_) {
+      // Fallback shallow copy
+      return { ...this.options };
+    }
+  }
+
+  /**
+   * Get list of available configuration profiles
+   * 利用可能な設定プロファイルの一覧を取得
+   * 
+   * @returns {string[]} Array of profile names / プロファイル名の配列
+   * @static
+   * @since 0.1.12
+   */
+  static listProfiles() {
+    return getProfileNames();
+  }
+
+  /**
+   * Get configuration profile details
+   * 設定プロファイルの詳細を取得
+   * 
+   * @param {string} profileName - Profile name / プロファイル名
+   * @returns {Object|null} Profile configuration with description / 説明付きプロファイル設定
+   * @static
+   * @since 0.1.12
+   */
+  static getProfileDetails(profileName) {
+    return getProfile(profileName);
+  }
+
+  /**
+   * Initialize performance overlay
+   * パフォーマンスオーバーレイを初期化
+   * @private
+   * @since 0.1.12
+   */
+  _initializePerformanceOverlay() {
+    if (typeof window === 'undefined') {
+      Logger.warn('Performance overlay requires browser environment');
+      return;
+    }
+
+    const overlayOptions = {
+      position: 'top-right',
+      fpsAveragingWindowMs: 1000,
+      autoUpdate: true,
+      updateIntervalMs: 500,
+      ...this.options.performanceOverlay
+    };
+
+    this._performanceOverlay = new PerformanceOverlay(overlayOptions);
+    
+    // Show immediately if configured
+    if (overlayOptions.autoShow) {
+      this._performanceOverlay.show();
+    }
+
+    Logger.debug('Performance overlay initialized');
+
+    // Hook postRender to provide real-time updates with low overhead
+    this._hookPerformanceOverlayUpdates();
+  }
+
+  /**
+   * Toggle performance overlay visibility
+   * パフォーマンスオーバーレイの表示/非表示切り替え
+   * 
+   * @returns {boolean} New visibility state / 新しい表示状態
+   * @since 0.1.12
+   */
+  togglePerformanceOverlay() {
+    if (!this._performanceOverlay) {
+      Logger.warn('Performance overlay not initialized. Set performanceOverlay.enabled: true in options.');
+      return false;
+    }
+    
+    this._performanceOverlay.toggle();
+    return this._performanceOverlay.isVisible;
+  }
+
+  /**
+   * Show performance overlay
+   * パフォーマンスオーバーレイを表示
+   * @since 0.1.12
+   */
+  showPerformanceOverlay() {
+    if (this._performanceOverlay) {
+      this._performanceOverlay.show();
+    }
+  }
+
+  /**
+   * Hide performance overlay
+   * パフォーマンスオーバーレイを非表示
+   * @since 0.1.12
+   */
+  hidePerformanceOverlay() {
+    if (this._performanceOverlay) {
+      this._performanceOverlay.hide();
+    }
+  }
+
+  /**
+   * Enable or disable performance overlay at runtime.
+   * 実行時にパフォーマンスオーバーレイを有効/無効化します。
+   * @param {boolean} enabled - true to enable, false to disable
+   * @param {Object} [options] - Optional overlay options to apply
+   * @returns {boolean} Current enabled state
+   * @since 0.1.12
+   */
+  setPerformanceOverlayEnabled(enabled, options = {}) {
+    if (enabled) {
+      if (!this._performanceOverlay) {
+        // Initialize with given options overriding existing config
+        this.options.performanceOverlay = { enabled: true, ...(this.options.performanceOverlay || {}), ...options };
+        this._initializePerformanceOverlay();
+      } else {
+        // Apply options if provided
+        if (options && Object.keys(options).length > 0) {
+          this._performanceOverlay.options = { ...this._performanceOverlay.options, ...options };
+        }
+        this._performanceOverlay.show();
+      }
+      return true;
+    }
+
+    // Disable and cleanup listener
+    if (this._performanceOverlay) {
+      this._performanceOverlay.hide();
+    }
+    if (this._postRenderListener) {
+      try { this.viewer.scene.postRender.removeEventListener(this._postRenderListener); } catch (_) { Logger.debug('postRender listener removal failed (non-fatal)'); }
+      this._postRenderListener = null;
+    }
+    return false;
+  }
+
+  /**
+   * Estimate memory usage for performance monitoring
+   * パフォーマンス監視用のメモリ使用量推定
+   * @private
+   * @since 0.1.12
+   */
+  _estimateMemoryUsage() {
+    try {
+      // Rough estimation based on rendered entities and data
+      const entityCount = (this.renderer?.geometryRenderer?.entities?.length) 
+        || (this.renderer?.voxelEntities?.length) || 0;
+      const voxelDataSize = this._voxelData ? Object.keys(this._voxelData).length : 0;
+      
+      // Estimate: ~1KB per entity + ~100B per voxel data entry
+      const estimated = (entityCount * 1024 + voxelDataSize * 100) / (1024 * 1024);
+      return Math.max(0.1, estimated);
+    } catch (_error) {
+      return 0;
+    }
   }
 
   /**
@@ -835,12 +1317,16 @@ export class Heatbox {
         this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
       }
       
-      // 5. 描画
+      // 5. 描画（レンダリング時間の計測）
       Logger.debug('Step 5: 描画');
+      const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
       const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+      const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      this._lastRenderTime = Math.max(0, t1 - t0);
       
       // 統計情報に実際の描画数を反映
       this._statistics.renderedVoxels = renderedVoxelCount;
+      this._statistics.renderTimeMs = this._lastRenderTime;
       Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
       
       // v0.1.9: 自動視点調整
@@ -856,6 +1342,14 @@ export class Heatbox {
       }
       
       Logger.debug('Heatbox.setData - 処理完了');
+      
+      // Update overlay immediately after render if available
+      if (this._performanceOverlay && this._performanceOverlay.isVisible) {
+        const stats = this.getStatistics() || {};
+        stats.renderTimeMs = this._lastRenderTime;
+        stats.memoryUsageMB = this._estimateMemoryUsage();
+        this._performanceOverlay.update(stats, undefined);
+      }
       
     } catch (error) {
       Logger.error('ヒートマップ作成エラー:', error);
@@ -907,6 +1401,15 @@ export class Heatbox {
     this.clear();
     if (this._eventHandler && !this._eventHandler.isDestroyed()) {
       this._eventHandler.destroy();
+    }
+    // Remove overlay listener and destroy overlay
+    if (this._postRenderListener) {
+      try { this.viewer.scene.postRender.removeEventListener(this._postRenderListener); } catch (_) { Logger.debug('postRender listener removal failed (non-fatal)'); }
+      this._postRenderListener = null;
+    }
+    if (this._performanceOverlay) {
+      try { this._performanceOverlay.destroy(); } catch (_) { Logger.debug('overlay destroy failed (non-fatal)'); }
+      this._performanceOverlay = null;
     }
     this._eventHandler = null;
   }
@@ -1055,6 +1558,51 @@ export class Heatbox {
   }
 
   /**
+   * Hook viewer postRender to feed overlay with periodic updates.
+   * viewer の postRender にフックし、オーバーレイへ定期更新を供給します。
+   * @private
+   */
+  _hookPerformanceOverlayUpdates() {
+    if (!this._performanceOverlay || this._postRenderListener) return;
+
+    const interval = this._performanceOverlay.options?.updateIntervalMs ?? 500;
+    this._postRenderListener = () => {
+      // Skip if overlay not visible
+      if (!this._performanceOverlay || !this._performanceOverlay.isVisible) return;
+
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+
+      // Calculate frame time from previous timestamp
+      let frameTime;
+      if (this._prevFrameTimestamp != null) {
+        frameTime = Math.max(0, now - this._prevFrameTimestamp);
+      }
+      this._prevFrameTimestamp = now;
+
+      // Throttle updates
+      if (now - this._overlayLastUpdate < interval) return;
+      this._overlayLastUpdate = now;
+
+      const stats = this.getStatistics() || {};
+      // Attach last render time and estimated memory usage
+      if (this._lastRenderTime != null) stats.renderTimeMs = this._lastRenderTime;
+      stats.memoryUsageMB = this._estimateMemoryUsage();
+
+      try {
+        this._performanceOverlay.update(stats, frameTime);
+      } catch (_e) {
+        // Ignore overlay update errors to avoid impacting render loop
+      }
+    };
+
+    try {
+      this.viewer.scene.postRender.addEventListener(this._postRenderListener);
+    } catch (_e) {
+      // No-op if event registration fails
+    }
+  }
+
+  /**
    * Fit view to data bounds with smart camera positioning.
    * データ境界にスマートなカメラ位置でビューをフィットします。
    * @param {Object} bounds - Target bounds (optional, uses current data bounds if not provided) / 対象境界
@@ -1165,8 +1713,8 @@ export class Heatbox {
     Logger.debug('Handling minimal data range');
     
     const destination = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt + 2000);
-    const heading = Cesium.Math.toRadians(fitOptions.heading);
-    const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+    const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
+    const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
     
     return this.viewer.camera.flyTo({
       destination,
@@ -1198,8 +1746,8 @@ export class Heatbox {
       maxRange / 2
     );
     
-    const heading = Cesium.Math.toRadians(fitOptions.heading);
-    const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+    const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
+    const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
     
     return this.viewer.camera.flyToBoundingSphere(boundingSphere, {
       duration: 2.5,
@@ -1222,7 +1770,7 @@ export class Heatbox {
     }
 
     try {
-      const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+      const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
       const fov = this.viewer.camera.frustum.fovy || Cesium.Math.toRadians(60);
       
       // 幾何学的計算: データがフレームに収まる高度を計算
@@ -1245,7 +1793,7 @@ export class Heatbox {
       const maxHeight = Math.min(100000, maxRange * 10);
       cameraHeight = Math.max(minHeight, Math.min(maxHeight, cameraHeight));
       
-      Logger.debug(`Camera height calculated: ${cameraHeight.toFixed(0)}m (range: ${maxRange.toFixed(0)}m, pitch: ${fitOptions.pitch}°)`);
+      Logger.debug(`Camera height calculated: ${cameraHeight.toFixed(0)}m (range: ${maxRange.toFixed(0)}m, pitch: ${fitOptions.pitchDegrees || fitOptions.pitch}°)`);
       return cameraHeight;
       
     } catch (error) {
@@ -1277,8 +1825,8 @@ export class Heatbox {
       );
 
       // カメラの向き設定
-      const heading = Cesium.Math.toRadians(fitOptions.heading);
-      const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+      const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
+      const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
       const roll = 0;
 
       const orientation = {
@@ -1287,7 +1835,7 @@ export class Heatbox {
         roll
       };
 
-      Logger.debug(`Camera target: position=${centerLon.toFixed(6)},${centerLat.toFixed(6)},${(centerAlt + cameraHeight).toFixed(0)}, heading=${fitOptions.heading}°, pitch=${fitOptions.pitch}°`);
+      Logger.debug(`Camera target: position=${centerLon.toFixed(6)},${centerLat.toFixed(6)},${(centerAlt + cameraHeight).toFixed(0)}, heading=${fitOptions.headingDegrees || fitOptions.heading}°, pitch=${fitOptions.pitchDegrees || fitOptions.pitch}°`);
 
       // 距離に応じた移動時間の調整
       const duration = Math.max(1.0, Math.min(3.0, Math.log10(maxRange) * 0.8));

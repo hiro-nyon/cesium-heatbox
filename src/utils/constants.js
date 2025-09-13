@@ -33,7 +33,11 @@ export const DEFAULT_OPTIONS = {
   outlineOpacity: 1.0, // 枠線透明度（0-1）
   outlineWidthResolver: null, // 関数: (params) => number で動的太さ制御
   // 実質的な太さ表現のための代替描画（WebGLの線幅制限回避用）
-  outlineEmulation: 'off', // 'off' | 'topn' | 'non-topn' | 'all'（ポリラインで太線エミュレーション：TopNのみ | TopN以外のみ | すべて）
+  /**
+   * @deprecated v0.1.12 — Use `outlineRenderMode` and `emulationScope` instead.
+   * 'off' | 'topn' | 'non-topn' | 'all'
+   */
+  outlineEmulation: 'off',
   // v0.1.6.1: インセット枠線（ADR-0004）
   outlineInset: 0, // インセット枠線のオフセット距離（メートル、0で無効）
   outlineInsetMode: 'all', // インセット枠線の適用範囲：'all'（全体） | 'topn'（TopNのみ）
