@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
+## [0.1.12-alpha.4] - 2025-09-13
+
+### Added
+- 観測可能性 (Phase 2): パフォーマンスオーバーレイを実装（`viewer.scene.postRender` にフック、`updateIntervalMs` スロットリング）。
+- ランタイム制御 API: `setPerformanceOverlayEnabled`/`togglePerformanceOverlay`/`showPerformanceOverlay`/`hidePerformanceOverlay` を追加。
+- プロファイル機能 (Phase 2): `Heatbox.listProfiles()`/`Heatbox.getProfileDetails()` と `profile` オプション、`getEffectiveOptions()` を追加。
+
+### Changed
+- 移行/正規化 (Phase 3):
+  - `outlineEmulation` → `outlineRenderMode` + `emulationScope` への統合マッピングを強化。
+  - `fitViewOptions.pitch/heading` → `pitchDegrees/headingDegrees` へ移行（旧名は警告のみ）。
+  - `outlineWidthPreset` の旧名（`uniform`/`adaptive-density`/`topn-focus`）を `medium`/`adaptive`/`thick` に統一。
+- プロファイル適用順序を明確化（`defaults ← profile ← user`）。
+- ドキュメント整備 (Phase 3/4): README/MIGRATION/ADR/Wiki を v0.1.12 に同期、英語サマリを追加。
+- バージョンを `0.1.12-alpha.4` に更新。
+
+### Fixed
+- テスト安定化 (Phase 4): Claude の変更を取り込み、移行シナリオ/警告マッチングを堅牢化。Viewer モックを強化し `isValidViewer` を満たすよう修正。
+- CI ばらつき対策: 環境依存の重いスイート（perftest/QA）をデフォルト実行から除外（必要時のみ別ジョブで実行）。
+
+### Docs
+- MIGRATION.md を追加し v0.1.11→v0.1.12 の移行手順とコード例を整理。
+- Wiki/API を再生成・同期。README の旧API表記を新APIへ更新（`outlineRenderMode`/`emulationScope`、`pitchDegrees`/`headingDegrees`）。
+
 ## [0.1.11] - 2025-09-08
 
 ### Added
