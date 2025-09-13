@@ -145,6 +145,51 @@ Priority: Medium | Target: 2026-02
 
 > 注: 0.1系では「コアのデータモデル変更や新レイヤー」は行わず、安定化と利用性向上に限定します。
 
+### v0.1.14（Examples 体系化・整理）
+Priority: Medium | Target: 2025-10
+
+Scope（examples/advanced を体系化し、学習・検証導線を改善）
+- [ ] カテゴリ別ディレクトリ構成の導入（既存ファイルは段階的に移行）
+  - observability/（観測可能性）
+    - performance-overlay-demo.html（v0.1.12）
+    - benchmark-usage.md（CLIの使い方・CSV/MD出力サンプル）
+  - rendering/（描画モード・高さ/ワイヤーフレーム）
+    - wireframe-height-demo.js / wireframe-height-demo-umd.html
+    - adaptive-rendering-demo.html / adaptive-rendering-demo.js（プリセット・adaptiveOutlines）
+  - outlines/（枠線：標準/インセット/エミュレーション）
+    - outline-overlap-demo-umd.html
+    - emulation-scope-demo.html（新規: standard/inset への部分エミュ重ね合わせ例）
+  - selection-limits/（選択戦略と描画上限）
+    - selection-strategy-demo.html（新規: density/coverage/hybrid 比較）
+    - performance-optimization.js（段階的ロード・上限制御）
+  - data/（データ生成・フィルタリング）
+    - entity-filtering.js（属性/高度/範囲フィルタ）
+
+ガイドライン（examples 統一ルール）
+- [ ] Cesium 1.120 を参照し、UMD/ESMのどちらでも動く最小構成を提示
+- [ ] 各カテゴリ配下に README.md（目的、前提、主要オプション、落とし穴）
+- [ ] 例名・ファイル名はケバブケース、UIテキストは英語、READMEは日英併記
+- [ ] Heatbox の `profile` と `getEffectiveOptions()` の使用例を各カテゴリに1つ以上配置
+- [ ] `fitView(..., { pitchDegrees, headingDegrees })` の統一APIで記述
+
+受け入れ基準（Acceptance Criteria）
+- [ ] examples/advanced のトップ README にカテゴリ一覧と対応ファイルの表を掲載
+- [ ] observability/rendering/outlines/selection-limits/data の5カテゴリが存在
+- [ ] すべてのHTML例で「白画面/コンソールエラー」が無い（ローカル確認）
+- [ ] 既存の UMD 例（wireframe/outline-overlap）は動作維持（リンクも更新）
+- [ ] v0.1.12 の新API（outlineRenderMode/emulationScope、pitchDegrees/headingDegrees、profile）が少なくとも1つの例で確認可能
+
+移行計画（非破壊）
+- Step 1: 例の分類・README整備（ファイル移動は行わない）
+- Step 2: 新規例（emulation-scope-demo、selection-strategy-demo）を追加
+- Step 3: 影響範囲を確認しつつフェーズドでディレクトリ移動（git mv）し、リンク更新
+- Step 4: Wiki の Examples ページと同期（tools/wiki-sync.js）
+
+リスク & 緩和
+- URL/リンク切れ → Step 1ではリンクのみ先に整備、移動はStep 3で一括実施
+- ブラウザ互換 → 例のHTMLテンプレートを統一（Cesium CSS/JS、UMD/ESM切替コメント）
+
+
 #### 0.1 Exit Criteria（0.2 への移行基準）
 - [ ] Lint 0 errors、主要分岐に単体テストが存在（Heatbox/VoxelRenderer/Validation）
 - [ ] Examples（Basic/Advanced）が主要機能（TopN/インセット/エミュ/適応制御）の動作確認に十分

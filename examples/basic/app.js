@@ -12,8 +12,17 @@ let heatbox;
 let testEntities = [];
 let isVisible = true;
 
-// UI要素のキャッシュ
-const elements = {};
+  // UI要素のキャッシュ
+  const elements = {};
+
+  // v0.1.12: Profile information
+  const profileInfo = {
+    'none': 'プロファイルなし',
+    'mobile-fast': 'モバイル高速化',
+    'desktop-balanced': 'デスクトップバランス型',
+    'dense-data': '高密度データ向け',
+    'sparse-data': '疎データ向け'
+  };
 
 /**
  * テスト用エンティティを生成する関数
