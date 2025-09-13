@@ -146,9 +146,9 @@ function reRenderHeatmap() {
     const updated = {
       showOutline: wireframe ? false : false,
       opacity: wireframe ? 0.0 : 1.0,
-      // ADR-0009 Phase 5: 適応制御オプション
+      // v0.1.12: 適応制御オプション
       adaptiveOutlines: true,
-      outlineWidthPreset: 'adaptive-density',
+      outlineWidthPreset: 'adaptive', // v0.1.12: adaptive-density → adaptive
       boxOpacityMode: 'density',
       outlineOpacityMode: 'density',
       boxOpacityResolver: !wireframe ? (ctx => {
@@ -157,7 +157,7 @@ function reRenderHeatmap() {
         return 0.05 + nd * 0.95;
       }) : (() => 0),
       outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
-      outlineEmulation: wireframe ? 'all' : 'off',
+      emulationScope: wireframe ? 'all' : 'off', // v0.1.12: outlineEmulation → emulationScope
       outlineInset: 0,
       outlineInsetMode: 'none'
     };
@@ -586,12 +586,12 @@ async function createHeatmap() {
       }) : (() => 0),
       // Emulation-only mode (thick edges only)
       outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
-      outlineEmulation: wireframe ? 'all' : 'off',
+      emulationScope: wireframe ? 'all' : 'off', // v0.1.12: outlineEmulation → emulationScope
       outlineInset: 0,
       outlineInsetMode: 'none',
       // ADR-0009 Phase 5 対応: 適応的制御を有効化
       adaptiveOutlines: true,
-      outlineWidthPreset: 'adaptive-density',
+      outlineWidthPreset: 'adaptive', // v0.1.12: adaptive-density → adaptive
       boxOpacityMode: 'density',
       outlineOpacityMode: 'density',
       // In wireframe: higher density → thicker and darker (direct mapping)
@@ -859,9 +859,9 @@ function updateStatisticsWithHeatmap(options) {
       document.getElementById('sizeInfo').textContent = finalSize;
     } else {
       document.getElementById('autoSizeInfo').style.display = 'none';
-      // Manual size calculation
-      const gridSize = options.gridSize || 20;
-      estimatedVoxels = Math.pow(gridSize, 3);
+    // Manual size calculation
+    const gridSize = Math.max(1, Math.min(100, options.gridSize || 20)); // Safe bounds
+    estimatedVoxels = Math.pow(gridSize, 3);
     }
     
     document.getElementById('voxelCount').textContent = estimatedVoxels.toLocaleString();
