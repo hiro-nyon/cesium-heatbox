@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>CesiumJS Heatbox v0.1.12 - New Features Demo</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html, body, #cesiumContainer {
+            width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(42, 42, 42, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 13px;
+            z-index: 100;
+            max-width: 350px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        #controls h3 {
+            margin: 0 0 15px 0;
+            color: #4CAF50;
+            font-size: 16px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 8px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        button:hover {
+            background: linear-gradient(135deg, #45a049, #3d8b40);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        button.secondary {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+        
+        button.secondary:hover {
+            background: linear-gradient(135deg, #1976D2, #1565C0);
+        }
+        
+        button.warning {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+        }
+        
+        button.warning:hover {
+            background: linear-gradient(135deg, #F57C00, #E65100);
+        }
+        
+        select, input[type="range"] {
+            width: 100%;
+            margin-bottom: 12px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background: #333;
+            color: white;
+        }
+        
+        select option {
+            background: #333;
+            color: white;
+        }
+        
+        .info {
+            background: rgba(0, 100, 200, 0.2);
+            border: 1px solid rgba(0, 100, 200, 0.4);
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
+        
+        .feature-highlight {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.4);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+        
+        .new-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 6px;
+        }
+        
+        #stats {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 11px;
+            min-width: 200px;
+        }
+        
+        .slider-container {
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    
+    <div id="controls">
+        <h3>🚀 Heatbox v0.1.12 Features</h3>
+        
+        <div class="feature-highlight">
+            <strong>New in v0.1.12:</strong> Configuration profiles, performance overlay, API consistency improvements
+        </div>
+        
+        <div class="control-group">
+            <label>Configuration Profile: <span class="new-badge">NEW</span></label>
+            <select id="profileSelect">
+                <option value="none">No Profile (Manual)</option>
+                <option value="mobile-fast">Mobile Fast</option>
+                <option value="desktop-balanced" selected>Desktop Balanced</option>
+                <option value="dense-data">Dense Data</option>
+                <option value="sparse-data">Sparse Data</option>
+            </select>
+            <div id="profileDescription" style="font-size: 11px; color: #aaa; margin-top: 5px;"></div>
+        </div>
+
+        <div class="control-group">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>Data Points:</label>
+                    <span id="voxelCountLabel">1500</span>
+                </div>
+                <input type="range" id="voxelCountSlider" min="200" max="8000" value="1500" step="200">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Render Mode: <span class="new-badge">UPDATED</span></label>
+            <select id="renderModeSelect">
+                <option value="standard" selected>Standard</option>
+                <option value="inset">Inset Outlines</option>
+                <option value="emulation-only">Emulation Only</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Emulation Scope: <span class="new-badge">NEW</span></label>
+            <select id="emulationScopeSelect">
+                <option value="off" selected>Off</option>
+                <option value="topn">TopN Only</option>
+                <option value="non-topn">Non-TopN Only</option>
+                <option value="all">All Voxels</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Outline Preset: <span class="new-badge">UPDATED</span></label>
+            <select id="presetSelect">
+                <option value="thin">Thin</option>
+                <option value="medium" selected>Medium</option>
+                <option value="thick">Thick</option>
+                <option value="adaptive">Adaptive</option>
+            </select>
+        </div>
+        
+        <div class="control-row">
+            <button id="generateData">Generate Data</button>
+            <button id="toggleOverlay" class="secondary">Show Overlay</button>
+        </div>
+        
+        <div class="control-row">
+            <button id="clearData" class="warning">Clear All</button>
+            <button id="debugBtn">Debug Info</button>
+        </div>
+        
+        <div class="info">
+            <div><strong>v0.1.12 Highlights:</strong></div>
+            <div>• <strong>Profiles:</strong> Pre-configured optimization settings</div>
+            <div>• <strong>Overlay:</strong> Real-time performance monitoring</div>
+            <div>• <strong>API:</strong> Consistent naming (pitchDegrees/headingDegrees)</div>
+            <div>• <strong>Control:</strong> Unified render modes and emulation scope</div>
+        </div>
+    </div>
+
+    <div id="stats" style="display: none;">
+        <div><strong>Performance Stats:</strong></div>
+        <div id="statsContent">No data</div>
+    </div>
+
+    <script type="module">
+        // Import Heatbox (assuming UMD build)
+        const Heatbox = window.CesiumHeatbox || window.Heatbox;
+        
+        // Check for Heatbox availability
+        if (!Heatbox) {
+            alert('Heatbox library not found. Please ensure the build is available.');
+        }
+
+        // Initialize Cesium viewer
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            terrainProvider: Cesium.createWorldTerrain(),
+            timeline: false,
+            animation: false,
+            baseLayerPicker: false,
+            fullscreenButton: false,
+            vrButton: false,
+            geocoder: false,
+            homeButton: false,
+            infoBox: false,
+            sceneModePicker: false,
+            selectionIndicator: false,
+            navigationHelpButton: false
+        });
+
+        // Global state
+        let heatbox = null;
+        let currentData = [];
+        
+        // DOM elements
+        const profileSelect = document.getElementById('profileSelect');
+        const profileDescription = document.getElementById('profileDescription');
+        const voxelCountSlider = document.getElementById('voxelCountSlider');
+        const voxelCountLabel = document.getElementById('voxelCountLabel');
+        const renderModeSelect = document.getElementById('renderModeSelect');
+        const emulationScopeSelect = document.getElementById('emulationScopeSelect');
+        const presetSelect = document.getElementById('presetSelect');
+        const generateDataBtn = document.getElementById('generateData');
+        const toggleOverlayBtn = document.getElementById('toggleOverlay');
+        const clearDataBtn = document.getElementById('clearData');
+        const debugBtn = document.getElementById('debugBtn');
+        const statsDiv = document.getElementById('stats');
+        const statsContent = document.getElementById('statsContent');
+
+        // Profile descriptions
+        const profileDescriptions = {
+            'none': 'Manual configuration - use custom settings',
+            'mobile-fast': 'Optimized for mobile devices - prioritizes performance',
+            'desktop-balanced': 'Balanced performance and quality for desktop',
+            'dense-data': 'Optimized for high-density clustered data',
+            'sparse-data': 'Optimized for sparse, wide-spread data'
+        };
+
+        // Update profile description
+        function updateProfileDescription() {
+            const profile = profileSelect.value;
+            profileDescription.textContent = profileDescriptions[profile] || '';
+        }
+
+        // Update voxel count label
+        voxelCountSlider.addEventListener('input', () => {
+            voxelCountLabel.textContent = voxelCountSlider.value;
+        });
+
+        // Profile selection handler
+        profileSelect.addEventListener('change', () => {
+            updateProfileDescription();
+            if (heatbox && currentData.length > 0) {
+                initializeHeatbox();
+                regenerateVisualization();
+            }
+        });
+
+        // Initialize Heatbox with current settings
+        function initializeHeatbox() {
+            const profile = profileSelect.value === 'none' ? undefined : profileSelect.value;
+            
+            const options = {
+                debug: true,
+                performanceOverlay: {
+                    enabled: true,
+                    position: 'top-right',
+                    autoShow: false
+                }
+            };
+
+            // Add profile if selected
+            if (profile) {
+                options.profile = profile;
+            }
+
+            // Add custom settings when no profile
+            if (!profile) {
+                options.outlineRenderMode = renderModeSelect.value;
+                options.emulationScope = emulationScopeSelect.value;
+                options.outlineWidthPreset = presetSelect.value;
+                options.maxRenderVoxels = 8000;
+                options.adaptiveOutlines = presetSelect.value === 'adaptive';
+            }
+
+            if (heatbox) {
+                heatbox.clear();
+            }
+
+            try {
+                heatbox = new Heatbox(viewer, options);
+                console.log('Heatbox initialized:', {
+                    profile: profile || 'none',
+                    availableProfiles: Heatbox.listProfiles()
+                });
+            } catch (error) {
+                console.error('Failed to initialize Heatbox:', error);
+                alert('Failed to initialize Heatbox. Check console for details.');
+            }
+        }
+
+        // Generate test data
+        function generateTestData(count) {
+            const entities = [];
+            const bounds = {
+                minLon: 139.6,
+                maxLon: 139.8,
+                minLat: 35.6,
+                maxLat: 35.7,
+                minAlt: 0,
+                maxAlt: 300
+            };
+
+            // Create clustered data for more interesting visualization
+            const clusterCenters = [];
+            const numClusters = Math.floor(count / 100) + 2;
+            
+            for (let c = 0; c < numClusters; c++) {
+                clusterCenters.push({
+                    lon: bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon),
+                    lat: bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat),
+                    alt: bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt),
+                    intensity: 50 + Math.random() * 50
+                });
+            }
+
+            for (let i = 0; i < count; i++) {
+                let lon, lat, alt, value;
+                
+                if (Math.random() < 0.7 && clusterCenters.length > 0) {
+                    // Cluster point
+                    const cluster = clusterCenters[Math.floor(Math.random() * clusterCenters.length)];
+                    lon = cluster.lon + (Math.random() - 0.5) * 0.02;
+                    lat = cluster.lat + (Math.random() - 0.5) * 0.02;
+                    alt = cluster.alt + (Math.random() - 0.5) * 50;
+                    value = cluster.intensity + (Math.random() - 0.5) * 20;
+                } else {
+                    // Random point
+                    lon = bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon);
+                    lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
+                    alt = bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt);
+                    value = Math.random() * 30;
+                }
+                
+                entities.push(viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+                    point: {
+                        pixelSize: 1,
+                        show: false
+                    },
+                    properties: {
+                        value: Math.max(0, value)
+                    }
+                }));
+            }
+
+            return entities;
+        }
+
+        // Regenerate visualization with current data
+        function regenerateVisualization() {
+            if (!heatbox || currentData.length === 0) return;
+
+            const startTime = performance.now();
+            heatbox.setData(currentData);
+            const endTime = performance.now();
+            
+            console.log(`Visualization updated in ${(endTime - startTime).toFixed(2)}ms`);
+            
+            // Fit view to data with v0.1.12 API
+            setTimeout(() => {
+                if (heatbox.fitView) {
+                    heatbox.fitView({
+                        paddingPercent: 0.15,
+                        pitchDegrees: -45,  // v0.1.12: Updated naming
+                        headingDegrees: 45  // v0.1.12: Updated naming
+                    });
+                }
+                updateStats();
+            }, 100);
+        }
+
+        // Update statistics display
+        function updateStats() {
+            if (!heatbox) return;
+            
+            const stats = heatbox.getStatistics();
+            const effectiveOptions = heatbox.getEffectiveOptions();
+            
+            let content = `
+                <div>Total Voxels: ${stats.totalVoxels}</div>
+                <div>Rendered: ${stats.renderedVoxels}</div>
+                <div>Strategy: ${stats.selectionStrategy}</div>
+                <div>Render Time: ${stats.renderTimeMs ? stats.renderTimeMs.toFixed(1) + 'ms' : 'N/A'}</div>
+                <div>Active Profile: ${effectiveOptions.profile || 'none'}</div>
+                <div>Render Mode: ${effectiveOptions.outlineRenderMode}</div>
+                <div>Emulation: ${effectiveOptions.emulationScope}</div>
+                <div>Preset: ${effectiveOptions.outlineWidthPreset}</div>
+            `;
+            
+            statsContent.innerHTML = content;
+        }
+
+        // Event handlers
+        generateDataBtn.addEventListener('click', () => {
+            const count = parseInt(voxelCountSlider.value);
+            console.log(`Generating ${count} data points...`);
+            
+            // Clear existing data
+            if (currentData.length > 0) {
+                currentData.forEach(entity => viewer.entities.remove(entity));
+            }
+            
+            // Initialize heatbox if needed
+            if (!heatbox) {
+                initializeHeatbox();
+            }
+            
+            // Generate new data
+            currentData = generateTestData(count);
+            regenerateVisualization();
+            
+            statsDiv.style.display = 'block';
+        });
+
+        toggleOverlayBtn.addEventListener('click', () => {
+            if (!heatbox) {
+                alert('Please generate data first');
+                return;
+            }
+            
+            const isVisible = heatbox.togglePerformanceOverlay();
+            toggleOverlayBtn.textContent = isVisible ? 'Hide Overlay' : 'Show Overlay';
+        });
+
+        clearDataBtn.addEventListener('click', () => {
+            if (heatbox) {
+                heatbox.clear();
+            }
+            
+            if (currentData.length > 0) {
+                currentData.forEach(entity => viewer.entities.remove(entity));
+                currentData = [];
+            }
+            
+            console.log('All data cleared');
+            statsDiv.style.display = 'none';
+        });
+
+        debugBtn.addEventListener('click', () => {
+            if (!heatbox) {
+                alert('Please generate data first');
+                return;
+            }
+
+            console.group('🔍 Heatbox Debug Information');
+            
+            // Available profiles
+            console.log('Available Profiles:', Heatbox.listProfiles());
+            
+            // Current effective options
+            const effectiveOptions = heatbox.getEffectiveOptions();
+            console.log('Effective Options:', effectiveOptions);
+            
+            // Profile details if using one
+            if (effectiveOptions.profile) {
+                const profileDetails = Heatbox.getProfileDetails(effectiveOptions.profile);
+                console.log('Profile Details:', profileDetails);
+            }
+            
+            // Statistics
+            const stats = heatbox.getStatistics();
+            console.log('Statistics:', stats);
+            
+            console.groupEnd();
+            
+            // Show brief alert
+            alert(`Debug info logged to console.\n\nActive: ${effectiveOptions.profile || 'manual'}\nRendered: ${stats.renderedVoxels}/${stats.totalVoxels} voxels`);
+        });
+
+        // Settings change handlers for manual mode
+        renderModeSelect.addEventListener('change', () => {
+            if (profileSelect.value === 'none' && heatbox && currentData.length > 0) {
+                initializeHeatbox();
+                regenerateVisualization();
+            }
+        });
+
+        emulationScopeSelect.addEventListener('change', () => {
+            if (profileSelect.value === 'none' && heatbox && currentData.length > 0) {
+                initializeHeatbox();
+                regenerateVisualization();
+            }
+        });
+
+        presetSelect.addEventListener('change', () => {
+            if (profileSelect.value === 'none' && heatbox && currentData.length > 0) {
+                initializeHeatbox();
+                regenerateVisualization();
+            }
+        });
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            updateProfileDescription();
+            
+            // Generate initial data after a short delay
+            setTimeout(() => {
+                generateDataBtn.click();
+            }, 1000);
+        });
+
+        // Handle errors
+        window.addEventListener('error', (event) => {
+            console.error('Demo error:', event.error);
+        });
+
+        // Console welcome message
+        console.log(`
+🚀 CesiumJS Heatbox v0.1.12 Features Demo
+========================================
+
+New Features:
+• Configuration Profiles (mobile-fast, desktop-balanced, dense-data, sparse-data)
+• Performance Overlay with real-time monitoring  
+• API consistency improvements (pitchDegrees/headingDegrees)
+• Unified render modes and emulation scope control
+
+Try the different profiles and settings to see the improvements!
+        `);
+    </script>
+</body>
+</html>

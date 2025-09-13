@@ -2,6 +2,22 @@
 
 このディレクトリには、cesium-heatbox の高度な使用例が含まれています。
 
+目次（体系化：v0.1.14計画）
+- Observability（観測可能性）
+  - performance-overlay-demo.html（v0.1.12 のオーバーレイ）
+  - benchmark-usage（CLIの使い方は後述リンク）
+- Rendering（描画モード・高さ/ワイヤーフレーム）
+  - wireframe-height-demo.js / wireframe-height-demo-umd.html
+  - adaptive-rendering-demo.html / adaptive-rendering-demo.js
+- Outlines（枠線：標準/インセット/エミュレーション）
+  - outline-overlap-demo-umd.html
+  - emulation-scope-demo.html（計画中）
+- Selection & Limits（選択戦略と描画上限）
+  - performance-optimization.js（段階的ロード・上限制御）
+  - selection-strategy-demo.html（計画中: density/coverage/hybrid 比較）
+- Data（データ生成・フィルタリング）
+  - entity-filtering.js
+
 ## 📁 ファイル構成
 
 ### 1. `entity-filtering.js`
@@ -233,6 +249,13 @@ A: `heightBased: true`で高さベース表現を使用
 A: `maxRenderVoxels`を小さくし、`wireframeOnly: true`を使用
 
 ## 関連ドキュメント
+  
+### 観測可能性の追加例（v0.1.12+）
+- performance-overlay-demo.html（FPS/フレーム時間/ボクセル統計/メモリ目安を表示）
+- ベンチマークCLIの使い方は `tools/benchmark.js` を参照（`npm run benchmark -- --out markdown` でMD出力）
+
+### 次期整理（v0.1.14）
+- カテゴリ配下に README を追加し、リンクを更新します。既存ファイルの移動は段階的に行います（リンク切れ防止のため）。
 
 - [API Reference](../../wiki/API-Reference.md)
 - [Examples](../../wiki/Examples.md)
