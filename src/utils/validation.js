@@ -7,6 +7,7 @@ import * as Cesium from 'cesium';
 import { PERFORMANCE_LIMITS, ERROR_MESSAGES } from './constants.js';
 import { Logger } from './logger.js';
 import { warnOnce } from './deprecate.js';
+import { applyProfile, isValidProfile } from './profiles.js';
 
 /**
  * Check whether a CesiumJS Viewer is valid.
@@ -134,7 +135,20 @@ export function validateVoxelCount(totalVoxels, voxelSize) {
  * @returns {Object} Normalized options / 正規化されたオプション
  */
 export function validateAndNormalizeOptions(options = {}) {
-  const normalized = { ...options };
+  // v0.1.12: Apply profile if specified (before normalization)
+  let mergedOptions = options;
+  if (options.profile && options.profile !== 'none') {
+    if (isValidProfile(options.profile)) {
+      Logger.debug(`Applying profile: ${options.profile}`);
+      mergedOptions = applyProfile(options.profile, options);
+      // Remove profile property after application
+      delete mergedOptions.profile;
+    } else {
+      Logger.warn(`Invalid profile name: ${options.profile}. Available profiles: mobile-fast, desktop-balanced, dense-data, sparse-data`);
+    }
+  }
+
+  const normalized = { ...mergedOptions };
   
   // v0.1.5: batchMode非推奨化警告（debug時のみ）
   if (normalized.batchMode && normalized.debug) {

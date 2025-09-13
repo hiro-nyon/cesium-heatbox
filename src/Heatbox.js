@@ -17,6 +17,8 @@ import { CoordinateTransformer } from './core/CoordinateTransformer.js';
 import { VoxelGrid } from './core/VoxelGrid.js';
 import { DataProcessor } from './core/DataProcessor.js';
 import { VoxelRenderer } from './core/VoxelRenderer.js';
+import { getProfileNames, getProfile } from './utils/profiles.js';
+import { PerformanceOverlay } from './utils/performanceOverlay.js';
 
 /**
  * Main class of CesiumJS Heatbox.
@@ -51,8 +53,15 @@ export class Heatbox {
     this._voxelData = null;
     this._statistics = null;
     this._eventHandler = null;
+    this._performanceOverlay = null;
+    this._lastRenderTime = null;
 
     this._initializeEventListeners();
+    
+    // v0.1.12: Initialize performance overlay if enabled
+    if (this.options.performanceOverlay && this.options.performanceOverlay.enabled) {
+      this._initializePerformanceOverlay();
+    }
   }
 
   /**
@@ -66,6 +75,119 @@ export class Heatbox {
     } catch (_) {
       // Fallback shallow copy
       return { ...this.options };
+    }
+  }
+
+  /**
+   * Get list of available configuration profiles
+   * 利用可能な設定プロファイルの一覧を取得
+   * 
+   * @returns {string[]} Array of profile names / プロファイル名の配列
+   * @static
+   * @since 0.1.12
+   */
+  static listProfiles() {
+    return getProfileNames();
+  }
+
+  /**
+   * Get configuration profile details
+   * 設定プロファイルの詳細を取得
+   * 
+   * @param {string} profileName - Profile name / プロファイル名
+   * @returns {Object|null} Profile configuration with description / 説明付きプロファイル設定
+   * @static
+   * @since 0.1.12
+   */
+  static getProfileDetails(profileName) {
+    return getProfile(profileName);
+  }
+
+  /**
+   * Initialize performance overlay
+   * パフォーマンスオーバーレイを初期化
+   * @private
+   * @since 0.1.12
+   */
+  _initializePerformanceOverlay() {
+    if (typeof window === 'undefined') {
+      Logger.warn('Performance overlay requires browser environment');
+      return;
+    }
+
+    const overlayOptions = {
+      position: 'top-right',
+      fpsAveragingWindowMs: 1000,
+      autoUpdate: true,
+      ...this.options.performanceOverlay
+    };
+
+    this._performanceOverlay = new PerformanceOverlay(overlayOptions);
+    
+    // Show immediately if configured
+    if (overlayOptions.autoShow) {
+      this._performanceOverlay.show();
+    }
+
+    Logger.debug('Performance overlay initialized');
+  }
+
+  /**
+   * Toggle performance overlay visibility
+   * パフォーマンスオーバーレイの表示/非表示切り替え
+   * 
+   * @returns {boolean} New visibility state / 新しい表示状態
+   * @since 0.1.12
+   */
+  togglePerformanceOverlay() {
+    if (!this._performanceOverlay) {
+      Logger.warn('Performance overlay not initialized. Set performanceOverlay.enabled: true in options.');
+      return false;
+    }
+    
+    this._performanceOverlay.toggle();
+    return this._performanceOverlay.isVisible;
+  }
+
+  /**
+   * Show performance overlay
+   * パフォーマンスオーバーレイを表示
+   * @since 0.1.12
+   */
+  showPerformanceOverlay() {
+    if (this._performanceOverlay) {
+      this._performanceOverlay.show();
+    }
+  }
+
+  /**
+   * Hide performance overlay
+   * パフォーマンスオーバーレイを非表示
+   * @since 0.1.12
+   */
+  hidePerformanceOverlay() {
+    if (this._performanceOverlay) {
+      this._performanceOverlay.hide();
+    }
+  }
+
+  /**
+   * Estimate memory usage for performance monitoring
+   * パフォーマンス監視用のメモリ使用量推定
+   * @private
+   * @since 0.1.12
+   */
+  _estimateMemoryUsage() {
+    try {
+      // Rough estimation based on rendered entities and data
+      const entityCount = this.renderer?.entities?.length || 0;
+      const voxelDataSize = this._voxelData ? Object.keys(this._voxelData).length : 0;
+      
+      // Estimate: ~1KB per entity + ~100B per voxel data entry
+      const estimated = (entityCount * 1024 + voxelDataSize * 100) / (1024 * 1024);
+      return Math.max(0.1, estimated);
+    } catch (_error) {
+      return 0;
     }
   }
 
