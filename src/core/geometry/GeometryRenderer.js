@@ -162,9 +162,9 @@ export class GeometryRenderer {
 
     // インセット距離の適用（ADR-0004の境界条件：両側合計で各軸寸法の最大40%まで＝片側20%）
     // 片側20%までに制限することで、最終寸法は元の60%以上を保証する
-    const maxInsetX = baseSizeX * 0.2;
-    const maxInsetY = baseSizeY * 0.2;
-    const maxInsetZ = baseSizeZ * 0.2;
+    const maxInsetX = safeBaseSizeX * 0.2;
+    const maxInsetY = safeBaseSizeY * 0.2;
+    const maxInsetZ = safeBaseSizeZ * 0.2;
     
     const baseInset = insetAmount !== null ? insetAmount : this.options.outlineInset;
     const effectiveInsetX = Math.min(baseInset, maxInsetX);
@@ -172,13 +172,13 @@ export class GeometryRenderer {
     const effectiveInsetZ = Math.min(baseInset, maxInsetZ);
     
     // インセット後の寸法計算（各軸から2倍のインセットを引く）
-    const insetSizeX = Math.max(baseSizeX - (effectiveInsetX * 2), baseSizeX * 0.1);
-    const insetSizeY = Math.max(baseSizeY - (effectiveInsetY * 2), baseSizeY * 0.1);
-    const insetSizeZ = Math.max(baseSizeZ - (effectiveInsetZ * 2), baseSizeZ * 0.1);
+    const insetSizeX = Math.max(safeBaseSizeX - (effectiveInsetX * 2), safeBaseSizeX * 0.1);
+    const insetSizeY = Math.max(safeBaseSizeY - (effectiveInsetY * 2), safeBaseSizeY * 0.1);
+    const insetSizeZ = Math.max(safeBaseSizeZ - (effectiveInsetZ * 2), safeBaseSizeZ * 0.1);
     
     // セカンダリBoxエンティティの設定（枠線のみ、塗りなし）
     const insetEntity = this.viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
+      position: Cesium.Cartesian3.fromDegrees(safeCenterLon, safeCenterLat, safeCenterAlt),
       box: {
         dimensions: new Cesium.Cartesian3(insetSizeX, insetSizeY, insetSizeZ),
         fill: false,
@@ -198,8 +198,8 @@ export class GeometryRenderer {
     // 枠線の厚み部分を視覚化（WebGL 1px制限の回避）
     if (this.options.enableThickFrames && (effectiveInsetX > 0.1 || effectiveInsetY > 0.1 || effectiveInsetZ > 0.1)) {
       this.createThickOutlineFrames({
-        centerLon, centerLat, centerAlt,
-        outerX: baseSizeX, outerY: baseSizeY, outerZ: baseSizeZ,
+        centerLon: safeCenterLon, centerLat: safeCenterLat, centerAlt: safeCenterAlt,
+        outerX: safeBaseSizeX, outerY: safeBaseSizeY, outerZ: safeBaseSizeZ,
         innerX: insetSizeX, innerY: insetSizeY, innerZ: insetSizeZ,
         frameColor: outlineColor, voxelKey
       });
