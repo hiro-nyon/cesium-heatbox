@@ -56,6 +56,20 @@ export class Heatbox {
   }
 
   /**
+   * Get effective normalized options snapshot.
+   * 正規化済みオプションのスナップショットを取得します。
+   * @returns {Object} options snapshot
+   */
+  getEffectiveOptions() {
+    try {
+      return JSON.parse(JSON.stringify(this.options));
+    } catch (_) {
+      // Fallback shallow copy
+      return { ...this.options };
+    }
+  }
+
+  /**
    * Set heatmap data and render.
    * ヒートマップデータを設定し、描画を実行します。
    * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
