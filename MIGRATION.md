@@ -1,4 +1,30 @@
-# CesiumJS Heatbox - Migration Guide
+# CesiumJS Heatbox - Migration Guide / 移行ガイド
+
+English | 日本語
+
+## English (Summary)
+
+This guide explains how to migrate between Heatbox versions. For v0.1.11 → v0.1.12, the focus is API name unification, deprecation of legacy resolvers, and observability features.
+
+- Angle naming: `fitViewOptions.pitch/heading` → `pitchDegrees/headingDegrees`
+- Rendering modes unified: `outlineEmulation` → `outlineRenderMode` (standard|inset|emulation-only) + `emulationScope` (off|topn|non-topn|all)
+- Presets: `outlineWidthPreset` legacy names → `thin|medium|thick|adaptive`
+- Profiles: use `profile: 'mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data'`
+- Observability: `performanceOverlay` with optional `autoShow` and `updateIntervalMs`
+
+Quick steps
+1) Replace old names with the new ones (see mapping below).
+2) Remove resolver options and use `adaptiveOutlines` + `adaptiveParams`.
+3) If you previously used `outlineEmulation`, pick:
+   - Full emulation: `outlineRenderMode: 'emulation-only'`
+   - Partial overlay: keep `outlineRenderMode: 'standard'|'inset'` and set `emulationScope: 'topn'|'non-topn'|'all'`.
+4) Optional: Enable a profile and the performance overlay for diagnostics.
+
+For complete examples and Japanese details, see below.
+
+---
+
+## 日本語
 
 このガイドは、CesiumJS Heatboxの異なるバージョン間での移行手順を説明します。
 

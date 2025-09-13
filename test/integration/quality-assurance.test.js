@@ -260,7 +260,7 @@ describe('Quality Assurance Integration Tests', () => {
 
   describe('Version Consistency', () => {
     test('should report consistent version information', () => {
-      const heatbox = new Heatbox(mockViewer, {});
+      const _heatbox = new Heatbox(mockViewer, {});
       
       // Check if version is accessible (implementation may vary)
       expect(typeof Heatbox.listProfiles).toBe('function');
@@ -272,11 +272,11 @@ describe('Quality Assurance Integration Tests', () => {
     });
 
     test('should maintain consistent option schema', () => {
-      const heatbox = new Heatbox(mockViewer, {
+      const _heatboxInstance = new Heatbox(mockViewer, {
         profile: 'desktop-balanced'
       });
 
-      const effective = heatbox.getEffectiveOptions();
+      const effective = _heatboxInstance.getEffectiveOptions();
       
       // Core options should exist
       const coreOptions = [
