@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - 0.1.12-alpha.6 の調整を踏まえて再タグ（ビルド通過版）。
 
+## [0.1.12-alpha.8] - 2025-09-14
+
+### Changed
+- CI build 通過後のバージョン更新（安定化反映のプレリリース）。
+
 ## [0.1.12-alpha.4] - 2025-09-13
 
 ### Added
