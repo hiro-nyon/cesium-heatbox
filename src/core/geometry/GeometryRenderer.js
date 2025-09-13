@@ -71,11 +71,30 @@ export class GeometryRenderer {
       emulateThick = false
     } = config;
 
-    // Entity configuration
+    // Validate coordinate inputs to prevent Cesium RangeError
+    const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
+    const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-90, Math.min(90, centerLat)) : 0;
+    const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
+    
+    // Validate dimension inputs to prevent Cesium geometry errors
+    const safeCellSizeX = Number.isFinite(cellSizeX) && cellSizeX > 0 ? Math.min(cellSizeX, 1e6) : 1;
+    const safeCellSizeY = Number.isFinite(cellSizeY) && cellSizeY > 0 ? Math.min(cellSizeY, 1e6) : 1;
+    const safeBoxHeight = Number.isFinite(boxHeight) && boxHeight > 0 ? Math.min(boxHeight, 1e6) : 1;
+    
+    // Log warning if values were clamped
+    if (safeCenterLon !== centerLon || safeCenterLat !== centerLat || safeCenterAlt !== centerAlt ||
+        safeCellSizeX !== cellSizeX || safeCellSizeY !== cellSizeY || safeBoxHeight !== boxHeight) {
+      Logger.warn(`Clamped invalid geometry values for voxel ${voxelKey}:`, {
+        original: { centerLon, centerLat, centerAlt, cellSizeX, cellSizeY, boxHeight },
+        clamped: { safeCenterLon, safeCenterLat, safeCenterAlt, safeCellSizeX, safeCellSizeY, safeBoxHeight }
+      });
+    }
+
+    // Entity configuration with safe values
     const entityConfig = {
-      position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
+      position: Cesium.Cartesian3.fromDegrees(safeCenterLon, safeCenterLat, safeCenterAlt),
       box: {
-        dimensions: new Cesium.Cartesian3(cellSizeX, cellSizeY, boxHeight),
+        dimensions: new Cesium.Cartesian3(safeCellSizeX, safeCellSizeY, safeBoxHeight),
         outline: shouldShowOutline && !emulateThick,
         outlineColor: outlineColor,
         outlineWidth: Math.max(outlineWidth || 1, 0) // 負値防止
@@ -131,6 +150,15 @@ export class GeometryRenderer {
       outlineColor, outlineWidth, voxelKey,
       insetAmount = null
     } = config;
+
+    // Validate inputs for inset outline to prevent Cesium errors
+    const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
+    const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-90, Math.min(90, centerLat)) : 0;
+    const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
+    
+    const safeBaseSizeX = Number.isFinite(baseSizeX) && baseSizeX > 0 ? Math.min(baseSizeX, 1e6) : 1;
+    const safeBaseSizeY = Number.isFinite(baseSizeY) && baseSizeY > 0 ? Math.min(baseSizeY, 1e6) : 1;
+    const safeBaseSizeZ = Number.isFinite(baseSizeZ) && baseSizeZ > 0 ? Math.min(baseSizeZ, 1e6) : 1;
 
     // インセット距離の適用（ADR-0004の境界条件：両側合計で各軸寸法の最大40%まで＝片側20%）
     // 片側20%までに制限することで、最終寸法は元の60%以上を保証する
@@ -423,7 +451,18 @@ export class GeometryRenderer {
 
     // 各エッジをポリラインとして作成
     edges.forEach((edge, index) => {
-      const positions = [vertices[edge[0]], vertices[edge[1]]];
+      const vertex0 = vertices[edge[0]];
+      const vertex1 = vertices[edge[1]];
+      
+      // Validate vertex positions to prevent Cesium RangeError
+      if (!vertex0 || !vertex1 || 
+          !Number.isFinite(vertex0.x) || !Number.isFinite(vertex0.y) || !Number.isFinite(vertex0.z) ||
+          !Number.isFinite(vertex1.x) || !Number.isFinite(vertex1.y) || !Number.isFinite(vertex1.z)) {
+        Logger.warn(`Invalid vertex positions for edge ${index}, skipping polyline creation`);
+        return;
+      }
+
+      const positions = [vertex0, vertex1];
 
       const polylineEntity = this.viewer.entities.add({
         polyline: {
