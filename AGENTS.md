@@ -30,6 +30,7 @@
 - Keep files reasonably small and focused (aim for <= ~300–400 LOC where practical).
 - Design for testability: mirror structure under `test/` (e.g., `test/core/<Feature>/<File>.test.js`).
 - Prefer incremental composition over inheritance for extensibility.
+ - When implementing new features, proactively create new files as needed instead of enlarging existing ones. Extract helpers into new modules to keep file sizes modest and responsibilities well distributed across the codebase.
 
 ## Testing Guidelines
 - Framework: Jest + jsdom; tests in `test/**/*.{test,spec}.js`.
