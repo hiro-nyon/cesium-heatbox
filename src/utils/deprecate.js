@@ -15,14 +15,15 @@ const warnedDeprecations = new Set();
  * @param {string} code - Unique warning code / 一意の警告コード
  * @param {string} message - Warning message / 警告メッセージ
  */
+import { Logger } from './logger.js';
+
 export function warnOnce(code, message) {
   if (warnedDeprecations.has(code)) {
     return;
   }
   
   warnedDeprecations.add(code);
-  // eslint-disable-next-line no-console
-  console.warn(message);
+  Logger.warn(message);
 }
 
 /**
