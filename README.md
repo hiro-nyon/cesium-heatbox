@@ -49,6 +49,9 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **Entityベースのワークフロー**: 既存 `Cesium.Entity` から直接生成。事前のタイル化やサーバー処理が不要
 - **自動ボクセルサイズ決定 (v0.1.4)**: `autoVoxelSize` によりデータ範囲と件数から最適サイズを自動計算。パフォーマンスと解像度のバランスを自動化
 - **オーケストレーション型アーキテクチャ（ADR-0009, v0.1.11）**: Single Responsibility Principleに基づく完全な責務分離を実現
+- **設定プロファイル機能 (v0.1.12)**: `mobile-fast`、`desktop-balanced`、`dense-data`、`sparse-data` で環境別最適化
+- **パフォーマンス監視 (v0.1.12)**: リアルタイムオーバーレイでFPS、描画時間、メモリ使用量を可視化
+- **API一貫性向上 (v0.1.12)**: 命名規則統一（`pitchDegrees`/`headingDegrees`）と適応制御システム統合
   - **ColorCalculator**: 色計算・カラーマップ処理の専門化
   - **VoxelSelector**: 密度・カバレッジ・ハイブリッド選択戦略の専門化
   - **AdaptiveController**: 適応パラメータ・近隣密度計算の専門化
@@ -156,36 +159,64 @@ npm run build
 ### 日本語
 
 ```javascript
-import Heatbox from 'cesium-heatbox';
+import { Heatbox } from 'cesium-heatbox';
 
-// Viewerが初期化済みの状態で
+// v0.1.12: プロファイル機能で環境に最適化
 const heatbox = new Heatbox(viewer, {
-  voxelSize: 20,
-  opacity: 0.8
+  profile: 'desktop-balanced',     // 自動設定プロファイル  
+  voxelSize: { x: 1000, y: 1000, z: 100 },
+  opacity: 0.8,
+  performanceOverlay: {
+    enabled: true,                 // リアルタイム性能監視
+    position: 'top-right'
+  }
 });
 
 // エンティティからヒートマップを作成
 const entities = viewer.entities.values;
-const statistics = await heatbox.createFromEntities(entities);
+heatbox.setData(entities);
 
+// v0.1.12: 新しいAPI命名規則でビューフィット  
+heatbox.fitView({
+  paddingPercent: 0.1,
+  pitchDegrees: -45,              // 更新された命名規則
+  headingDegrees: 0
+});
+
+// 統計情報の取得
+const statistics = heatbox.getStatistics();
 console.log('作成完了:', statistics);
 ```
 
 ### English
 
 ```javascript
-import Heatbox from 'cesium-heatbox';
+import { Heatbox } from 'cesium-heatbox';
 
-// With initialized Viewer
+// v0.1.12: Use configuration profiles for environment optimization
 const heatbox = new Heatbox(viewer, {
-  voxelSize: 20,
-  opacity: 0.8
+  profile: 'desktop-balanced',     // Auto-configuration profile
+  voxelSize: { x: 1000, y: 1000, z: 100 },
+  opacity: 0.8,
+  performanceOverlay: {
+    enabled: true,                 // Real-time performance monitoring  
+    position: 'top-right'
+  }
 });
 
 // Create heatmap from entities
 const entities = viewer.entities.values;
-const statistics = await heatbox.createFromEntities(entities);
+heatbox.setData(entities);
 
+// v0.1.12: Fit view with updated API naming convention
+heatbox.fitView({
+  paddingPercent: 0.1,
+  pitchDegrees: -45,              // Updated naming convention
+  headingDegrees: 0
+});
+
+// Get statistics
+const statistics = heatbox.getStatistics();
 console.log('Creation completed:', statistics);
 ```
 
@@ -246,12 +277,14 @@ Docs are structured English first, then Japanese. Each page includes a language 
 - [API リファレンス](docs/API.md)
 - [クイックスタート](docs/quick-start.md)
 - [はじめに](docs/getting-started.md)
+- [移行ガイド](MIGRATION.md) 🆕 **v0.1.12移行ガイド**
 - [開発ガイド](docs/development-guide.md)
 
 ### English
 - [API Reference](docs/API.md)
 - [Quick Start](docs/quick-start.md)
-- [Getting Started](docs/getting-started.md)
+- [Getting Started](docs/getting-started.md)  
+- [Migration Guide](MIGRATION.md) 🆕 **v0.1.12 Migration Guide**
 - [Development Guide](docs/development-guide.md)
 
 ## ライセンス / License
