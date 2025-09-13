@@ -190,6 +190,18 @@ const statistics = heatbox.getStatistics();
 console.log('作成完了:', statistics);
 ```
 
+補足（v0.1.12）
+- プロファイルの確認/詳細:
+```javascript
+const profiles = Heatbox.listProfiles();
+const details = Heatbox.getProfileDetails('mobile-fast');
+```
+- パフォーマンスオーバーレイのランタイム制御:
+```javascript
+heatbox.setPerformanceOverlayEnabled(true, { position: 'bottom-left' });
+heatbox.togglePerformanceOverlay();
+```
+
 ### English
 
 ```javascript
@@ -220,6 +232,18 @@ heatbox.fitView({
 // Get statistics
 const statistics = heatbox.getStatistics();
 console.log('Creation completed:', statistics);
+```
+
+Tips (v0.1.12)
+- Profiles overview/details:
+```javascript
+const profiles = Heatbox.listProfiles();
+const details = Heatbox.getProfileDetails('mobile-fast');
+```
+- Runtime control of performance overlay:
+```javascript
+heatbox.setPerformanceOverlayEnabled(true, { position: 'bottom-left' });
+heatbox.togglePerformanceOverlay();
 ```
 
 ## API
