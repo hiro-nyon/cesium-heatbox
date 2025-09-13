@@ -131,7 +131,6 @@ export class AdaptiveController {
         break;
 
       case 'adaptive':
-      // Legacy name (map to adaptive)
       case 'adaptive-density':
         adaptiveWidth = isDenseArea ?
           Math.max(0.5, baseOptions.outlineWidth * (0.5 + normalizedDensity * 0.5)) :
