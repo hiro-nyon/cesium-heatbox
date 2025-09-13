@@ -6,42 +6,18 @@
 import { Heatbox } from '../../src/Heatbox.js';
 import { validateAndNormalizeOptions } from '../../src/utils/validation.js';
 import { clearWarnings } from '../../src/utils/deprecate.js';
+import { createMockViewer, createWarningAssertions, TEST_CONFIGS } from '../helpers/testHelpers.js';
 
 describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
   let mockViewer;
   let consoleSpy;
-  const expectWarnContains = (substring) => {
-    const calls = consoleSpy.mock.calls.map(args => args.map(a => String(a)).join(' '));
-    expect(calls.some(line => line.includes(substring))).toBe(true);
-  };
+  let warnings;
 
   beforeEach(() => {
-    // Mock CesiumJS Viewer
-    mockViewer = {
-      scene: {
-        canvas: { getContext: () => ({}) },
-        postRender: {
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn()
-        },
-        globe: { show: true }
-      },
-      entities: {
-        add: jest.fn(),
-        remove: jest.fn(),
-        removeAll: jest.fn()
-      },
-      camera: {
-        flyTo: jest.fn(),
-        setView: jest.fn()
-      }
-    };
-
-    // Clear deprecation warnings
+    mockViewer = createMockViewer();
     clearWarnings();
-
-    // Spy on console to capture deprecation warnings
     consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    warnings = createWarningAssertions(consoleSpy);
   });
 
   afterEach(() => {
@@ -67,8 +43,8 @@ describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
       expect(normalized.fitViewOptions.paddingPercent).toBe(0.1);
 
       // Should show deprecation warnings
-      expectWarnContains('[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.pitch is deprecated');
-      expectWarnContains('[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.heading is deprecated');
+      warnings.expectWarnContains('[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.pitch is deprecated');
+      warnings.expectWarnContains('[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.heading is deprecated');
     });
 
     test('should prioritize new names when both old and new are provided', () => {
@@ -273,14 +249,9 @@ describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
 
   describe('Scenario 7: Complete migration workflow', () => {
     test('should handle complex v0.1.11 configuration migration', () => {
-      // Comprehensive v0.1.11 style configuration
+      // Use predefined legacy configuration
       const v011Config = {
-        fitViewOptions: {
-          pitch: -45,
-          heading: 180
-        },
-        outlineEmulation: 'topn',
-        outlineWidthPreset: 'uniform',
+        ...TEST_CONFIGS.LEGACY_V011,
         outlineWidthResolver: (params) => params.isTopN ? 4 : 2,
         outlineOpacityResolver: (ctx) => ctx.isTopN ? 1.0 : 0.6,
         boxOpacityResolver: (_ctx) => 0.8
