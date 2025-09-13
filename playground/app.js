@@ -504,6 +504,12 @@ class HeatboxPlayground {
    * 翻訳辞書
    */
   _getTranslations() {
+    // Externalized dictionaries take precedence (see playground/i18n/*.js)
+    try {
+      if (typeof window !== 'undefined' && window.HEATBOX_I18N) {
+        return window.HEATBOX_I18N;
+      }
+    } catch (_) {}
     return {
       ja: {
         // Section summaries
@@ -1110,6 +1116,32 @@ class HeatboxPlayground {
     document.getElementById('manualFitView').addEventListener('click', () => {
       this.executeFitView();
     });
+
+    // v0.1.12: Profiles & Performance Overlay controls
+    const profileSel = document.getElementById('configProfile');
+    if (profileSel && typeof this.handleProfileChange === 'function') {
+      profileSel.addEventListener('change', this.handleProfileChange.bind(this));
+    }
+    const overlayChk = document.getElementById('performanceOverlay');
+    if (overlayChk && typeof this.handlePerformanceOverlayToggle === 'function') {
+      overlayChk.addEventListener('change', this.handlePerformanceOverlayToggle.bind(this));
+    }
+    const overlayPos = document.getElementById('overlayPosition');
+    if (overlayPos && typeof this.handlePerformanceOverlayToggle === 'function') {
+      overlayPos.addEventListener('change', this.handlePerformanceOverlayToggle.bind(this));
+    }
+    const overlayInt = document.getElementById('overlayUpdateInterval');
+    if (overlayInt && typeof this.handleOverlayIntervalChange === 'function') {
+      overlayInt.addEventListener('input', this.handleOverlayIntervalChange.bind(this));
+    }
+    const presetSel = document.getElementById('outlineWidthPreset');
+    if (presetSel && typeof this.handlePresetChange === 'function') {
+      presetSel.addEventListener('change', this.handlePresetChange.bind(this));
+    }
+    const effBtn = document.getElementById('getEffectiveOptions');
+    if (effBtn && typeof this.showEffectiveOptions === 'function') {
+      effBtn.addEventListener('click', this.showEffectiveOptions.bind(this));
+    }
     
     // 空ボクセル表示チェックボックス
     document.getElementById('showEmptyVoxels').addEventListener('change', (e) => {
@@ -2476,6 +2508,7 @@ class HeatboxPlayground {
     const outlineMode = document.getElementById('outlineMode')?.value || 'adaptive';
     const outlineWidthManual = parseInt(document.getElementById('outlineWidth')?.value || '2', 10);
     const outlineEmulationMode = document.getElementById('outlineEmulationMode')?.value || 'off';
+    const emulationScope = document.getElementById('emulationScope')?.value || 'off';
     const outlineInset = parseFloat(document.getElementById('outlineInset')?.value || '0');
     const outlineInsetModeSel = document.getElementById('outlineInsetMode')?.value || 'all';
     const enableThickFrames = document.getElementById('enableThickFrames')?.checked || false;
@@ -2491,6 +2524,9 @@ class HeatboxPlayground {
     const maxRenderVoxels = document.getElementById('maxRenderVoxels')?.value || 'auto';
     const renderLimitStrategy = document.getElementById('renderLimitStrategy')?.value || 'hybrid';
     const autoView = document.getElementById('autoView')?.checked || false;
+    const perfOverlayEnabled = document.getElementById('performanceOverlay')?.checked || false;
+    const perfOverlayPos = document.getElementById('overlayPosition')?.value || 'top-right';
+    const perfOverlayInterval = parseInt(document.getElementById('overlayUpdateInterval')?.value || '500', 10);
     const fitViewHeading = parseFloat(document.getElementById('fitViewHeading')?.value || '0');
     const fitViewPitch = parseFloat(document.getElementById('fitViewPitch')?.value || '-45');
 
@@ -2566,6 +2602,7 @@ class HeatboxPlayground {
       outlineWidthResolver: outlineWidthResolver,
       // v0.1.6+: 太線エミュレーション（WebGL制約の回避）
       outlineEmulation: outlineEmulationMode,
+      emulationScope: emulationScope,
       // v0.1.7 additions
       outlineRenderMode: outlineRenderMode,
       adaptiveOutlines: adaptiveOutlines,
@@ -2643,9 +2680,19 @@ class HeatboxPlayground {
     options.autoView = autoView;
     if (autoView) {
       options.fitViewOptions = {
-        heading: fitViewHeading,
-        pitch: fitViewPitch,
-        paddingRatio: 0.1
+        headingDegrees: fitViewHeading,
+        pitchDegrees: fitViewPitch,
+        paddingPercent: 0.1
+      };
+    }
+
+    // v0.1.12: Performance overlay initial state
+    if (perfOverlayEnabled) {
+      options.performanceOverlay = {
+        enabled: true,
+        position: perfOverlayPos,
+        updateIntervalMs: perfOverlayInterval,
+        autoShow: true
       };
     }
     
@@ -2762,13 +2809,13 @@ class HeatboxPlayground {
     }
     
     try {
-      const heading = parseFloat(document.getElementById('fitViewHeading').value);
-      const pitch = parseFloat(document.getElementById('fitViewPitch').value);
+      const headingDeg = parseFloat(document.getElementById('fitViewHeading').value);
+      const pitchDeg = parseFloat(document.getElementById('fitViewPitch').value);
       
       await this.heatbox.fitView(null, {
-        heading: heading,
-        pitch: pitch,
-        paddingRatio: 0.1
+        headingDegrees: headingDeg,
+        pitchDegrees: pitchDeg,
+        paddingPercent: 0.1
       });
       
       console.log('✅ Manual fitView completed successfully');

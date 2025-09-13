@@ -3,13 +3,13 @@
  * プレイグラウンドにv0.1.12の新機能を統合
  */
 
-// プロファイル設定情報
-const PROFILE_DESCRIPTIONS = {
-  '': 'Customize all settings manually',
-  'mobile-fast': 'Optimized for mobile devices: Fast rendering, reduced quality',
-  'desktop-balanced': 'Balanced performance for desktop environments',
-  'dense-data': 'Optimized for high-density datasets with many data points',
-  'sparse-data': 'Optimized for sparse datasets with fewer data points'
+// プロファイル説明は i18n キーを使用（外部辞書に定義）
+const PROFILE_DESC_KEYS = {
+  '': 'profile_desc_custom',
+  'mobile-fast': 'profile_desc_mobile',
+  'desktop-balanced': 'profile_desc_desktop',
+  'dense-data': 'profile_desc_dense',
+  'sparse-data': 'profile_desc_sparse'
 };
 
 const PROFILE_CONFIGS = {
@@ -56,9 +56,12 @@ HeatboxPlayground.prototype.handleProfileChange = function() {
   
   const selectedProfile = profileSelect.value;
   
-  // 説明文更新
-  const description = PROFILE_DESCRIPTIONS[selectedProfile] || PROFILE_DESCRIPTIONS[''];
-  profileDescElement.textContent = description;
+  // 説明文更新（i18n）
+  const key = PROFILE_DESC_KEYS[selectedProfile] || PROFILE_DESC_KEYS[''];
+  if (profileDescElement) {
+    profileDescElement.setAttribute('data-i18n', key);
+  }
+  try { this._applyTranslations(); } catch (_) {}
   
   // プロファイル設定をUIに反映
   if (selectedProfile && PROFILE_CONFIGS[selectedProfile]) {
