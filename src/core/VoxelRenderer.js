@@ -486,7 +486,7 @@ export class VoxelRenderer {
     // Emulation logic
     let emulateThickForThis = renderModeConfig.shouldUseEmulationOnly;
     if (!renderModeConfig.shouldUseEmulationOnly) {
-      // v0.1.12: Use new emulationScope instead of deprecated outlineEmulation  
+      // v0.1.12: Use new emulationScope instead of deprecated outlineEmulation
       const scope = this.options.emulationScope || 'off';
       if (scope === 'topn') {
         emulateThickForThis = isTopN && (finalOutlineWidth || 1) > 1;
@@ -495,7 +495,8 @@ export class VoxelRenderer {
       } else if (scope === 'all') {
         emulateThickForThis = (finalOutlineWidth || 1) > 1;
       } else if (this.options.adaptiveOutlines && adaptiveParams.shouldUseEmulation) {
-        emulateThickForThis = true;
+        // Safety: when scope is explicitly 'off', do not enable emulation from adaptive control
+        emulateThickForThis = scope !== 'off';
       }
     }
 

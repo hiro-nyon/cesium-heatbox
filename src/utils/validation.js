@@ -281,10 +281,14 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.outlineInset = isNaN(v) || v < 0 ? 0 : v;
   }
   if (normalized.outlineInsetMode !== undefined) {
-    const validModes = ['all', 'topn'];
-    if (!validModes.includes(normalized.outlineInsetMode)) {
+    let mode = normalized.outlineInsetMode;
+    if (mode === 'off') mode = 'none'; // legacy alias
+    const validModes = ['all', 'topn', 'none'];
+    if (!validModes.includes(mode)) {
       Logger.warn(`Invalid outlineInsetMode: ${normalized.outlineInsetMode}. Using 'all'.`);
       normalized.outlineInsetMode = 'all';
+    } else {
+      normalized.outlineInsetMode = mode;
     }
   }
 
@@ -296,10 +300,14 @@ export function validateAndNormalizeOptions(options = {}) {
   }
   
   if (normalized.outlineInsetMode !== undefined) {
-    const validInsetModes = ['all', 'topn'];
-    if (!validInsetModes.includes(normalized.outlineInsetMode)) {
+    let mode2 = normalized.outlineInsetMode;
+    if (mode2 === 'off') mode2 = 'none'; // legacy alias
+    const validInsetModes = ['all', 'topn', 'none'];
+    if (!validInsetModes.includes(mode2)) {
       Logger.warn(`Invalid outlineInsetMode: ${normalized.outlineInsetMode}. Using 'all'.`);
       normalized.outlineInsetMode = 'all';
+    } else {
+      normalized.outlineInsetMode = mode2;
     }
   }
   

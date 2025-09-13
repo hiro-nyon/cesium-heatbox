@@ -91,14 +91,19 @@ export class GeometryRenderer {
     }
 
     // Entity configuration with safe values
+    const showOutline = Boolean(shouldShowOutline && !emulateThick);
+    const boxConfig = {
+      dimensions: new Cesium.Cartesian3(safeCellSizeX, safeCellSizeY, safeBoxHeight),
+      outline: showOutline
+    };
+    if (showOutline) {
+      boxConfig.outlineColor = outlineColor;
+      boxConfig.outlineWidth = Math.max(outlineWidth || 1, 1);
+    }
+
     const entityConfig = {
       position: Cesium.Cartesian3.fromDegrees(safeCenterLon, safeCenterLat, safeCenterAlt),
-      box: {
-        dimensions: new Cesium.Cartesian3(safeCellSizeX, safeCellSizeY, safeBoxHeight),
-        outline: shouldShowOutline && !emulateThick,
-        outlineColor: outlineColor,
-        outlineWidth: Math.max(outlineWidth || 1, 0) // 負値防止
-      },
+      box: boxConfig,
       properties: {
         type: 'voxel',
         key: voxelKey,
