@@ -1,51 +1,80 @@
 # Class: DataProcessor（DataProcessorクラス）
 
-**English** | [日本語](#日本語)
+**日本語** | [English](#english)
 
-Class responsible for processing entity data, classification into voxels, and statistical calculations.
+## English
 
-エンティティデータの処理、ボクセルへの分類、統計計算を担当するクラス。
+Class responsible for processing entity data.
 
-## Constructor / コンストラクタ
+### Constructor
 
-### new DataProcessor()
+#### new DataProcessor()
 
-Creates a new DataProcessor instance for entity data processing.
+### Methods
 
-エンティティデータ処理のための新しいDataProcessorインスタンスを作成します。
+#### (static) calculateStatistics(voxelData, grid) → {Object}
 
-## Methods / メソッド
+Calculate statistics from voxel data.
 
-### (static) calculateStatistics(voxelData, grid) → {Object}
+| Name | Type | Description |
+|---|---|---|
+| voxelData | Map | Voxel data / ボクセルデータ |
+| grid | Object | Grid info / グリッド情報 |
 
-Calculates statistical information from voxel data.
+#### (static) classifyEntitiesIntoVoxels(entities, bounds, grid) → {Map}
+
+Classify entities into voxels (simple implementation).
+
+| Name | Type | Description |
+|---|---|---|
+| entities | Array | Entity array / エンティティ配列 |
+| bounds | Object | Bounds info / 境界情報 |
+| grid | Object | Grid info / グリッド情報 |
+
+#### (static) getTopNVoxels(voxelData, topN) → {Array}
+
+Get top-N densest voxels.
+
+| Name | Type | Description |
+|---|---|---|
+| voxelData | Map | Voxel data / ボクセルデータ |
+| topN | number | Number to get / 取得する上位の数 |
+
+
+## 日本語
+
+エンティティデータの処理を担当するクラス。
+
+### コンストラクタ
+
+#### new DataProcessor()
+
+### メソッド
+
+#### (static) calculateStatistics(voxelData, grid) → {Object}
 
 ボクセルデータから統計情報を計算します。
 
-| Name | Type | Description |
+| 名前 | 型 | 説明 |
 |---|---|---|
-| voxelData | Map | ボクセルデータ |
-| grid | Object | グリッド情報 |
+| voxelData | Map | Voxel data / ボクセルデータ |
+| grid | Object | Grid info / グリッド情報 |
 
-### (static) classifyEntitiesIntoVoxels(entities, bounds, grid) → {Map}
+#### (static) classifyEntitiesIntoVoxels(entities, bounds, grid) → {Map}
 
-Classifies entities into voxels (simple implementation).
+エンティティをボクセルに分類（シンプル実装）。
 
-エンティティをボクセルに分類（シンプル実装）
-
-| Name | Type | Description |
+| 名前 | 型 | 説明 |
 |---|---|---|
-| entities | Array | エンティティ配列 |
-| bounds | Object | 境界情報 |
-| grid | Object | グリッド情報 |
+| entities | Array | Entity array / エンティティ配列 |
+| bounds | Object | Bounds info / 境界情報 |
+| grid | Object | Grid info / グリッド情報 |
 
-### (static) getTopNVoxels(voxelData, topN) → {Array}
+#### (static) getTopNVoxels(voxelData, topN) → {Array}
 
-Returns the top N voxels by count.
+上位 N 個のボクセルを取得します。
 
-上位N個のボクセルを取得
-
-| Name | Type | Description |
+| 名前 | 型 | 説明 |
 |---|---|---|
-| voxelData | Map | ボクセルデータ |
-| topN | number | 取得する上位の数 |
+| voxelData | Map | Voxel data / ボクセルデータ |
+| topN | number | Number to get / 取得する上位の数 |

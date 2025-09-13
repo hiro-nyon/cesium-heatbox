@@ -1,68 +1,78 @@
 # Global
 
-日本語 | English
+**日本語** | [English](#english)
 
-日本語: グローバルな定数・ユーティリティ・メタ情報の概要ページ。  
-English: Overview of global constants, utilities, and library metadata.
+## English
 
-## Constructor
+### Constructor
 
-### (constant) COLOR_CONSTANTS
+#### (constant) COLOR_CONSTANTS
 
-## Methods
+### Methods
 
-### (constant) COLOR_CONSTANTS
+#### (constant) COLOR_CONSTANTS
 
-色分け関連定数
+Color-related constants.
 
-### (constant) COORDINATE_CONSTANTS
+#### (constant) COORDINATE_CONSTANTS
 
-座標変換定数
+Coordinate-related constants.
 
-### (constant) DEFAULT_OPTIONS
+#### (constant) DEFAULT_OPTIONS
 
-デフォルト設定値
+Default option values.
 
-### (constant) DEFAULT_STATISTICS
+#### (constant) DEFAULT_STATISTICS
 
-統計情報のデフォルト値
+Default statistics values.
 
-### (constant) ERROR_MESSAGES
+#### (constant) DEVICE_TIER_RANGES
 
-エラーメッセージ
+Device tier constants
 
-### (constant) LOG_LEVELS
+#### (constant) ERROR_MESSAGES
 
-ログレベル定数
+Error message strings.
 
-### (constant) Logger
+#### (constant) LOG_LEVELS
 
-ログ出力の共通ユーティリティ
+Log level constants.
 
-### (constant) PERFORMANCE_LIMITS
+#### (constant) Logger
 
-パフォーマンス制限値
+Common logging utility.
 
-### (constant) VERSION
+#### (constant) PERFORMANCE_LIMITS
 
-ライブラリのメタ情報
+Performance limits.
 
-### (constant) log
+#### (constant) VERSION
 
-下位互換のためのラッパー関数群
-既存のconsole.log置き換え用
+Library metadata.
 
-### calculateDataRange(bounds) → {Object}
+#### (constant) log
 
-境界からデータ範囲を計算
+Wrapper functions for backward compatibility.
+
+#### applyAutoRenderBudget(options) → {Object}
+
+Apply auto render budget to options
+
+| Name | Type | Description |
+|---|---|---|
+| options | Object | 設定オプション |
+
+#### calculateDataRange(bounds) → {Object}
+
+> English translation pending. See Japanese section below.
 
 | Name | Type | Description |
 |---|---|---|
 | bounds | Object | 境界情報 |
 
-### createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMeters) → {Object}
+#### createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMeters) → {Object}
 
-指定された中心点とサイズから境界を生成
+> English translation pending. See Japanese section below.
 
 | Name | Type | Description |
 |---|---|---|
@@ -71,18 +81,51 @@ English: Overview of global constants, utilities, and library metadata.
 | centerAlt | number | 中心高度 |
 | sizeMeters | number | 一辺のサイズ（メートル） |
 
-### estimateInitialVoxelSize(bounds, entityCount) → {number}
+#### detectDeviceTier() → {Object}
 
-データ範囲に基づいて初期ボクセルサイズを推定
+Detect device tier and return appropriate maxRenderVoxels
+
+#### estimateInitialVoxelSize(bounds, entityCount, options) → {number}
+
+Estimate initial voxel size based on data range.
 
 | Name | Type | Description |
 |---|---|---|
-| bounds | Object | 境界情報 |
-| entityCount | number | エンティティ数 |
+| bounds | Object | Bounds info / 境界情報 |
+| entityCount | number | Number of entities / エンティティ数 |
+| options | Object | Calculation options / 計算オプション |
 
-### generateTestEntities(viewer, bounds, count) → {Array}
+#### estimateVoxelSizeBasic(bounds, entityCount) → {number}
 
-指定された範囲内にランダムなテストエンティティを生成
+Basic voxel size estimation (existing algorithm).
+
+| Name | Type | Description |
+|---|---|---|
+| bounds | Object | Bounds info / 境界情報 |
+| entityCount | number | Number of entities / エンティティ数 |
+
+#### estimateVoxelSizeByOccupancy(bounds, entityCount, options) → {number}
+
+Occupancy-based voxel size estimation with iterative approximation.
+
+| Name | Type | Description |
+|---|---|---|
+| bounds | Object | Bounds info / 境界情報 |
+| entityCount | number | Number of entities / エンティティ数 |
+| options | Object | Calculation options / 計算オプション |
+
+#### generateSampleData(total, config) → {Array.<Cesium.Entity>}
+
+Generate clustered sample entities without adding to a viewer.
+
+| Name | Type | Description |
+|---|---|---|
+| total | number | 総エンティティ数 |
+| config | Object | { clusters: Array<{ center:[lon,lat,alt], radius:number, density:number, count:number }> } |
+
+#### generateTestEntities(viewer, bounds, count) → {Array}
+
+> English translation pending. See Japanese section below.
 
 | Name | Type | Description |
 |---|---|---|
@@ -90,74 +133,290 @@ English: Overview of global constants, utilities, and library metadata.
 | bounds | Object | 生成範囲 {minLon, maxLon, minLat, maxLat, minAlt, maxAlt} |
 | count | number | 生成数（デフォルト: 500） |
 
-### getAllEntities(viewer) → {Array}
+#### getAllEntities(viewer) → {Array}
 
-指定されたviewerの全エンティティを取得
+> English translation pending. See Japanese section below.
 
 | Name | Type | Description |
 |---|---|---|
 | viewer | Object | CesiumJS Viewer |
 
-### getEnvironmentInfo() → {Object}
+#### getDeviceInfo() → {Object}
 
-環境情報を取得
+Get device information
 
-### getLogLevel()
+#### getEnvironmentInfo() → {Object}
 
-現在のログレベルを決定
-NODE_ENV=production では ERROR と WARN のみ
-DEBUG=true または NODE_ENV=development では全レベル出力
+Get environment information.
 
-### getTokyoStationBounds() → {Object}
+#### getLogLevel()
 
-東京駅周辺の境界を取得
+Determine current log level.
 
-### hasValidPosition(entity) → {boolean}
+#### getTokyoStationBounds() → {Object}
 
-エンティティが有効な位置情報を持つかチェック
+> English translation pending. See Japanese section below.
+
+#### getWebGLInfo() → {Object}
+
+Get WebGL capability information
+
+#### hasValidPosition(entity) → {boolean}
+
+Check whether an entity has a valid position.
 
 | Name | Type | Description |
 |---|---|---|
 | entity | Object | Cesium Entity |
 
-### isValidEntities(entities) → {boolean}
+#### isValidEntities(entities) → {boolean}
 
-エンティティ配列が有効かチェック
+Check whether the entity array is valid.
 
 | Name | Type | Description |
 |---|---|---|
-| entities | Array | エンティティ配列 |
+| entities | Array | Entity array / エンティティ配列 |
 
-### isValidViewer(viewer) → {boolean}
+#### isValidViewer(viewer) → {boolean}
 
-CesiumJS Viewerが有効かチェック
+Check whether a CesiumJS Viewer is valid.
 
 | Name | Type | Description |
 |---|---|---|
 | viewer | Object | CesiumJS Viewer |
 
-### isValidVoxelSize(voxelSize) → {boolean}
+#### isValidVoxelSize(voxelSize) → {boolean}
 
-ボクセルサイズが有効かチェック
-
-| Name | Type | Description |
-|---|---|---|
-| voxelSize | number | ボクセルサイズ |
-
-### validateAndNormalizeOptions(options) → {Object}
-
-オプションを検証して正規化
-v0.1.5: batchMode非推奨化と新機能バリデーションを追加
+Check whether the voxel size is valid.
 
 | Name | Type | Description |
 |---|---|---|
-| options | Object | ユーザー指定のオプション |
+| voxelSize | number | Voxel size / ボクセルサイズ |
 
-### validateVoxelCount(totalVoxels, voxelSize) → {Object}
+#### validateAndNormalizeOptions(options) → {Object}
 
-処理するボクセル数が制限内かチェック
+Validate and normalize options.
 
 | Name | Type | Description |
 |---|---|---|
-| totalVoxels | number | 総ボクセル数 |
-| voxelSize | number | ボクセルサイズ |
+| options | Object | User-specified options / ユーザー指定のオプション |
+
+#### validateVoxelCount(totalVoxels, voxelSize) → {Object}
+
+Validate that total voxel count is within limits.
+
+| Name | Type | Description |
+|---|---|---|
+| totalVoxels | number | Total voxels / 総ボクセル数 |
+| voxelSize | number | Voxel size / ボクセルサイズ |
+
+
+## 日本語
+
+### コンストラクタ
+
+#### (constant) COLOR_CONSTANTS
+
+### メソッド
+
+#### (constant) COLOR_CONSTANTS
+
+色分け関連定数。
+
+#### (constant) COORDINATE_CONSTANTS
+
+座標変換定数。
+
+#### (constant) DEFAULT_OPTIONS
+
+デフォルト設定値。
+
+#### (constant) DEFAULT_STATISTICS
+
+統計情報のデフォルト値。
+
+#### (constant) DEVICE_TIER_RANGES
+
+端末ティア定数
+
+#### (constant) ERROR_MESSAGES
+
+エラーメッセージ。
+
+#### (constant) LOG_LEVELS
+
+ログレベル定数。
+
+#### (constant) Logger
+
+ログ出力の共通ユーティリティ。
+
+#### (constant) PERFORMANCE_LIMITS
+
+パフォーマンス制限値。
+
+#### (constant) VERSION
+
+ライブラリのメタ情報。
+
+#### (constant) log
+
+既存の console.log 置き換え用のラッパー関数群。
+
+#### applyAutoRenderBudget(options) → {Object}
+
+Auto Render Budgetをオプションに適用
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| options | Object | 設定オプション |
+
+#### calculateDataRange(bounds) → {Object}
+
+境界からデータ範囲を計算
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| bounds | Object | 境界情報 |
+
+#### createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMeters) → {Object}
+
+指定された中心点とサイズから境界を生成
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| centerLon | number | 中心経度 |
+| centerLat | number | 中心緯度 |
+| centerAlt | number | 中心高度 |
+| sizeMeters | number | 一辺のサイズ（メートル） |
+
+#### detectDeviceTier() → {Object}
+
+端末ティアを検出し、適切なmaxRenderVoxelsを返す
+
+#### estimateInitialVoxelSize(bounds, entityCount, options) → {number}
+
+データ範囲に基づいて初期ボクセルサイズを推定します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| bounds | Object | Bounds info / 境界情報 |
+| entityCount | number | Number of entities / エンティティ数 |
+| options | Object | Calculation options / 計算オプション |
+
+#### estimateVoxelSizeBasic(bounds, entityCount) → {number}
+
+基本的なボクセルサイズ推定（既存アルゴリズム）
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| bounds | Object | Bounds info / 境界情報 |
+| entityCount | number | Number of entities / エンティティ数 |
+
+#### estimateVoxelSizeByOccupancy(bounds, entityCount, options) → {number}
+
+占有率ベースのボクセルサイズ推定（反復近似）
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| bounds | Object | Bounds info / 境界情報 |
+| entityCount | number | Number of entities / エンティティ数 |
+| options | Object | Calculation options / 計算オプション |
+
+#### generateSampleData(total, config) → {Array.<Cesium.Entity>}
+
+ビューアに追加せず、クラスター状のサンプルエンティティ配列を生成します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| total | number | 総エンティティ数 |
+| config | Object | { clusters: Array<{ center:[lon,lat,alt], radius:number, density:number, count:number }> } |
+
+#### generateTestEntities(viewer, bounds, count) → {Array}
+
+指定された範囲内にランダムなテストエンティティを生成
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| viewer | Object | CesiumJS Viewer |
+| bounds | Object | 生成範囲 {minLon, maxLon, minLat, maxLat, minAlt, maxAlt} |
+| count | number | 生成数（デフォルト: 500） |
+
+#### getAllEntities(viewer) → {Array}
+
+指定されたviewerの全エンティティを取得
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| viewer | Object | CesiumJS Viewer |
+
+#### getDeviceInfo() → {Object}
+
+端末情報を取得
+
+#### getEnvironmentInfo() → {Object}
+
+環境情報を取得します。
+
+#### getLogLevel()
+
+現在のログレベルを決定します。
+NODE_ENV=production では ERROR と WARN のみ、DEBUG=true または NODE_ENV=development では全レベル出力。
+
+#### getTokyoStationBounds() → {Object}
+
+東京駅周辺の境界を取得
+
+#### getWebGLInfo() → {Object}
+
+WebGL能力情報を取得
+
+#### hasValidPosition(entity) → {boolean}
+
+エンティティが有効な位置情報を持つかチェックします。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| entity | Object | Cesium Entity |
+
+#### isValidEntities(entities) → {boolean}
+
+エンティティ配列が有効かチェックします。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| entities | Array | Entity array / エンティティ配列 |
+
+#### isValidViewer(viewer) → {boolean}
+
+CesiumJS Viewerが有効かチェックします。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| viewer | Object | CesiumJS Viewer |
+
+#### isValidVoxelSize(voxelSize) → {boolean}
+
+ボクセルサイズが有効かチェックします。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| voxelSize | number | Voxel size / ボクセルサイズ |
+
+#### validateAndNormalizeOptions(options) → {Object}
+
+オプションを検証して正規化します。
+v0.1.5: batchMode 非推奨化と新機能バリデーションを追加。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| options | Object | User-specified options / ユーザー指定のオプション |
+
+#### validateVoxelCount(totalVoxels, voxelSize) → {Object}
+
+処理するボクセル数が制限内かチェックします。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| totalVoxels | number | Total voxels / 総ボクセル数 |
+| voxelSize | number | Voxel size / ボクセルサイズ |

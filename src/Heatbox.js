@@ -56,6 +56,20 @@ export class Heatbox {
   }
 
   /**
+   * Get effective normalized options snapshot.
+   * 正規化済みオプションのスナップショットを取得します。
+   * @returns {Object} options snapshot
+   */
+  getEffectiveOptions() {
+    try {
+      return JSON.parse(JSON.stringify(this.options));
+    } catch (_) {
+      // Fallback shallow copy
+      return { ...this.options };
+    }
+  }
+
+  /**
    * Set heatmap data and render.
    * ヒートマップデータを設定し、描画を実行します。
    * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
@@ -487,8 +501,8 @@ export class Heatbox {
     Logger.debug('Handling minimal data range');
     
     const destination = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt + 2000);
-    const heading = Cesium.Math.toRadians(fitOptions.heading);
-    const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+    const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
+    const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
     
     return this.viewer.camera.flyTo({
       destination,
@@ -520,8 +534,8 @@ export class Heatbox {
       maxRange / 2
     );
     
-    const heading = Cesium.Math.toRadians(fitOptions.heading);
-    const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+    const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
+    const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
     
     return this.viewer.camera.flyToBoundingSphere(boundingSphere, {
       duration: 2.5,
@@ -544,7 +558,7 @@ export class Heatbox {
     }
 
     try {
-      const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+      const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
       const fov = this.viewer.camera.frustum.fovy || Cesium.Math.toRadians(60);
       
       // 幾何学的計算: データがフレームに収まる高度を計算
@@ -567,7 +581,7 @@ export class Heatbox {
       const maxHeight = Math.min(100000, maxRange * 10);
       cameraHeight = Math.max(minHeight, Math.min(maxHeight, cameraHeight));
       
-      Logger.debug(`Camera height calculated: ${cameraHeight.toFixed(0)}m (range: ${maxRange.toFixed(0)}m, pitch: ${fitOptions.pitch}°)`);
+      Logger.debug(`Camera height calculated: ${cameraHeight.toFixed(0)}m (range: ${maxRange.toFixed(0)}m, pitch: ${fitOptions.pitchDegrees || fitOptions.pitch}°)`);
       return cameraHeight;
       
     } catch (error) {
@@ -599,8 +613,8 @@ export class Heatbox {
       );
 
       // カメラの向き設定
-      const heading = Cesium.Math.toRadians(fitOptions.heading);
-      const pitch = Cesium.Math.toRadians(fitOptions.pitch);
+      const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
+      const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
       const roll = 0;
 
       const orientation = {
@@ -609,7 +623,7 @@ export class Heatbox {
         roll
       };
 
-      Logger.debug(`Camera target: position=${centerLon.toFixed(6)},${centerLat.toFixed(6)},${(centerAlt + cameraHeight).toFixed(0)}, heading=${fitOptions.heading}°, pitch=${fitOptions.pitch}°`);
+      Logger.debug(`Camera target: position=${centerLon.toFixed(6)},${centerLat.toFixed(6)},${(centerAlt + cameraHeight).toFixed(0)}, heading=${fitOptions.headingDegrees || fitOptions.heading}°, pitch=${fitOptions.pitchDegrees || fitOptions.pitch}°`);
 
       // 距離に応じた移動時間の調整
       const duration = Math.max(1.0, Math.min(3.0, Math.log10(maxRange) * 0.8));

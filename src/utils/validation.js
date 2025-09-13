@@ -6,6 +6,7 @@
 import * as Cesium from 'cesium';
 import { PERFORMANCE_LIMITS, ERROR_MESSAGES } from './constants.js';
 import { Logger } from './logger.js';
+import { warnOnce } from './deprecate.js';
 
 /**
  * Check whether a CesiumJS Viewer is valid.
@@ -188,19 +189,65 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.outlineOpacity = Math.max(0, Math.min(1, parseFloat(normalized.outlineOpacity) || 1));
   }
   
+  // v0.1.12: Deprecated Resolver systems - show warnings and remove
   if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
-    if (typeof normalized.outlineWidthResolver !== 'function') {
-      Logger.warn('outlineWidthResolver must be a function. Ignoring.');
-      normalized.outlineWidthResolver = null;
-    }
+    warnOnce('outlineWidthResolver',
+      '[Heatbox][DEPRECATION][v0.2.0] outlineWidthResolver is deprecated; use adaptiveOutlines with outlineWidthPreset and adaptiveParams instead.');
+    // Remove deprecated resolver from normalized options
+    delete normalized.outlineWidthResolver;
+  }
+  
+  if (normalized.outlineOpacityResolver !== undefined && normalized.outlineOpacityResolver !== null) {
+    warnOnce('outlineOpacityResolver',
+      '[Heatbox][DEPRECATION][v0.2.0] outlineOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.outlineOpacityRange instead.');
+    delete normalized.outlineOpacityResolver;
+  }
+  
+  if (normalized.boxOpacityResolver !== undefined && normalized.boxOpacityResolver !== null) {
+    warnOnce('boxOpacityResolver',
+      '[Heatbox][DEPRECATION][v0.2.0] boxOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.boxOpacityRange instead.');
+    delete normalized.boxOpacityResolver;
   }
 
-  // v0.1.6+: 太線エミュレーションモード
-  if (normalized.outlineEmulation !== undefined) {
-    const validModes = ['off', 'topn', 'non-topn', 'all'];
-    if (!validModes.includes(normalized.outlineEmulation)) {
-      Logger.warn(`Invalid outlineEmulation: ${normalized.outlineEmulation}. Using 'off'.`);
-      normalized.outlineEmulation = 'off';
+  // v0.1.12: outlineEmulation deprecation and migration to outlineRenderMode  
+  if (normalized.outlineEmulation !== undefined && normalized.outlineRenderMode === undefined) {
+    warnOnce('outlineEmulation',
+      '[Heatbox][DEPRECATION][v0.2.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.');
+    
+    const v = normalized.outlineEmulation;
+    if (v === false || v === 'off') {
+      // outlineEmulation: false/off → standard mode
+      normalized.outlineRenderMode = 'standard';
+    } else if (v === true || v === 'all') {
+      // outlineEmulation: true/all → emulation-only mode
+      normalized.outlineRenderMode = 'emulation-only';
+      normalized.emulationScope = 'all';
+    } else if (v === 'topn') {
+      // outlineEmulation: topn → standard mode + emulation for topn
+      normalized.outlineRenderMode = 'standard';
+      normalized.emulationScope = 'topn';
+    } else if (v === 'non-topn') {
+      // outlineEmulation: non-topn → standard mode + emulation for non-topn
+      normalized.outlineRenderMode = 'standard';
+      normalized.emulationScope = 'non-topn';
+    } else {
+      Logger.warn(`Invalid outlineEmulation: ${v}. Using 'standard' mode.`);
+      normalized.outlineRenderMode = 'standard';
+    }
+    
+    // Remove old property
+    delete normalized.outlineEmulation;
+  }
+  
+  // v0.1.12: outlineWidthPreset legacy name mapping
+  if (normalized.outlineWidthPreset !== undefined) {
+    const preset = normalized.outlineWidthPreset;
+    const legacyMap = { 'uniform': 'medium', 'adaptive-density': 'adaptive', 'topn-focus': 'thick' };
+    
+    if (legacyMap[preset]) {
+      warnOnce(`outlineWidthPreset.${preset}`,
+        `[Heatbox][DEPRECATION][v0.2.0] outlineWidthPreset "${preset}" is deprecated; use "${legacyMap[preset]}".`);
+      normalized.outlineWidthPreset = legacyMap[preset];
     }
   }
 
@@ -287,14 +334,27 @@ export function validateAndNormalizeOptions(options = {}) {
   // v0.1.9: 自動視点調整 fitView オプション
   if (normalized.fitViewOptions !== undefined) {
     const f = normalized.fitViewOptions || {};
+    
+    // v0.1.12: Deprecation warnings for old naming
+    if (f.pitch !== undefined && f.pitchDegrees === undefined) {
+      warnOnce('fitViewOptions.pitch',
+        '[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.pitch is deprecated; use fitViewOptions.pitchDegrees.');
+    }
+    if (f.heading !== undefined && f.headingDegrees === undefined) {
+      warnOnce('fitViewOptions.heading',
+        '[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.heading is deprecated; use fitViewOptions.headingDegrees.');
+    }
+    
     const padding = parseFloat(f.paddingPercent);
-    const pitch = parseFloat(f.pitch);
-    const heading = parseFloat(f.heading);
+    // Prioritize new names, fallback to old names
+    const pitch = f.pitchDegrees !== undefined ? parseFloat(f.pitchDegrees) : parseFloat(f.pitch);
+    const heading = f.headingDegrees !== undefined ? parseFloat(f.headingDegrees) : parseFloat(f.heading);
     const altitudeStrategy = f.altitudeStrategy;
+    
     normalized.fitViewOptions = {
       paddingPercent: Number.isFinite(padding) ? Math.max(0, Math.min(1, padding)) : 0.1,
-      pitch: Number.isFinite(pitch) ? Math.max(-90, Math.min(0, pitch)) : -30,
-      heading: Number.isFinite(heading) ? heading : 0,
+      pitchDegrees: Number.isFinite(pitch) ? Math.max(-90, Math.min(0, pitch)) : -30,
+      headingDegrees: Number.isFinite(heading) ? heading : 0,
       altitudeStrategy: altitudeStrategy === 'manual' ? 'manual' : 'auto'
     };
   }

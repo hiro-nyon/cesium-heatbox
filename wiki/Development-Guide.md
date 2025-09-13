@@ -31,12 +31,12 @@ npm run docs           # JSDoc 生成（docs/api/）
 - `main` 安定、`feature/*` 機能、`hotfix/*` 緊急修正
 - コミット形式: `type(scope): subject`（例: `feat(core): add voxel cap`）
 
-## リリースの流れ（例）
-```
-npm version patch|minor|major
-git push origin main --tags
-```
-GitHub Actions によりビルド/テスト/NPM 公開を自動化できます（設定済）。
+## リリースの流れ（v0.1.11）
+- バージョン更新: `package.json#version` と `src/index.js` の `VERSION` を同一に更新
+- 検証: `npm run -s lint && npm run -s type-check && npm test --silent -- --reporters=summary` と `npm run build`
+- タグ付け: 安定版は `v<version>`（例: `v0.1.11`）
+  - `git tag -a v0.1.11 -m "release: 0.1.11" && git push origin v0.1.11`
+- 公開: GitHub Actions が npm へ publish（安定版は `@latest`）
 
 ## ドキュメント
 - 仕様: `docs/specification.md`

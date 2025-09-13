@@ -1,8 +1,7 @@
 /**
  * Memory leak tests for VoxelRenderer orchestration system
  * VoxelRendererオーケストレーションシステムのメモリリークテスト
- * 
- * v0.1.11-alpha: ADR-0009 Phase 5 - Memory safety validation
+ * v0.1.11: ADR-0009 Phase 5 - Memory safety validation
  */
 
 import { VoxelRenderer } from '../../src/core/VoxelRenderer.js';

@@ -10,7 +10,7 @@
 - `fitViewOptions.pitch`/`heading` の代替として `pitchDegrees`/`headingDegrees` を追加（旧名は存続・警告のみ）
 - `outlineRenderMode`（`standard`/`inset`/`emulation-only`）を追加。既存の `outlineEmulation` は引き続き利用可能（将来削除予定）
 - 適応的制御のプリセット（`outlineWidthPreset` など）を強化。`boxOpacityResolver`/`outlineOpacityResolver` は非推奨化の対象としつつ存続
-- 詳細は MIGRATION.md を参照
+- 0.1.10 以前の移行ガイドは不要です（0.1.10 は破棄）。変更点は本リリースノートおよび ADR を参照してください。
 
 ### 🧪 品質・その他
 - 安定化・ハードニング（ログ/バリデーションの改善）

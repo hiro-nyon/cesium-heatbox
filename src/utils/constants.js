@@ -41,8 +41,9 @@ export const DEFAULT_OPTIONS = {
   
   // v0.1.7: 適応的枠線制御とエミュレーション専用表示モード（ADR-0005）
   outlineRenderMode: 'standard', // 'standard' | 'inset' | 'emulation-only' 表示モード
+  emulationScope: 'off', // v0.1.12: 'off' | 'topn' | 'non-topn' | 'all' - emulation scope
   adaptiveOutlines: false, // 適応的枠線制御を有効化（オプトイン）
-  outlineWidthPreset: 'uniform', // 'adaptive-density' | 'topn-focus' | 'uniform' プリセット
+  outlineWidthPreset: 'medium', // v0.1.12: 'thin' | 'medium' | 'thick' | 'adaptive' プリセット
   
   // v0.1.7: 透明度resolver
   boxOpacityResolver: null, // 関数: (ctx) => number(0-1) でボックス透明度制御
@@ -72,8 +73,8 @@ export const DEFAULT_OPTIONS = {
   autoView: false, // 自動視点調整有効化
   fitViewOptions: {
     paddingPercent: 0.1, // データ範囲の10%パディング
-    pitch: -30, // ピッチ角度（度）
-    heading: 0, // ヘディング角度（度）
+    pitchDegrees: -30, // ピッチ角度（度）- v0.1.12: unified naming
+    headingDegrees: 0, // ヘディング角度（度）- v0.1.12: unified naming
     altitudeStrategy: 'auto' // 'auto' | 'manual' 高度計算戦略
   }
 };

@@ -2,7 +2,7 @@
  * Class responsible for rendering 3D voxels.
  * 3Dボクセルの描画を担当するクラス。
  * 
- * v0.1.11-alpha: ADR-0009準拠のアーキテクチャ - Single Responsibility Principle適用
+ * v0.1.11: ADR-0009準拠のアーキテクチャ - Single Responsibility Principle適用
  * 
  * **アーキテクチャ概要**:
  * - **オーケストレーション役**: 各専門クラスを統括し、描画プロセス全体を調整
@@ -25,16 +25,16 @@ import { VoxelSelector } from './selection/VoxelSelector.js';
 import { AdaptiveController } from './adaptive/AdaptiveController.js';
 import { GeometryRenderer } from './geometry/GeometryRenderer.js';
 
-// v0.1.11-alpha: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
-// v0.1.11-alpha: VoxelSelector added (ADR-0009 Phase 2)
-// v0.1.11-alpha: AdaptiveController added (ADR-0009 Phase 3)
-// v0.1.11-alpha: GeometryRenderer added (ADR-0009 Phase 4)
+// v0.1.11: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
+// v0.1.11: VoxelSelector added (ADR-0009 Phase 2)
+// v0.1.11: AdaptiveController added (ADR-0009 Phase 3)
+// v0.1.11: GeometryRenderer added (ADR-0009 Phase 4)
 
 /**
  * VoxelRenderer - 3D voxel rendering orchestration class.
  * 3Dボクセル描画オーケストレーションクラス。
  * 
- * v0.1.11-alpha: Refactored for Single Responsibility Principle (ADR-0009).
+ * v0.1.11: Refactored for Single Responsibility Principle (ADR-0009).
  * Now serves as orchestrator delegating specialized tasks to:
  * ColorCalculator, VoxelSelector, AdaptiveController, and GeometryRenderer.
  * 
@@ -45,7 +45,7 @@ export class VoxelRenderer {
    * Constructor - Initialize VoxelRenderer orchestration system.
    * VoxelRendererオーケストレーションシステムを初期化します。
    * 
-   * v0.1.11-alpha: Instantiates specialized classes for delegation:
+   * v0.1.11: Instantiates specialized classes for delegation:
    * - VoxelSelector: Voxel selection strategies (density, coverage, hybrid)
    * - AdaptiveController: Adaptive parameter calculation and preset logic  
    * - GeometryRenderer: Entity creation and management
@@ -83,10 +83,9 @@ export class VoxelRenderer {
       outlineInsetMode: 'all', // インセット枠線適用範囲
       // v0.1.7: 新オプション
       outlineRenderMode: 'standard',
+      emulationScope: 'off', // v0.1.12: emulation scope control
       adaptiveOutlines: false,
-      outlineWidthPreset: 'uniform',
-      boxOpacityResolver: null,
-      outlineOpacityResolver: null,
+      outlineWidthPreset: 'medium', // v0.1.12: updated default
       ...options
     };
     
@@ -111,9 +110,9 @@ export class VoxelRenderer {
   }
 
   /**
-   * Compute adaptive outline parameters (v0.1.11-alpha).
+   * Compute adaptive outline parameters (v0.1.11).
    * 適応的枠線パラメータを計算 (v0.1.11-alpha)。
-   * v0.1.11-alpha: AdaptiveControllerに委譲 (ADR-0009 Phase 3)
+   * v0.1.11: AdaptiveControllerに委譲 (ADR-0009 Phase 3)
    * @param {Object} voxelInfo - Voxel info / ボクセル情報
    * @param {boolean} isTopN - Whether it is TopN / TopNボクセルかどうか
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
@@ -122,14 +121,14 @@ export class VoxelRenderer {
    * @private
    */
   _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics) {
-    // v0.1.11-alpha: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
+    // v0.1.11: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
     return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options);
   }
 
   /**
    * Backward-compatible inset outline decision API.
    * 後方互換のためのインセット枠線適用判定メソッド。
-   * v0.1.11-alpha: GeometryRenderer に委譲 (ADR-0009 Phase 4)
+   * v0.1.11: GeometryRenderer に委譲 (ADR-0009 Phase 4)
    * @param {boolean} isTopN
    * @returns {boolean}
    * @private
@@ -142,7 +141,7 @@ export class VoxelRenderer {
    * Render voxel data - Orchestrated rendering process.
    * ボクセルデータ描画 - オーケストレーション化された描画プロセス。
    * 
-   * v0.1.11-alpha: Fully orchestrated implementation (ADR-0009 Phase 5):
+   * v0.1.11: Fully orchestrated implementation (ADR-0009 Phase 5):
    * 
    * **Process Flow**:
    * 1. **GeometryRenderer.clear()** - Clear existing entities
@@ -169,7 +168,7 @@ export class VoxelRenderer {
    * @returns {number} Number of rendered voxels / 実際に描画されたボクセル数
    */
   render(voxelData, bounds, grid, statistics) {
-    // v0.1.11-alpha: GeometryRendererに委譲してエンティティクリア (ADR-0009 Phase 4)
+    // v0.1.11: GeometryRendererに委譲してエンティティクリア (ADR-0009 Phase 4)
     this.geometryRenderer.clear();
     Logger.debug('VoxelRenderer.render - Starting render with simplified approach', {
       voxelDataSize: voxelData.size,
@@ -270,12 +269,12 @@ export class VoxelRenderer {
     return renderedCount;
   }
 
-  // v0.1.11-alpha: _renderBoundingBox/_addEdgePolylines moved to GeometryRenderer (ADR-0009 Phase 4)
+  // v0.1.11: _renderBoundingBox/_addEdgePolylines moved to GeometryRenderer (ADR-0009 Phase 4)
 
   /**
    * Render a single voxel with all visual configurations.
    * 単一ボクセルを全ての視覚設定で描画します。
-   * v0.1.11-alpha: Phase5 オーケストレーション最適化 (ADR-0009 Phase 5)
+   * v0.1.11: Phase5 オーケストレーション最適化 (ADR-0009 Phase 5)
    * @param {string} key - Voxel key / ボクセルキー
    * @param {Object} info - Voxel info / ボクセル情報
    * @param {Object} bounds - Bounds / 境界
@@ -398,8 +397,8 @@ export class VoxelRenderer {
         opacity = adaptiveParams.boxOpacity || this.options.opacity;
       }
       
-      // TopN highlight adjustment
-      if (this.options.highlightTopN && !isTopN && !this.options.boxOpacityResolver) {
+      // TopN highlight adjustment 
+      if (this.options.highlightTopN && !isTopN) {
         opacity *= (1 - (this.options.highlightStyle?.boostOpacity || 0.2));
       }
     }
@@ -487,11 +486,13 @@ export class VoxelRenderer {
     // Emulation logic
     let emulateThickForThis = renderModeConfig.shouldUseEmulationOnly;
     if (!renderModeConfig.shouldUseEmulationOnly) {
-      if (this.options.outlineEmulation === 'topn') {
+      // v0.1.12: Use new emulationScope instead of deprecated outlineEmulation  
+      const scope = this.options.emulationScope || 'off';
+      if (scope === 'topn') {
         emulateThickForThis = isTopN && (finalOutlineWidth || 1) > 1;
-      } else if (this.options.outlineEmulation === 'non-topn') {
+      } else if (scope === 'non-topn') {
         emulateThickForThis = !isTopN && (finalOutlineWidth || 1) > 1;
-      } else if (this.options.outlineEmulation === 'all') {
+      } else if (scope === 'all') {
         emulateThickForThis = (finalOutlineWidth || 1) > 1;
       } else if (this.options.adaptiveOutlines && adaptiveParams.shouldUseEmulation) {
         emulateThickForThis = true;
@@ -594,23 +595,23 @@ export class VoxelRenderer {
   /**
    * Interpolate color based on density (v0.1.5: color maps supported).
    * 密度に基づいて色を補間（v0.1.5: カラーマップ対応）。
-   * v0.1.11-alpha: ColorCalculatorに委譲 (ADR-0009 Phase 1)
+   * v0.1.11: ColorCalculatorに委譲 (ADR-0009 Phase 1)
    * @param {number} normalizedDensity - Normalized density (0-1) / 正規化された密度 (0-1)
    * @param {number} [rawValue] - Raw value for diverging scheme / 生値（二極性配色用）
    * @returns {Cesium.Color} Calculated color / 計算された色
    */
   interpolateColor(normalizedDensity, rawValue = null) {
-    // v0.1.11-alpha: 新しいColorCalculatorに委譲
+    // v0.1.11: 新しいColorCalculatorに委譲
     return ColorCalculator.calculateColor(normalizedDensity, rawValue, this.options);
   }
   
-  // v0.1.11-alpha: _interpolateFromColorMap and _interpolateDivergingColor methods 
+  // v0.1.11: _interpolateFromColorMap and _interpolateDivergingColor methods 
   // moved to ColorCalculator (ADR-0009 Phase 1)
 
 
   /**
    * 描画されたエンティティを全てクリア
-   * v0.1.11-alpha: GeometryRendererに委譲 (ADR-0009 Phase 4)
+   * v0.1.11: GeometryRendererに委譲 (ADR-0009 Phase 4)
    */
   clear() {
     this.geometryRenderer.clear();
@@ -640,14 +641,14 @@ export class VoxelRenderer {
   }
 
 
-  // v0.1.11-alpha: _createInsetOutline moved to GeometryRenderer (ADR-0009 Phase 4)
+  // v0.1.11: _createInsetOutline moved to GeometryRenderer (ADR-0009 Phase 4)
 
   // Thick outline frame creation is fully handled by GeometryRenderer.
 
   /**
    * Toggle visibility.
    * 表示/非表示を切り替えます。
-   * v0.1.11-alpha: GeometryRendererに委譲 (ADR-0009 Phase 5)
+   * v0.1.11: GeometryRendererに委譲 (ADR-0009 Phase 5)
    * @param {boolean} show - true to show / 表示する場合は true
    */
   setVisible(show) {
@@ -669,7 +670,7 @@ export class VoxelRenderer {
    * @private
    */
   _selectVoxelsForRendering(allVoxels, maxCount, bounds, grid) {
-    // v0.1.11-alpha: 新しいVoxelSelectorに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 2)
+    // v0.1.11: 新しいVoxelSelectorに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 2)
     const selectionResult = this.voxelSelector.selectVoxels(allVoxels, maxCount, { grid, bounds });
     
     // 統計情報の更新

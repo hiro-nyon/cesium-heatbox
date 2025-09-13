@@ -281,7 +281,7 @@ describe('GeometryRenderer', () => {
       expect(description).toContain('ボクセル [1, 2, 3]');
       expect(description).toContain('42');
       expect(description).toContain('desc-key');
-      expect(description).toContain('v0.1.11-alpha GeometryRenderer');
+      expect(description).toContain('v0.1.11 GeometryRenderer');
     });
   });
 
@@ -398,7 +398,7 @@ describe('GeometryRenderer', () => {
       const config = geometryRenderer.getConfiguration();
 
       expect(config.entityCount).toBe(1);
-      expect(config.version).toBe('0.1.11-alpha');
+      expect(config.version).toBe('0.1.11');
       expect(config.phase).toBe('ADR-0009 Phase 4');
       expect(config.wireframeOnly).toBe(false);
     });

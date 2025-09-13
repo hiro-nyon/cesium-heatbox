@@ -11,7 +11,7 @@ import { Logger } from '../../utils/logger.js';
  * - カメラ距離・重なりリスク調整 (Camera distance & overlap risk adjustment)
  * 
  * ADR-0009 Phase 3: VoxelRenderer responsibility separation
- * @version 0.1.11-alpha
+ * @version 0.1.11
  */
 export class AdaptiveController {
   /**
@@ -109,24 +109,46 @@ export class AdaptiveController {
    */
   applyPresetLogic(preset, isTopN, normalizedDensity, isDenseArea, baseOptions) {
     let adaptiveWidth, adaptiveBoxOpacity, adaptiveOutlineOpacity;
-    
+
     switch (preset) {
+      // New names (v0.1.12)
+      case 'thin':
+        adaptiveWidth = Math.max(0.5, baseOptions.outlineWidth * 0.7);
+        adaptiveBoxOpacity = baseOptions.opacity;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 0.8;
+        break;
+
+      case 'medium':
+        adaptiveWidth = baseOptions.outlineWidth;
+        adaptiveBoxOpacity = baseOptions.opacity;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        break;
+
+      case 'thick':
+        adaptiveWidth = Math.max(1, baseOptions.outlineWidth * 1.5);
+        adaptiveBoxOpacity = baseOptions.opacity;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        break;
+
+      case 'adaptive':
       case 'adaptive-density':
-        adaptiveWidth = isDenseArea ? 
+        adaptiveWidth = isDenseArea ?
           Math.max(0.5, baseOptions.outlineWidth * (0.5 + normalizedDensity * 0.5)) :
           baseOptions.outlineWidth;
         adaptiveBoxOpacity = isDenseArea ? baseOptions.opacity * 0.8 : baseOptions.opacity;
         adaptiveOutlineOpacity = isDenseArea ? 0.6 : 1.0;
         break;
-        
+
+      // Legacy name (map to thick/topn focus)
       case 'topn-focus':
-        adaptiveWidth = isTopN ? 
+        adaptiveWidth = isTopN ?
           baseOptions.outlineWidth * (1.5 + normalizedDensity * 0.5) :
           Math.max(0.5, baseOptions.outlineWidth * 0.7);
         adaptiveBoxOpacity = isTopN ? baseOptions.opacity : baseOptions.opacity * 0.6;
         adaptiveOutlineOpacity = isTopN ? 1.0 : 0.4;
         break;
-        
+
+      // Legacy name (uniform)
       case 'uniform':
       default:
         adaptiveWidth = baseOptions.outlineWidth;
@@ -134,7 +156,7 @@ export class AdaptiveController {
         adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
         break;
     }
-    
+
     return {
       adaptiveWidth,
       adaptiveBoxOpacity,
@@ -246,7 +268,7 @@ export class AdaptiveController {
   getConfiguration() {
     return {
       ...this.options,
-      version: '0.1.11-alpha',
+      version: '0.1.11',
       phase: 'ADR-0009 Phase 3'
     };
   }
