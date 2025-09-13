@@ -6,7 +6,8 @@
 import { Heatbox } from '../../src/Heatbox.js';
 import { validateAndNormalizeOptions } from '../../src/utils/validation.js';
 import { clearWarnings } from '../../src/utils/deprecate.js';
-import { createMockViewer, createWarningAssertions, TEST_CONFIGS } from '../helpers/testHelpers.js';
+import { createMockViewer, TEST_CONFIGS } from '../helpers/testHelpers.js';
+// Future enhancement: import { createWarningAssertions } when migrating to advanced helpers
 
 describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
   let mockViewer;
