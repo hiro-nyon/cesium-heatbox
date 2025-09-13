@@ -20,6 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 - GH Pages（Quick Start/Playground）での大量エンティティ生成時の安定性を向上。
 
+## [0.1.12-alpha.7] - 2025-09-14
+
+### Fixed
+- ESLint ビルドエラーを解消（createInsetOutline で安全化値を使用、空の catch を回避）。
+
+### Changed
+- 0.1.12-alpha.6 の調整を踏まえて再タグ（ビルド通過版）。
+
 ## [0.1.12-alpha.4] - 2025-09-13
 
 ### Added
