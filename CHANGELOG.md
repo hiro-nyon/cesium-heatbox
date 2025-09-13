@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - validation.js の数値計算で発生しうる RangeError を修正（正規化処理の端数・境界値で例外となるケースを解消）
 
+## [0.1.12-alpha.6] - 2025-09-14
+
+### Changed
+- Auto Render Budget をより保守的な上限に調整（Safari/モバイル環境では追加の上限キャップを適用）。
+
+### Notes
+- GH Pages（Quick Start/Playground）での大量エンティティ生成時の安定性を向上。
+
 ## [0.1.12-alpha.4] - 2025-09-13
 
 ### Added
