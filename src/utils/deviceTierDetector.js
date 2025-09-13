@@ -79,7 +79,9 @@ export function detectDeviceTier() {
       if (isMobile || isSafari) {
         maxRenderVoxels = Math.min(maxRenderVoxels, 12000);
       }
-    } catch (_) {}
+    } catch (_) {
+      // Ignore UA parsing errors - fallback to computed values
+    }
     
     Logger.debug(`Device tier detected: ${tier} (${detectionMethod}), maxRenderVoxels: ${maxRenderVoxels}`);
     
