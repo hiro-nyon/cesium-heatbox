@@ -389,53 +389,66 @@ export class GeometryRenderer {
 
     const polylineEntities = [];
     
-    // ボックスの8つの頂点を計算
-    const halfX = cellSizeX / 2;
-    const halfY = cellSizeY / 2;
-    const halfZ = boxHeight / 2;
+    // Validate inputs for edge polylines to prevent coordinate calculation errors
+    const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
+    const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-89, Math.min(89, centerLat)) : 0; // Avoid poles
+    const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
+    
+    const safeCellSizeX = Number.isFinite(cellSizeX) && cellSizeX > 0 ? Math.min(cellSizeX, 1e6) : 1;
+    const safeCellSizeY = Number.isFinite(cellSizeY) && cellSizeY > 0 ? Math.min(cellSizeY, 1e6) : 1;
+    const safeBoxHeight = Number.isFinite(boxHeight) && boxHeight > 0 ? Math.min(boxHeight, 1e6) : 1;
+
+    // ボックスの8つの頂点を計算 - 安全な値を使用
+    const halfX = safeCellSizeX / 2;
+    const halfY = safeCellSizeY / 2;
+    const halfZ = safeBoxHeight / 2;
+    
+    // 座標変換係数の安全な計算
+    const cosLat = Math.cos(safeCenterLat * Math.PI / 180);
+    const safeCosFactor = Math.max(0.01, Math.abs(cosLat)); // 極地近くでの0除算防止
 
     const vertices = [
       // 下面の4頂点
       Cesium.Cartesian3.fromDegrees(
-        centerLon - halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat - halfY / 111320,
-        centerAlt - halfZ
+        safeCenterLon - halfX / (111320 * safeCosFactor),
+        safeCenterLat - halfY / 111320,
+        safeCenterAlt - halfZ
       ),
       Cesium.Cartesian3.fromDegrees(
-        centerLon + halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat - halfY / 111320,
-        centerAlt - halfZ
+        safeCenterLon + halfX / (111320 * safeCosFactor),
+        safeCenterLat - halfY / 111320,
+        safeCenterAlt - halfZ
       ),
       Cesium.Cartesian3.fromDegrees(
-        centerLon + halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat + halfY / 111320,
-        centerAlt - halfZ
+        safeCenterLon + halfX / (111320 * safeCosFactor),
+        safeCenterLat + halfY / 111320,
+        safeCenterAlt - halfZ
       ),
       Cesium.Cartesian3.fromDegrees(
-        centerLon - halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat + halfY / 111320,
-        centerAlt - halfZ
+        safeCenterLon - halfX / (111320 * safeCosFactor),
+        safeCenterLat + halfY / 111320,
+        safeCenterAlt - halfZ
       ),
       // 上面の4頂点
       Cesium.Cartesian3.fromDegrees(
-        centerLon - halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat - halfY / 111320,
-        centerAlt + halfZ
+        safeCenterLon - halfX / (111320 * safeCosFactor),
+        safeCenterLat - halfY / 111320,
+        safeCenterAlt + halfZ
       ),
       Cesium.Cartesian3.fromDegrees(
-        centerLon + halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat - halfY / 111320,
-        centerAlt + halfZ
+        safeCenterLon + halfX / (111320 * safeCosFactor),
+        safeCenterLat - halfY / 111320,
+        safeCenterAlt + halfZ
       ),
       Cesium.Cartesian3.fromDegrees(
-        centerLon + halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat + halfY / 111320,
-        centerAlt + halfZ
+        safeCenterLon + halfX / (111320 * safeCosFactor),
+        safeCenterLat + halfY / 111320,
+        safeCenterAlt + halfZ
       ),
       Cesium.Cartesian3.fromDegrees(
-        centerLon - halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat + halfY / 111320,
-        centerAlt + halfZ
+        safeCenterLon - halfX / (111320 * safeCosFactor),
+        safeCenterLat + halfY / 111320,
+        safeCenterAlt + halfZ
       )
     ];
 
