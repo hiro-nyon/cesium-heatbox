@@ -9,6 +9,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
+### Fixed
+- validation.js の数値計算で発生しうる RangeError を修正（正規化処理の端数・境界値で例外となるケースを解消）
+
+## [0.1.12] - 2025-09-14
+
+本リリースは 0.1.12-alpha.11 ～ 0.1.12-alpha.13 の安定化変更を取り込み、描画と自動カメラ調整の競合、適応制御・エミュレーション経路の安全性、ジオメトリ生成の堅牢性を高めました。
+
+### Fixed
+- 自動カメラ調整（fitView）
+  - `viewer.scene.postRender` で一回だけ実行する方式に変更し、描画とカメラ移動が同フレームで競合して発生しうる RangeError を回避。
+  - Rectangle→BoundingSphere に基づく安定ズームへ切替（`camera.flyToBoundingSphere` + `HeadingPitchRange`）。
+  - 俯角は安全範囲にクランプ（既定: -35°, 範囲: [-85°, -10°]）。失敗時は `viewer.zoomTo(entities)` にフォールバック。
+- 太線エミュレーション経路の誤作動を排除
+  - 標準表示ではエミュレーション・エッジ（ポリライン）を生成しない（`outlineRenderMode==='emulation-only'` または `emulationScope!=='off'` の場合のみ生成）。
+- 適応制御（Adaptive）
+  - `'adaptive'`/`'topn-focus'` の線幅を安全範囲にクランプ（最小1.0、最大3.0倍相当）。
+- GeometryRenderer の堅牢化
+  - `box.outline=false` の場合は `outlineColor/outlineWidth` を設定しない。
+  - Inset outline の `outlineWidth` を常に >= 1 にクランプ。
+  - 厚みフレーム生成でゼロ/負厚みを検出してスキップ。座標・オフセットも保守的に検証。
+- validation:
+  - `outlineInsetMode: 'off'` をレガシーエイリアスとして `'none'` に正規化し、`'all'|'topn'|'none'` を許容。
+
+### Changed
+- 公開APIの変更なし。`fitViewOptions`（`headingDegrees`/`pitchDegrees`/`paddingPercent`）はそのまま尊重。
+
+## [0.1.12-alpha.13] - 2025-09-14
+
+### Fixed
+- fitView の実行を `viewer.scene.postRender` で1回だけ行う方式に変更し、描画とカメラ移動が同フレームで競合して発生しうる RangeError を回避。
+- Rectangle→BoundingSphere に基づく安定ズームへ切り替え（`camera.flyToBoundingSphere` + `HeadingPitchRange`）。
+  - 俯角は安全範囲にクランプ（既定: -35°, 範囲: [-85°, -10°]）。
+  - 失敗時は `viewer.zoomTo(viewer.entities)` へフォールバック。
+
+### Changed
+- 公開APIの変更なし。`fitViewOptions`（`headingDegrees`/`pitchDegrees`/`paddingPercent`）はそのまま尊重。
+
+## [0.1.12-alpha.12] - 2025-09-14
+
+### Fixed
+- 標準表示時に太線エミュレーションのエッジ・ポリラインが誤って生成される可能性を排除。
+  - `outlineRenderMode==='emulation-only'` または `emulationScope!=='off'` の場合のみ、エミュレーション・エッジを生成。
+
+## [0.1.12-alpha.11] - 2025-09-14
+
+### Fixed
+- AdaptiveController: `'adaptive'`/`'topn-focus'` の線幅を安全範囲にクランプ（最小1.0、最大3.0倍相当）。
+- GeometryRenderer の堅牢化:
+  - `box.outline=false` の場合は `outlineColor/outlineWidth` を設定しない。
+  - Inset outline の `outlineWidth` を常に >= 1 にクランプ。
+  - 厚みフレーム生成でゼロ/負厚みを検出してスキップ。座標オフセットも保守的に検証。
+- VoxelRenderer: `emulationScope='off'` のとき、adaptive制御から太線エミュレーションが有効化されないようガード。
+- validation: `outlineInsetMode: 'off'` をレガシーエイリアスとして `'none'` に正規化し、`'all'|'topn'|'none'` を許容。
+
+### Notes
+- これらの変更は公開APIに影響を与えず、レンダリングの安定性を高めるための内部修正です。
+
+## [0.1.12-alpha.6] - 2025-09-14
+
+### Changed
+- Auto Render Budget をより保守的な上限に調整（Safari/モバイル環境では追加の上限キャップを適用）。
+
+### Notes
+- GH Pages（Quick Start/Playground）での大量エンティティ生成時の安定性を向上。
+
+## [0.1.12-alpha.7] - 2025-09-14
+
+### Fixed
+- ESLint ビルドエラーを解消（createInsetOutline で安全化値を使用、空の catch を回避）。
+
+### Changed
+- 0.1.12-alpha.6 の調整を踏まえて再タグ（ビルド通過版）。
+
+## [0.1.12-alpha.8] - 2025-09-14
+
+### Changed
+- CI build 通過後のバージョン更新（安定化反映のプレリリース）。
+
+## [0.1.12-alpha.4] - 2025-09-13
+
+### Added
+- 観測可能性 (Phase 2): パフォーマンスオーバーレイを実装（`viewer.scene.postRender` にフック、`updateIntervalMs` スロットリング）。
+- ランタイム制御 API: `setPerformanceOverlayEnabled`/`togglePerformanceOverlay`/`showPerformanceOverlay`/`hidePerformanceOverlay` を追加。
+- プロファイル機能 (Phase 2): `Heatbox.listProfiles()`/`Heatbox.getProfileDetails()` と `profile` オプション、`getEffectiveOptions()` を追加。
+
+### Changed
+- 移行/正規化 (Phase 3):
+  - `outlineEmulation` → `outlineRenderMode` + `emulationScope` への統合マッピングを強化。
+  - `fitViewOptions.pitch/heading` → `pitchDegrees/headingDegrees` へ移行（旧名は警告のみ）。
+  - `outlineWidthPreset` の旧名（`uniform`/`adaptive-density`/`topn-focus`）を `medium`/`adaptive`/`thick` に統一。
+- プロファイル適用順序を明確化（`defaults ← profile ← user`）。
+- ドキュメント整備 (Phase 3/4): README/MIGRATION/ADR/Wiki を v0.1.12 に同期、英語サマリを追加。
+- バージョンを `0.1.12-alpha.4` に更新。
+
+### Fixed
+- テスト安定化 (Phase 4): Claude の変更を取り込み、移行シナリオ/警告マッチングを堅牢化。Viewer モックを強化し `isValidViewer` を満たすよう修正。
+- CI ばらつき対策: 環境依存の重いスイート（perftest/QA）をデフォルト実行から除外（必要時のみ別ジョブで実行）。
+
+### Docs
+- MIGRATION.md を追加し v0.1.11→v0.1.12 の移行手順とコード例を整理。
+- Wiki/API を再生成・同期。README の旧API表記を新APIへ更新（`outlineRenderMode`/`emulationScope`、`pitchDegrees`/`headingDegrees`）。
+
 ## [0.1.11] - 2025-09-08
 
 ### Added

@@ -109,24 +109,51 @@ export class AdaptiveController {
    */
   applyPresetLogic(preset, isTopN, normalizedDensity, isDenseArea, baseOptions) {
     let adaptiveWidth, adaptiveBoxOpacity, adaptiveOutlineOpacity;
-    
+
     switch (preset) {
-      case 'adaptive-density':
-        adaptiveWidth = isDenseArea ? 
-          Math.max(0.5, baseOptions.outlineWidth * (0.5 + normalizedDensity * 0.5)) :
-          baseOptions.outlineWidth;
+      // New names (v0.1.12)
+      case 'thin':
+        // v0.1.12-alpha.10: 最小値を1.0に設定してRangeError防止
+        adaptiveWidth = Math.max(1.0, baseOptions.outlineWidth * 0.8);
+        adaptiveBoxOpacity = baseOptions.opacity;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 0.8;
+        break;
+
+      case 'medium':
+        adaptiveWidth = baseOptions.outlineWidth;
+        adaptiveBoxOpacity = baseOptions.opacity;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        break;
+
+      case 'thick':
+        adaptiveWidth = Math.max(1, baseOptions.outlineWidth * 1.5);
+        adaptiveBoxOpacity = baseOptions.opacity;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        break;
+
+      case 'adaptive':
+      case 'adaptive-density': {
+        // v0.1.12-alpha.10: 安全な値範囲でRangeError防止（0.8-3.0倍に制限）
+        const densityFactor = isDenseArea ? (0.8 + normalizedDensity * 0.4) : 1.0; // 0.8-1.2倍
+        adaptiveWidth = Math.max(1.0, Math.min(baseOptions.outlineWidth * 3.0,
+          baseOptions.outlineWidth * densityFactor));
         adaptiveBoxOpacity = isDenseArea ? baseOptions.opacity * 0.8 : baseOptions.opacity;
         adaptiveOutlineOpacity = isDenseArea ? 0.6 : 1.0;
         break;
-        
+      }
+
+      // Legacy name (map to thick/topn focus)
       case 'topn-focus':
-        adaptiveWidth = isTopN ? 
-          baseOptions.outlineWidth * (1.5 + normalizedDensity * 0.5) :
-          Math.max(0.5, baseOptions.outlineWidth * 0.7);
+        // v0.1.12-alpha.10: 安全な値範囲でRangeError防止
+        adaptiveWidth = isTopN ?
+          Math.max(1.0, Math.min(baseOptions.outlineWidth * 3.0, 
+            baseOptions.outlineWidth * (1.5 + normalizedDensity * 0.5))) :
+          Math.max(1.0, baseOptions.outlineWidth * 0.8); // 0.5→0.8で最小値を安全に
         adaptiveBoxOpacity = isTopN ? baseOptions.opacity : baseOptions.opacity * 0.6;
         adaptiveOutlineOpacity = isTopN ? 1.0 : 0.4;
         break;
-        
+
+      // Legacy name (uniform)
       case 'uniform':
       default:
         adaptiveWidth = baseOptions.outlineWidth;
@@ -134,7 +161,7 @@ export class AdaptiveController {
         adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
         break;
     }
-    
+
     return {
       adaptiveWidth,
       adaptiveBoxOpacity,
@@ -203,7 +230,8 @@ export class AdaptiveController {
     const finalOutlineOpacity = Math.max(0.2, presetResult.adaptiveOutlineOpacity * (1 - overlapRisk));
     
     return {
-      outlineWidth: Math.max(0.5, finalWidth),
+      // v0.1.12-alpha.10: RangeError防止のため最小値を1.0に設定
+      outlineWidth: Math.max(1.0, finalWidth),
       boxOpacity: Math.max(0.1, Math.min(1.0, presetResult.adaptiveBoxOpacity)),
       outlineOpacity: Math.max(0.2, Math.min(1.0, finalOutlineOpacity)),
       shouldUseEmulation: isDenseArea || (finalWidth > 2 && renderOptions.outlineRenderMode !== 'standard'),

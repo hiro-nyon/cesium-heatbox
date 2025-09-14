@@ -46,6 +46,10 @@ Common logging utility.
 
 Performance limits.
 
+#### (constant) PROFILES
+
+Predefined configuration profiles
+
 #### (constant) VERSION
 
 Library metadata.
@@ -62,6 +66,15 @@ Apply auto render budget to options
 |---|---|---|
 | options | Object | 設定オプション |
 
+#### applyProfile(profileName, userOptions) → {Object}
+
+Apply profile to options with user options taking priority
+
+| Name | Type | Description |
+|---|---|---|
+| profileName | string | Profile name / プロファイル名 |
+| userOptions | Object | User provided options / ユーザー提供オプション |
+
 #### calculateDataRange(bounds) → {Object}
 
 > English translation pending. See Japanese section below.
@@ -69,6 +82,10 @@ Apply auto render budget to options
 | Name | Type | Description |
 |---|---|---|
 | bounds | Object | 境界情報 |
+
+#### clearWarnings()
+
+Clear all warning states (for testing)
 
 #### createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMeters) → {Object}
 
@@ -153,6 +170,18 @@ Get environment information.
 
 Determine current log level.
 
+#### getProfile(profileName) → {Object|null}
+
+Get profile configuration
+
+| Name | Type | Description |
+|---|---|---|
+| profileName | string | Profile name / プロファイル名 |
+
+#### getProfileNames() → {Array.<string>}
+
+Get list of available profile names
+
 #### getTokyoStationBounds() → {Object}
 
 > English translation pending. See Japanese section below.
@@ -176,6 +205,14 @@ Check whether the entity array is valid.
 | Name | Type | Description |
 |---|---|---|
 | entities | Array | Entity array / エンティティ配列 |
+
+#### isValidProfile(profileName) → {boolean}
+
+Validate profile name
+
+| Name | Type | Description |
+|---|---|---|
+| profileName | string | Profile name to validate / 検証するプロファイル名 |
 
 #### isValidViewer(viewer) → {boolean}
 
@@ -209,6 +246,25 @@ Validate that total voxel count is within limits.
 |---|---|---|
 | totalVoxels | number | Total voxels / 総ボクセル数 |
 | voxelSize | number | Voxel size / ボクセルサイズ |
+
+#### warnOnce(code, message)
+
+Warn once about deprecated feature
+
+| Name | Type | Description |
+|---|---|---|
+| code | string | Unique warning code / 一意の警告コード |
+| message | string | Warning message / 警告メッセージ |
+
+#### EmulationScope
+
+#### OutlineRenderMode
+
+#### OutlineWidthPreset
+
+#### PerformanceOverlayConfig
+
+#### ProfileName
 
 
 ## 日本語
@@ -255,6 +311,10 @@ Validate that total voxel count is within limits.
 
 パフォーマンス制限値。
 
+#### (constant) PROFILES
+
+事前定義された設定プロファイル
+
 #### (constant) VERSION
 
 ライブラリのメタ情報。
@@ -271,6 +331,15 @@ Auto Render Budgetをオプションに適用
 |---|---|---|
 | options | Object | 設定オプション |
 
+#### applyProfile(profileName, userOptions) → {Object}
+
+ユーザーオプション優先でプロファイルをオプションに適用
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| profileName | string | Profile name / プロファイル名 |
+| userOptions | Object | User provided options / ユーザー提供オプション |
+
 #### calculateDataRange(bounds) → {Object}
 
 境界からデータ範囲を計算
@@ -278,6 +347,10 @@ Auto Render Budgetをオプションに適用
 | 名前 | 型 | 説明 |
 |---|---|---|
 | bounds | Object | 境界情報 |
+
+#### clearWarnings()
+
+すべての警告状態をクリア（テスト用）
 
 #### createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMeters) → {Object}
 
@@ -363,6 +436,18 @@ Auto Render Budgetをオプションに適用
 現在のログレベルを決定します。
 NODE_ENV=production では ERROR と WARN のみ、DEBUG=true または NODE_ENV=development では全レベル出力。
 
+#### getProfile(profileName) → {Object|null}
+
+プロファイル設定を取得
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| profileName | string | Profile name / プロファイル名 |
+
+#### getProfileNames() → {Array.<string>}
+
+利用可能なプロファイル名の一覧を取得
+
 #### getTokyoStationBounds() → {Object}
 
 東京駅周辺の境界を取得
@@ -386,6 +471,14 @@ WebGL能力情報を取得
 | 名前 | 型 | 説明 |
 |---|---|---|
 | entities | Array | Entity array / エンティティ配列 |
+
+#### isValidProfile(profileName) → {boolean}
+
+プロファイル名の検証
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| profileName | string | Profile name to validate / 検証するプロファイル名 |
 
 #### isValidViewer(viewer) → {boolean}
 
@@ -420,3 +513,22 @@ v0.1.5: batchMode 非推奨化と新機能バリデーションを追加。
 |---|---|---|
 | totalVoxels | number | Total voxels / 総ボクセル数 |
 | voxelSize | number | Voxel size / ボクセルサイズ |
+
+#### warnOnce(code, message)
+
+廃止予定機能について一度だけ警告する
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| code | string | Unique warning code / 一意の警告コード |
+| message | string | Warning message / 警告メッセージ |
+
+#### EmulationScope
+
+#### OutlineRenderMode
+
+#### OutlineWidthPreset
+
+#### PerformanceOverlayConfig
+
+#### ProfileName

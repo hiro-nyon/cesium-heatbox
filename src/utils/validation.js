@@ -6,6 +6,8 @@
 import * as Cesium from 'cesium';
 import { PERFORMANCE_LIMITS, ERROR_MESSAGES } from './constants.js';
 import { Logger } from './logger.js';
+import { warnOnce } from './deprecate.js';
+import { applyProfile, isValidProfile } from './profiles.js';
 
 /**
  * Check whether a CesiumJS Viewer is valid.
@@ -116,7 +118,16 @@ export function validateVoxelCount(totalVoxels, voxelSize) {
   if (totalVoxels > PERFORMANCE_LIMITS.maxVoxels) {
     result.valid = false;
     result.error = ERROR_MESSAGES.VOXEL_LIMIT_EXCEEDED;
-    result.recommendedSize = Math.ceil(voxelSize * Math.pow(totalVoxels / PERFORMANCE_LIMITS.maxVoxels, 1/3));
+    
+    // Safe calculation with bounds checking
+    const ratio = totalVoxels / PERFORMANCE_LIMITS.maxVoxels;
+    const scaleFactor = Math.pow(Math.max(1, Math.min(1000, ratio)), 1/3);
+    const calculatedSize = voxelSize * scaleFactor;
+    
+    result.recommendedSize = Math.ceil(
+      Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+               Math.min(PERFORMANCE_LIMITS.maxVoxelSize, calculatedSize))
+    );
   } else if (totalVoxels > PERFORMANCE_LIMITS.warningThreshold) {
     result.warning = true;
     result.error = ERROR_MESSAGES.MEMORY_WARNING;
@@ -133,7 +144,20 @@ export function validateVoxelCount(totalVoxels, voxelSize) {
  * @returns {Object} Normalized options / 正規化されたオプション
  */
 export function validateAndNormalizeOptions(options = {}) {
-  const normalized = { ...options };
+  // v0.1.12: Apply profile if specified (before normalization)
+  let mergedOptions = options;
+  if (options.profile && options.profile !== 'none') {
+    if (isValidProfile(options.profile)) {
+      Logger.debug(`Applying profile: ${options.profile}`);
+      mergedOptions = applyProfile(options.profile, options);
+      // Remove profile property after application
+      delete mergedOptions.profile;
+    } else {
+      Logger.warn(`Invalid profile name: ${options.profile}. Available profiles: mobile-fast, desktop-balanced, dense-data, sparse-data`);
+    }
+  }
+
+  const normalized = { ...mergedOptions };
   
   // v0.1.5: batchMode非推奨化警告（debug時のみ）
   if (normalized.batchMode && normalized.debug) {
@@ -188,19 +212,66 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.outlineOpacity = Math.max(0, Math.min(1, parseFloat(normalized.outlineOpacity) || 1));
   }
   
+  // v0.1.12: Deprecated Resolver systems - show warnings and remove
   if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
-    if (typeof normalized.outlineWidthResolver !== 'function') {
-      Logger.warn('outlineWidthResolver must be a function. Ignoring.');
-      normalized.outlineWidthResolver = null;
-    }
+    warnOnce('outlineWidthResolver',
+      '[Heatbox][DEPRECATION][v0.2.0] outlineWidthResolver is deprecated; use adaptiveOutlines with outlineWidthPreset and adaptiveParams instead.');
+    // Remove deprecated resolver from normalized options
+    delete normalized.outlineWidthResolver;
+  }
+  
+  if (normalized.outlineOpacityResolver !== undefined && normalized.outlineOpacityResolver !== null) {
+    warnOnce('outlineOpacityResolver',
+      '[Heatbox][DEPRECATION][v0.2.0] outlineOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.outlineOpacityRange instead.');
+    delete normalized.outlineOpacityResolver;
+  }
+  
+  if (normalized.boxOpacityResolver !== undefined && normalized.boxOpacityResolver !== null) {
+    warnOnce('boxOpacityResolver',
+      '[Heatbox][DEPRECATION][v0.2.0] boxOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.boxOpacityRange instead.');
+    delete normalized.boxOpacityResolver;
   }
 
-  // v0.1.6+: 太線エミュレーションモード
-  if (normalized.outlineEmulation !== undefined) {
-    const validModes = ['off', 'topn', 'non-topn', 'all'];
-    if (!validModes.includes(normalized.outlineEmulation)) {
-      Logger.warn(`Invalid outlineEmulation: ${normalized.outlineEmulation}. Using 'off'.`);
-      normalized.outlineEmulation = 'off';
+  // v0.1.12: outlineEmulation deprecation and migration to outlineRenderMode  
+  if (normalized.outlineEmulation !== undefined && (normalized.outlineRenderMode === undefined || normalized.outlineRenderMode === 'standard')) {
+    warnOnce('outlineEmulation',
+      '[Heatbox][DEPRECATION][v0.2.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.');
+    
+    const v = normalized.outlineEmulation;
+    if (v === false || v === 'off') {
+      // outlineEmulation: false/off → standard mode + explicit off scope
+      normalized.outlineRenderMode = 'standard';
+      normalized.emulationScope = 'off';
+    } else if (v === true || v === 'all') {
+      // outlineEmulation: true/all → emulation-only mode
+      normalized.outlineRenderMode = 'emulation-only';
+      normalized.emulationScope = 'all';
+    } else if (v === 'topn') {
+      // outlineEmulation: topn → standard mode + emulation for topn
+      normalized.outlineRenderMode = 'standard';
+      normalized.emulationScope = 'topn';
+    } else if (v === 'non-topn') {
+      // outlineEmulation: non-topn → standard mode + emulation for non-topn
+      normalized.outlineRenderMode = 'standard';
+      normalized.emulationScope = 'non-topn';
+    } else {
+      Logger.warn(`Invalid outlineEmulation: ${v}. Using 'standard' mode.`);
+      normalized.outlineRenderMode = 'standard';
+    }
+    
+    // Remove old property
+    delete normalized.outlineEmulation;
+  }
+  
+  // v0.1.12: outlineWidthPreset legacy name mapping
+  if (normalized.outlineWidthPreset !== undefined) {
+    const preset = normalized.outlineWidthPreset;
+    const legacyMap = { 'uniform': 'medium', 'adaptive-density': 'adaptive', 'topn-focus': 'thick' };
+    
+    if (legacyMap[preset]) {
+      warnOnce(`outlineWidthPreset.${preset}`,
+        `[Heatbox][DEPRECATION][v0.2.0] outlineWidthPreset "${preset}" is deprecated; use "${legacyMap[preset]}".`);
+      normalized.outlineWidthPreset = legacyMap[preset];
     }
   }
 
@@ -210,10 +281,14 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.outlineInset = isNaN(v) || v < 0 ? 0 : v;
   }
   if (normalized.outlineInsetMode !== undefined) {
-    const validModes = ['all', 'topn'];
-    if (!validModes.includes(normalized.outlineInsetMode)) {
+    let mode = normalized.outlineInsetMode;
+    if (mode === 'off') mode = 'none'; // legacy alias
+    const validModes = ['all', 'topn', 'none'];
+    if (!validModes.includes(mode)) {
       Logger.warn(`Invalid outlineInsetMode: ${normalized.outlineInsetMode}. Using 'all'.`);
       normalized.outlineInsetMode = 'all';
+    } else {
+      normalized.outlineInsetMode = mode;
     }
   }
 
@@ -225,10 +300,14 @@ export function validateAndNormalizeOptions(options = {}) {
   }
   
   if (normalized.outlineInsetMode !== undefined) {
-    const validInsetModes = ['all', 'topn'];
-    if (!validInsetModes.includes(normalized.outlineInsetMode)) {
+    let mode2 = normalized.outlineInsetMode;
+    if (mode2 === 'off') mode2 = 'none'; // legacy alias
+    const validInsetModes = ['all', 'topn', 'none'];
+    if (!validInsetModes.includes(mode2)) {
       Logger.warn(`Invalid outlineInsetMode: ${normalized.outlineInsetMode}. Using 'all'.`);
       normalized.outlineInsetMode = 'all';
+    } else {
+      normalized.outlineInsetMode = mode2;
     }
   }
   
@@ -287,14 +366,27 @@ export function validateAndNormalizeOptions(options = {}) {
   // v0.1.9: 自動視点調整 fitView オプション
   if (normalized.fitViewOptions !== undefined) {
     const f = normalized.fitViewOptions || {};
+    
+    // v0.1.12: Deprecation warnings for old naming
+    if (f.pitch !== undefined && f.pitchDegrees === undefined) {
+      warnOnce('fitViewOptions.pitch',
+        '[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.pitch is deprecated; use fitViewOptions.pitchDegrees.');
+    }
+    if (f.heading !== undefined && f.headingDegrees === undefined) {
+      warnOnce('fitViewOptions.heading',
+        '[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.heading is deprecated; use fitViewOptions.headingDegrees.');
+    }
+    
     const padding = parseFloat(f.paddingPercent);
-    const pitch = parseFloat(f.pitch);
-    const heading = parseFloat(f.heading);
+    // Prioritize new names, fallback to old names
+    const pitch = f.pitchDegrees !== undefined ? parseFloat(f.pitchDegrees) : parseFloat(f.pitch);
+    const heading = f.headingDegrees !== undefined ? parseFloat(f.headingDegrees) : parseFloat(f.heading);
     const altitudeStrategy = f.altitudeStrategy;
+    
     normalized.fitViewOptions = {
       paddingPercent: Number.isFinite(padding) ? Math.max(0, Math.min(1, padding)) : 0.1,
-      pitch: Number.isFinite(pitch) ? Math.max(-90, Math.min(0, pitch)) : -30,
-      heading: Number.isFinite(heading) ? heading : 0,
+      pitchDegrees: Number.isFinite(pitch) ? Math.max(-90, Math.min(0, pitch)) : -30,
+      headingDegrees: Number.isFinite(heading) ? heading : 0,
       altitudeStrategy: altitudeStrategy === 'manual' ? 'manual' : 'auto'
     };
   }
@@ -386,11 +478,26 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
   Logger.debug(`Starting occupancy-based estimation: N=${entityCount}, target=${targetFill}, maxVoxels=${maxRenderVoxels}`);
   
   for (let iteration = 0; iteration < maxIterations; iteration++) {
-    // 現在のサイズでの総ボクセル数を計算
-    const numVoxelsX = Math.ceil(dataRange.x / currentSize);
-    const numVoxelsY = Math.ceil(dataRange.y / currentSize);
-    const numVoxelsZ = Math.ceil(dataRange.z / currentSize);
+    // Safe bounds checking for currentSize
+    if (!Number.isFinite(currentSize) || currentSize <= 0) {
+      Logger.warn(`Invalid currentSize detected: ${currentSize}, using fallback`);
+      currentSize = estimateVoxelSizeBasic(bounds, entityCount);
+      if (!Number.isFinite(currentSize) || currentSize <= 0) {
+        currentSize = PERFORMANCE_LIMITS.minVoxelSize;
+      }
+    }
+    
+    // 現在のサイズでの総ボクセル数を計算（安全性チェック付き）
+    const numVoxelsX = Math.max(1, Math.ceil(Math.max(0, dataRange.x) / currentSize));
+    const numVoxelsY = Math.max(1, Math.ceil(Math.max(0, dataRange.y) / currentSize));
+    const numVoxelsZ = Math.max(1, Math.ceil(Math.max(0, dataRange.z) / currentSize));
     const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
+    
+    // Safeguard against overflow
+    if (!Number.isFinite(totalVoxels) || totalVoxels <= 0 || totalVoxels > 1e9) {
+      Logger.warn(`Invalid totalVoxels calculated: ${totalVoxels}, breaking iteration`);
+      break;
+    }
     
     // 期待占有セル数の計算: E[occupied] ≈ M × (1 - exp(-N/M))
     const expectedOccupied = totalVoxels * (1 - Math.exp(-entityCount / totalVoxels));
@@ -407,13 +514,16 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
       break;
     }
     
-    // サイズ調整（Newton法的なアプローチ）
+    // サイズ調整（Newton法的なアプローチ）- 安全な計算
+    const fillRatio = Math.max(0.1, Math.min(10.0, currentFill / targetFill));
+    const adjustmentFactor = Math.pow(fillRatio, 0.3);
+    
     if (currentFill > targetFill) {
       // 占有率が高すぎる → サイズを大きくしてボクセル数を減らす
-      currentSize *= Math.pow(currentFill / targetFill, 0.3);
+      currentSize *= adjustmentFactor;
     } else {
       // 占有率が低すぎる → サイズを小さくしてボクセル数を増やす
-      currentSize *= Math.pow(currentFill / targetFill, 0.3);
+      currentSize *= adjustmentFactor;
     }
     
     // 制限値内に収める
@@ -434,18 +544,39 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
  */
 export function calculateDataRange(bounds) {
   try {
-    // 緯度経度をメートルに変換（簡易変換）
-    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-    const cosLat = Math.cos(centerLat * Math.PI / 180);
+    // Validate bounds input
+    const validBounds = {
+      minLat: Number.isFinite(bounds.minLat) ? Math.max(-90, Math.min(90, bounds.minLat)) : 0,
+      maxLat: Number.isFinite(bounds.maxLat) ? Math.max(-90, Math.min(90, bounds.maxLat)) : 0.1,
+      minLon: Number.isFinite(bounds.minLon) ? Math.max(-180, Math.min(180, bounds.minLon)) : 0,
+      maxLon: Number.isFinite(bounds.maxLon) ? Math.max(-180, Math.min(180, bounds.maxLon)) : 0.1,
+      minAlt: Number.isFinite(bounds.minAlt) ? bounds.minAlt : 0,
+      maxAlt: Number.isFinite(bounds.maxAlt) ? bounds.maxAlt : 100
+    };
     
-    const lonRangeMeters = (bounds.maxLon - bounds.minLon) * 111000 * cosLat;
-    const latRangeMeters = (bounds.maxLat - bounds.minLat) * 111000;
-    const altRangeMeters = Math.max(bounds.maxAlt - bounds.minAlt, 1); // 最小1m
+    // Ensure valid ranges
+    if (validBounds.maxLat <= validBounds.minLat) {
+      validBounds.maxLat = validBounds.minLat + 0.001; // ~100m
+    }
+    if (validBounds.maxLon <= validBounds.minLon) {
+      validBounds.maxLon = validBounds.minLon + 0.001; // ~100m at equator
+    }
+    if (validBounds.maxAlt <= validBounds.minAlt) {
+      validBounds.maxAlt = validBounds.minAlt + 1; // 1m minimum
+    }
+    
+    // 緯度経度をメートルに変換（簡易変換）- 安全な計算
+    const centerLat = (validBounds.minLat + validBounds.maxLat) / 2;
+    const cosLat = Math.cos(Math.max(-Math.PI/2, Math.min(Math.PI/2, centerLat * Math.PI / 180)));
+    
+    const lonRangeMeters = Math.abs(validBounds.maxLon - validBounds.minLon) * 111000 * Math.abs(cosLat);
+    const latRangeMeters = Math.abs(validBounds.maxLat - validBounds.minLat) * 111000;
+    const altRangeMeters = Math.abs(validBounds.maxAlt - validBounds.minAlt);
     
     return {
-      x: Math.max(lonRangeMeters, 1),
-      y: Math.max(latRangeMeters, 1),
-      z: altRangeMeters
+      x: Math.max(1, Math.min(1e6, lonRangeMeters)), // 1m to 1000km bounds
+      y: Math.max(1, Math.min(1e6, latRangeMeters)), 
+      z: Math.max(1, Math.min(1e4, altRangeMeters))  // 1m to 10km altitude range
     };
     
   } catch (error) {

@@ -8,8 +8,7 @@
 ### 最小設定
 ```js
 const heatbox = new Heatbox(viewer, {
-  outlineRenderMode: 'emulation-only',
-  outlineEmulation: 'all',   // すべてをエミュレーション
+  outlineRenderMode: 'emulation-only', // 標準/インセットを描かずポリラインのみで太線を表現
   showOutline: false,        // 標準枠線はオフ
   opacity: 0.0               // ボックス塗り無し（エッジのみ）
 });
@@ -19,7 +18,6 @@ const heatbox = new Heatbox(viewer, {
 ```js
 const heatbox = new Heatbox(viewer, {
   outlineRenderMode: 'emulation-only',
-  outlineEmulation: 'all',
   showOutline: false,
   opacity: 0.0,
   outlineWidthResolver: ({ normalizedDensity }) => {
@@ -39,6 +37,8 @@ const heatbox = new Heatbox(viewer, {
 - 高密度領域を「はっきり」見せたい
 - 標準の枠線（box.outline）では太さの制約がある
 
+補足: `emulationScope` は標準/インセット描画に「部分エミュレーション」を重ねる場合に使用します（例: `emulationScope: 'topn'`）。`emulation-only` モードでは不要です。
+
 ## English
 Emulation-only (`outlineRenderMode: 'emulation-only'`) renders thick edges using polylines without standard or inset outlines. It avoids the WebGL 1px limit and is suitable for density-driven thickness/opacity.
 
@@ -46,7 +46,6 @@ Emulation-only (`outlineRenderMode: 'emulation-only'`) renders thick edges using
 ```js
 const heatbox = new Heatbox(viewer, {
   outlineRenderMode: 'emulation-only',
-  outlineEmulation: 'all',
   showOutline: false,
   opacity: 0.0
 });
@@ -56,7 +55,6 @@ const heatbox = new Heatbox(viewer, {
 ```js
 const heatbox = new Heatbox(viewer, {
   outlineRenderMode: 'emulation-only',
-  outlineEmulation: 'all',
   showOutline: false,
   opacity: 0.0,
   outlineWidthResolver: ({ normalizedDensity }) => {
@@ -76,3 +74,4 @@ const heatbox = new Heatbox(viewer, {
 - Emphasize dense regions clearly
 - Standard box outlines have thickness limitations
 
+Note: `emulationScope` is used to overlay partial emulation on top of standard/inset rendering (e.g., `emulationScope: 'topn'`). It is not required in `emulation-only` mode.

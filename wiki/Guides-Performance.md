@@ -16,7 +16,9 @@
 3) 表示の工夫
 - `wireframeOnly: true` で軽量化、または `opacity` を下げる
 - 線の重なりは `outlineInset` / `voxelGap` / `outlineOpacity` で緩和
-- 太線は `outlineEmulation: 'topn'|'all'` を併用
+- 太線は以下のいずれかを検討
+  - 部分エミュ: `outlineRenderMode: 'standard'|'inset'` + `emulationScope: 'topn'|'all'`
+  - 専用モード: `outlineRenderMode: 'emulation-only'`
 
 4) デバッグ/検証
 - `const s = heatbox.getStatistics()` で `renderedVoxels` と `maxCount` を確認
@@ -51,9 +53,10 @@ Practical steps to balance performance and readability.
 3) Display
 - `wireframeOnly: true` or reduce `opacity`
 - Use `outlineInset` / `voxelGap` / `outlineOpacity` to mitigate overlap
-- Consider `outlineEmulation: 'topn'|'all'` for thicker lines
+- For thicker lines, consider either:
+  - Partial emulation: `outlineRenderMode: 'standard'|'inset'` + `emulationScope: 'topn'|'all'`
+  - Emulation-only mode: `outlineRenderMode: 'emulation-only'`
 
 4) Debug/Verify
 - Check `renderedVoxels` and `maxCount` via `getStatistics()`
 - If heavy, increase `voxelSize` or reduce `maxRenderVoxels`
-

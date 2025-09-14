@@ -94,7 +94,7 @@ Gets current heatmap statistics.
 **Returns:**
 - `HeatboxStatistics|null` - Statistics object or null if data not created.
 
-##### `fitView(bounds, options)` (v0.1.9)
+##### `fitView(bounds, options)` (v0.1.9, updated v0.1.12)
 
 Automatically adjusts camera position to optimally view the heatmap data.
 
@@ -102,8 +102,8 @@ Automatically adjusts camera position to optimally view the heatmap data.
 - `bounds` (Object, optional) - Custom bounds. If not specified, uses data bounds
   - `minLon`, `maxLon`, `minLat`, `maxLat`, `minAlt`, `maxAlt` (number) - Boundary coordinates
 - `options` (Object, optional) - Camera positioning options
-  - `heading` (number, default: 0) - Camera heading in degrees
-  - `pitch` (number, default: -30) - Camera pitch in degrees
+  - `headingDegrees` (number, default: 0) - Camera heading in degrees
+  - `pitchDegrees` (number, default: -30) - Camera pitch in degrees
   - `paddingPercent` (number, default: 0.1) - Padding ratio around bounds
 
 **Returns:**
@@ -114,10 +114,10 @@ Automatically adjusts camera position to optimally view the heatmap data.
 // Basic usage - fit to all data
 await heatbox.fitView();
 
-// Custom camera angle
+// Custom camera angle (v0.1.12 naming)
 await heatbox.fitView(null, { 
-  heading: 45, 
-  pitch: -60, 
+  headingDegrees: 45, 
+  pitchDegrees: -60, 
   paddingPercent: 0.2 
 });
 
@@ -218,7 +218,7 @@ See Japanese section for complete performance optimization tips.
 - `viewer` (Cesium.Viewer) - CesiumJS Viewerインスタンス
 - `options` (Object, optional) - 設定オプション
 
-**オプション（v0.1.7対応）:**
+**オプション（v0.1.7 以降）:**
 - `voxelSize` (number, default: 20) - 目標ボクセルサイズ（メートル）。実際の描画寸法はグリッド分割数に基づく各軸の実セルサイズ `cellSizeX/Y/Z` を使用し、`voxelSize` 以下になる場合があります（重なり防止のため）。
 - `opacity` (number, default: 0.8) - データボクセルの透明度 (0.0-1.0)
 - `emptyOpacity` (number, default: 0.03) - 空ボクセルの透明度 (0.0-1.0)
@@ -245,15 +245,17 @@ See Japanese section for complete performance optimization tips.
   - 制約: 各軸のインセットは片側最大20%（両側合計40%）にクランプされ、最終寸法は元の60%以上を保証します。
 // v0.1.7 追加
 - **`outlineRenderMode` ('standard'|'inset'|'emulation-only', default: 'standard') - v0.1.7: 表示モード切替**
+- **`emulationScope` ('off'|'topn'|'non-topn'|'all', default: 'off') - v0.1.12: エミュレーション適用範囲（`outlineRenderMode` と組み合わせ）**
 - **`adaptiveOutlines` (boolean, default: false) - v0.1.7: 適応的枠線制御を有効化（オプトイン）**
-- **`outlineWidthPreset` ('uniform'|'adaptive-density'|'topn-focus') - v0.1.7: よくある制御パターンのプリセット**
-- **`boxOpacityResolver` ((ctx) => number 0–1) - v0.1.7: ボックス塗り透明度の適応制御**
-- **`outlineOpacityResolver` ((ctx) => number 0–1) - v0.1.7: 枠線透明度の適応制御（標準/インセット/エミュ）**
-// v0.1.6+ 追加（強調表示向け）
-- **`outlineEmulation` ('off'|'topn', default: 'off') - v0.1.6+: 太線エミュレーション（WebGL線幅制限の回避）**
-  - 太線はエッジのポリラインで描画。隣接ボクセルの重なりを避けるため、外縁とインセットの“中間位置”に配置します。
-  - `outlineInset` が指定されていればそれを優先（片側20%上限でクランプ）、未指定の場合は各軸5%の自動インセットを使用します。
-  - 太線対象ボクセルでは、標準の `box.outline` は無効化し二重描画を回避します。
+- **`outlineWidthPreset` ('thin'|'medium'|'thick'|'adaptive') - v0.1.7→v0.1.12: プリセット名を統一（旧: 'uniform'|'adaptive-density'|'topn-focus'）**
+- ~~`boxOpacityResolver` ((ctx) => number 0–1)~~ - Deprecated in v0.1.12: `adaptiveOutlines` + `adaptiveParams` を使用してください
+- ~~`outlineOpacityResolver` ((ctx) => number 0–1)~~ - Deprecated in v0.1.12: `adaptiveOutlines` + `adaptiveParams` を使用してください
+// v0.1.12 追加
+- **`profile` ('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data') - v0.1.12: 環境別の事前定義プロファイル**
+- **`performanceOverlay` ({ enabled?: boolean; position?: 'top-left'|'top-right'|'bottom-left'|'bottom-right'; autoShow?: boolean; updateIntervalMs?: number }) - v0.1.12: パフォーマンスオーバーレイ**
+- // v0.1.6+ 追加（強調表示向け）
+- ~~`outlineEmulation` ('off'|'topn'|...)~~ - Deprecated in v0.1.12: `outlineRenderMode` + `emulationScope` に統合
+  - 太線の表現は引き続き利用可能です。`outlineRenderMode: 'emulation-only'` と `emulationScope` を使用してください。
 - `batchMode` は v0.1.5 で非推奨（無視されます。将来削除予定）
 
 > 寸法について: 描画されるボックスの幅・奥行・高さは、グリッドの実セルサイズ `cellSizeX`, `cellSizeY`, `cellSizeZ` を使用します。`heightBased: true` の場合は `cellSizeZ` を基準に密度で高さをスケーリングします。
@@ -264,7 +266,7 @@ const heatbox = new Heatbox(viewer, {
   // 表示モード（v0.1.7）
   outlineRenderMode: 'emulation-only',
   adaptiveOutlines: true,
-  outlineWidthPreset: 'adaptive-density',
+  outlineWidthPreset: 'adaptive',
   // 透明度の適応制御（v0.1.7）
   // 順相関（密度が高いほど不透明、低いほど薄い）
   boxOpacityResolver: ({ isTopN, normalizedDensity }) => isTopN ? 1.0 : Math.max(0, Math.min(1, 0.3 + 0.7 * (normalizedDensity || 0))),
@@ -428,7 +430,43 @@ if (bounds) {
 **戻り値:**
 - `Object`
 
+#### `getEffectiveOptions()` (v0.1.12)
+
+正規化・プロファイル適用後の有効な設定を取得します（`defaults ← profile ← user`）。
+
+**戻り値:**
+- `Object`
+
+#### `togglePerformanceOverlay()` / `showPerformanceOverlay()` / `hidePerformanceOverlay()` (v0.1.12)
+
+パフォーマンスオーバーレイ（FPS/描画時間/メモリ）をトグル・表示・非表示します。
+
+#### `setPerformanceOverlayEnabled(enabled, options?)` (v0.1.12)
+
+オーバーレイをランタイムで有効/無効化します。
+
+**パラメータ:**
+- `enabled` (boolean)
+- `options` ({ position?: 'top-left'|'top-right'|'bottom-left'|'bottom-right'; updateIntervalMs?: number })
+
 ### 静的メソッド
+
+#### `Heatbox.listProfiles()` (v0.1.12)
+
+利用可能な設定プロファイル名を配列で返します。
+
+**戻り値:**
+- `string[]`
+
+#### `Heatbox.getProfileDetails(name)` (v0.1.12)
+
+プロファイルの説明や主要パラメータを返します。
+
+**パラメータ:**
+- `name` (string)
+
+**戻り値:**
+- `Object`
 
 #### `Heatbox.filterEntities(entities, predicate)`
 

@@ -49,6 +49,11 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **Entityベースのワークフロー**: 既存 `Cesium.Entity` から直接生成。事前のタイル化やサーバー処理が不要
 - **自動ボクセルサイズ決定 (v0.1.4)**: `autoVoxelSize` によりデータ範囲と件数から最適サイズを自動計算。パフォーマンスと解像度のバランスを自動化
 - **オーケストレーション型アーキテクチャ（ADR-0009, v0.1.11）**: Single Responsibility Principleに基づく完全な責務分離を実現
+- **設定プロファイル機能 (v0.1.12)**: `mobile-fast`、`desktop-balanced`、`dense-data`、`sparse-data` で環境別最適化
+- **パフォーマンス監視 (v0.1.12)**: リアルタイムオーバーレイでFPS、描画時間、メモリ使用量を可視化
+- **API一貫性向上 (v0.1.12)**: 命名規則統一（`pitchDegrees`/`headingDegrees`）、`outlineRenderMode`/`emulationScope`統合
+- **適応制御システム統合 (v0.1.12)**: Resolver廃止による`adaptiveParams`システムへの一本化
+- **デバッグ支援強化 (v0.1.12)**: `getEffectiveOptions()`による設定確認とプロファイル詳細取得
   - **ColorCalculator**: 色計算・カラーマップ処理の専門化
   - **VoxelSelector**: 密度・カバレッジ・ハイブリッド選択戦略の専門化
   - **AdaptiveController**: 適応パラメータ・近隣密度計算の専門化
@@ -61,7 +66,7 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **TopN強調表示 (v0.1.5)**: 密度上位N個のボクセルを強調、他を淡色表示する `highlightTopN` オプション
 - **枠線重なり対策 (v0.1.6)**: `voxelGap` による間隔調整と `outlineOpacity` による透明度制御で視認性向上
 - **動的枠線制御 (v0.1.6)**: `outlineWidthResolver` 関数でボクセル毎の枠線太さを密度に応じて動的調整
-- **太線エミュレーション拡張 (v0.1.6.2)**: `outlineEmulation` に 'all', 'non-topn' モード追加で WebGL 1px 制限を回避
+- **太線エミュレーション (v0.1.12)**: `outlineRenderMode: 'emulation-only'` または `emulationScope: 'topn'|'all'`（`outlineEmulation` は非推奨）
 - **厚い枠線表示 (v0.1.6.2)**: `enableThickFrames` で12個のフレームボックスによる視覚的に厚い枠線を実現
 - **インセット枠線 (v0.1.6.1)**: `outlineInset` で枠線をボックス内側にオフセット（`outlineInsetMode` で TopN 限定も可）
 - **Wiki自動同期 (v0.1.6)**: JSDoc → Markdown 変換による GitHub Wiki の自動更新
@@ -89,7 +94,7 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **TopN highlighting (v0.1.5)**: `highlightTopN` option to emphasize top N density voxels
 - **Outline overlap mitigation (v0.1.6)**: `voxelGap` for spacing and `outlineOpacity` for transparency control
 - **Dynamic outline control (v0.1.6)**: `outlineWidthResolver` function for density-adaptive outline thickness
-- **Extended outline emulation (v0.1.6.2)**: `outlineEmulation` 'all', 'non-topn' modes to bypass WebGL 1px limitation
+- **Outline emulation (v0.1.12)**: use `outlineRenderMode: 'emulation-only'` or `emulationScope: 'topn'|'all'` (legacy `outlineEmulation` is deprecated)
 - **Thick outline frames (v0.1.6.2)**: `enableThickFrames` creates visually thick outlines using 12 frame boxes
 - **Inset outline (v0.1.6.1)**: `outlineInset` to draw outlines inset from faces (`outlineInsetMode` to limit to TopN)
 - **Wiki auto-sync (v0.1.6)**: JSDoc → Markdown conversion for automated GitHub Wiki updates
@@ -156,37 +161,90 @@ npm run build
 ### 日本語
 
 ```javascript
-import Heatbox from 'cesium-heatbox';
+import { Heatbox } from 'cesium-heatbox';
 
-// Viewerが初期化済みの状態で
+// v0.1.12: プロファイル機能で環境に最適化
 const heatbox = new Heatbox(viewer, {
-  voxelSize: 20,
-  opacity: 0.8
+  profile: 'desktop-balanced',     // 自動設定プロファイル  
+  voxelSize: { x: 1000, y: 1000, z: 100 },
+  opacity: 0.8,
+  performanceOverlay: {
+    enabled: true,                 // リアルタイム性能監視
+    position: 'top-right'
+  }
 });
 
 // エンティティからヒートマップを作成
 const entities = viewer.entities.values;
-const statistics = await heatbox.createFromEntities(entities);
+heatbox.setData(entities);
 
+// v0.1.12: fitView は内部で postRender 一回の実行にスケジュールされ、
+// 描画競合を避けつつ Rectangle→BoundingSphere ベースで安定ズームします。
+await heatbox.fitView(null, {
+  paddingPercent: 0.1,
+  pitchDegrees: -35,
+  headingDegrees: 0
+});
+
+// 統計情報の取得
+const statistics = heatbox.getStatistics();
 console.log('作成完了:', statistics);
+```
+
+補足（v0.1.12）
+- プロファイルの確認/詳細:
+```javascript
+const profiles = Heatbox.listProfiles();
+const details = Heatbox.getProfileDetails('mobile-fast');
+```
+- パフォーマンスオーバーレイのランタイム制御:
+```javascript
+heatbox.setPerformanceOverlayEnabled(true, { position: 'bottom-left' });
+heatbox.togglePerformanceOverlay();
 ```
 
 ### English
 
 ```javascript
-import Heatbox from 'cesium-heatbox';
+import { Heatbox } from 'cesium-heatbox';
 
-// With initialized Viewer
+// v0.1.12: Use configuration profiles for environment optimization
 const heatbox = new Heatbox(viewer, {
-  voxelSize: 20,
-  opacity: 0.8
+  profile: 'desktop-balanced',     // Auto-configuration profile
+  voxelSize: { x: 1000, y: 1000, z: 100 },
+  opacity: 0.8,
+  performanceOverlay: {
+    enabled: true,                 // Real-time performance monitoring  
+    position: 'top-right'
+  }
 });
 
 // Create heatmap from entities
 const entities = viewer.entities.values;
-const statistics = await heatbox.createFromEntities(entities);
+heatbox.setData(entities);
 
+// v0.1.12: Fit view with updated API naming convention
+heatbox.fitView({
+  paddingPercent: 0.1,
+  pitchDegrees: -45,              // Updated naming convention
+  headingDegrees: 0
+});
+
+// Get statistics
+const statistics = heatbox.getStatistics();
 console.log('Creation completed:', statistics);
+```
+
+Tips (v0.1.12)
+- Profiles overview/details:
+```javascript
+const profiles = Heatbox.listProfiles();
+const details = Heatbox.getProfileDetails('mobile-fast');
+```
+- Runtime control of performance overlay:
+```javascript
+heatbox.setPerformanceOverlayEnabled(true, { position: 'bottom-left' });
+heatbox.togglePerformanceOverlay();
 ```
 
 ## API
@@ -246,12 +304,14 @@ Docs are structured English first, then Japanese. Each page includes a language 
 - [API リファレンス](docs/API.md)
 - [クイックスタート](docs/quick-start.md)
 - [はじめに](docs/getting-started.md)
+- [移行ガイド](MIGRATION.md) 🆕 **v0.1.12移行ガイド**
 - [開発ガイド](docs/development-guide.md)
 
 ### English
 - [API Reference](docs/API.md)
 - [Quick Start](docs/quick-start.md)
-- [Getting Started](docs/getting-started.md)
+- [Getting Started](docs/getting-started.md)  
+- [Migration Guide](MIGRATION.md) 🆕 **v0.1.12 Migration Guide**
 - [Development Guide](docs/development-guide.md)
 
 ## ライセンス / License

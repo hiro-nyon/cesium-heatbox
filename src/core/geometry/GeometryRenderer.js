@@ -71,15 +71,39 @@ export class GeometryRenderer {
       emulateThick = false
     } = config;
 
-    // Entity configuration
+    // Validate coordinate inputs to prevent Cesium RangeError
+    const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
+    const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-90, Math.min(90, centerLat)) : 0;
+    const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
+    
+    // Validate dimension inputs to prevent Cesium geometry errors
+    const safeCellSizeX = Number.isFinite(cellSizeX) && cellSizeX > 0 ? Math.min(cellSizeX, 1e6) : 1;
+    const safeCellSizeY = Number.isFinite(cellSizeY) && cellSizeY > 0 ? Math.min(cellSizeY, 1e6) : 1;
+    const safeBoxHeight = Number.isFinite(boxHeight) && boxHeight > 0 ? Math.min(boxHeight, 1e6) : 1;
+    
+    // Log warning if values were clamped
+    if (safeCenterLon !== centerLon || safeCenterLat !== centerLat || safeCenterAlt !== centerAlt ||
+        safeCellSizeX !== cellSizeX || safeCellSizeY !== cellSizeY || safeBoxHeight !== boxHeight) {
+      Logger.warn(`Clamped invalid geometry values for voxel ${voxelKey}:`, {
+        original: { centerLon, centerLat, centerAlt, cellSizeX, cellSizeY, boxHeight },
+        clamped: { safeCenterLon, safeCenterLat, safeCenterAlt, safeCellSizeX, safeCellSizeY, safeBoxHeight }
+      });
+    }
+
+    // Entity configuration with safe values
+    const showOutline = Boolean(shouldShowOutline && !emulateThick);
+    const boxConfig = {
+      dimensions: new Cesium.Cartesian3(safeCellSizeX, safeCellSizeY, safeBoxHeight),
+      outline: showOutline
+    };
+    if (showOutline) {
+      boxConfig.outlineColor = outlineColor;
+      boxConfig.outlineWidth = Math.max(outlineWidth || 1, 1);
+    }
+
     const entityConfig = {
-      position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
-      box: {
-        dimensions: new Cesium.Cartesian3(cellSizeX, cellSizeY, boxHeight),
-        outline: shouldShowOutline && !emulateThick,
-        outlineColor: outlineColor,
-        outlineWidth: Math.max(outlineWidth || 1, 0) // 負値防止
-      },
+      position: Cesium.Cartesian3.fromDegrees(safeCenterLon, safeCenterLat, safeCenterAlt),
+      box: boxConfig,
       properties: {
         type: 'voxel',
         key: voxelKey,
@@ -132,11 +156,20 @@ export class GeometryRenderer {
       insetAmount = null
     } = config;
 
+    // Validate inputs for inset outline to prevent Cesium errors
+    const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
+    const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-90, Math.min(90, centerLat)) : 0;
+    const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
+    
+    const safeBaseSizeX = Number.isFinite(baseSizeX) && baseSizeX > 0 ? Math.min(baseSizeX, 1e6) : 1;
+    const safeBaseSizeY = Number.isFinite(baseSizeY) && baseSizeY > 0 ? Math.min(baseSizeY, 1e6) : 1;
+    const safeBaseSizeZ = Number.isFinite(baseSizeZ) && baseSizeZ > 0 ? Math.min(baseSizeZ, 1e6) : 1;
+
     // インセット距離の適用（ADR-0004の境界条件：両側合計で各軸寸法の最大40%まで＝片側20%）
     // 片側20%までに制限することで、最終寸法は元の60%以上を保証する
-    const maxInsetX = baseSizeX * 0.2;
-    const maxInsetY = baseSizeY * 0.2;
-    const maxInsetZ = baseSizeZ * 0.2;
+    const maxInsetX = safeBaseSizeX * 0.2;
+    const maxInsetY = safeBaseSizeY * 0.2;
+    const maxInsetZ = safeBaseSizeZ * 0.2;
     
     const baseInset = insetAmount !== null ? insetAmount : this.options.outlineInset;
     const effectiveInsetX = Math.min(baseInset, maxInsetX);
@@ -144,19 +177,20 @@ export class GeometryRenderer {
     const effectiveInsetZ = Math.min(baseInset, maxInsetZ);
     
     // インセット後の寸法計算（各軸から2倍のインセットを引く）
-    const insetSizeX = Math.max(baseSizeX - (effectiveInsetX * 2), baseSizeX * 0.1);
-    const insetSizeY = Math.max(baseSizeY - (effectiveInsetY * 2), baseSizeY * 0.1);
-    const insetSizeZ = Math.max(baseSizeZ - (effectiveInsetZ * 2), baseSizeZ * 0.1);
+    const insetSizeX = Math.max(safeBaseSizeX - (effectiveInsetX * 2), safeBaseSizeX * 0.1);
+    const insetSizeY = Math.max(safeBaseSizeY - (effectiveInsetY * 2), safeBaseSizeY * 0.1);
+    const insetSizeZ = Math.max(safeBaseSizeZ - (effectiveInsetZ * 2), safeBaseSizeZ * 0.1);
     
     // セカンダリBoxエンティティの設定（枠線のみ、塗りなし）
     const insetEntity = this.viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
+      position: Cesium.Cartesian3.fromDegrees(safeCenterLon, safeCenterLat, safeCenterAlt),
       box: {
         dimensions: new Cesium.Cartesian3(insetSizeX, insetSizeY, insetSizeZ),
         fill: false,
         outline: true,
         outlineColor: outlineColor,
-        outlineWidth: Math.max(outlineWidth || 1, 0)
+        // CesiumのBox outlineWidthは0や負値で不安定になるため最低1にクランプ
+        outlineWidth: Math.max(outlineWidth || 1, 1)
       },
       properties: {
         type: 'voxel-inset-outline',
@@ -170,8 +204,8 @@ export class GeometryRenderer {
     // 枠線の厚み部分を視覚化（WebGL 1px制限の回避）
     if (this.options.enableThickFrames && (effectiveInsetX > 0.1 || effectiveInsetY > 0.1 || effectiveInsetZ > 0.1)) {
       this.createThickOutlineFrames({
-        centerLon, centerLat, centerAlt,
-        outerX: baseSizeX, outerY: baseSizeY, outerZ: baseSizeZ,
+        centerLon: safeCenterLon, centerLat: safeCenterLat, centerAlt: safeCenterAlt,
+        outerX: safeBaseSizeX, outerY: safeBaseSizeY, outerZ: safeBaseSizeZ,
         innerX: insetSizeX, innerY: insetSizeY, innerZ: insetSizeZ,
         frameColor: outlineColor, voxelKey
       });
@@ -213,9 +247,18 @@ export class GeometryRenderer {
     } = config;
 
     // フレーム厚み計算（外側と内側の差を2で割ったもの）
-    const frameThickX = (outerX - innerX) / 2;
-    const frameThickY = (outerY - innerY) / 2;
-    const frameThickZ = (outerZ - innerZ) / 2;
+    let frameThickX = (outerX - innerX) / 2;
+    let frameThickY = (outerY - innerY) / 2;
+    let frameThickZ = (outerZ - innerZ) / 2;
+    // 厚みが0や負になるケースを防止（ゼロ寸法BoxはCesiumで不安定）
+    const minFrame = 0.05;
+    if (frameThickX <= 0 || frameThickY <= 0 || frameThickZ <= 0) {
+      Logger.warn(`Invalid frame thickness for voxel ${voxelKey}, skipping thick frames`);
+      return [];
+    }
+    frameThickX = Math.max(frameThickX, minFrame);
+    frameThickY = Math.max(frameThickY, minFrame);
+    frameThickZ = Math.max(frameThickZ, minFrame);
     
     // 境界計算：各軸での内側・外側の境界
     const outerBoundX = outerX / 2;    // 外側境界（中心からの距離）
@@ -361,55 +404,86 @@ export class GeometryRenderer {
 
     const polylineEntities = [];
     
-    // ボックスの8つの頂点を計算
-    const halfX = cellSizeX / 2;
-    const halfY = cellSizeY / 2;
-    const halfZ = boxHeight / 2;
+    // Validate inputs for edge polylines to prevent coordinate calculation errors
+    const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
+    const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-85, Math.min(85, centerLat)) : 0; // Avoid poles more strictly
+    const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
+    
+    const safeCellSizeX = Number.isFinite(cellSizeX) && cellSizeX > 0 ? Math.min(cellSizeX, 1e5) : 1; // More conservative limits
+    const safeCellSizeY = Number.isFinite(cellSizeY) && cellSizeY > 0 ? Math.min(cellSizeY, 1e5) : 1;
+    const safeBoxHeight = Number.isFinite(boxHeight) && boxHeight > 0 ? Math.min(boxHeight, 1e5) : 1;
 
-    const vertices = [
+    // Early validation: check if dimensions are reasonable
+    if (safeCellSizeX < 0.001 || safeCellSizeY < 0.001 || safeBoxHeight < 0.001) {
+      Logger.warn(`Dimensions too small for voxel ${voxelKey}, skipping edge polylines`);
+      return polylineEntities;
+    }
+
+    // ボックスの8つの頂点を計算 - 安全な値を使用
+    const halfX = safeCellSizeX / 2;
+    const halfY = safeCellSizeY / 2;
+    const halfZ = safeBoxHeight / 2;
+    
+    // 座標変換係数の安全な計算 - より保守的なアプローチ
+    const cosLat = Math.cos(safeCenterLat * Math.PI / 180);
+    const safeCosFactor = Math.max(0.1, Math.abs(cosLat)); // より保守的な最小値
+
+    // 計算された座標オフセットの事前検証
+    const lonOffset = halfX / (111320 * safeCosFactor);
+    const latOffset = halfY / 111320;
+    
+    if (!Number.isFinite(lonOffset) || !Number.isFinite(latOffset) || 
+        Math.abs(lonOffset) > 0.1 || Math.abs(latOffset) > 0.1) {
+      Logger.warn(`Coordinate offsets out of range for voxel ${voxelKey}, skipping edge polylines`);
+      return polylineEntities;
+    }
+
+    // 頂点座標の事前計算とバリデーション
+    const vertexCoords = [
       // 下面の4頂点
-      Cesium.Cartesian3.fromDegrees(
-        centerLon - halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat - halfY / 111320,
-        centerAlt - halfZ
-      ),
-      Cesium.Cartesian3.fromDegrees(
-        centerLon + halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat - halfY / 111320,
-        centerAlt - halfZ
-      ),
-      Cesium.Cartesian3.fromDegrees(
-        centerLon + halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat + halfY / 111320,
-        centerAlt - halfZ
-      ),
-      Cesium.Cartesian3.fromDegrees(
-        centerLon - halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat + halfY / 111320,
-        centerAlt - halfZ
-      ),
+      [safeCenterLon - lonOffset, safeCenterLat - latOffset, safeCenterAlt - halfZ],
+      [safeCenterLon + lonOffset, safeCenterLat - latOffset, safeCenterAlt - halfZ],
+      [safeCenterLon + lonOffset, safeCenterLat + latOffset, safeCenterAlt - halfZ],
+      [safeCenterLon - lonOffset, safeCenterLat + latOffset, safeCenterAlt - halfZ],
       // 上面の4頂点
-      Cesium.Cartesian3.fromDegrees(
-        centerLon - halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat - halfY / 111320,
-        centerAlt + halfZ
-      ),
-      Cesium.Cartesian3.fromDegrees(
-        centerLon + halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat - halfY / 111320,
-        centerAlt + halfZ
-      ),
-      Cesium.Cartesian3.fromDegrees(
-        centerLon + halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat + halfY / 111320,
-        centerAlt + halfZ
-      ),
-      Cesium.Cartesian3.fromDegrees(
-        centerLon - halfX / (111320 * Math.cos(centerLat * Math.PI / 180)),
-        centerLat + halfY / 111320,
-        centerAlt + halfZ
-      )
+      [safeCenterLon - lonOffset, safeCenterLat - latOffset, safeCenterAlt + halfZ],
+      [safeCenterLon + lonOffset, safeCenterLat - latOffset, safeCenterAlt + halfZ],
+      [safeCenterLon + lonOffset, safeCenterLat + latOffset, safeCenterAlt + halfZ],
+      [safeCenterLon - lonOffset, safeCenterLat + latOffset, safeCenterAlt + halfZ]
     ];
+
+    // 全ての座標が有効範囲内かチェック
+    const allCoordsValid = vertexCoords.every(([lon, lat, alt]) => 
+      Number.isFinite(lon) && Number.isFinite(lat) && Number.isFinite(alt) &&
+      lon >= -180 && lon <= 180 && lat >= -85 && lat <= 85 &&
+      alt >= -50000 && alt <= 500000
+    );
+
+    if (!allCoordsValid) {
+      Logger.warn(`Invalid vertex coordinates for voxel ${voxelKey}, skipping edge polylines`);
+      return polylineEntities;
+    }
+
+    // Cartesian3頂点の安全な作成
+    let vertices;
+    try {
+      vertices = vertexCoords.map(([lon, lat, alt]) => 
+        Cesium.Cartesian3.fromDegrees(lon, lat, alt)
+      );
+    } catch (error) {
+      Logger.warn(`Failed to create Cartesian3 vertices for voxel ${voxelKey}:`, error);
+      return polylineEntities;
+    }
+
+    // 作成された頂点の最終検証
+    const validVertices = vertices.every(vertex => 
+      vertex && Number.isFinite(vertex.x) && Number.isFinite(vertex.y) && Number.isFinite(vertex.z)
+    );
+
+    if (!validVertices) {
+      Logger.warn(`Generated vertices contain invalid values for voxel ${voxelKey}, skipping edge polylines`);
+      return polylineEntities;
+    }
 
     // ボックスの12エッジを定義
     const edges = [
@@ -423,24 +497,45 @@ export class GeometryRenderer {
 
     // 各エッジをポリラインとして作成
     edges.forEach((edge, index) => {
-      const positions = [vertices[edge[0]], vertices[edge[1]]];
-
-      const polylineEntity = this.viewer.entities.add({
-        polyline: {
-          positions: positions,
-          width: Math.max(outlineWidth, 1),
-          material: outlineColor,
-          clampToGround: false
-        },
-        properties: {
-          type: 'voxel-edge-polyline',
-          parentKey: voxelKey,
-          edgeIndex: index
+      try {
+        const vertex0 = vertices[edge[0]];
+        const vertex1 = vertices[edge[1]];
+        
+        // 追加の安全性チェック
+        if (!vertex0 || !vertex1) {
+          Logger.warn(`Missing vertices for edge ${index} in voxel ${voxelKey}`);
+          return;
         }
-      });
 
-      this.entities.push(polylineEntity);
-      polylineEntities.push(polylineEntity);
+        const positions = [vertex0, vertex1];
+        
+        // positions配列の最終検証
+        if (positions.length !== 2) {
+          Logger.warn(`Invalid positions array length for edge ${index} in voxel ${voxelKey}`);
+          return;
+        }
+
+        const polylineEntity = this.viewer.entities.add({
+          polyline: {
+            positions: positions,
+            width: Math.max(Math.min(outlineWidth, 20), 1), // width制限も追加
+            material: outlineColor,
+            clampToGround: false
+          },
+          properties: {
+            type: 'voxel-edge-polyline',
+            parentKey: voxelKey,
+            edgeIndex: index
+          }
+        });
+
+        this.entities.push(polylineEntity);
+        polylineEntities.push(polylineEntity);
+        
+      } catch (error) {
+        Logger.warn(`Failed to create polyline for edge ${index} in voxel ${voxelKey}:`, error);
+        // エラーが発生しても処理を継続（他のエッジは正常に作成される可能性がある）
+      }
     });
 
     Logger.debug(`Created ${polylineEntities.length} edge polylines for voxel ${voxelKey}`);
