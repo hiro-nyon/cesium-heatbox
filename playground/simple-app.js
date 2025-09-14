@@ -511,16 +511,13 @@ function processLoadedData(data, fileName) {
       throw new Error('Unsupported data format');
     }
     
-    // Add raw points to viewer?（切り分け用: 既定は追加しない）
-    const SHOW_RAW_POINTS = false;
-    if (SHOW_RAW_POINTS) {
-      const addedEntities = [];
-      currentEntities.forEach(entity => {
-        const added = viewer.entities.add(entity);
-        if (added) addedEntities.push(added);
-      });
-      currentEntities = addedEntities;
-    }
+    // 従来通り: ロード直後に元Pointをviewerへ追加
+    const addedEntities = [];
+    currentEntities.forEach(entity => {
+      const added = viewer.entities.add(entity);
+      if (added) addedEntities.push(added);
+    });
+    currentEntities = addedEntities;
     
     // Update statistics
     updateStatistics();
@@ -528,7 +525,10 @@ function processLoadedData(data, fileName) {
     // Enable controls
     document.getElementById('createHeatmap').disabled = false;
     
-    // Auto-adjust cameraはヒートマップ作成後に行うためここではズームしない
+    // 従来通り: ロード直後にオートカメラ調整
+    if (document.getElementById('autoCamera').checked) {
+      viewer.zoomTo(viewer.entities);
+    }
     
     updateStatus(`Successfully loaded ${currentEntities.length} data points from ${fileName}`, 'success');
     
