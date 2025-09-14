@@ -12,6 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - validation.js の数値計算で発生しうる RangeError を修正（正規化処理の端数・境界値で例外となるケースを解消）
 
+## [0.1.14] - 2025-09-14
+
+本リリースでは v0.1.13 の互換方針を拡張し、outline 幅の resolver 互換も復元しました。API破壊はありません。
+
+### Changed
+- validation: `outlineWidthResolver` を「警告は出すが削除しない」挙動へ変更（関数でない値は無効化）。
+- docs(ROADMAP): Resolver を宣言的API（adaptive ranges / classification）で置き換える計画を詳細化。
+  - AdaptiveController の補間は classification と同一ロジック（linear/log/quantize/threshold/quantile/jenks 等）を共有する方針を明記。
+- docs(AGENTS/MIGRATION): 代替実装が安定提供されるまで Resolver を削除しないポリシーを再掲・強調。
+
+### Notes
+- Resolver API は引き続き非推奨です。`adaptiveParams.*Range` と将来の `classification.*` へ段階的に移行してください。
+
 ## [0.1.13] - 2025-09-14
 
 緊急パッチ。v0.2.0へ向けたAPI整理の過程で resolver（box/outline opacity）が正規化段階で削除されるため、密度ベースの不透明度制御が使えないケースが発生していました。本リリースでは、非推奨の警告は維持しつつ、削除せずに通過させる互換挙動へ戻します。
