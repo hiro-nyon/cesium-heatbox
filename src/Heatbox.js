@@ -685,53 +685,63 @@ export class Heatbox {
 
       Logger.debug('fitView called with bounds:', targetBounds, 'options:', fitOptions);
 
-      // データ境界の中心とサイズを計算
-      const centerLon = (targetBounds.minLon + targetBounds.maxLon) / 2;
-      const centerLat = (targetBounds.minLat + targetBounds.maxLat) / 2;
-      const centerAlt = (targetBounds.minAlt + targetBounds.maxAlt) / 2;
+      // postRenderで一回だけ実行して描画との競合を回避
+      const safeOptions = { ...fitOptions };
+      if (!Number.isFinite(safeOptions.pitchDegrees)) safeOptions.pitchDegrees = -35;
+      if (!Number.isFinite(safeOptions.headingDegrees)) safeOptions.headingDegrees = 0;
 
-      // データ範囲の計算（極端なケースの処理）
-      const dataRange = calculateDataRange(targetBounds);
-      const maxRange = Math.max(dataRange.x, dataRange.y, dataRange.z);
-      
-      // 極小データの保護
-      if (maxRange < 10) {
-        Logger.debug('Very small data range detected, applying minimum scale');
-        return this._handleMinimalDataRange(centerLon, centerLat, centerAlt, fitOptions);
-      }
-      
-      // 極大データの保護
-      if (maxRange > 100000) {
-        Logger.debug('Very large data range detected, applying maximum scale');
-        return this._handleLargeDataRange(targetBounds, fitOptions);
-      }
-
-      // パディングの計算（範囲制限）
-      const paddingPercent = Math.max(0.05, Math.min(0.5, fitOptions.paddingPercent));
-      const paddingMeters = paddingPercent * maxRange;
-      
-      // カメラ高度の計算（ピッチと視野角を考慮）
-      const cameraHeight = this._calculateOptimalCameraHeight(
-        maxRange, 
-        paddingMeters, 
-        fitOptions
-      );
-
-      // カメラ移動の実行
-      return this._executeCameraMovement(
-        centerLon, 
-        centerLat, 
-        centerAlt, 
-        cameraHeight, 
-        fitOptions,
-        maxRange,
-        paddingMeters
-      );
+      return await new Promise((resolve) => {
+        let fired = false;
+        const handler = async () => {
+          if (fired) return;
+          fired = true;
+          try {
+            await this._fitByBoundingSphere(targetBounds, safeOptions);
+          } catch (e) {
+            Logger.warn('fitView (postRender) failed, trying fallback:', e);
+          try {
+            await this.viewer.zoomTo(this.viewer.entities);
+          } catch (zoomErr) {
+            Logger.warn('zoomTo fallback failed:', zoomErr);
+          }
+          } finally {
+            try {
+              this.viewer.scene.postRender.removeEventListener(handler);
+            } catch (remErr) {
+              Logger.debug('postRender removeEventListener failed (non-fatal):', remErr);
+            }
+            resolve();
+          }
+        };
+        try {
+          this.viewer.scene.postRender.addEventListener(handler);
+        } catch (e) {
+          Logger.warn('postRender addEventListener failed:', e);
+          resolve();
+        }
+      });
 
     } catch (error) {
       Logger.error('fitView failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * Fit by bounding sphere derived from rectangle bounds
+   * @private
+   */
+  async _fitByBoundingSphere(bounds, fitOptions) {
+    const rect = Cesium.Rectangle.fromDegrees(bounds.minLon, bounds.minLat, bounds.maxLon, bounds.maxLat);
+    const bs = Cesium.BoundingSphere.fromRectangle3D(rect, Cesium.Ellipsoid.WGS84, Math.max(0, bounds.minAlt || 0));
+    const heading = Cesium.Math.toRadians(fitOptions.headingDegrees ?? 0);
+    const pitchDeg = Math.max(-85, Math.min(-10, fitOptions.pitchDegrees ?? -35));
+    const pitch = Cesium.Math.toRadians(pitchDeg);
+    const range = Math.max(bs.radius * 2.2, 1000.0);
+    await this.viewer.camera.flyToBoundingSphere(bs, {
+      duration: 1.2,
+      offset: new Cesium.HeadingPitchRange(heading, pitch, range)
+    });
   }
 
   /**
