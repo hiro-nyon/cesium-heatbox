@@ -31,8 +31,16 @@ git config user.name "${GIT_USER_NAME:-$GIT_USER_NAME_DEFAULT}"
 git config user.email "${GIT_USER_EMAIL:-$GIT_USER_EMAIL_DEFAULT}"
 
 ## If token is available, set remote URL with token for push auth
-if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-  git remote set-url origin "https://${GITHUB_TOKEN}@github.com/${OWNER}/${REPO}.wiki.git"
+# Prefer WIKI_TOKEN, then GH_TOKEN (GitHub CLI/Actions), then GITHUB_TOKEN
+TOKEN="${WIKI_TOKEN:-}"
+if [[ -z "$TOKEN" && -n "${GH_TOKEN:-}" ]]; then TOKEN="$GH_TOKEN"; fi
+if [[ -z "$TOKEN" && -n "${GITHUB_TOKEN:-}" ]]; then TOKEN="$GITHUB_TOKEN"; fi
+
+if [[ -n "$TOKEN" ]]; then
+  # Use GitHub-recommended x-access-token as username, token as password part
+  git remote set-url origin "https://x-access-token:${TOKEN}@github.com/${OWNER}/${REPO}.wiki.git"
+else
+  echo "Warning: No WIKI_TOKEN/GH_TOKEN/GITHUB_TOKEN provided; push may fail due to auth" >&2
 fi
 
 git checkout "$BRANCH" || true
