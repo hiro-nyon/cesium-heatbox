@@ -5,13 +5,9 @@ let heatboxInstance = null;
 let currentEntities = [];
 let currentData = null;
 let isHeatmapVisible = true; // 表示状態を追跡
-// QS: 自動カメラ調整のタイミング制御
-let _qsAutoViewRequest = false;
+// QS: 自動カメラ調整のタイミング制御（postRender一回）
 let _qsFitOnceHandler = null;
 let _qsFitViewOptions = null;
-// QSデバッグ用トグル
-const QS_DISABLE_WIREFRAME_AT_CREATE = true; // 初回作成時は必ずstandardに固定
-const QS_HIDE_RAW_POINTS_AFTER_CREATE = true; // 元のPointエンティティを非表示にして切り分け
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -21,8 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
   setupQuickStartMobileMenu();
   initializeEnvironmentInfo();
   // setupAutoVoxelSizeToggle(); // QS enforces auto voxel size
-  // QS: デバッグフックを初期化
-  try { installDebugHooks(); } catch (_) {}
 });
 
 // Initialize Cesium viewer
@@ -90,117 +84,10 @@ function initializeCesium() {
     } catch (_) {}
 
     updateStatus('Cesium initialized successfully', 'success');
-    // QS: 安定性対策 - 半透明/OIT/ログ深度/ポストプロセスを抑止
-    try {
-      if (viewer && viewer.scene) {
-        if (typeof viewer.scene.orderIndependentTranslucency !== 'undefined') {
-          viewer.scene.orderIndependentTranslucency = false;
-        }
-        if (typeof viewer.scene.logarithmicDepthBuffer !== 'undefined') {
-          viewer.scene.logarithmicDepthBuffer = false;
-        }
-        if (typeof viewer.scene.sunBloom !== 'undefined') {
-          viewer.scene.sunBloom = false;
-        }
-        if (typeof viewer.scene.requestRenderMode !== 'undefined') {
-          viewer.scene.requestRenderMode = false;
-        }
-      }
-    } catch (_) {}
     
   } catch (error) {
     console.error('Failed to initialize Cesium:', error);
     updateStatus('Failed to initialize Cesium: ' + error.message, 'error');
-  }
-}
-
-// ===== Debug hooks (QS専用) =====
-function installDebugHooks() {
-  if (!window || !viewer || !viewer.scene) return;
-  // renderError にフック
-  try {
-    const errEv = viewer.scene.renderError;
-    if (errEv && typeof errEv.addEventListener === 'function') {
-      errEv.addEventListener(function() {
-        const args = Array.prototype.slice.call(arguments || []);
-        console.error('[QS][renderError] captured', args && args[0] && args[0].message ? args[0].message : args[0]);
-        safeDebugSnapshot('renderError');
-      });
-    }
-  } catch(_) {}
-
-  // グローバル onerror
-  try {
-    window.addEventListener('error', function(e){
-      console.error('[QS][window.error]', e && e.message);
-      safeDebugSnapshot('window.error');
-    });
-  } catch(_) {}
-
-  // コンソールから手動呼び出し可能
-  window.heatboxDebugDump = function(label){ safeDebugSnapshot(label || 'manual'); };
-}
-
-function safeGetValue(prop) {
-  try {
-    if (!prop) return null;
-    if (typeof prop.getValue === 'function') return prop.getValue(Cesium.JulianDate.now());
-    return prop;
-  } catch(_) { return null; }
-}
-
-function safeDebugSnapshot(label) {
-  try {
-    const stats = { label, t: Date.now() };
-    // viewer全体
-    const values = (viewer && viewer.entities && viewer.entities.values) ? viewer.entities.values : [];
-    stats.viewerEntities = values.length;
-
-    // Heatbox内部（可能なら）
-    let hbEntities = 0;
-    try { hbEntities = heatboxInstance && heatboxInstance.renderer && heatboxInstance.renderer.geometryRenderer && Array.isArray(heatboxInstance.renderer.geometryRenderer.entities) ? heatboxInstance.renderer.geometryRenderer.entities.length : 0; } catch(_) {}
-    stats.heatboxEntities = hbEntities;
-
-    // Box/Polylineの簡易統計
-    let boxCount = 0, plCount = 0;
-    const dimMin = { x: Infinity, y: Infinity, z: Infinity };
-    const dimMax = { x: -Infinity, y: -Infinity, z: -Infinity };
-    let invalidDims = 0, invalidPos = 0;
-
-    for (let i = 0; i < values.length; i++) {
-      const e = values[i];
-      if (!e) continue;
-      // Box
-      if (e.box) {
-        boxCount++;
-        const dims = safeGetValue(e.box.dimensions);
-        if (!dims || !isFinite(dims.x) || !isFinite(dims.y) || !isFinite(dims.z) || dims.x <= 0 || dims.y <= 0 || dims.z <= 0) {
-          invalidDims++;
-        } else {
-          dimMin.x = Math.min(dimMin.x, dims.x); dimMax.x = Math.max(dimMax.x, dims.x);
-          dimMin.y = Math.min(dimMin.y, dims.y); dimMax.y = Math.max(dimMax.y, dims.y);
-          dimMin.z = Math.min(dimMin.z, dims.z); dimMax.z = Math.max(dimMax.z, dims.z);
-        }
-      }
-      // Polyline
-      if (e.polyline) {
-        plCount++;
-      }
-      // 位置
-      const pos = safeGetValue(e.position);
-      if (!pos || !isFinite(pos.x) || !isFinite(pos.y) || !isFinite(pos.z)) invalidPos++;
-    }
-
-    stats.boxCount = boxCount;
-    stats.polylineCount = plCount;
-    stats.invalidDims = invalidDims;
-    stats.invalidPos = invalidPos;
-    stats.dimMin = dimMin;
-    stats.dimMax = dimMax;
-
-    console.warn('[QS][debugSnapshot]', stats);
-  } catch (err) {
-    console.error('[QS][debugSnapshot] failed', err);
   }
 }
 
@@ -260,23 +147,55 @@ function reRenderHeatmap() {
   try {
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     const updated = {
-      showOutline: false,
-      opacity: wireframe ? 0.0 : 0.85,
-      // QSでは適応制御を無効化（安定優先）
-      adaptiveOutlines: false,
-      outlineWidthPreset: 'medium',
-      outlineRenderMode: 'standard',
-      emulationScope: 'off',
+      showOutline: wireframe ? false : false,
+      opacity: wireframe ? 0.0 : 1.0,
+      // Ensure no box fill is rendered in wireframe
+      wireframeOnly: wireframe,
+      // ADR-0009 Phase 5: 適応制御オプション
+      adaptiveOutlines: true,
+      outlineWidthPreset: 'adaptive-density',
+      boxOpacityMode: 'density',
+      outlineOpacityMode: 'density',
+      boxOpacityResolver: !wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        return 0.05 + nd * 0.95;
+      }) : (() => 0),
+      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
+      outlineEmulation: wireframe ? 'all' : 'off',
       outlineInset: 0,
       outlineInsetMode: 'none'
     };
-
+    if (wireframe) {
+      // Direct density mapping for outlines (thicker/darker at higher density)
+      updated.outlineOpacity = undefined;
+      updated.outlineOpacityResolver = (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        const op = 0.15 + nd * 0.85;
+        return Math.max(0.05, Math.min(1.0, op));
+      });
+      updated.outlineWidth = undefined;
+      updated.outlineWidthResolver = (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        const minW = 1.5, maxW = 10;
+        return minW + nd * (maxW - minW);
+      });
+    } else {
+      // Clear resolvers when exiting wireframe
+      updated.outlineOpacityResolver = undefined;
+      updated.outlineWidthResolver = undefined;
+    }
     Object.assign(heatboxInstance.options, updated);
     if (typeof heatboxInstance.createFromEntities === 'function') {
       heatboxInstance.createFromEntities(currentEntities);
     } else {
       heatboxInstance.setData(currentEntities);
       if (typeof heatboxInstance.update === 'function') heatboxInstance.update();
+    }
+    if (wireframe) {
+      try { adjustEmulationByDensity(); } catch (_) {}
     }
     
     // 重要: 再描画後の即座な画面更新を要求
@@ -404,19 +323,16 @@ function initializeEnvironmentInfo() {
   try {
     // Cesium version
     const cesiumVersion = typeof Cesium !== 'undefined' ? Cesium.VERSION : 'Unknown';
-    const cesiumEl = document.getElementById('cesiumVersion') || document.getElementById('navCesiumVersion');
-    if (cesiumEl) cesiumEl.textContent = cesiumVersion;
+    document.getElementById('cesiumVersion').textContent = cesiumVersion;
     
     // WebGL support
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     const webglSupport = gl ? 'Supported' : 'Not Supported';
-    const webglEl = document.getElementById('webglSupport') || document.getElementById('navWebglSupport');
-    if (webglEl) webglEl.textContent = webglSupport;
+    document.getElementById('webglSupport').textContent = webglSupport;
     
     // Heatbox version - will be set when heatbox is initialized
-    const hbEl = document.getElementById('heatboxVersion') || document.getElementById('navHeatboxVersion');
-    if (hbEl) hbEl.textContent = 'Loading...';
+    document.getElementById('heatboxVersion').textContent = 'Loading...';
     
   } catch (error) {
     console.error('Error initializing environment info:', error);
@@ -532,7 +448,7 @@ function processLoadedData(data, fileName) {
       throw new Error('Unsupported data format');
     }
     
-    // 従来通り: ロード直後に元Pointをviewerへ追加
+    // Add entities to viewer and keep actual Cesium Entity references
     const addedEntities = [];
     currentEntities.forEach(entity => {
       const added = viewer.entities.add(entity);
@@ -546,7 +462,7 @@ function processLoadedData(data, fileName) {
     // Enable controls
     document.getElementById('createHeatmap').disabled = false;
     
-    // 従来通り: ロード直後にオートカメラ調整
+    // Auto-adjust camera if enabled
     if (document.getElementById('autoCamera').checked) {
       viewer.zoomTo(viewer.entities);
     }
@@ -649,34 +565,54 @@ async function createHeatmap() {
     // Quick Start: fixed auto settings (Safe fallback)
     const autoCamera = document.getElementById('autoCamera')?.checked || true;
 
-    // 初回は必ずstandardに固定（ポリライン大量生成を抑止）
-    const wireframe = QS_DISABLE_WIREFRAME_AT_CREATE ? false : (document.getElementById('wireframeOnly')?.checked || false);
-    const options = {
+  const wireframe = document.getElementById('wireframeOnly')?.checked || false;
+  const options = {
       autoVoxelSize: true,
       autoVoxelSizeMode: 'basic',
       voxelSize: undefined,
       maxVoxelSize: 10,
       targetCells: 3000,
-      // Safety cap for GH Pages demo to avoid excessive entities
-      maxRenderVoxels: 8000,
+      maxRenderVoxels: 'auto', 
       renderLimitStrategy: 'hybrid', // バランス重視の戦略
       colorMap: 'viridis',
-      // QS安定化: 初回作成は不透明ボックスでOIT経路を回避
-      opacity: 1.0,
+      // TopN強調表示 (Quick Start)
+      highlightTopN: 0, // デフォルトで無効
+      // Hide box fill in emulation-only (wireframe toggle)
+      opacity: wireframe ? 0.0 : 1.0,
+      wireframeOnly: wireframe,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
       // Do not use standard outlines when emulation-only
-      showOutline: false,
-      // EmulationはQSではオフ固定（安定化）
-      outlineRenderMode: 'standard',
-      emulationScope: 'off', // v0.1.12: outlineEmulation → emulationScope
+      showOutline: wireframe ? false : false,
+      // Default: density-driven fill shading
+      boxOpacityResolver: !wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5); // stronger gamma for contrast
+        return 0.05 + nd * 0.95; // 0.05–1.0 by density (stronger)
+      }) : (() => 0),
+      // Emulation-only mode (thick edges only)
+      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
+      outlineEmulation: wireframe ? 'all' : 'off',
       outlineInset: 0,
       outlineInsetMode: 'none',
-      // QSでは適応制御を無効化（安定優先）
-      adaptiveOutlines: false,
-      outlineWidthPreset: 'medium',
-      // Deprecated resolver系は使用しない（サンプル安定化）
-      // Quick Start用設定（ライブラリの自動fitは使わず、後段でpostRender一回に集約）
+      // ADR-0009 Phase 5 対応: 適応的制御を有効化
+      adaptiveOutlines: true,
+      outlineWidthPreset: 'adaptive-density',
+      boxOpacityMode: 'density',
+      outlineOpacityMode: 'density',
+      // In wireframe: higher density → thicker and darker (direct mapping)
+      outlineOpacityResolver: wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        return 0.15 + nd * 0.85; // 0.15→1.0 as density rises
+      }) : undefined,
+      outlineWidthResolver: wireframe ? (ctx => {
+        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5);
+        const minW = 1.5, maxW = 10; // px
+        return minW + nd * (maxW - minW);
+      }) : undefined,
+      // Quick Start用設定（ライブラリfitViewは使わず、後段でpostRender一回に集約）
       autoView: false,
       debugMode: false // Quick Startはデバッグ無効
     };
@@ -697,13 +633,8 @@ async function createHeatmap() {
       if (!HB) throw new Error('Heatbox constructor not found');
       heatboxInstance = new HB(viewer, options);
       // Update heatbox version info
-      try {
-        const version = (g && g.CesiumHeatbox && (g.CesiumHeatbox.VERSION || g.CesiumHeatbox.default?.VERSION || g.CesiumHeatbox.Heatbox?.VERSION)) || 'Loaded';
-        const hv1 = document.getElementById('heatboxVersion');
-        const hv2 = document.getElementById('navHeatboxVersion');
-        if (hv1) hv1.textContent = String(version);
-        if (hv2) hv2.textContent = String(version);
-      } catch (_) {}
+      const hv = document.getElementById('heatboxVersion');
+      if (hv) hv.textContent = 'Loaded';
     }
     
     // Create heatmap from Cesium Entities
@@ -715,28 +646,10 @@ async function createHeatmap() {
         heatboxInstance.update();
       }
     }
-    // デバッグ: 実効オプションとスナップショット
-    try {
-      if (typeof heatboxInstance.getEffectiveOptions === 'function') {
-        console.warn('[QS] Effective options', heatboxInstance.getEffectiveOptions());
-      }
-      safeDebugSnapshot('after-create');
-    } catch(_) {}
-    // Do not post-adjust polylines in QS（安定性優先）
-    
-    // QS: 元のPointエンティティを一旦隠す（切り分け用）
-    try {
-      if (QS_HIDE_RAW_POINTS_AFTER_CREATE && viewer && viewer.entities && viewer.entities.values) {
-        const vs = viewer.entities.values;
-        for (let i = 0; i < vs.length; i++) {
-          const e = vs[i];
-          if (e && e.point && !e.box && !e.polyline) {
-            e.show = false;
-          }
-        }
-        console.warn('[QS] hid raw points for isolation');
-      }
-    } catch(_) {}
+    // Post-adjust emulation polylines by density when wireframe is enabled
+    if (wireframe) {
+      try { adjustEmulationByDensity(); } catch (_) {}
+    }
     
     // Update statistics with heatmap info
     updateStatisticsWithHeatmap(options);
@@ -757,7 +670,6 @@ async function createHeatmap() {
     // 自動カメラ位置調整（postRenderで一回だけ実行して競合回避）
     try {
       if (autoCamera && viewer && viewer.scene && !_qsFitOnceHandler) {
-        _qsAutoViewRequest = true;
         _qsFitViewOptions = { headingDegrees: 0, pitchDegrees: -35, paddingPercent: 0.1 };
         let fired = false;
         _qsFitOnceHandler = async () => {
@@ -766,7 +678,6 @@ async function createHeatmap() {
           try { await qsZoomToHeatboxBounds(); } catch (e) { console.warn('[QS] auto zoom failed:', e); }
           try { viewer.scene.postRender.removeEventListener(_qsFitOnceHandler); } catch (_) {}
           _qsFitOnceHandler = null;
-          _qsAutoViewRequest = false;
         };
         viewer.scene.postRender.addEventListener(_qsFitOnceHandler);
       }
@@ -790,20 +701,15 @@ async function qsZoomToHeatboxBounds() {
     if (heatboxInstance && typeof heatboxInstance.getBounds === 'function') {
       const bounds = heatboxInstance.getBounds();
       if (bounds) {
-        // 境界矩形からバウンディングスフィアを生成し、オフセット指定で確実に可視化
         const rect = Cesium.Rectangle.fromDegrees(bounds.minLon, bounds.minLat, bounds.maxLon, bounds.maxLat);
         const bs = Cesium.BoundingSphere.fromRectangle3D(rect, Cesium.Ellipsoid.WGS84, Math.max(0, bounds.minAlt || 0));
         const heading = Cesium.Math.toRadians(_qsFitViewOptions?.headingDegrees ?? 0);
         const pitch = Cesium.Math.toRadians(_qsFitViewOptions?.pitchDegrees ?? -35);
-        const range = Math.max(bs.radius * 2.2, 1500.0);
-        await viewer.camera.flyToBoundingSphere(bs, {
-          duration: 1.2,
-          offset: new Cesium.HeadingPitchRange(heading, pitch, range)
-        });
-        return;        
+        const range = Math.max(bs.radius * 2.2, 1000.0);
+        await viewer.camera.flyToBoundingSphere(bs, { duration: 1.2, offset: new Cesium.HeadingPitchRange(heading, pitch, range) });
+        return;
       }
     }
-    // フォールバック: viewer.entitiesへズーム
     if (viewer.entities) await viewer.zoomTo(viewer.entities);
   } catch (e) {
     console.warn('[QS] qsZoomToHeatboxBounds failed:', e);
@@ -817,6 +723,7 @@ function adjustEmulationByDensity() {
     const values = viewer.entities.values;
     const countByKey = new Map();
     let minC = Infinity, maxC = -Infinity;
+    const now = Cesium.JulianDate.now();
     for (let i = 0; i < values.length; i++) {
       const e = values[i];
       const p = e && e.properties;
@@ -848,14 +755,28 @@ function adjustEmulationByDensity() {
       const w = minW + nd * (maxW - minW);
       if (typeof e.polyline.width === 'number') e.polyline.width = w;
       else if (e.polyline.width && typeof e.polyline.width.setValue === 'function') e.polyline.width.setValue(w);
-      // opacity
+      // opacity (preserve base color if available; fallback to black)
       const op = Math.max(0.05, Math.min(1.0, 0.15 + nd * 0.85));
-      const mat = e.polyline.material;
-      if (mat && typeof mat.withAlpha === 'function') {
-        e.polyline.material = mat.withAlpha(op);
-      } else if (window.Cesium && Cesium.Color) {
-        e.polyline.material = Cesium.Color.WHITE.withAlpha(op);
-      }
+      let baseColor = null;
+      try {
+        const mat = e.polyline.material;
+        if (mat) {
+          if (typeof mat.withAlpha === 'function') {
+            // Already a Cesium.Color
+            baseColor = mat;
+          } else if (typeof mat.getValue === 'function') {
+            const val = mat.getValue(now);
+            // ColorMaterialProperty#getValue may return a Color or an object with .color
+            if (val && typeof val.withAlpha === 'function') {
+              baseColor = val;
+            } else if (val && val.color && typeof val.color.withAlpha === 'function') {
+              baseColor = val.color;
+            }
+          }
+        }
+      } catch (_) { /* noop */ }
+      if (!baseColor && window.Cesium && Cesium.Color) baseColor = Cesium.Color.BLACK;
+      if (baseColor) e.polyline.material = baseColor.withAlpha(op);
     }
     try { viewer.scene.requestRender && viewer.scene.requestRender(); } catch (_) {}
   } catch (_) {}
@@ -997,9 +918,9 @@ function updateStatisticsWithHeatmap(options) {
       document.getElementById('sizeInfo').textContent = finalSize;
     } else {
       document.getElementById('autoSizeInfo').style.display = 'none';
-    // Manual size calculation
-    const gridSize = Math.max(1, Math.min(100, options.gridSize || 20)); // Safe bounds
-    estimatedVoxels = Math.pow(gridSize, 3);
+      // Manual size calculation
+      const gridSize = options.gridSize || 20;
+      estimatedVoxels = Math.pow(gridSize, 3);
     }
     
     document.getElementById('voxelCount').textContent = estimatedVoxels.toLocaleString();
