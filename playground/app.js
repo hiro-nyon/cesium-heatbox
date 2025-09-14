@@ -1816,6 +1816,14 @@ class HeatboxPlayground {
           throw new Error('Heatboxのデータ設定メソッドが見つかりません');
         }
         
+        // Emulation-only の場合はポリラインの透明度を後処理（density/slider対応）
+        try {
+          const vm = document.getElementById('viewModePreset')?.value || this._currentViewMode || 'boxes';
+          if (vm === 'emulation-only') {
+            this._adjustEmulationOpacity();
+          }
+        } catch (_) {}
+
         // 統計情報の取得
         const stats = this.heatbox.getStatistics();
         console.log('ヒートマップ統計情報:', stats);
@@ -1865,6 +1873,75 @@ class HeatboxPlayground {
       alert('ヒートマップの作成に失敗しました: ' + error.message);
     } finally {
       this.showLoading(false);
+    }
+  }
+
+  /**
+   * Emulation-only のポリライン透明度を後処理
+   * - outlineOpacityMode==='density' のとき、密度に応じて 0.5→1.0 で補間
+   * - outlineOpacityMode==='off' のとき、スライダー outlineOpacity を一様適用
+   */
+  _adjustEmulationOpacity() {
+    try {
+      const mode = document.getElementById('outlineOpacityMode')?.value || 'off';
+      const sliderVal = parseFloat(document.getElementById('outlineOpacity')?.value || '1') || 1.0;
+      const values = (this.viewer && this.viewer.entities && this.viewer.entities.values) || [];
+      if (!values.length) return;
+
+      // 集計: voxel 母体から count の min/max を取得
+      const countByKey = new Map();
+      let minC = Infinity, maxC = -Infinity;
+      const now = Cesium.JulianDate.now();
+      for (let i = 0; i < values.length; i++) {
+        const e = values[i];
+        const p = e && e.properties;
+        if (!p) continue;
+        const type = p.type && (typeof p.type.getValue === 'function' ? p.type.getValue() : p.type);
+        if (type === 'voxel') {
+          const key = p.key && (typeof p.key.getValue === 'function' ? p.key.getValue() : p.key);
+          const c = p.count && (typeof p.count.getValue === 'function' ? p.count.getValue() : p.count);
+          if (key != null && Number.isFinite(c)) {
+            countByKey.set(key, c);
+            if (c < minC) minC = c;
+            if (c > maxC) maxC = c;
+          }
+        }
+      }
+
+      for (let i = 0; i < values.length; i++) {
+        const e = values[i];
+        const p = e && e.properties;
+        if (!p || !e.polyline) continue;
+        const type = p.type && (typeof p.type.getValue === 'function' ? p.type.getValue() : p.type);
+        if (type !== 'voxel-edge-polyline') continue;
+        let alpha = sliderVal;
+        if (mode === 'density' && countByKey.size > 0 && isFinite(minC) && isFinite(maxC) && maxC !== minC) {
+          const parentKey = p.parentKey && (typeof p.parentKey.getValue === 'function' ? p.parentKey.getValue() : p.parentKey);
+          const c = countByKey.get(parentKey);
+          if (Number.isFinite(c)) {
+            const nd = Math.max(0, Math.min(1, (c - minC) / (maxC - minC)));
+            alpha = Math.max(0.2, Math.min(1.0, 0.5 + nd * 0.5));
+          }
+        }
+        // 既存マテリアルの色を保ちつつアルファのみ更新
+        let baseColor = null;
+        try {
+          const mat = e.polyline.material;
+          if (mat) {
+            if (typeof mat.withAlpha === 'function') baseColor = mat;
+            else if (typeof mat.getValue === 'function') {
+              const val = mat.getValue(now);
+              if (val && typeof val.withAlpha === 'function') baseColor = val;
+              else if (val && val.color && typeof val.color.withAlpha === 'function') baseColor = val.color;
+            }
+          }
+        } catch (_) {}
+        if (!baseColor && window.Cesium && Cesium.Color) baseColor = Cesium.Color.BLACK;
+        if (baseColor) e.polyline.material = baseColor.withAlpha(alpha);
+      }
+      try { this.viewer.scene.requestRender && this.viewer.scene.requestRender(); } catch (_) {}
+    } catch (e) {
+      console.warn('[Playground] _adjustEmulationOpacity failed:', e);
     }
   }
 
