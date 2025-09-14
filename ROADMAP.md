@@ -138,7 +138,7 @@ Acceptance Criteria
 Risks & Mitigations
 - v0.2.0 のAPI整理との整合: 将来的な削除は「Adaptive 実装完了後」へ明確化。利用者に段階的移行を促す（MIGRATION.md も追記）。
 
-### v0.1.14（適応的表示の核）- 視認性最適化の仕上げ
+### v0.1.15（適応的表示の核）- 視認性最適化の仕上げ
 Priority: Medium | Target: 2026-02
 
 - コア機能（仕上げ・検証）
@@ -161,7 +161,7 @@ Priority: Medium | Target: 2026-02
 
 > 注: 0.1系では「コアのデータモデル変更や新レイヤー」は行わず、安定化と利用性向上に限定します。
 
-### v0.1.15（Examples 体系化・整理）
+### v0.1.16（Examples 体系化・整理）
 Priority: Medium | Target: 2025-10
 
 Scope（examples/advanced を体系化し、学習・検証導線を改善）
