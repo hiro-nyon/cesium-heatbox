@@ -5,6 +5,9 @@ let heatboxInstance = null;
 let currentEntities = [];
 let currentData = null;
 let isHeatmapVisible = true; // 表示状態を追跡
+// QSデバッグ用トグル
+const QS_DISABLE_WIREFRAME_AT_CREATE = true; // 初回作成時は必ずstandardに固定
+const QS_HIDE_RAW_POINTS_AFTER_CREATE = true; // 元のPointエンティティを非表示にして切り分け
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -238,13 +241,13 @@ function reRenderHeatmap() {
     const updated = {
       showOutline: false,
       opacity: wireframe ? 0.0 : 0.85,
-      // v0.1.12: 適応制御のみ使用（Resolverは無効化）
-      adaptiveOutlines: true,
-      outlineWidthPreset: 'adaptive',
-      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
-      emulationScope: wireframe ? 'all' : 'off',
+      // QSでは適応制御を無効化（安定優先）
+      adaptiveOutlines: false,
+      outlineWidthPreset: 'medium',
+      outlineRenderMode: 'standard',
+      emulationScope: 'off',
       outlineInset: 0,
-      outlineInsetMode: 'off'
+      outlineInsetMode: 'none'
     };
 
     Object.assign(heatboxInstance.options, updated);
@@ -625,7 +628,8 @@ async function createHeatmap() {
     // Quick Start: fixed auto settings (Safe fallback)
     const autoCamera = document.getElementById('autoCamera')?.checked || true;
 
-    const wireframe = document.getElementById('wireframeOnly')?.checked || false;
+    // 初回は必ずstandardに固定（ポリライン大量生成を抑止）
+    const wireframe = QS_DISABLE_WIREFRAME_AT_CREATE ? false : (document.getElementById('wireframeOnly')?.checked || false);
     const options = {
       autoVoxelSize: true,
       autoVoxelSizeMode: 'basic',
@@ -636,8 +640,6 @@ async function createHeatmap() {
       maxRenderVoxels: 8000,
       renderLimitStrategy: 'hybrid', // バランス重視の戦略
       colorMap: 'viridis',
-      // TopN強調表示 (Quick Start)
-      highlightTopN: 0, // デフォルトで無効
       // Hide box fill in emulation-only (wireframe toggle)
       opacity: wireframe ? 0.0 : 0.85,
       showEmptyVoxels: false,
@@ -645,13 +647,13 @@ async function createHeatmap() {
       // Do not use standard outlines when emulation-only
       showOutline: false,
       // Emulation-only mode (thick edges only)
-      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
-      emulationScope: wireframe ? 'all' : 'off', // v0.1.12: outlineEmulation → emulationScope
+      outlineRenderMode: 'standard',
+      emulationScope: 'off', // v0.1.12: outlineEmulation → emulationScope
       outlineInset: 0,
-      outlineInsetMode: 'off',
-      // ADR-0009 Phase 5 対応: 適応的制御を有効化
-      adaptiveOutlines: true,
-      outlineWidthPreset: 'adaptive', // v0.1.12: adaptive-density → adaptive
+      outlineInsetMode: 'none',
+      // QSでは適応制御を無効化（安定優先）
+      adaptiveOutlines: false,
+      outlineWidthPreset: 'medium',
       // Deprecated resolver系は使用しない（サンプル安定化）
       // Quick Start用設定
       autoView: autoCamera,
@@ -700,6 +702,20 @@ async function createHeatmap() {
       safeDebugSnapshot('after-create');
     } catch(_) {}
     // Do not post-adjust polylines in QS（安定性優先）
+    
+    // QS: 元のPointエンティティを一旦隠す（切り分け用）
+    try {
+      if (QS_HIDE_RAW_POINTS_AFTER_CREATE && viewer && viewer.entities && viewer.entities.values) {
+        const vs = viewer.entities.values;
+        for (let i = 0; i < vs.length; i++) {
+          const e = vs[i];
+          if (e && e.point && !e.box && !e.polyline) {
+            e.show = false;
+          }
+        }
+        console.warn('[QS] hid raw points for isolation');
+      }
+    } catch(_) {}
     
     // Update statistics with heatmap info
     updateStatisticsWithHeatmap(options);
