@@ -12,6 +12,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - validation.js の数値計算で発生しうる RangeError を修正（正規化処理の端数・境界値で例外となるケースを解消）
 
+## [0.1.12-alpha.13] - 2025-09-14
+
+### Fixed
+- fitView の実行を `viewer.scene.postRender` で1回だけ行う方式に変更し、描画とカメラ移動が同フレームで競合して発生しうる RangeError を回避。
+- Rectangle→BoundingSphere に基づく安定ズームへ切り替え（`camera.flyToBoundingSphere` + `HeadingPitchRange`）。
+  - 俯角は安全範囲にクランプ（既定: -35°, 範囲: [-85°, -10°]）。
+  - 失敗時は `viewer.zoomTo(viewer.entities)` へフォールバック。
+
+### Changed
+- 公開APIの変更なし。`fitViewOptions`（`headingDegrees`/`pitchDegrees`/`paddingPercent`）はそのまま尊重。
+
+## [0.1.12-alpha.12] - 2025-09-14
+
+### Fixed
+- 標準表示時に太線エミュレーションのエッジ・ポリラインが誤って生成される可能性を排除。
+  - `outlineRenderMode==='emulation-only'` または `emulationScope!=='off'` の場合のみ、エミュレーション・エッジを生成。
+
+## [0.1.12-alpha.11] - 2025-09-14
+
+### Fixed
+- AdaptiveController: `'adaptive'`/`'topn-focus'` の線幅を安全範囲にクランプ（最小1.0、最大3.0倍相当）。
+- GeometryRenderer の堅牢化:
+  - `box.outline=false` の場合は `outlineColor/outlineWidth` を設定しない。
+  - Inset outline の `outlineWidth` を常に >= 1 にクランプ。
+  - 厚みフレーム生成でゼロ/負厚みを検出してスキップ。座標オフセットも保守的に検証。
+- VoxelRenderer: `emulationScope='off'` のとき、adaptive制御から太線エミュレーションが有効化されないようガード。
+- validation: `outlineInsetMode: 'off'` をレガシーエイリアスとして `'none'` に正規化し、`'all'|'topn'|'none'` を許容。
+
+### Notes
+- これらの変更は公開APIに影響を与えず、レンダリングの安定性を高めるための内部修正です。
+
 ## [0.1.12-alpha.6] - 2025-09-14
 
 ### Changed
