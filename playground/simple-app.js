@@ -5,6 +5,9 @@ let heatboxInstance = null;
 let currentEntities = [];
 let currentData = null;
 let isHeatmapVisible = true; // 表示状態を追跡
+// QS: 自動カメラ調整のタイミング制御（postRender一回）
+let _qsFitOnceHandler = null;
+let _qsFitViewOptions = null;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -609,8 +612,8 @@ async function createHeatmap() {
         const minW = 1.5, maxW = 10; // px
         return minW + nd * (maxW - minW);
       }) : undefined,
-      // Quick Start用設定
-      autoView: autoCamera,
+      // Quick Start用設定（ライブラリfitViewは使わず、後段でpostRender一回に集約）
+      autoView: false,
       debugMode: false // Quick Startはデバッグ無効
     };
     
@@ -663,6 +666,22 @@ async function createHeatmap() {
     }
     
     updateStatus(`Heatmap created successfully with ${currentEntities.length} entities`, 'success');
+
+    // 自動カメラ位置調整（postRenderで一回だけ実行して競合回避）
+    try {
+      if (autoCamera && viewer && viewer.scene && !_qsFitOnceHandler) {
+        _qsFitViewOptions = { headingDegrees: 0, pitchDegrees: -35, paddingPercent: 0.1 };
+        let fired = false;
+        _qsFitOnceHandler = async () => {
+          if (fired) return;
+          fired = true;
+          try { await qsZoomToHeatboxBounds(); } catch (e) { console.warn('[QS] auto zoom failed:', e); }
+          try { viewer.scene.postRender.removeEventListener(_qsFitOnceHandler); } catch (_) {}
+          _qsFitOnceHandler = null;
+        };
+        viewer.scene.postRender.addEventListener(_qsFitOnceHandler);
+      }
+    } catch (_) {}
     
     // 重要: ヒートマップ作成後の即座な画面更新を要求
     if (viewer && viewer.scene) {
@@ -672,6 +691,28 @@ async function createHeatmap() {
   } catch (error) {
     console.error('Error creating heatmap:', error);
     updateStatus('Error creating heatmap: ' + error.message, 'error');
+  }
+}
+
+// QS: Heatboxの境界に基づき安定的にズームする
+async function qsZoomToHeatboxBounds() {
+  if (!viewer) return;
+  try {
+    if (heatboxInstance && typeof heatboxInstance.getBounds === 'function') {
+      const bounds = heatboxInstance.getBounds();
+      if (bounds) {
+        const rect = Cesium.Rectangle.fromDegrees(bounds.minLon, bounds.minLat, bounds.maxLon, bounds.maxLat);
+        const bs = Cesium.BoundingSphere.fromRectangle3D(rect, Cesium.Ellipsoid.WGS84, Math.max(0, bounds.minAlt || 0));
+        const heading = Cesium.Math.toRadians(_qsFitViewOptions?.headingDegrees ?? 0);
+        const pitch = Cesium.Math.toRadians(_qsFitViewOptions?.pitchDegrees ?? -35);
+        const range = Math.max(bs.radius * 2.2, 1000.0);
+        await viewer.camera.flyToBoundingSphere(bs, { duration: 1.2, offset: new Cesium.HeadingPitchRange(heading, pitch, range) });
+        return;
+      }
+    }
+    if (viewer.entities) await viewer.zoomTo(viewer.entities);
+  } catch (e) {
+    console.warn('[QS] qsZoomToHeatboxBounds failed:', e);
   }
 }
 

@@ -191,7 +191,27 @@
       </div>
     </details>
     
-    <!-- 2. Basic Configuration -->
+    <!-- 2. Configuration Profiles (v0.1.12) -->
+    <details class="section" open>
+      <summary data-i18n="sum_profiles">🆕 Configuration Profiles (v0.1.12)</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label data-i18n="label_profile">Profile</label>
+          <select id="configProfile">
+            <option value="" data-i18n="opt_profile_custom">Custom (No Profile)</option>
+            <option value="mobile-fast" data-i18n="opt_profile_mobile">Mobile Fast</option>
+            <option value="desktop-balanced" data-i18n="opt_profile_desktop">Desktop Balanced</option>
+            <option value="dense-data" data-i18n="opt_profile_dense">Dense Data</option>
+            <option value="sparse-data" data-i18n="opt_profile_sparse">Sparse Data</option>
+          </select>
+        </div>
+        <div id="profileDescription" class="control-group" style="font-size: 11px; color: #aaa; margin-top: 5px;">
+          <span data-i18n="profile_desc_custom">Customize all settings manually</span>
+        </div>
+      </div>
+    </details>
+
+    <!-- 3. Basic Configuration -->
     <details class="section" open>
       <summary data-i18n="sum_basic">Basic Configuration</summary>
       <div class="controls section-content">
@@ -211,12 +231,12 @@
           </label>
         </div>
         <div class="control-group" id="fitViewGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_fitViewHeading">Fit View Heading</label>
+          <label data-i18n="label_fitViewHeading">Fit View Heading Degrees (v0.1.12)</label>
           <input type="range" id="fitViewHeading" min="0" max="360" step="15" value="0" disabled />
           <span id="fitViewHeadingValue">0</span>
         </div>
         <div class="control-group" id="fitViewPitchGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_fitViewPitch">Fit View Pitch</label>
+          <label data-i18n="label_fitViewPitch">Fit View Pitch Degrees (v0.1.12)</label>
           <input type="range" id="fitViewPitch" min="-90" max="0" step="5" value="-45" disabled />
           <span id="fitViewPitchValue">-45</span>
         </div>
@@ -226,7 +246,34 @@
       </div>
     </details>
 
-    <!-- 3. Voxel Configuration -->
+    <!-- 4. Performance Overlay (v0.1.12) -->
+    <details class="section">
+      <summary data-i18n="sum_performance">🆕 Performance Overlay (v0.1.12)</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="performanceOverlay" />
+            <span data-i18n="chk_performanceOverlay">Enable Performance Overlay</span>
+          </label>
+        </div>
+        <div class="control-group" id="overlayPositionGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_overlayPosition">Overlay Position</label>
+          <select id="overlayPosition" disabled>
+            <option value="top-left" data-i18n="opt_pos_topleft">Top Left</option>
+            <option value="top-right" selected data-i18n="opt_pos_topright">Top Right</option>
+            <option value="bottom-left" data-i18n="opt_pos_bottomleft">Bottom Left</option>
+            <option value="bottom-right" data-i18n="opt_pos_bottomright">Bottom Right</option>
+          </select>
+        </div>
+        <div class="control-group" id="overlayUpdateGroup" style="opacity: 0.5; pointer-events: none;">
+          <label data-i18n="label_overlayUpdate">Update Interval (ms)</label>
+          <input type="range" id="overlayUpdateInterval" min="100" max="2000" step="100" value="500" disabled />
+          <span id="overlayUpdateValue">500</span>
+        </div>
+      </div>
+    </details>
+
+    <!-- 5. Voxel Configuration -->
     <details class="section" open>
       <summary data-i18n="sum_voxel">Voxel Configuration</summary>
       <div class="controls section-content">
@@ -396,8 +443,18 @@
         <div class="sub-section" style="margin-bottom: 16px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
           <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #ffb74d;" data-i18n="h4_outline_emulation">Thick Line Emulation (WebGL Constraint Workaround)</h4>
           <div class="control-group">
-            <label data-i18n="label_outlineEmulation">Emulation Target</label>
+            <label data-i18n="label_emulationScope">Emulation Scope (v0.1.12)</label>
+            <select id="emulationScope">
+              <option value="off" data-i18n="opt_emul_off">Disabled</option>
+              <option value="topn" data-i18n="opt_emul_topn">Top-N Only</option>
+              <option value="non-topn" data-i18n="opt_emul_non_topn">Non-TopN Only</option>
+              <option value="all" data-i18n="opt_emul_all">All Voxels</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label data-i18n="label_legacyEmulation">⚠️ Legacy outlineEmulation (Deprecated)</label>
             <select id="outlineEmulationMode">
+              <option value="" data-i18n="opt_legacy_none">Use emulationScope above</option>
               <option value="off" data-i18n="opt_emul_off">Disabled</option>
               <option value="topn" data-i18n="opt_emul_topn">Top-N Only</option>
               <option value="non-topn" data-i18n="opt_emul_non_topn">Non-TopN Only</option>
@@ -442,12 +499,17 @@
             <span data-i18n="chk_adaptiveOutlines">Enable Adaptive Outline Control</span>
           </label>
         </div>
-        <div class="control-group">
-          <label data-i18n="label_outlinePreset">Outline Preset</label>
+          <div class="control-group">
+          <label data-i18n="label_outlinePreset">Outline Preset (v0.1.12 Updated)</label>
           <select id="outlineWidthPreset">
-            <option value="uniform" selected data-i18n="opt_preset_uniform">Uniform</option>
-            <option value="adaptive-density" data-i18n="opt_preset_density">Density Adaptive</option>
-            <option value="topn-focus" data-i18n="opt_preset_topn">Top-N Focus</option>
+            <option value="thin" data-i18n="opt_preset_thin">Thin</option>
+            <option value="medium" selected data-i18n="opt_preset_medium">Medium</option>
+            <option value="thick" data-i18n="opt_preset_thick">Thick</option>
+            <option value="adaptive" data-i18n="opt_preset_adaptive">Adaptive</option>
+            <!-- Legacy options with deprecation notices -->
+            <option value="uniform" data-i18n="opt_preset_uniform_legacy">⚠️ Uniform (Deprecated → Medium)</option>
+            <option value="adaptive-density" data-i18n="opt_preset_density_legacy">⚠️ Density Adaptive (Deprecated → Adaptive)</option>
+            <option value="topn-focus" data-i18n="opt_preset_topn_legacy">⚠️ Top-N Focus (Deprecated → Thick)</option>
           </select>
         </div>
         <div class="control-group">
@@ -485,6 +547,9 @@
         </div>
           <div class="control-group">
         <button id="testHeatbox" data-i18n="btn_testHeatbox">Test Heatbox</button>
+          </div>
+        <div class="control-group">
+        <button id="getEffectiveOptions" data-i18n="btn_getEffectiveOptions">🆕 Get Effective Options (v0.1.12)</button>
           </div>
         </div>
 
@@ -557,7 +622,11 @@
   <!-- Heatbox library -->
   <!-- Heatbox library (CDN from unpkg, latest) -->
   <script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js?v=latest"></script>
+  <!-- i18n dictionaries (externalized) -->
+  <script src="i18n/en.js"></script>
+  <script src="i18n/ja.js"></script>
   <script src="app.js"></script>
+  <script src="v012-features.js"></script>
   <script>
     // Mobile nav dropdown (caret only; label is provided by i18n)
     (function(){
