@@ -13,7 +13,10 @@ This document provides migration instructions between different versions of Cesi
 
 ### Migration Overview
 
-This guide explains how to migrate from v0.1.11 to v0.1.12. The focus is on API consistency improvements, deprecation of legacy resolver systems, enhanced observability features, and fitView stabilization.
+This guide explains how to migrate from v0.1.11 to v0.1.12+. The focus is on API consistency improvements, deprecation of legacy resolver systems, enhanced observability features, and fitView stabilization.
+
+Important note (v0.1.13):
+- While resolver-based opacity options (`boxOpacityResolver`, `outlineOpacityResolver`) remain deprecated, they are KEPT for compatibility until AdaptiveController provides fully functional opacity ranges (`adaptiveParams.boxOpacityRange`/`outlineOpacityRange`) shipped in a stable release. Do not remove them from apps until that implementation lands; warnings are expected.
 
 ### Breaking Changes
 

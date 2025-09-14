@@ -1,5 +1,16 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 0.1.13（2025-09-14）
+
+緊急パッチ。非推奨としていた透明度リゾルバ（`boxOpacityResolver` / `outlineOpacityResolver`）が正規化段階で削除されるため、密度ベースの不透明度制御が使えないケースが発生していました。本バージョンでは、警告は維持しつつ削除せずに通過させることで、後方互換を復元します。
+
+変更点
+- validation: 正規化時に `boxOpacityResolver` / `outlineOpacityResolver` を削除せず、関数であればそのまま保持（非関数は警告の上で無効化）。
+- docs: ROADMAP に「AdaptiveController による `adaptiveParams.boxOpacityRange`/`outlineOpacityRange` の実装が完成するまで、resolver を絶対に削除しない」強い方針を明記。
+
+注意
+- resolver は引き続き非推奨です。AdaptiveController 側での opacity range 実装完了・安定化が済むまでは削除しませんが、将来的には移行を推奨します。
+
 ## バージョン 0.1.10 - 安定化と移行準備（2025-01-XX）
 
 ### 🧭 方針転換

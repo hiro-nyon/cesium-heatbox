@@ -145,6 +145,22 @@ Priority: Medium | Target: 2026-02
 
 > 注: 0.1系では「コアのデータモデル変更や新レイヤー」は行わず、安定化と利用性向上に限定します。
 
+### v0.1.13（緊急パッチ・後方互換性）
+Priority: Immediate | Target: 2025-09-14
+
+Scope（resolver の互換性維持と方針の明記）
+- [x] validation: `boxOpacityResolver` / `outlineOpacityResolver` を正規化時に削除しない（非推奨の警告は出す）。
+- [x] ドキュメント更新：以下の強い方針を明記。
+  - 「AdaptiveController における `adaptiveParams.boxOpacityRange` / `outlineOpacityRange` の実装が完了し、安定版へ載るまで、resolver を絶対に削除しない（normalize で消さない）。」
+  - 「resolver の廃止は、その代替（AdaptiveController 側の連続/離散の opacity 制御）が提供・検証・ドキュメント化された後にのみ実施する。」
+
+Acceptance Criteria
+- [x] Playground/Quick Start など既存の resolver 依存フローで密度ベースの不透明度が機能する。
+- [x] Console に deprecation 警告は出るが、機能は維持される。
+
+Risks & Mitigations
+- v0.2.0 のAPI整理との整合: 将来的な削除は「Adaptive 実装完了後」へ明確化。利用者に段階的移行を促す（MIGRATION.md も追記）。
+
 ### v0.1.14（Examples 体系化・整理）
 Priority: Medium | Target: 2025-10
 
@@ -218,6 +234,20 @@ Priority: High | Target: 2025-12
 - 実装方針
   - 既存ライブラリの活用（d3-array/d3-scale/simple-statistics 等）を優先。バンドルサイズ配慮のためユーティリティ部品のみ導入。
 - 互換性: 低（新オプション追加のみ、既存デフォルト維持）。
+
+Implementation Notes（必ずここに実装する）
+- `src/core/adaptive/AdaptiveController.js`
+  - `calculateAdaptiveParams(...)` にて、`statistics` から算出される `normalizedDensity` を用い、
+    - `adaptiveParams.boxOpacityRange: [min, max]` に従って `boxOpacity` を線形（または将来的に gamma 対応）で補間して設定。
+    - `adaptiveParams.outlineOpacityRange: [min, max]` に従って `outlineOpacity` を補間して設定。
+  - 必要に応じて `applyPresetLogic(...)` の戻り値とレンジ適用の優先順位を整理（レンジ優先→プリセット補正、もしくは逆）。
+- `src/core/VoxelRenderer.js`
+  - 既存の `adaptiveParams.boxOpacity || options.opacity` をそのまま利用（AdaptiveController が最終値を入れる）。
+  - outline 側も `adaptiveParams.outlineOpacity` を優先的に使用。
+
+Policy（重要・強い方針）
+- 上記の AdaptiveController での opacity range 実装が完了し、安定版に含まれるまでは、`boxOpacityResolver` / `outlineOpacityResolver` を絶対に削除しない（正規化で消さない）。
+- 削除の判断は、実装・検証・ドキュメント（MIGRATION.md/RELEASE_NOTES.md）のすべてが揃った後に行う。
 - 受け入れ基準:
   - [ ] 代表データで各分類が視覚的に区別でき、凡例/ガイドが同期表示される。
   - [ ] 透明度分類を有効化した場合、fill/outline（標準/インセット/エミュ）に0–1で正しく反映される。

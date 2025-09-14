@@ -220,16 +220,23 @@ export function validateAndNormalizeOptions(options = {}) {
     delete normalized.outlineWidthResolver;
   }
   
+  // v0.2.0 planned: Resolver deprecation. For now, warn but keep for compatibility.
   if (normalized.outlineOpacityResolver !== undefined && normalized.outlineOpacityResolver !== null) {
     warnOnce('outlineOpacityResolver',
-      '[Heatbox][DEPRECATION][v0.2.0] outlineOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.outlineOpacityRange instead.');
-    delete normalized.outlineOpacityResolver;
+      '[Heatbox][DEPRECATION][v0.2.0] outlineOpacityResolver is deprecated; prefer adaptiveOutlines with adaptiveParams.outlineOpacityRange.');
+    if (typeof normalized.outlineOpacityResolver !== 'function') {
+      Logger.warn('outlineOpacityResolver must be a function. Ignoring.');
+      normalized.outlineOpacityResolver = null;
+    }
   }
   
   if (normalized.boxOpacityResolver !== undefined && normalized.boxOpacityResolver !== null) {
     warnOnce('boxOpacityResolver',
-      '[Heatbox][DEPRECATION][v0.2.0] boxOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.boxOpacityRange instead.');
-    delete normalized.boxOpacityResolver;
+      '[Heatbox][DEPRECATION][v0.2.0] boxOpacityResolver is deprecated; prefer adaptiveOutlines with adaptiveParams.boxOpacityRange.');
+    if (typeof normalized.boxOpacityResolver !== 'function') {
+      Logger.warn('boxOpacityResolver must be a function. Ignoring.');
+      normalized.boxOpacityResolver = null;
+    }
   }
 
   // v0.1.12: outlineEmulation deprecation and migration to outlineRenderMode  

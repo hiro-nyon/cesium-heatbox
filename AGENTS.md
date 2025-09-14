@@ -90,3 +90,8 @@
      - `git tag -a v0.1.11-alpha.5 -m "release: 0.1.11-alpha.5"`
      - `git push origin v0.1.11-alpha.5`
   4. GitHub Actions publishes to npm once the tag is pushed and CI is green.
+
+## Deprecations & Future Feature Policy（重要）
+- 別ブランチ/将来リリースで実装予定の機能がある場合、代替が完成するまで既存APIを削除しないでください。
+  - 例: 透明度resolver（`boxOpacityResolver`/`outlineOpacityResolver`）は `AdaptiveController` における `adaptiveParams.boxOpacityRange`/`outlineOpacityRange` の実装が安定提供されるまで絶対に削除しない（normalizeで消さない）。
+- 非推奨APIは「警告は出すが動作は維持」を原則とし、代替実装が提供・検証・ドキュメント化された後にのみ削除します。
