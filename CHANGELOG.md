@@ -12,6 +12,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - validation.js の数値計算で発生しうる RangeError を修正（正規化処理の端数・境界値で例外となるケースを解消）
 
+## [0.1.12] - 2025-09-14
+
+本リリースは 0.1.12-alpha.11 ～ 0.1.12-alpha.13 の安定化変更を取り込み、描画と自動カメラ調整の競合、適応制御・エミュレーション経路の安全性、ジオメトリ生成の堅牢性を高めました。
+
+### Fixed
+- 自動カメラ調整（fitView）
+  - `viewer.scene.postRender` で一回だけ実行する方式に変更し、描画とカメラ移動が同フレームで競合して発生しうる RangeError を回避。
+  - Rectangle→BoundingSphere に基づく安定ズームへ切替（`camera.flyToBoundingSphere` + `HeadingPitchRange`）。
+  - 俯角は安全範囲にクランプ（既定: -35°, 範囲: [-85°, -10°]）。失敗時は `viewer.zoomTo(entities)` にフォールバック。
+- 太線エミュレーション経路の誤作動を排除
+  - 標準表示ではエミュレーション・エッジ（ポリライン）を生成しない（`outlineRenderMode==='emulation-only'` または `emulationScope!=='off'` の場合のみ生成）。
+- 適応制御（Adaptive）
+  - `'adaptive'`/`'topn-focus'` の線幅を安全範囲にクランプ（最小1.0、最大3.0倍相当）。
+- GeometryRenderer の堅牢化
+  - `box.outline=false` の場合は `outlineColor/outlineWidth` を設定しない。
+  - Inset outline の `outlineWidth` を常に >= 1 にクランプ。
+  - 厚みフレーム生成でゼロ/負厚みを検出してスキップ。座標・オフセットも保守的に検証。
+- validation:
+  - `outlineInsetMode: 'off'` をレガシーエイリアスとして `'none'` に正規化し、`'all'|'topn'|'none'` を許容。
+
+### Changed
+- 公開APIの変更なし。`fitViewOptions`（`headingDegrees`/`pitchDegrees`/`paddingPercent`）はそのまま尊重。
+
 ## [0.1.12-alpha.13] - 2025-09-14
 
 ### Fixed

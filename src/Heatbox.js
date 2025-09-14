@@ -660,9 +660,24 @@ export class Heatbox {
   /**
    * Fit view to data bounds with smart camera positioning.
    * データ境界にスマートなカメラ位置でビューをフィットします。
-   * @param {Object} bounds - Target bounds (optional, uses current data bounds if not provided) / 対象境界
-   * @param {Object} options - Fit view options / フィットビューオプション
-   * @returns {Promise} Promise that resolves when camera movement is complete / カメラ移動完了時に解決するPromise
+   *
+   * 実装メモ（v0.1.12）：
+   * - 描画とカメラ移動の競合を避けるため、`viewer.scene.postRender` で1回だけ実行します。
+   * - 矩形境界（経緯度）から `Cesium.Rectangle` → `Cesium.BoundingSphere` を生成し、
+   *   `camera.flyToBoundingSphere` + `HeadingPitchRange` で安定的にズームします。
+   * - 俯角は安全範囲にクランプ（既定: -35°, 範囲: [-85°, -10°]）。
+   * - 失敗時は `viewer.zoomTo(viewer.entities)` へフォールバックします。
+   *
+   * @param {Object} [bounds] - Target bounds（省略時は現在のデータ境界）
+   * @param {Object} [options] - Fit view options
+   * @param {number} [options.headingDegrees=0] - カメラの方位（度）
+   * @param {number} [options.pitchDegrees=-35] - カメラの俯角（度、-85〜-10にクランプ）
+   * @param {number} [options.paddingPercent=0.1] - 表示パディング（0〜0.5）
+   * @returns {Promise<void>} カメラ移動完了時に解決する Promise
+   * @example
+   * // データを適用後、安定的にビューフィット
+   * await heatbox.setData(viewer.entities.values);
+   * await heatbox.fitView(null, { headingDegrees: 0, pitchDegrees: -35, paddingPercent: 0.1 });
    */
   async fitView(bounds = null, options = {}) {
     try {

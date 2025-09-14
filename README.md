@@ -178,10 +178,11 @@ const heatbox = new Heatbox(viewer, {
 const entities = viewer.entities.values;
 heatbox.setData(entities);
 
-// v0.1.12: 新しいAPI命名規則でビューフィット  
-heatbox.fitView({
+// v0.1.12: fitView は内部で postRender 一回の実行にスケジュールされ、
+// 描画競合を避けつつ Rectangle→BoundingSphere ベースで安定ズームします。
+await heatbox.fitView(null, {
   paddingPercent: 0.1,
-  pitchDegrees: -45,              // 更新された命名規則
+  pitchDegrees: -35,
   headingDegrees: 0
 });
 
