@@ -63,8 +63,89 @@ class HeatboxPlayground {
     this._applyTranslations();
     this._setupMobileUI();
     this._setupDesktopCollapseUI();
+    // View Mode state store (per-mode parameter persistence)
+    this._viewModeStates = {
+      'boxes': {},
+      'outline-only': {},
+      'outline-inset': { outlineInset: 2.0, outlineInsetMode: 'all' },
+      'emulation-only': {}
+    };
+    this._currentViewMode = (document.getElementById('viewModePreset')?.value) || 'boxes';
+    this._setupViewModeControls();
     
     console.log('=== HeatboxPlayground 初期化完了 ===');
+  }
+
+  /**
+   * View Mode controls wiring
+   * - Save/restore per-mode state
+   * - Enforce semantic overrides for each mode
+   */
+  _setupViewModeControls() {
+    const sel = document.getElementById('viewModePreset');
+    if (!sel) return;
+    sel.addEventListener('change', () => {
+      const prev = this._currentViewMode;
+      const next = sel.value || 'boxes';
+      // Save current UI parameters into prev mode
+      this._saveViewModeState(prev);
+      // Apply next mode state (or defaults)
+      this._applyViewModeState(next);
+      this._currentViewMode = next;
+      // Refresh heatmap if exists
+      try { this.updateHeatmapOptions && this.updateHeatmapOptions(); } catch (_) {}
+    });
+  }
+
+  _saveViewModeState(mode) {
+    const getVal = (id, def=null) => {
+      const el = document.getElementById(id);
+      if (!el) return def;
+      if (el.type === 'checkbox') return !!el.checked;
+      return el.value ?? def;
+    };
+    this._viewModeStates[mode] = {
+      outlineRenderMode: getVal('outlineRenderMode', 'standard'),
+      emulationScope: getVal('emulationScope', 'off'),
+      outlineInset: parseFloat(getVal('outlineInset', '0')) || 0,
+      outlineInsetMode: getVal('outlineInsetMode', 'all'),
+      enableThickFrames: !!(document.getElementById('enableThickFrames')?.checked),
+      adaptiveOutlines: !!(document.getElementById('adaptiveOutlines')?.checked),
+      outlineWidthPreset: getVal('outlineWidthPreset', 'medium')
+    };
+  }
+
+  _applyViewModeState(mode) {
+    const st = this._viewModeStates[mode] || {};
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el || val === undefined || val === null) return;
+      if (el.type === 'checkbox') el.checked = !!val; else el.value = val;
+      // immediate UI reflectors
+      if (id === 'outlineInset') {
+        const dv = document.getElementById('outlineInsetValue');
+        if (dv) dv.textContent = String(val);
+      }
+    };
+    // Defaults per mode
+    if (!st.outlineRenderMode) {
+      st.outlineRenderMode = (mode === 'outline-inset') ? 'inset' : (mode === 'emulation-only' ? 'emulation-only' : 'standard');
+    }
+    if (!st.emulationScope) st.emulationScope = (mode === 'emulation-only') ? 'all' : 'off';
+    if (st.outlineInset === undefined) st.outlineInset = (mode === 'outline-inset') ? 2.0 : 0.0;
+    if (!st.outlineInsetMode) st.outlineInsetMode = (mode === 'outline-inset') ? 'all' : 'all';
+    if (st.enableThickFrames === undefined) st.enableThickFrames = (mode === 'emulation-only');
+    if (st.adaptiveOutlines === undefined) st.adaptiveOutlines = true;
+    if (!st.outlineWidthPreset) st.outlineWidthPreset = 'adaptive';
+
+    // Apply to UI
+    setVal('outlineRenderMode', st.outlineRenderMode);
+    setVal('emulationScope', st.emulationScope);
+    setVal('outlineInset', st.outlineInset);
+    setVal('outlineInsetMode', st.outlineInsetMode);
+    setVal('enableThickFrames', st.enableThickFrames);
+    setVal('adaptiveOutlines', st.adaptiveOutlines);
+    setVal('outlineWidthPreset', st.outlineWidthPreset);
   }
 
   /**
@@ -2534,7 +2615,7 @@ class HeatboxPlayground {
     const gridSize = parseInt(document.getElementById('gridSize').value);
     const colorMap = document.getElementById('colorMap').value;
     const customColorTheme = document.getElementById('customColorTheme').value;
-    const wireframeOnly = document.getElementById('wireframeOnly').checked;
+    const wireframeOnly = document.getElementById('wireframeOnly')?.checked || false;
     const heightBased = document.getElementById('heightBased').checked;
     const debugMode = document.getElementById('debugMode').checked;
     const showBounds = document.getElementById('showBounds').checked;
@@ -2548,6 +2629,7 @@ class HeatboxPlayground {
     const voxelGap = parseFloat(document.getElementById('voxelGap')?.value || '0');
     const outlineOpacity = parseFloat(document.getElementById('outlineOpacity')?.value || '1');
     const outlineMode = document.getElementById('outlineMode')?.value || 'adaptive';
+    const viewMode = document.getElementById('viewModePreset')?.value || this._currentViewMode || 'boxes';
     const outlineWidthManual = parseInt(document.getElementById('outlineWidth')?.value || '2', 10);
     const outlineEmulationMode = document.getElementById('outlineEmulationMode')?.value || 'off';
     const emulationScope = document.getElementById('emulationScope')?.value || 'off';
@@ -2578,21 +2660,21 @@ class HeatboxPlayground {
     if (outlineMode === 'adaptive') {
       outlineWidthResolver = (params) => {
         const { isTopN, normalizedDensity } = params || {};
+        // densityベースの連続マッピング（simple.html相当の挙動に近づける）
+        const d = Math.max(0, Math.min(1, Number(normalizedDensity) || 0));
+        const nd = Math.pow(d, 0.5); // ガンマ補正（コントラスト強化）
+        const minW = 1.5;
+        const maxW = 10.0;
         let width;
-        
-        // 「すべて太線」モードの場合は、すべてを太くする
         if (outlineEmulationMode === 'all') {
-          if (isTopN) width = 6;           // TopNをさらに強調
-          else width = 4;                  // その他も太線に
+          // すべて太線モードでは最低太さを確保しつつTopNをわずかに強調
+          width = minW + nd * (maxW - minW);
+          if (isTopN) width = Math.min(maxW, width + 2);
+          width = Math.max(3, width); // すべて太線らしく下限を上げる
         } else {
-          // 通常のadaptiveモード
-          if (isTopN) width = 6;           // TopNを強調
-          else if (normalizedDensity > 0.7) width = 1; // 高密度は細く
-          else if (normalizedDensity > 0.3) width = 2; // 中密度は標準
-          else width = 3;                  // 低密度は太く
+          width = minW + nd * (maxW - minW);
+          if (isTopN) width = Math.min(maxW, width + 2);
         }
-        
-        // 統計を記録
         try { self._recordOutlineResolver(width, params); } catch (_) {}
         return width;
       };
@@ -2650,6 +2732,50 @@ class HeatboxPlayground {
       adaptiveOutlines: adaptiveOutlines,
       outlineWidthPreset: outlineWidthPreset
     };
+
+    // View Mode semantic overrides (preserve per-mode parameters via _viewModeStates)
+    switch (viewMode) {
+      case 'boxes':
+        options.opacity = 0.8;
+        options.showOutline = false;
+        options.wireframeOnly = false;
+        options.outlineRenderMode = 'standard';
+        options.emulationScope = 'off';
+        options.outlineInset = 0;
+        options.outlineInsetMode = 'all';
+        break;
+      case 'outline-only':
+        options.opacity = 0.0;      // hide fill
+        options.showOutline = true; // draw outlines only
+        options.wireframeOnly = false; // standard outline path
+        options.outlineRenderMode = 'standard';
+        options.emulationScope = 'off';
+        options.outlineInset = 0;
+        options.outlineInsetMode = 'all';
+        break;
+      case 'outline-inset': {
+        const st = this._viewModeStates['outline-inset'] || {};
+        options.opacity = 0.8;
+        options.showOutline = true;
+        options.wireframeOnly = false;
+        options.outlineRenderMode = 'inset';
+        options.emulationScope = 'off';
+        options.outlineInset = (typeof st.outlineInset === 'number') ? st.outlineInset : Math.max(0, parseFloat(document.getElementById('outlineInset')?.value) || 2.0);
+        options.outlineInsetMode = st.outlineInsetMode || (document.getElementById('outlineInsetMode')?.value || 'all');
+        options.enableThickFrames = !!st.enableThickFrames;
+        break;
+      }
+      case 'emulation-only':
+        options.opacity = 0.0;      // hide fill
+        options.showOutline = true;
+        options.wireframeOnly = true; // emulate thick edges only
+        options.outlineRenderMode = 'emulation-only';
+        options.emulationScope = 'all';
+        options.outlineInset = 0;
+        options.outlineInsetMode = 'all';
+        options.enableThickFrames = true;
+        break;
+    }
 
     // v0.1.6.1: インセット枠線（ADR-0004）
     let finalOutlineInset = outlineInset;

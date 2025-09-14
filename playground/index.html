@@ -246,7 +246,23 @@
       </div>
     </details>
 
-    <!-- 4. Performance Overlay (v0.1.12) -->
+    <!-- 4. View Mode (Display Preset) -->
+    <details class="section" open>
+      <summary>View Mode</summary>
+      <div class="controls section-content">
+        <div class="control-group">
+          <label>Preset</label>
+          <select id="viewModePreset">
+            <option value="boxes" selected>Boxes Only</option>
+            <option value="outline-only">Outline Only</option>
+            <option value="outline-inset">Outline + Inset</option>
+            <option value="emulation-only">Emulation Only</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <!-- 5. Performance Overlay (v0.1.12) -->
     <details class="section">
       <summary data-i18n="sum_performance">🆕 Performance Overlay (v0.1.12)</summary>
       <div class="controls section-content">
@@ -273,7 +289,7 @@
       </div>
     </details>
 
-    <!-- 5. Voxel Configuration -->
+    <!-- 6. Voxel Configuration -->
     <details class="section" open>
       <summary data-i18n="sum_voxel">Voxel Configuration</summary>
       <div class="controls section-content">
@@ -301,12 +317,7 @@
             <span data-i18n="chk_heightBased">Height Based</span>
           </label>
         </div>
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="wireframeOnly" />
-            <span data-i18n="chk_wireframeOnly">Wireframe Only</span>
-          </label>
-        </div>
+        
         <div class="control-group">
           <label>
             <input type="checkbox" id="showEmptyVoxels" />
@@ -441,6 +452,7 @@
 
         <!-- C. Emulation (WebGL constraint workaround) -->
         <div class="sub-section" style="margin-bottom: 16px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          
           <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #ffb74d;" data-i18n="h4_outline_emulation">Thick Line Emulation (WebGL Constraint Workaround)</h4>
           <div class="control-group">
             <label data-i18n="label_emulationScope">Emulation Scope (v0.1.12)</label>
