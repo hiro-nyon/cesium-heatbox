@@ -1603,31 +1603,66 @@ class HeatboxPlayground {
       
       const centerLon = 139.6917;
       const centerLat = 35.6895;
-      const radius = 0.02; // 約2km（密度を上げる）
+      const radius = 0.02; // 約2km（XY範囲は据え置き）
+
+      // Z範囲を拡張しつつ体積密度を維持する
+      const baseCount = 800;      // 既存のサンプル基準
+      const oldZMax = 200;        // 既存のZ最大値
+      const newZMax = 400;        // 拡張後のZ最大値（より立体的に）
+      const zScale = newZMax / oldZMax;
+      const sampleCount = Math.round(baseCount * zScale); // 体積増分に応じて点数を増やす
       
-      for (let i = 0; i < 800; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * radius;
-        const lon = centerLon + Math.cos(angle) * distance;
-        const lat = centerLat + Math.sin(angle) * distance;
-        const height = Math.random() * 200;
-        
-        // Cesium Entityとして追加
-        this.viewer.entities.add({
-          id: `sample-${i}`,
-          position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
-          point: {
-            pixelSize: 5,
-            color: Cesium.Color.fromCssColorString('#1976D2').withAlpha(0.85),
-            outlineWidth: 0
-          },
-          properties: {
-            weight: Math.random() * 100,
-            type: 'sample',
-            value: Math.random() * 100
-          }
-        });
-      }
+      // 複数クラスター（2〜5個）をランダムに生成
+      const minCenters = 1;
+      const maxCenters = 5;
+      const centerCount = Math.floor(Math.random() * (maxCenters - minCenters + 1)) + minCenters;
+
+      // クラスター中心を東京中心周辺にばらまく（±範囲）
+      // 全体を少し寄せる（中心分布の広がりを縮小）
+      const lonSpan = 0.06; // ±0.03度（約3km）
+      const latSpan = 0.048; // ±0.024度
+      const centers = Array.from({ length: centerCount }, () => ({
+        lon: centerLon + (Math.random() - 0.5) * lonSpan,
+        lat: centerLat + (Math.random() - 0.5) * latSpan,
+      }));
+
+      // 各クラスター半径は全体の面積が概ね一定になるよう 1/sqrt(N) で縮小（少しゆらぎ）
+      // クラスター半径もわずかに縮小（±のゆらぎ幅も少し狭める）
+      const clusterRadii = centers.map(() => radius / Math.sqrt(centerCount) * (0.80 + Math.random() * 0.25));
+
+      // 点数を各クラスターに割当（均等＋余りランダム）
+      const counts = new Array(centerCount).fill(Math.floor(sampleCount / centerCount));
+      let remaining = sampleCount - counts.reduce((a, b) => a + b, 0);
+      while (remaining-- > 0) counts[Math.floor(Math.random() * centerCount)]++;
+
+      // 各クラスターに点を生成
+      let idx = 0;
+      centers.forEach((c, ci) => {
+        const cr = clusterRadii[ci];
+        for (let k = 0; k < counts[ci]; k++) {
+          const angle = Math.random() * Math.PI * 2;
+          const distance = Math.random() * cr;
+          const lon = c.lon + Math.cos(angle) * distance;
+          const lat = c.lat + Math.sin(angle) * distance;
+          const height = Math.random() * newZMax;
+
+          this.viewer.entities.add({
+            id: `sample-${idx++}`,
+            position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
+            point: {
+              pixelSize: 5,
+              color: Cesium.Color.fromCssColorString('#1976D2').withAlpha(0.85),
+              outlineWidth: 0
+            },
+            properties: {
+              weight: Math.random() * 100,
+              type: 'sample',
+              value: Math.random() * 100,
+              clusterId: ci + 1
+            }
+          });
+        }
+      });
       
       // 統計更新（Cesium Entitiesを使用）
       this.currentData = this.viewer.entities.values;

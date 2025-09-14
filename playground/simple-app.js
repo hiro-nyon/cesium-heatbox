@@ -367,7 +367,13 @@ function handleFileInput(event) {
 function loadSampleData() {
   updateStatus('Loading sample data...', 'loading');
   try {
-    const data = generateTokyoClusterGeoJSON(800, 0.02, 0, 200);
+    // Z範囲を拡張しつつ体積密度を維持する（Playground と整合）
+    const baseCount = 800;
+    const oldZMax = 200;
+    const newZMax = 400; // より立体的に（400m）
+    const zScale = newZMax / oldZMax;
+    const count = Math.round(baseCount * zScale);
+    const data = generateTokyoClusterGeoJSON(count, 0.02, 0, newZMax);
     processLoadedData(data, 'Playground-style Sample Data');
   } catch (error) {
     console.error('Error generating sample data:', error);
@@ -388,26 +394,58 @@ function generateTestData() {
 }
 
 // Generate Tokyo cluster GeoJSON (like Playground sample)
-function generateTokyoClusterGeoJSON(count = 800, radius = 0.02, minAlt = 0, maxAlt = 200) {
+function generateTokyoClusterGeoJSON(count = 800, radius = 0.02, minAlt = 0, maxAlt = 200, centerCount) {
   const features = [];
   const centerLon = 139.6917;
   const centerLat = 35.6895;
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = Math.random() * radius;
-    const lon = centerLon + Math.cos(angle) * dist;
-    const lat = centerLat + Math.sin(angle) * dist;
-    const alt = minAlt + Math.random() * (maxAlt - minAlt);
-    const value = Math.random() * 100;
-    features.push({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [lon, lat, alt] },
-      properties: {
-        value: Math.round(value * 100) / 100,
-        name: `Sample ${i + 1}`
-      }
-    });
+
+  // クラスター数（デフォルト: 2〜5のランダム）
+  if (typeof centerCount !== 'number' || centerCount < 1) {
+    const minCenters = 1;
+    const maxCenters = 5;
+    centerCount = Math.floor(Math.random() * (maxCenters - minCenters + 1)) + minCenters;
   }
+
+  // クラスター中心を東京中心周辺にばらまく
+  // 全体を少し寄せる（中心分布の広がりを縮小）
+  const lonSpan = 0.06;  // ±0.03度
+  const latSpan = 0.048; // ±0.024度
+  const centers = Array.from({ length: centerCount }, () => ({
+    lon: centerLon + (Math.random() - 0.5) * lonSpan,
+    lat: centerLat + (Math.random() - 0.5) * latSpan,
+  }));
+
+  // クラスター半径は 1/sqrt(N) で縮小（少しゆらぎ）し、全体の面積感を維持
+  // クラスター半径もわずかに縮小
+  const clusterRadii = centers.map(() => radius / Math.sqrt(centerCount) * (0.80 + Math.random() * 0.25));
+
+  // 点数を各クラスターに割当（均等＋余りランダム）
+  const counts = new Array(centerCount).fill(Math.floor(count / centerCount));
+  let rem = count - counts.reduce((a, b) => a + b, 0);
+  while (rem-- > 0) counts[Math.floor(Math.random() * centerCount)]++;
+
+  let idx = 0;
+  centers.forEach((c, ci) => {
+    const cr = clusterRadii[ci];
+    for (let k = 0; k < counts[ci]; k++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Math.random() * cr;
+      const lon = c.lon + Math.cos(angle) * dist;
+      const lat = c.lat + Math.sin(angle) * dist;
+      const alt = minAlt + Math.random() * (maxAlt - minAlt);
+      const value = Math.random() * 100;
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lon, lat, alt] },
+        properties: {
+          value: Math.round(value * 100) / 100,
+          name: `Sample ${++idx}`,
+          clusterId: ci + 1
+        }
+      });
+    }
+  });
+
   return { type: 'FeatureCollection', features };
 }
 
