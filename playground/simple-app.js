@@ -511,13 +511,16 @@ function processLoadedData(data, fileName) {
       throw new Error('Unsupported data format');
     }
     
-    // Add entities to viewer and keep actual Cesium Entity references
-    const addedEntities = [];
-    currentEntities.forEach(entity => {
-      const added = viewer.entities.add(entity);
-      if (added) addedEntities.push(added);
-    });
-    currentEntities = addedEntities;
+    // Add raw points to viewer?（切り分け用: 既定は追加しない）
+    const SHOW_RAW_POINTS = false;
+    if (SHOW_RAW_POINTS) {
+      const addedEntities = [];
+      currentEntities.forEach(entity => {
+        const added = viewer.entities.add(entity);
+        if (added) addedEntities.push(added);
+      });
+      currentEntities = addedEntities;
+    }
     
     // Update statistics
     updateStatistics();
@@ -525,10 +528,7 @@ function processLoadedData(data, fileName) {
     // Enable controls
     document.getElementById('createHeatmap').disabled = false;
     
-    // Auto-adjust camera if enabled
-    if (document.getElementById('autoCamera').checked) {
-      viewer.zoomTo(viewer.entities);
-    }
+    // Auto-adjust cameraはヒートマップ作成後に行うためここではズームしない
     
     updateStatus(`Successfully loaded ${currentEntities.length} data points from ${fileName}`, 'success');
     
