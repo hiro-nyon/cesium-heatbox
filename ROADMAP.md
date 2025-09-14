@@ -238,8 +238,13 @@ Priority: High | Target: 2025-12
 Implementation Notes（必ずここに実装する）
 - `src/core/adaptive/AdaptiveController.js`
   - `calculateAdaptiveParams(...)` にて、`statistics` から算出される `normalizedDensity` を用い、
-    - `adaptiveParams.boxOpacityRange: [min, max]` に従って `boxOpacity` を線形（または将来的に gamma 対応）で補間して設定。
+    - `adaptiveParams.boxOpacityRange: [min, max]` に従って `boxOpacity` を補間して設定。
     - `adaptiveParams.outlineOpacityRange: [min, max]` に従って `outlineOpacity` を補間して設定。
+    - `adaptiveParams.outlineWidthRange: [min, max]`（新設）に従って `outlineWidth` を補間して設定（TopN時の加算ブーストも許容）。
+    - 補間のロジックは v0.2.0 の分類（classification）と同期させる：
+      - 既定は linear だが、`classification` の設定が有効な場合は同じスキーム（log/equal-interval/quantize/threshold/quantile/jenks 等）で opacity/width にも適用。
+      - 実装は共通ユーティリティ（`src/utils/classification.js`）を用い、色・透明度・太さの補間ソースを統一する。
+      - 任意で `gamma` や `easing` を導入し、連続補間の特性を統一的に調整できるようにする。
   - 必要に応じて `applyPresetLogic(...)` の戻り値とレンジ適用の優先順位を整理（レンジ優先→プリセット補正、もしくは逆）。
 - `src/core/VoxelRenderer.js`
   - 既存の `adaptiveParams.boxOpacity || options.opacity` をそのまま利用（AdaptiveController が最終値を入れる）。
@@ -248,6 +253,53 @@ Implementation Notes（必ずここに実装する）
 Policy（重要・強い方針）
 - 上記の AdaptiveController での opacity range 実装が完了し、安定版に含まれるまでは、`boxOpacityResolver` / `outlineOpacityResolver` を絶対に削除しない（正規化で消さない）。
 - 削除の判断は、実装・検証・ドキュメント（MIGRATION.md/RELEASE_NOTES.md）のすべてが揃った後に行う。
+
+---
+
+Resolver 置き換え計画（v0.2.0で「別の形ですべて再実装」）
+
+目的
+- 既存の Resolver API（`outlineWidthResolver` / `outlineOpacityResolver` / `boxOpacityResolver`）で可能だった表現力を、宣言的で最適化しやすい新APIに置き換える。
+- パフォーマンス（関数呼び出し頻度の削減）と一貫性（UI/プロファイル/チューニングとの連携）を高める。
+
+設計（新API）
+- Adaptive Ranges（連続制御）
+  - `adaptiveParams.boxOpacityRange: [min, max]`
+  - `adaptiveParams.outlineOpacityRange: [min, max]`
+  - `adaptiveParams.outlineWidthRange: [min, max]`（新設）
+  - いずれも `normalizedDensity` に対する線形補間（将来的に `gamma` 係数や `easing` を追加検討）。
+- Classification（離散/連続の分類マップ）
+  - v0.2.0 の `classification.*` と連携し、色だけでなく透明度/太さにも適用可能にする。
+  - `classificationTargets: { color?: boolean; opacity?: boolean; width?: boolean }` を導入（デフォルト: colorのみ）。
+- Emulation Hook（エミュレーション時の後処理）
+  - `outlineRenderMode: 'emulation-only'` のとき、内部的にポリラインへ最終アルファ/太さを反映する軽量フックを設ける（Playgroundの後処理と同等の効果をライブラリ側に統合）。
+
+実装箇所
+- `src/core/adaptive/AdaptiveController.js`：range補間・TopN加算ロジックの中心。
+- `src/core/VoxelRenderer.js`：AdaptiveController が計算した最終値をそのまま使用（条件分岐の簡素化）。
+- `src/utils/validation.js`：新オプションの正規化・クランプ（0–1 / >0 の安全域）。
+- `src/utils/classification.js`（新規）：分類スキーム実装（linear/log/quantile 等の薄いユーティリティ）。
+
+互換性
+- v0.2.0 までは Resolver API を「警告のみで存続」。移行ガイドに従い新APIへ移してもらう。
+- v0.2.x（または 0.3.0）で Resolver API を段階的に削除（ロードマップとリリースノートで事前告知）。
+
+受け入れ基準（パリティテスト）
+- 旧Resolverで実現していた代表シナリオで視覚的パリティ：
+  1) 密度ベースのボックス不透明度（低密度:薄 / 高密度:濃）
+  2) 密度ベースの枠線透明度（emulation-only を含む）
+  3) 密度ベースの枠線太さ（TopNは加算ブースト）
+  4) TopNベースの不透明度切替
+- Playground/Quick Start で実データを用いた比較スクリーンショットを添付し、差分が許容範囲に収まる。
+
+移行ガイド（MIGRATION.md 追記）
+- 旧: `*Resolver` → 新: `adaptiveParams.*Range` または `classification.*` のマッピング例を掲載。
+- emulation-only 時の透明度/太さの適用順序を明記（Adaptive → Emulation Hook の順）。
+
+スケジュール
+- 0.1.15: AdaptiveController に `box/outlineOpacityRange` 実装（幅の安全クランプ + テスト）。
+- 0.2.0: `outlineWidthRange` / classification 連携 / emulation hook を統合、Resolver を非推奨のまま維持。
+- 0.2.x: Resolver API の段階的削除（少なくとも2リリース以上のグレイス期間）。
 - 受け入れ基準:
   - [ ] 代表データで各分類が視覚的に区別でき、凡例/ガイドが同期表示される。
   - [ ] 透明度分類を有効化した場合、fill/outline（標準/インセット/エミュ）に0–1で正しく反映される。
