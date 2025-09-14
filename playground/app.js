@@ -46,6 +46,19 @@ class HeatboxPlayground {
     this.initializeControlStates();
     this.updateEnvironmentInfo();
     this._resetOutlineStats();
+    // Camera/fitView coordination flags
+    this._autoViewRequest = false;
+    this._fitViewOptions = null;
+    this._fitOnceHandler = null;
+    this._inCameraMove = false;
+    // Debug: capture render errors quickly
+    try {
+      this.viewer?.scene?.renderError?.addEventListener((e) => {
+        console.warn('[PG][renderError]', e && e.message ? e.message : e);
+      });
+      this.viewer?.camera?.moveStart?.addEventListener?.(() => { this._inCameraMove = true; });
+      this.viewer?.camera?.moveEnd?.addEventListener?.(() => { this._inCameraMove = false; });
+    } catch (_) {}
     this._setupLanguageControls();
     this._applyTranslations();
     this._setupMobileUI();
@@ -1725,9 +1738,29 @@ class HeatboxPlayground {
         
         // 統計情報を更新
         this.updateStatisticsFromHeatmap(stats);
-        
-        // カメラ移動は行わない（点データ生成時のみ移動）
-        // this._zoomToHeatboxBounds(); // コメントアウト
+
+        // 自動カメラ位置調整（postRenderで一回だけ実行して競合を回避）
+        try {
+          if (this._autoViewRequest && this.viewer && this.viewer.scene && !this._fitOnceHandler) {
+            const opts = this._fitViewOptions || { headingDegrees: 0, pitchDegrees: -45, paddingPercent: 0.1 };
+            let fired = false;
+            this._fitOnceHandler = async () => {
+              if (fired) return;
+              fired = true;
+              try {
+                // ライブラリfitViewではなく、Playground側の安定化ルートでズーム
+                this._zoomToHeatboxBounds();
+              } catch (e) {
+                console.warn('auto-fitView failed:', e);
+              } finally {
+                try { this.viewer.scene.postRender.removeEventListener(this._fitOnceHandler); } catch (_) {}
+                this._fitOnceHandler = null;
+                this._autoViewRequest = false;
+              }
+            };
+            this.viewer.scene.postRender.addEventListener(this._fitOnceHandler);
+          }
+        } catch (_) {}
       } catch (error) {
         console.error('ヒートマップデータ処理エラー:', error);
         alert('データの処理中にエラーが発生しました: ' + error.message);
@@ -2676,15 +2709,14 @@ class HeatboxPlayground {
     // Adaptive Rendering Strategy
     options.renderLimitStrategy = renderLimitStrategy;
     
-    // Auto View設定
-    options.autoView = autoView;
-    if (autoView) {
-      options.fitViewOptions = {
-        headingDegrees: fitViewHeading,
-        pitchDegrees: fitViewPitch,
-        paddingPercent: 0.1
-      };
-    }
+    // Auto View設定はライブラリ自動を使わず、後段でpostRender一回で実行（競合回避）
+    this._autoViewRequest = !!autoView;
+    this._fitViewOptions = autoView ? {
+      headingDegrees: fitViewHeading,
+      pitchDegrees: fitViewPitch,
+      paddingPercent: 0.1
+    } : null;
+    options.autoView = false;
 
     // v0.1.12: Performance overlay initial state
     if (perfOverlayEnabled) {

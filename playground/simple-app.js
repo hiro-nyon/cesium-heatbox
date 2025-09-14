@@ -86,6 +86,23 @@ function initializeCesium() {
     } catch (_) {}
 
     updateStatus('Cesium initialized successfully', 'success');
+    // QS: 安定性対策 - 半透明/OIT/ログ深度/ポストプロセスを抑止
+    try {
+      if (viewer && viewer.scene) {
+        if (typeof viewer.scene.orderIndependentTranslucency !== 'undefined') {
+          viewer.scene.orderIndependentTranslucency = false;
+        }
+        if (typeof viewer.scene.logarithmicDepthBuffer !== 'undefined') {
+          viewer.scene.logarithmicDepthBuffer = false;
+        }
+        if (typeof viewer.scene.sunBloom !== 'undefined') {
+          viewer.scene.sunBloom = false;
+        }
+        if (typeof viewer.scene.requestRenderMode !== 'undefined') {
+          viewer.scene.requestRenderMode = false;
+        }
+      }
+    } catch (_) {}
     
   } catch (error) {
     console.error('Failed to initialize Cesium:', error);
@@ -640,13 +657,13 @@ async function createHeatmap() {
       maxRenderVoxels: 8000,
       renderLimitStrategy: 'hybrid', // バランス重視の戦略
       colorMap: 'viridis',
-      // Hide box fill in emulation-only (wireframe toggle)
-      opacity: wireframe ? 0.0 : 0.85,
+      // QS安定化: 初回作成は不透明ボックスでOIT経路を回避
+      opacity: 1.0,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
       // Do not use standard outlines when emulation-only
       showOutline: false,
-      // Emulation-only mode (thick edges only)
+      // EmulationはQSではオフ固定（安定化）
       outlineRenderMode: 'standard',
       emulationScope: 'off', // v0.1.12: outlineEmulation → emulationScope
       outlineInset: 0,
