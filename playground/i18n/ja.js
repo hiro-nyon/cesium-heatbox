@@ -41,5 +41,13 @@ if (typeof window !== 'undefined') {
     opt_preset_uniform_legacy: '⚠️ 均一（廃止予定 → 中）',
     opt_preset_density_legacy: '⚠️ 密度適応（廃止予定 → 適応）',
     opt_preset_topn_legacy: '⚠️ TopN重視（廃止予定 → 太い）'
+    ,
+    // View Mode (Playground)
+    sum_viewmode: '表示モード',
+    label_viewmode_preset: 'プリセット',
+    opt_view_boxes: 'ボックスのみ',
+    opt_view_outline: '枠線のみ',
+    opt_view_outline_inset: '枠線＋インセット',
+    opt_view_emulation: 'エミュレーションのみ'
   };
 }

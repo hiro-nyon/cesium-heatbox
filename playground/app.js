@@ -135,7 +135,7 @@ class HeatboxPlayground {
     if (st.outlineInset === undefined) st.outlineInset = (mode === 'outline-inset') ? 2.0 : 0.0;
     if (!st.outlineInsetMode) st.outlineInsetMode = (mode === 'outline-inset') ? 'all' : 'all';
     if (st.enableThickFrames === undefined) st.enableThickFrames = (mode === 'emulation-only');
-    if (st.adaptiveOutlines === undefined) st.adaptiveOutlines = true;
+    // Do not force adaptiveOutlines; keep user's current checkbox state
     if (!st.outlineWidthPreset) st.outlineWidthPreset = 'adaptive';
 
     // Apply to UI
@@ -144,7 +144,7 @@ class HeatboxPlayground {
     setVal('outlineInset', st.outlineInset);
     setVal('outlineInsetMode', st.outlineInsetMode);
     setVal('enableThickFrames', st.enableThickFrames);
-    setVal('adaptiveOutlines', st.adaptiveOutlines);
+    if (st.adaptiveOutlines !== undefined) setVal('adaptiveOutlines', st.adaptiveOutlines);
     setVal('outlineWidthPreset', st.outlineWidthPreset);
   }
 
@@ -2752,6 +2752,7 @@ class HeatboxPlayground {
         options.emulationScope = 'off';
         options.outlineInset = 0;
         options.outlineInsetMode = 'all';
+        options.adaptiveOutlines = false; // ensure slider opacity applies
         break;
       case 'outline-inset': {
         const st = this._viewModeStates['outline-inset'] || {};
@@ -2763,6 +2764,7 @@ class HeatboxPlayground {
         options.outlineInset = (typeof st.outlineInset === 'number') ? st.outlineInset : Math.max(0, parseFloat(document.getElementById('outlineInset')?.value) || 2.0);
         options.outlineInsetMode = st.outlineInsetMode || (document.getElementById('outlineInsetMode')?.value || 'all');
         options.enableThickFrames = !!st.enableThickFrames;
+        options.adaptiveOutlines = false; // ensure slider opacity applies
         break;
       }
       case 'emulation-only':
@@ -2774,6 +2776,7 @@ class HeatboxPlayground {
         options.outlineInset = 0;
         options.outlineInsetMode = 'all';
         options.enableThickFrames = true;
+        options.adaptiveOutlines = false; // emulate path controls thickness; keep opacity slider effective if any
         break;
     }
 
