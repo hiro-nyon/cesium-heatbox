@@ -41,5 +41,13 @@ if (typeof window !== 'undefined') {
     opt_preset_uniform_legacy: '⚠️ Uniform (Deprecated → Medium)',
     opt_preset_density_legacy: '⚠️ Density Adaptive (Deprecated → Adaptive)',
     opt_preset_topn_legacy: '⚠️ Top-N Focus (Deprecated → Thick)'
+    ,
+    // View Mode (Playground)
+    sum_viewmode: 'View Mode',
+    label_viewmode_preset: 'Preset',
+    opt_view_boxes: 'Boxes Only',
+    opt_view_outline: 'Outline Only',
+    opt_view_outline_inset: 'Outline + Inset',
+    opt_view_emulation: 'Emulation Only'
   };
 }
