@@ -148,21 +148,22 @@ function reRenderHeatmap() {
     const wireframe = document.getElementById('wireframeOnly')?.checked || false;
     const updated = {
       showOutline: wireframe ? false : false,
-      opacity: wireframe ? 0.0 : 1.0,
+      // 非ワイヤーフレーム時は一律不透明度を指定しない（密度ベースの不透明度を有効にする）
+      opacity: wireframe ? 0.0 : undefined,
       // Ensure no box fill is rendered in wireframe
       wireframeOnly: wireframe,
       // ADR-0009 Phase 5: 適応制御オプション
       adaptiveOutlines: true,
-      outlineWidthPreset: 'adaptive-density',
-      boxOpacityMode: 'density',
-      outlineOpacityMode: 'density',
-      boxOpacityResolver: !wireframe ? (ctx => {
+      outlineWidthPreset: 'adaptive',
+      // density→opacity は app.js と同様に Resolver で実装
+      boxOpacityResolver: wireframe ? (() => 0) : (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        return 0.05 + nd * 0.95;
-      }) : (() => 0),
+        // Range: 0.2 → 0.9 (linear)
+        return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
+      }),
       outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
-      outlineEmulation: wireframe ? 'all' : 'off',
+      // v0.2.0 deprecation対応: outlineEmulation → emulationScope
+      emulationScope: wireframe ? 'all' : 'off',
       outlineInset: 0,
       outlineInsetMode: 'none'
     };
@@ -183,7 +184,7 @@ function reRenderHeatmap() {
         return minW + nd * (maxW - minW);
       });
     } else {
-      // Clear resolvers when exiting wireframe
+      // Clear resolvers when exiting wireframe（アウトライン系のみ）
       updated.outlineOpacityResolver = undefined;
       updated.outlineWidthResolver = undefined;
     }
@@ -323,16 +324,19 @@ function initializeEnvironmentInfo() {
   try {
     // Cesium version
     const cesiumVersion = typeof Cesium !== 'undefined' ? Cesium.VERSION : 'Unknown';
-    document.getElementById('cesiumVersion').textContent = cesiumVersion;
+    const cesiumVerEl = document.getElementById('cesiumVersion');
+    if (cesiumVerEl) cesiumVerEl.textContent = cesiumVersion;
     
     // WebGL support
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     const webglSupport = gl ? 'Supported' : 'Not Supported';
-    document.getElementById('webglSupport').textContent = webglSupport;
+    const webglEl = document.getElementById('webglSupport');
+    if (webglEl) webglEl.textContent = webglSupport;
     
     // Heatbox version - will be set when heatbox is initialized
-    document.getElementById('heatboxVersion').textContent = 'Loading...';
+    const hbVerEl = document.getElementById('heatboxVersion');
+    if (hbVerEl) hbVerEl.textContent = 'Loading...';
     
   } catch (error) {
     console.error('Error initializing environment info:', error);
@@ -575,31 +579,30 @@ async function createHeatmap() {
       maxRenderVoxels: 'auto', 
       renderLimitStrategy: 'hybrid', // バランス重視の戦略
       colorMap: 'viridis',
-      // TopN強調表示 (Quick Start)
-      highlightTopN: 0, // デフォルトで無効
+      // TopN強調表示 (Quick Start) は未指定（0を入れず警告を避ける）
       // Hide box fill in emulation-only (wireframe toggle)
-      opacity: wireframe ? 0.0 : 1.0,
+      // 非ワイヤーフレーム時も base opacity は指定せず（Resolverが設定）
+      opacity: wireframe ? 0.0 : 0.8,
       wireframeOnly: wireframe,
       showEmptyVoxels: false,
       emptyOpacity: 0.0,
       // Do not use standard outlines when emulation-only
       showOutline: wireframe ? false : false,
-      // Default: density-driven fill shading
-      boxOpacityResolver: !wireframe ? (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5); // stronger gamma for contrast
-        return 0.05 + nd * 0.95; // 0.05–1.0 by density (stronger)
-      }) : (() => 0),
+      // Default: density-driven fill opacity（app.js と同等の resolver）
       // Emulation-only mode (thick edges only)
       outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
-      outlineEmulation: wireframe ? 'all' : 'off',
+      // v0.2.0 deprecation対応: outlineEmulation → emulationScope
+      emulationScope: wireframe ? 'all' : 'off',
       outlineInset: 0,
       outlineInsetMode: 'none',
       // ADR-0009 Phase 5 対応: 適応的制御を有効化
       adaptiveOutlines: true,
-      outlineWidthPreset: 'adaptive-density',
-      boxOpacityMode: 'density',
-      outlineOpacityMode: 'density',
+      outlineWidthPreset: 'adaptive',
+      boxOpacityResolver: wireframe ? (() => 0) : (ctx => {
+        const d = Number(ctx?.normalizedDensity) || 0;
+        // Range: 0.2 → 0.9 (linear)
+        return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
+      }),
       // In wireframe: higher density → thicker and darker (direct mapping)
       outlineOpacityResolver: wireframe ? (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
@@ -632,9 +635,21 @@ async function createHeatmap() {
         : null;
       if (!HB) throw new Error('Heatbox constructor not found');
       heatboxInstance = new HB(viewer, options);
+      // Re-apply runtime-only resolvers removed by normalization
+      try {
+        heatboxInstance.options.boxOpacityResolver = wireframe ? (() => 0) : (ctx => {
+          const d = Number(ctx?.normalizedDensity) || 0;
+          // Range: 0.2 → 0.9 (linear)
+          return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
+        });
+      } catch (_) {}
       // Update heatbox version info
       const hv = document.getElementById('heatboxVersion');
       if (hv) hv.textContent = 'Loaded';
+      try {
+        const eff = typeof heatboxInstance.getEffectiveOptions === 'function' ? heatboxInstance.getEffectiveOptions() : null;
+        console.log('[Heatbox] Effective adaptive params after init:', eff?.adaptiveParams, 'opacity:', eff?.opacity);
+      } catch (_) {}
     }
     
     // Create heatmap from Cesium Entities
@@ -646,6 +661,10 @@ async function createHeatmap() {
         heatboxInstance.update();
       }
     }
+    try {
+      const eff2 = typeof heatboxInstance.getEffectiveOptions === 'function' ? heatboxInstance.getEffectiveOptions() : null;
+      console.log('[Heatbox] Effective adaptive params after data:', eff2?.adaptiveParams, 'opacity:', eff2?.opacity);
+    } catch (_) {}
     // Post-adjust emulation polylines by density when wireframe is enabled
     if (wireframe) {
       try { adjustEmulationByDensity(); } catch (_) {}
