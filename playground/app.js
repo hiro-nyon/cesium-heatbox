@@ -1694,8 +1694,9 @@ class HeatboxPlayground {
       try {
         const wireframeOnly = document.getElementById('wireframeOnly')?.checked || false;
         this.heatbox.options.boxOpacityResolver = wireframeOnly ? (() => 0) : ((ctx) => {
-          const d = Number(ctx?.normalizedDensity) || 0;
-          return Math.max(0.2, Math.min(1.0, 0.3 + d * 0.7));
+          const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+          // Range: 0.2 → 0.9 (linear)
+          return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
         });
       } catch (_) {}
       
@@ -2682,7 +2683,7 @@ class HeatboxPlayground {
     if (boxOpacityMode !== 'off') {
       options.boxOpacityResolver = (ctx) => {
         const d = Number(ctx.normalizedDensity) || 0;
-        if (boxOpacityMode === 'density') return Math.max(0.2, Math.min(1.0, 0.3 + d * 0.7));
+        if (boxOpacityMode === 'density') return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
         if (boxOpacityMode === 'topn') return ctx.isTopN ? 0.95 : 0.5;
         return undefined;
       };

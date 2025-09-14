@@ -158,7 +158,8 @@ function reRenderHeatmap() {
       // density→opacity は app.js と同様に Resolver で実装
       boxOpacityResolver: wireframe ? (() => 0) : (ctx => {
         const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        return Math.max(0.2, Math.min(1.0, 0.3 + d * 0.7));
+        // Range: 0.2 → 0.9 (linear)
+        return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
       }),
       outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
       // v0.2.0 deprecation対応: outlineEmulation → emulationScope
@@ -599,7 +600,8 @@ async function createHeatmap() {
       outlineWidthPreset: 'adaptive',
       boxOpacityResolver: wireframe ? (() => 0) : (ctx => {
         const d = Number(ctx?.normalizedDensity) || 0;
-        return Math.max(0.2, Math.min(1.0, 0.3 + d * 0.7));
+        // Range: 0.2 → 0.9 (linear)
+        return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
       }),
       // In wireframe: higher density → thicker and darker (direct mapping)
       outlineOpacityResolver: wireframe ? (ctx => {
@@ -637,7 +639,8 @@ async function createHeatmap() {
       try {
         heatboxInstance.options.boxOpacityResolver = wireframe ? (() => 0) : (ctx => {
           const d = Number(ctx?.normalizedDensity) || 0;
-          return Math.max(0.2, Math.min(1.0, 0.3 + d * 0.7));
+          // Range: 0.2 → 0.9 (linear)
+          return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
         });
       } catch (_) {}
       // Update heatbox version info
