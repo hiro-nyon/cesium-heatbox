@@ -578,7 +578,10 @@ export class VoxelRenderer {
     }
     
     // Edge polylines for thick emulation
-    if (params.emulateThick) {
+    // 追加の安全ガード: emulation-only もしくは emulationScope!='off' の場合のみ許可
+    const allowEmulationEdges = (this.options.outlineRenderMode === 'emulation-only') ||
+      (this.options.emulationScope && this.options.emulationScope !== 'off');
+    if (allowEmulationEdges && params.emulateThick) {
       try {
         this.geometryRenderer.createEdgePolylines({
           centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
