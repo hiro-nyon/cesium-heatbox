@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
   setupQuickStartMobileMenu();
   initializeEnvironmentInfo();
   // setupAutoVoxelSizeToggle(); // QS enforces auto voxel size
+  // QS: デバッグフックを初期化
+  try { installDebugHooks(); } catch (_) {}
 });
 
 // Initialize Cesium viewer
@@ -85,6 +87,96 @@ function initializeCesium() {
   } catch (error) {
     console.error('Failed to initialize Cesium:', error);
     updateStatus('Failed to initialize Cesium: ' + error.message, 'error');
+  }
+}
+
+// ===== Debug hooks (QS専用) =====
+function installDebugHooks() {
+  if (!window || !viewer || !viewer.scene) return;
+  // renderError にフック
+  try {
+    const errEv = viewer.scene.renderError;
+    if (errEv && typeof errEv.addEventListener === 'function') {
+      errEv.addEventListener(function() {
+        const args = Array.prototype.slice.call(arguments || []);
+        console.error('[QS][renderError] captured', args && args[0] && args[0].message ? args[0].message : args[0]);
+        safeDebugSnapshot('renderError');
+      });
+    }
+  } catch(_) {}
+
+  // グローバル onerror
+  try {
+    window.addEventListener('error', function(e){
+      console.error('[QS][window.error]', e && e.message);
+      safeDebugSnapshot('window.error');
+    });
+  } catch(_) {}
+
+  // コンソールから手動呼び出し可能
+  window.heatboxDebugDump = function(label){ safeDebugSnapshot(label || 'manual'); };
+}
+
+function safeGetValue(prop) {
+  try {
+    if (!prop) return null;
+    if (typeof prop.getValue === 'function') return prop.getValue(Cesium.JulianDate.now());
+    return prop;
+  } catch(_) { return null; }
+}
+
+function safeDebugSnapshot(label) {
+  try {
+    const stats = { label, t: Date.now() };
+    // viewer全体
+    const values = (viewer && viewer.entities && viewer.entities.values) ? viewer.entities.values : [];
+    stats.viewerEntities = values.length;
+
+    // Heatbox内部（可能なら）
+    let hbEntities = 0;
+    try { hbEntities = heatboxInstance && heatboxInstance.renderer && heatboxInstance.renderer.geometryRenderer && Array.isArray(heatboxInstance.renderer.geometryRenderer.entities) ? heatboxInstance.renderer.geometryRenderer.entities.length : 0; } catch(_) {}
+    stats.heatboxEntities = hbEntities;
+
+    // Box/Polylineの簡易統計
+    let boxCount = 0, plCount = 0;
+    const dimMin = { x: Infinity, y: Infinity, z: Infinity };
+    const dimMax = { x: -Infinity, y: -Infinity, z: -Infinity };
+    let invalidDims = 0, invalidPos = 0;
+
+    for (let i = 0; i < values.length; i++) {
+      const e = values[i];
+      if (!e) continue;
+      // Box
+      if (e.box) {
+        boxCount++;
+        const dims = safeGetValue(e.box.dimensions);
+        if (!dims || !isFinite(dims.x) || !isFinite(dims.y) || !isFinite(dims.z) || dims.x <= 0 || dims.y <= 0 || dims.z <= 0) {
+          invalidDims++;
+        } else {
+          dimMin.x = Math.min(dimMin.x, dims.x); dimMax.x = Math.max(dimMax.x, dims.x);
+          dimMin.y = Math.min(dimMin.y, dims.y); dimMax.y = Math.max(dimMax.y, dims.y);
+          dimMin.z = Math.min(dimMin.z, dims.z); dimMax.z = Math.max(dimMax.z, dims.z);
+        }
+      }
+      // Polyline
+      if (e.polyline) {
+        plCount++;
+      }
+      // 位置
+      const pos = safeGetValue(e.position);
+      if (!pos || !isFinite(pos.x) || !isFinite(pos.y) || !isFinite(pos.z)) invalidPos++;
+    }
+
+    stats.boxCount = boxCount;
+    stats.polylineCount = plCount;
+    stats.invalidDims = invalidDims;
+    stats.invalidPos = invalidPos;
+    stats.dimMin = dimMin;
+    stats.dimMax = dimMax;
+
+    console.warn('[QS][debugSnapshot]', stats);
+  } catch (err) {
+    console.error('[QS][debugSnapshot] failed', err);
   }
 }
 
@@ -600,6 +692,13 @@ async function createHeatmap() {
         heatboxInstance.update();
       }
     }
+    // デバッグ: 実効オプションとスナップショット
+    try {
+      if (typeof heatboxInstance.getEffectiveOptions === 'function') {
+        console.warn('[QS] Effective options', heatboxInstance.getEffectiveOptions());
+      }
+      safeDebugSnapshot('after-create');
+    } catch(_) {}
     // Do not post-adjust polylines in QS（安定性優先）
     
     // Update statistics with heatmap info
