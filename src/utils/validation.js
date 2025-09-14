@@ -215,9 +215,11 @@ export function validateAndNormalizeOptions(options = {}) {
   // v0.1.12: Deprecated Resolver systems - show warnings and remove
   if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
     warnOnce('outlineWidthResolver',
-      '[Heatbox][DEPRECATION][v0.2.0] outlineWidthResolver is deprecated; use adaptiveOutlines with outlineWidthPreset and adaptiveParams instead.');
-    // Remove deprecated resolver from normalized options
-    delete normalized.outlineWidthResolver;
+      '[Heatbox][DEPRECATION][v0.2.0] outlineWidthResolver is deprecated; prefer adaptiveOutlines with outlineWidthPreset and adaptiveParams.');
+    if (typeof normalized.outlineWidthResolver !== 'function') {
+      Logger.warn('outlineWidthResolver must be a function. Ignoring.');
+      normalized.outlineWidthResolver = null;
+    }
   }
   
   // v0.2.0 planned: Resolver deprecation. For now, warn but keep for compatibility.
