@@ -1690,6 +1690,14 @@ class HeatboxPlayground {
       this.heatbox = new HB(this.viewer, options);
       console.log('Heatboxインスタンス作成完了:', this.heatbox);
       console.log('Heatboxインスタンスのメソッド:', Object.getOwnPropertyNames(this.heatbox));
+      // NOTE: main系の正規化でboxOpacityResolverは削除されるため、生成後に再設定して密度→不透明度を適用
+      try {
+        const wireframeOnly = document.getElementById('wireframeOnly')?.checked || false;
+        this.heatbox.options.boxOpacityResolver = wireframeOnly ? (() => 0) : ((ctx) => {
+          const d = Number(ctx?.normalizedDensity) || 0;
+          return Math.max(0.2, Math.min(1.0, 0.3 + d * 0.7));
+        });
+      } catch (_) {}
       
       // ヒートマップを生成 - createFromEntitiesメソッドを使用
       console.log('ヒートマップ生成開始...');
