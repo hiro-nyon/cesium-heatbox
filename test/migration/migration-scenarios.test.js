@@ -51,8 +51,8 @@ describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
       expect(normalized.fitViewOptions.paddingPercent).toBe(0.1);
 
       // Should show deprecation warnings
-      expectWarnContains('[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.pitch is deprecated');
-      expectWarnContains('[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.heading is deprecated');
+      expectWarnContains('[Heatbox][DEPRECATION][v1.0.0] fitViewOptions.pitch is deprecated');
+      expectWarnContains('[Heatbox][DEPRECATION][v1.0.0] fitViewOptions.heading is deprecated');
     });
 
     test('should prioritize new names when both old and new are provided', () => {
@@ -86,8 +86,8 @@ describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
       expect(normalized.outlineOpacityResolver).toBeUndefined();
 
       // Should show deprecation warnings
-      expectWarnContains('[Heatbox][DEPRECATION][v0.2.0] outlineWidthResolver is deprecated');
-      expectWarnContains('[Heatbox][DEPRECATION][v0.2.0] outlineOpacityResolver is deprecated');
+      expectWarnContains('[Heatbox][DEPRECATION][v1.0.0] outlineWidthResolver is deprecated');
+      expectWarnContains('[Heatbox][DEPRECATION][v1.0.0] outlineOpacityResolver is deprecated');
     });
 
     test('should suggest adaptive system migration', () => {
@@ -158,7 +158,7 @@ describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
     test('should show deprecation warning for outlineEmulation', () => {
       validateAndNormalizeOptions({ outlineEmulation: 'topn' });
 
-      expectWarnContains('[Heatbox][DEPRECATION][v0.2.0] outlineEmulation is deprecated');
+      expectWarnContains('[Heatbox][DEPRECATION][v1.0.0] outlineEmulation is deprecated');
     });
   });
 

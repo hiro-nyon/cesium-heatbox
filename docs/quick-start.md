@@ -299,7 +299,7 @@ The demo includes:
 **2. Practical Development**
 
 Feature implementation:
-1. Check v0.2.0 planned features in **specification.md**
+1. Check v1.0.0 planned features in **specification.md**
 2. Challenge implementing **data source selection functionality**
 3. Add **test cases**
 4. Update **documentation**
@@ -607,7 +607,7 @@ git push origin main
 ### 2. 実践的な開発
 
 #### 新機能の実装
-1. **specification.md**でv0.2.0の計画機能を確認
+1. **specification.md**でv1.0.0の計画機能を確認
 2. **データソース選択機能**の実装にチャレンジ
 3. **テストケース**の追加
 4. **ドキュメント**の更新

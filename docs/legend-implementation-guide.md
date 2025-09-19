@@ -275,7 +275,7 @@ document.getElementById('colorMapSelect').addEventListener('change', (e) => {
 - Tested with CesiumJS 1.120.0+
 - Requires modern browsers (ES6 support)
 
-### v0.2.0 Planned Extensions
+### v1.0.0 Planned Extensions
 
 - Support for discrete classification (quantize, jenks, etc.)
 - Interactive legend (click for filtering)
@@ -434,8 +434,8 @@ class HeatmapLegend {
    * @param {number} classes - 分割数
    */
   showClassification(classes) {
-    // v0.2.0 で実装予定の機能のプレースホルダー
-    console.log(`Classification with ${classes} classes (planned for v0.2.0)`);
+    // v1.0.0 で実装予定の機能のプレースホルダー
+    console.log(`Classification with ${classes} classes (planned for v1.0.0)`);
   }
 }
 
@@ -569,7 +569,7 @@ document.getElementById('colorMapSelect').addEventListener('change', (e) => {
 - CesiumJS 1.120.0+ で動作確認済み
 - モダンブラウザ（ES6対応）が必要
 
-## v0.2.0での拡張予定
+## v1.0.0での拡張予定
 
 - 離散化分類（quantize, jenks等）への対応
 - インタラクティブな凡例（クリックでフィルタリング）

@@ -1,7 +1,12 @@
 # CesiumJS Heatbox - Roadmap
 
 > このロードマップは四半期ごとに見直します。最新の進捗は GitHub Issues / Projects を参照してください。  
-本計画は「0.1で完結できるもの」と「0.2/0.3以降でなければ難しいもの」を切り分け、各バージョンのスコープ・受け入れ基準・互換性影響を明確化します。
+本計画は「0.1で完結できるもの」と「1.x/2.x以降でなければ難しいもの」を切り分け、各バージョンのスコープ・受け入れ基準・互換性影響を明確化します。
+
+> バージョニング方針変更（2025-09）
+> - これまで「0.2.x」で計画していた機能群は「1.x」へ移行します。
+> - メジャー: 破壊的変更（1.0.0）/ マイナー: 機能追加（1.1.0, 1.2.0, ...）/ パッチ: バグ修正（1.0.1, 1.0.2, ...）。
+> - 旧記述「0.2.x」「0.3.x」「0.4.x」は順次「1.x」「2.x」「3.x」へ読み替えてください（記載更新中の箇所あり）。
 
 ---
 
@@ -46,7 +51,7 @@ Priority: High | Target: 2025-09
   - [ ] Auto Render Budget: `'auto'` 指定時に低ティア端末で `autoMaxRenderVoxels ≤ 12,000`、高ティア端末で `autoMaxRenderVoxels ≥ 40,000`（いずれも `PERFORMANCE_LIMITS.maxVoxels` 以下）
   - [ ] Lint 0 errors, 追加テスト緑、Basic/Advanced が初期状態で正常動作
 - Out-of-Scope
-  - コアレンダラ大改修（Primitive化等, 0.4以降）
+  - コアレンダラ大改修（Primitive化等, 3.x以降）
 - Risks & Mitigations
   - 選択戦略のばらつき → ハイブリッド（TopK by density + 層化サンプル）で安定化、`debug` で比率を可視化
   - カメラ適合の端ケース → `flyToBoundingSphere` をFallbackに用意
@@ -118,11 +123,11 @@ Priority: Medium | Target: 2026-01
   - [ ] ベンチ出力が再現可能で、PRで差分比較が容易
   - [ ] `profile` 指定で、同一データに対し一貫した設定セットが適用される（例: `mobile-fast` で `opacity`/`highlightTopN`/`renderLimitStrategy` が想定値）
 - Out-of-Scope
-  - 新規描画バックエンド（0.4 系で検討）
+- 新規描画バックエンド（3.x 系で検討）
 - Risks & Mitigations
   - 計測のばらつき → 複数回平均/サンプル数と偏差の表示
 
-### v0.1.13（緊急パッチ・後方互換性）
+### v0.1.13-v0.1.14（緊急パッチ・後方互換性）
 Priority: Immediate | Target: 2025-09-14
 
 Scope（resolver の互換性維持と方針の明記）
@@ -136,7 +141,7 @@ Acceptance Criteria
 - [x] Console に deprecation 警告は出るが、機能は維持される。
 
 Risks & Mitigations
-- v0.2.0 のAPI整理との整合: 将来的な削除は「Adaptive 実装完了後」へ明確化。利用者に段階的移行を促す（MIGRATION.md も追記）。
+- v1.0.0 のAPI整理との整合: 将来的な削除は「Adaptive 実装完了後」へ明確化。利用者に段階的移行を促す（MIGRATION.md も追記）。
 
 ### v0.1.15（適応的表示の核）- 視認性最適化の仕上げ
 Priority: Medium | Target: 2026-02
@@ -206,7 +211,7 @@ Scope（examples/advanced を体系化し、学習・検証導線を改善）
 - ブラウザ互換 → 例のHTMLテンプレートを統一（Cesium CSS/JS、UMD/ESM切替コメント）
 
 
-#### 0.1 Exit Criteria（0.2 への移行基準）
+#### 0.1 Exit Criteria（1.0 への移行基準）
 - [ ] Lint 0 errors、主要分岐に単体テストが存在（Heatbox/VoxelRenderer/Validation）
 - [ ] Examples（Basic/Advanced）が主要機能（TopN/インセット/エミュ/適応制御）の動作確認に十分
 - [ ] Docs/Wiki がバイリンガルで同期（API/FAQ/チューニング/運用）
@@ -214,9 +219,9 @@ Scope（examples/advanced を体系化し、学習・検証導線を改善）
 
 ---
 
-## 0.2 系（機能拡張フェーズ）
+## 1.x 系（機能拡張フェーズ）
 
-### v0.2.0 - 分類スキームと凡例（連続/離散）
+### v1.0.0 - 分類スキームと凡例（連続/離散）
 Priority: High | Target: 2025-12
 - 分類スキーム（最小セット）
   - [ ] linear（既定）、log（log10/2）、equal-interval、quantize、threshold（custom thresholds）
@@ -241,7 +246,7 @@ Implementation Notes（必ずここに実装する）
     - `adaptiveParams.boxOpacityRange: [min, max]` に従って `boxOpacity` を補間して設定。
     - `adaptiveParams.outlineOpacityRange: [min, max]` に従って `outlineOpacity` を補間して設定。
     - `adaptiveParams.outlineWidthRange: [min, max]`（新設）に従って `outlineWidth` を補間して設定（TopN時の加算ブーストも許容）。
-    - 補間のロジックは v0.2.0 の分類（classification）と同期させる：
+    - 補間のロジックは v1.0.0 の分類（classification）と同期させる：
       - 既定は linear だが、`classification` の設定が有効な場合は同じスキーム（log/equal-interval/quantize/threshold/quantile/jenks 等）で opacity/width にも適用。
       - 実装は共通ユーティリティ（`src/utils/classification.js`）を用い、色・透明度・太さの補間ソースを統一する。
       - 任意で `gamma` や `easing` を導入し、連続補間の特性を統一的に調整できるようにする。
@@ -256,7 +261,7 @@ Policy（重要・強い方針）
 
 ---
 
-Resolver 置き換え計画（v0.2.0で「別の形ですべて再実装」）
+Resolver 置き換え計画（v1.0.0で「別の形ですべて再実装」）
 
 目的
 - 既存の Resolver API（`outlineWidthResolver` / `outlineOpacityResolver` / `boxOpacityResolver`）で可能だった表現力を、宣言的で最適化しやすい新APIに置き換える。
@@ -269,7 +274,7 @@ Resolver 置き換え計画（v0.2.0で「別の形ですべて再実装」）
   - `adaptiveParams.outlineWidthRange: [min, max]`（新設）
   - いずれも `normalizedDensity` に対する線形補間（将来的に `gamma` 係数や `easing` を追加検討）。
 - Classification（離散/連続の分類マップ）
-  - v0.2.0 の `classification.*` と連携し、色だけでなく透明度/太さにも適用可能にする。
+  - v1.0.0 の `classification.*` と連携し、色だけでなく透明度/太さにも適用可能にする。
   - `classificationTargets: { color?: boolean; opacity?: boolean; width?: boolean }` を導入（デフォルト: colorのみ）。
 - Emulation Hook（エミュレーション時の後処理）
   - `outlineRenderMode: 'emulation-only'` のとき、内部的にポリラインへ最終アルファ/太さを反映する軽量フックを設ける（Playgroundの後処理と同等の効果をライブラリ側に統合）。
@@ -281,8 +286,8 @@ Resolver 置き換え計画（v0.2.0で「別の形ですべて再実装」）
 - `src/utils/classification.js`（新規）：分類スキーム実装（linear/log/quantile 等の薄いユーティリティ）。
 
 互換性
-- v0.2.0 までは Resolver API を「警告のみで存続」。移行ガイドに従い新APIへ移してもらう。
-- v0.2.x（または 0.3.0）で Resolver API を段階的に削除（ロードマップとリリースノートで事前告知）。
+- v1.0.0 までは Resolver API を「警告のみで存続」。移行ガイドに従い新APIへ移してもらう。
+- v1.x（将来的に v2.0.0 で完全削除）で Resolver API を段階的に削除（ロードマップとリリースノートで事前告知）。
 
 受け入れ基準（パリティテスト）
 - 旧Resolverで実現していた代表シナリオで視覚的パリティ：
@@ -298,8 +303,8 @@ Resolver 置き換え計画（v0.2.0で「別の形ですべて再実装」）
 
 スケジュール
 - 0.1.15: AdaptiveController に `box/outlineOpacityRange` 実装（幅の安全クランプ + テスト）。
-- 0.2.0: `outlineWidthRange` / classification 連携 / emulation hook を統合、Resolver を非推奨のまま維持。
-- 0.2.x: Resolver API の段階的削除（少なくとも2リリース以上のグレイス期間）。
+- 1.0.0: `outlineWidthRange` / classification 連携 / emulation hook を統合、Resolver を非推奨のまま維持。
+- 1.x: Resolver API の段階的削除（少なくとも2リリース以上のグレイス期間）。
 - 受け入れ基準:
   - [ ] 代表データで各分類が視覚的に区別でき、凡例/ガイドが同期表示される。
   - [ ] 透明度分類を有効化した場合、fill/outline（標準/インセット/エミュ）に0–1で正しく反映される。
@@ -310,14 +315,14 @@ Resolver 置き換え計画（v0.2.0で「別の形ですべて再実装」）
   - [ ] シナリオ別推奨セット（密集データ/広域表示/TopN重視 など）
   - [ ] UI設定の永続化（localStorage）
 
-### v0.2.1 - 時間依存データ（PoC）
+### v1.1.0 - 時間依存データ（PoC）
 Priority: Medium | Target: 2026-01
 - [ ] `viewer.clock.currentTime` に基づく時刻評価・スライス描画（ステップ更新）
 - [ ] キャッシュ/再計算ポリシーの基本設計（時間次元の増加コスト抑制）
 - 互換性: 低（オプション追加）。
 - 受け入れ基準: サンプルで時刻操作に応じてボクセルが更新され、体感カクつきが許容範囲内。
 
-### v0.2.2 - メモリ/パフォーマンス最適化
+### v1.2.0 - メモリ/パフォーマンス最適化
 Priority: Medium | Target: 2026-02
 - [ ] 必要フィールドのみ保持（エンティティ配列の縮約）
 - [ ] 描画リストの再利用・差分更新
@@ -331,36 +336,36 @@ Priority: Medium | Target: 2026-02
 
 ---
 
-## 0.3 系（高度可視化フェーズ）
+## 2.x 系（高度可視化フェーズ）
 
-### v0.3.0 - スライス/深度フェード/フォーカス
+### v2.0.0 - スライス/深度フェード/フォーカス
 Priority: Medium | Target: 2026-04
 - [ ] スライス表示（X/Y/Z 平面での断面）
 - [ ] 深度フェード（カメラ距離に応じた不透明度）
 - [ ] フォーカス・コンテキスト（近傍強調・周辺減衰）
 - 互換性: 中（新API追加）。
 
-### v0.3.1 - ROI/ローカルヒストグラム
+### v2.1.0 - ROI/ローカルヒストグラム
 Priority: Medium | Target: 2026-05
 - [ ] 3Dボックス/ポリゴンでの範囲選択（ROI）
 - [ ] ROI内分布のローカルヒストグラムとカラーマップ連動
 
-### v0.3.2 - MIP風投影/動的TopN
+### v2.2.0 - MIP風投影/動的TopN
 Priority: Low | Target: 2026-06
 - [ ] 最大値投影（MIP）サマリ表示
 - [ ] 時間変化に同期した動的TopN演出
 
 ---
 
-## 0.4 系（アーキテクチャ強化）
+## 3.x 系（アーキテクチャ強化）
 
-### v0.4.0 - レンダリング基盤の拡張（実験的）
+### v3.0.0 - レンダリング基盤の拡張（実験的）
 Priority: Low | Target: 2026 H2
 - [ ] Primitiveベース描画（実験的）を `renderBackend: 'entity'|'primitive'` フラグで選択可能に（デフォルトはentity）
 - [ ] 座標変換の精度向上（高緯度・広域向けの ENU/ECEF 段階移行の調査）
 - 互換性: 大（内部構造の変更。デフォルトは既存維持）
 
-### v0.4.1+ - 応用表現/出力
+### v3.1.0+ - 応用表現/出力
 - [ ] 2.5Dカラム/六角ビニング（応用表現）
 - [ ] 静的LoD事前計算
 - [ ] 3D Tiles出力

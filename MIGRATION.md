@@ -25,7 +25,7 @@ Important note (v0.1.13):
 **Angle specification in fitViewOptions**
 
 ```javascript
-// v0.1.11 (deprecated, will be removed in v0.2.0)
+// v0.1.11 (deprecated, will be removed in v1.0.0)
 {
   fitViewOptions: {
     pitch: -30,
@@ -47,7 +47,7 @@ Important note (v0.1.13):
 **From dynamic control to adaptive control system**
 
 ```javascript
-// v0.1.11 (deprecated, will be removed in v0.2.0)
+// v0.1.11 (deprecated, will be removed in v1.0.0)
 {
   outlineWidthResolver: (params) => {
     return params.isTopN ? 3 : 1;
@@ -286,7 +286,7 @@ function migrateConditionalEmulation(oldOptions) {
 
 ```javascript
 // Example warning
-[Heatbox][DEPRECATION][v0.2.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.
+[Heatbox][DEPRECATION][v1.0.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.
 
 // Fix: use outlineRenderMode + emulationScope
 {
@@ -364,7 +364,7 @@ console.log('Effective preset:', effectiveOptions.outlineWidthPreset);
 v0.1.12では、角度を表すオプション名を統一しました。
 
 ```javascript
-// v0.1.11 (廃止予定、v0.2.0で削除)
+// v0.1.11 (廃止予定、v1.0.0で削除)
 {
   fitViewOptions: {
     pitch: -30,
@@ -386,7 +386,7 @@ v0.1.12では、角度を表すオプション名を統一しました。
 動的制御Resolverシステムから、より予測可能な適応制御システムに移行しました。
 
 ```javascript
-// v0.1.11 (廃止予定、v0.2.0で削除)
+// v0.1.11 (廃止予定、v1.0.0で削除)
 {
   outlineWidthResolver: (params) => {
     return params.isTopN ? 3 : 1;
@@ -416,7 +416,7 @@ v0.1.12では、角度を表すオプション名を統一しました。
 `outlineEmulation`から`outlineRenderMode`と`emulationScope`の組み合わせに変更されました。
 
 ```javascript
-// v0.1.11 (廃止予定、v0.2.0で削除)
+// v0.1.11 (廃止予定、v1.0.0で削除)
 {
   outlineEmulation: true        // または 'topn', 'non-topn', 'all'
 }
@@ -433,7 +433,7 @@ v0.1.12では、角度を表すオプション名を統一しました。
 プリセット名をより直感的な名前に変更しました。
 
 ```javascript
-// v0.1.11 (廃止予定、v0.2.0で削除)
+// v0.1.11 (廃止予定、v1.0.0で削除)
 {
   outlineWidthPreset: 'uniform'         // -> 'medium'
   // outlineWidthPreset: 'adaptive-density' -> 'adaptive'
@@ -512,7 +512,7 @@ v0.1.12では、`fitView`の実行が描画とカメラ移動の競合を避け�
 v0.1.12では、古いオプション使用時にコンソールに警告が表示されます。
 
 ```
-[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.pitch is deprecated; use fitViewOptions.pitchDegrees.
+[Heatbox][DEPRECATION][v1.0.0] fitViewOptions.pitch is deprecated; use fitViewOptions.pitchDegrees.
 ```
 
 #### Step 2: オプション名の更新
@@ -689,7 +689,7 @@ function migrateConditionalEmulation(oldOptions) {
 
 ```javascript
 // 警告例
-[Heatbox][DEPRECATION][v0.2.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.
+[Heatbox][DEPRECATION][v1.0.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.
 
 // 対処：outlineRenderMode と emulationScope を使用
 {

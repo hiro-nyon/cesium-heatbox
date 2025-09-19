@@ -225,7 +225,7 @@ Performance and stability:
 - **Enhanced emulation**: WebGL line width limitation workarounds (✅ Implemented)
 - **Memory management**: Leak prevention and stability improvements (✅ Implemented)
 
-**v0.2.0 Planned Features**
+**v1.0.0 Planned Features**
 
 Dynamic functionality:
 - **Real-time updates**: Automatic reflection of entity changes
@@ -243,7 +243,7 @@ Customization:
 - **Filtering**: Conditional filtering by attributes
 - **Export**: PNG and data CSV output
 
-**v0.3.0 Planned Features**
+**v2.0.0 Planned Features**
 
 Advanced analysis:
 - **Hierarchical voxels**: Different levels of detail (LOD)
@@ -1552,7 +1552,7 @@ const scaleConstraints = {
 - **スマート視覚化支援**: 自動カメラ位置調整とfitViewメソッド（✅ 実装済み）
 - **拡張自動ボクセルサイジング**: 占有率ベース計算と反復近似（✅ 実装済み）
 
-### v0.2.0 計画機能
+### v1.0.0 計画機能
 
 #### 動的機能
 - **リアルタイム更新**: エンティティ変更の自動反映
@@ -1579,7 +1579,7 @@ const scaleConstraints = {
 - **フィルタリング**: 属性による条件絞り込み
 - **エクスポート**: PNG、データCSV出力
 
-### v0.3.0 計画機能
+### v2.0.0 計画機能
 
 #### 高度な解析
 - **階層ボクセル**: 異なる詳細度レベル（LOD）

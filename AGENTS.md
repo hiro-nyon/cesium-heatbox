@@ -73,9 +73,10 @@
 - Open a PR to trigger GitHub Actions CI; merge only when green. If CI fails, reproduce locally, fix, rerun.
 
 ## Versioning (next)
-- For next/pre-release bumps, update both: `package.json#version` and the exported `VERSION` in `src/index.js` (e.g., `export const VERSION = '0.x.y-alpha.n'`).
-- Use SemVer with pre-release tags (e.g., `-alpha.N`, `-next.N`).
-- After bumping, run `npm run build` and `npm test`; update docs/changelog if user-facing changes.
+- 方針変更: 0.2.x 系の計画は 1.x 系へ移行します。
+- SemVer 準拠（メジャー=破壊的変更、マイナー=機能追加、パッチ=修正）。
+- 次回以降のプレリリースでは、`package.json#version` と `src/index.js` の `VERSION` を同じ値に更新（例: `export const VERSION = '1.0.0-alpha.n'`）。
+- 反映後は `npm run build` と `npm test` を実行し、ユーザー向け変更があればドキュメント/CHANGELOGも更新。
 
 ## Security & Configuration Tips
 - Node >= 18, npm >= 8. Peer dependency: `cesium@^1.120.0` (tests use a mock).
@@ -84,11 +85,11 @@
 ## Release & Publish (GitHub Actions)
 - npm publishing is handled by GitHub Actions; do not run `npm publish` locally.
 - Release steps (including pre-releases):
-  1. Bump `package.json#version` and `src/index.js` exported `VERSION` to the same value (e.g., `0.1.11-alpha.5`).
+  1. Bump `package.json#version` and `src/index.js` exported `VERSION` to the same value (e.g., `1.0.0-alpha.5`).
   2. Validate: `npm run -s lint && npm run -s type-check && npm test --silent -- --reporters=summary` and `npm run build`.
-  3. Tag the commit as `v<version>` (e.g., `v0.1.11-alpha.5`):
-     - `git tag -a v0.1.11-alpha.5 -m "release: 0.1.11-alpha.5"`
-     - `git push origin v0.1.11-alpha.5`
+  3. Tag the commit as `v<version>` (e.g., `v1.0.0-alpha.5`):
+     - `git tag -a v1.0.0-alpha.5 -m "release: 1.0.0-alpha.5"`
+     - `git push origin v1.0.0-alpha.5`
   4. GitHub Actions publishes to npm once the tag is pushed and CI is green.
 
 ## Deprecations & Future Feature Policy（重要）

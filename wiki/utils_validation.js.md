@@ -215,27 +215,27 @@ export function validateAndNormalizeOptions(options = {}) {
   // v0.1.12: Deprecated Resolver systems - show warnings and remove
   if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
     warnOnce('outlineWidthResolver',
-      '[Heatbox][DEPRECATION][v0.2.0] outlineWidthResolver is deprecated; use adaptiveOutlines with outlineWidthPreset and adaptiveParams instead.');
+      '[Heatbox][DEPRECATION][v1.0.0] outlineWidthResolver is deprecated; use adaptiveOutlines with outlineWidthPreset and adaptiveParams instead.');
     // Remove deprecated resolver from normalized options
     delete normalized.outlineWidthResolver;
   }
   
   if (normalized.outlineOpacityResolver !== undefined && normalized.outlineOpacityResolver !== null) {
     warnOnce('outlineOpacityResolver',
-      '[Heatbox][DEPRECATION][v0.2.0] outlineOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.outlineOpacityRange instead.');
+      '[Heatbox][DEPRECATION][v1.0.0] outlineOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.outlineOpacityRange instead.');
     delete normalized.outlineOpacityResolver;
   }
   
   if (normalized.boxOpacityResolver !== undefined && normalized.boxOpacityResolver !== null) {
     warnOnce('boxOpacityResolver',
-      '[Heatbox][DEPRECATION][v0.2.0] boxOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.boxOpacityRange instead.');
+      '[Heatbox][DEPRECATION][v1.0.0] boxOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.boxOpacityRange instead.');
     delete normalized.boxOpacityResolver;
   }
 
   // v0.1.12: outlineEmulation deprecation and migration to outlineRenderMode  
   if (normalized.outlineEmulation !== undefined && normalized.outlineRenderMode === undefined) {
     warnOnce('outlineEmulation',
-      '[Heatbox][DEPRECATION][v0.2.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.');
+      '[Heatbox][DEPRECATION][v1.0.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.');
     
     const v = normalized.outlineEmulation;
     if (v === false || v === 'off') {
@@ -269,7 +269,7 @@ export function validateAndNormalizeOptions(options = {}) {
     
     if (legacyMap[preset]) {
       warnOnce(`outlineWidthPreset.${preset}`,
-        `[Heatbox][DEPRECATION][v0.2.0] outlineWidthPreset "${preset}" is deprecated; use "${legacyMap[preset]}".`);
+        `[Heatbox][DEPRECATION][v1.0.0] outlineWidthPreset "${preset}" is deprecated; use "${legacyMap[preset]}".`);
       normalized.outlineWidthPreset = legacyMap[preset];
     }
   }
@@ -361,11 +361,11 @@ export function validateAndNormalizeOptions(options = {}) {
     // v0.1.12: Deprecation warnings for old naming
     if (f.pitch !== undefined && f.pitchDegrees === undefined) {
       warnOnce('fitViewOptions.pitch',
-        '[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.pitch is deprecated; use fitViewOptions.pitchDegrees.');
+        '[Heatbox][DEPRECATION][v1.0.0] fitViewOptions.pitch is deprecated; use fitViewOptions.pitchDegrees.');
     }
     if (f.heading !== undefined && f.headingDegrees === undefined) {
       warnOnce('fitViewOptions.heading',
-        '[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.heading is deprecated; use fitViewOptions.headingDegrees.');
+        '[Heatbox][DEPRECATION][v1.0.0] fitViewOptions.heading is deprecated; use fitViewOptions.headingDegrees.');
     }
     
     const padding = parseFloat(f.paddingPercent);
@@ -753,27 +753,27 @@ export function validateAndNormalizeOptions(options = {}) {
   // v0.1.12: Deprecated Resolver systems - show warnings and remove
   if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
     warnOnce('outlineWidthResolver',
-      '[Heatbox][DEPRECATION][v0.2.0] outlineWidthResolver is deprecated; use adaptiveOutlines with outlineWidthPreset and adaptiveParams instead.');
+      '[Heatbox][DEPRECATION][v1.0.0] outlineWidthResolver is deprecated; use adaptiveOutlines with outlineWidthPreset and adaptiveParams instead.');
     // Remove deprecated resolver from normalized options
     delete normalized.outlineWidthResolver;
   }
   
   if (normalized.outlineOpacityResolver !== undefined && normalized.outlineOpacityResolver !== null) {
     warnOnce('outlineOpacityResolver',
-      '[Heatbox][DEPRECATION][v0.2.0] outlineOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.outlineOpacityRange instead.');
+      '[Heatbox][DEPRECATION][v1.0.0] outlineOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.outlineOpacityRange instead.');
     delete normalized.outlineOpacityResolver;
   }
   
   if (normalized.boxOpacityResolver !== undefined && normalized.boxOpacityResolver !== null) {
     warnOnce('boxOpacityResolver',
-      '[Heatbox][DEPRECATION][v0.2.0] boxOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.boxOpacityRange instead.');
+      '[Heatbox][DEPRECATION][v1.0.0] boxOpacityResolver is deprecated; use adaptiveOutlines with adaptiveParams.boxOpacityRange instead.');
     delete normalized.boxOpacityResolver;
   }
 
   // v0.1.12: outlineEmulation deprecation and migration to outlineRenderMode  
   if (normalized.outlineEmulation !== undefined && normalized.outlineRenderMode === undefined) {
     warnOnce('outlineEmulation',
-      '[Heatbox][DEPRECATION][v0.2.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.');
+      '[Heatbox][DEPRECATION][v1.0.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.');
     
     const v = normalized.outlineEmulation;
     if (v === false || v === 'off') {
@@ -807,7 +807,7 @@ export function validateAndNormalizeOptions(options = {}) {
     
     if (legacyMap[preset]) {
       warnOnce(`outlineWidthPreset.${preset}`,
-        `[Heatbox][DEPRECATION][v0.2.0] outlineWidthPreset "${preset}" is deprecated; use "${legacyMap[preset]}".`);
+        `[Heatbox][DEPRECATION][v1.0.0] outlineWidthPreset "${preset}" is deprecated; use "${legacyMap[preset]}".`);
       normalized.outlineWidthPreset = legacyMap[preset];
     }
   }
@@ -899,11 +899,11 @@ export function validateAndNormalizeOptions(options = {}) {
     // v0.1.12: Deprecation warnings for old naming
     if (f.pitch !== undefined && f.pitchDegrees === undefined) {
       warnOnce('fitViewOptions.pitch',
-        '[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.pitch is deprecated; use fitViewOptions.pitchDegrees.');
+        '[Heatbox][DEPRECATION][v1.0.0] fitViewOptions.pitch is deprecated; use fitViewOptions.pitchDegrees.');
     }
     if (f.heading !== undefined && f.headingDegrees === undefined) {
       warnOnce('fitViewOptions.heading',
-        '[Heatbox][DEPRECATION][v0.2.0] fitViewOptions.heading is deprecated; use fitViewOptions.headingDegrees.');
+        '[Heatbox][DEPRECATION][v1.0.0] fitViewOptions.heading is deprecated; use fitViewOptions.headingDegrees.');
     }
     
     const padding = parseFloat(f.paddingPercent);

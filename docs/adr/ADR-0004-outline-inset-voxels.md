@@ -64,7 +64,7 @@ interface HeatboxOptions {
 - カメラ距離や透過順序で見え方が変化し得る。特に fill が不透明だとインセット枠線は視認されにくい。
 
 ## Alternatives Considered
-- Shader/Primitive ベースでのカスタム描画: 柔軟だが 0.1 系のスコープ外。将来の 0.4 系の検討事項。
+- Shader/Primitive ベースでのカスタム描画: 柔軟だが 0.1 系のスコープ外。将来の 3.x 系の検討事項。
 - 既存 Box の outline を内側に寄せるパラメータ: Cesium Entity API に直接的な機能がない。
 - `voxelGap` のみで対応: 接触は減るが「外縁ではなく内側に線を引く」という要件は満たせない。
 
@@ -90,7 +90,7 @@ interface HeatboxOptions {
 
 ## Rollout Plan
 - フラグはデフォルト OFF（0）。
-- 0.1.6.1 で導入を目標（パッチリリース）。必要に応じて 0.1.7 で調整し、0.2 系で改善可否を再評価。
+- 0.1.6.1 で導入を目標（パッチリリース）。必要に応じて 0.1.7 で調整し、1.x 系で改善可否を再評価。
 
 ## Implementation Notes (v0.1.6.1)
 - 二重Box方式で実装（fill用 + outline専用エンティティ）。

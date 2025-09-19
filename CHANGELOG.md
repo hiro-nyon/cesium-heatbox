@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.13] - 2025-09-14
 
-緊急パッチ。v0.2.0へ向けたAPI整理の過程で resolver（box/outline opacity）が正規化段階で削除されるため、密度ベースの不透明度制御が使えないケースが発生していました。本リリースでは、非推奨の警告は維持しつつ、削除せずに通過させる互換挙動へ戻します。
+緊急パッチ。v1.0.0へ向けたAPI整理の過程で resolver（box/outline opacity）が正規化段階で削除されるため、密度ベースの不透明度制御が使えないケースが発生していました。本リリースでは、非推奨の警告は維持しつつ、削除せずに通過させる互換挙動へ戻します。
 
 ### Changed
 - validation: `boxOpacityResolver` / `outlineOpacityResolver` を「警告は出すが削除しない」挙動に変更。関数でない値が来た場合のみ無効化。
@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Docs
 - ROADMAP: 「AdaptiveController で `boxOpacityRange`/`outlineOpacityRange` を実装し終えるまで resolver を絶対に削除しない」強い方針を明記。
-- MIGRATION: resolver は v0.2.0 で削除予定だが、実装完了までは維持する注記を追加。
+- MIGRATION: resolver は v1.0.0 で削除予定だが、実装完了までは維持する注記を追加。
 
 ## [0.1.12] - 2025-09-14
 
