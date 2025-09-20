@@ -319,8 +319,20 @@ Resolver 置き換え計画（v1.0.0で「別の形ですべて再実装」）
 Priority: Medium | Target: 2026-01
 - [ ] `viewer.clock.currentTime` に基づく時刻評価・スライス描画（ステップ更新）
 - [ ] キャッシュ/再計算ポリシーの基本設計（時間次元の増加コスト抑制）
+- 分類スコープ（時系列の揺れへの対応）
+  - [ ] `temporalClassificationScope: 'per-time'|'global'` を追加。
+    - `per-time`（時刻ごと再スケール）: 現在時刻（または `timeWindow`）内の density 分布（min/max や分位）で分類を算出。
+    - `global`（全時刻で統一）: すべての時刻を通した分布で分類（domain/しきい値）を固定。
+  - [ ] 既存の `classification`（linear/log/equal-interval/quantize/threshold/quantile/jenks）と組み合わせ可能。
+  - [ ] 凡例はスコープに追随（per-time は時刻に応じて更新、global は固定）。
+- API/実装メモ
+  - [ ] `src/utils/classification.js` に `computeDomain(data, { scope: 'per-time'|'global', clock })` を追加し、`AdaptiveController` から利用。
+  - [ ] グローバル domain は初回計算をメモ化、per-time は時刻キーごとにメモ化して再計算を抑制。
 - 互換性: 低（オプション追加）。
-- 受け入れ基準: サンプルで時刻操作に応じてボクセルが更新され、体感カクつきが許容範囲内。
+- 受け入れ基準
+  - [ ] 同一データで `temporalClassificationScope: 'per-time'` と `'global'` を切替えたとき、配色/凡例の挙動が仕様通りに変化する。
+  - [ ] いずれのスコープでも `classification` の各スキームが正しく適用される（最小限のスナップショットテスト）。
+  - [ ] サンプルで時刻操作に応じてボクセルが更新され、体感カクつきが許容範囲内。
 
 ### v1.2.0 - メモリ/パフォーマンス最適化
 Priority: Medium | Target: 2026-02
