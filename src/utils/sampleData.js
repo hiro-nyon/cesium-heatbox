@@ -167,3 +167,167 @@ export function createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMete
     centerAlt
   };
 }
+
+/**
+ * v0.1.15 Phase 1: Density pattern generators for parameter optimization (ADR-0011)
+ * パラメータ最適化用の密度パターン生成関数
+ */
+
+/**
+ * Generate clustered density pattern (高密度クラスター)
+ * @param {Object} bounds - Bounding box
+ * @param {number} count - Total entity count
+ * @param {number} clusterCount - Number of clusters (default: 3)
+ * @returns {Array<Cesium.Entity>} Generated entities
+ */
+function generateClusteredPattern(bounds, count, clusterCount = 3) {
+  const entities = [];
+  const entitiesPerCluster = Math.floor(count / clusterCount);
+  
+  const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+  const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+  const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
+  
+  for (let c = 0; c < clusterCount; c++) {
+    // クラスター中心をランダムに配置
+    const clusterLon = centerLon + (Math.random() - 0.5) * (bounds.maxLon - bounds.minLon) * 0.6;
+    const clusterLat = centerLat + (Math.random() - 0.5) * (bounds.maxLat - bounds.minLat) * 0.6;
+    const clusterAlt = centerAlt + (Math.random() - 0.5) * (bounds.maxAlt - bounds.minAlt) * 0.6;
+    
+    // 各クラスター内にエンティティを密集配置
+    const clusterRadius = Math.min(
+      (bounds.maxLon - bounds.minLon),
+      (bounds.maxLat - bounds.minLat)
+    ) * 0.1;
+    
+    for (let i = 0; i < entitiesPerCluster; i++) {
+      const r = Math.sqrt(Math.random()) * clusterRadius;
+      const theta = Math.random() * Math.PI * 2;
+      
+      const lon = clusterLon + r * Math.cos(theta);
+      const lat = clusterLat + r * Math.sin(theta);
+      const alt = clusterAlt + (Math.random() - 0.5) * (bounds.maxAlt - bounds.minAlt) * 0.2;
+      
+      entities.push(new Cesium.Entity({
+        id: `clustered-${c}-${i}-${Math.random().toString(36).slice(2, 8)}`,
+        position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
+      }));
+    }
+  }
+  
+  return entities;
+}
+
+/**
+ * Generate scattered density pattern (疎分布)
+ * @param {Object} bounds - Bounding box
+ * @param {number} count - Total entity count
+ * @returns {Array<Cesium.Entity>} Generated entities
+ */
+function generateScatteredPattern(bounds, count) {
+  const entities = [];
+  
+  for (let i = 0; i < count; i++) {
+    const lon = bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon);
+    const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
+    const alt = bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt);
+    
+    entities.push(new Cesium.Entity({
+      id: `scattered-${i}-${Math.random().toString(36).slice(2, 8)}`,
+      position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
+    }));
+  }
+  
+  return entities;
+}
+
+/**
+ * Generate gradient density pattern (グラデーション分布)
+ * @param {Object} bounds - Bounding box
+ * @param {number} count - Total entity count
+ * @returns {Array<Cesium.Entity>} Generated entities
+ */
+function generateGradientPattern(bounds, count) {
+  const entities = [];
+  
+  for (let i = 0; i < count; i++) {
+    // X軸方向に密度が増加するグラデーション
+    const x = Math.random();
+    const densityWeight = x * x; // 二乗で密度を増加
+    
+    const lon = bounds.minLon + x * (bounds.maxLon - bounds.minLon);
+    const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
+    const alt = bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt);
+    
+    // 密度の高いエリアでは複数のエンティティを近接配置
+    if (densityWeight > 0.7 && Math.random() > 0.5) {
+      const offset = 0.0001; // 約10m
+      entities.push(new Cesium.Entity({
+        id: `gradient-${i}-extra-${Math.random().toString(36).slice(2, 8)}`,
+        position: Cesium.Cartesian3.fromDegrees(
+          lon + (Math.random() - 0.5) * offset,
+          lat + (Math.random() - 0.5) * offset,
+          alt
+        )
+      }));
+    }
+    
+    entities.push(new Cesium.Entity({
+      id: `gradient-${i}-${Math.random().toString(36).slice(2, 8)}`,
+      position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
+    }));
+  }
+  
+  return entities;
+}
+
+/**
+ * Generate mixed density pattern (混在分布)
+ * @param {Object} bounds - Bounding box
+ * @param {number} count - Total entity count
+ * @returns {Array<Cesium.Entity>} Generated entities
+ */
+function generateMixedPattern(bounds, count) {
+  const entities = [];
+  
+  // 30%を高密度クラスター、70%を疎分布として配置
+  const clusteredCount = Math.floor(count * 0.3);
+  const scatteredCount = count - clusteredCount;
+  
+  // 高密度クラスター部分
+  const clusteredEntities = generateClusteredPattern(bounds, clusteredCount, 2);
+  entities.push(...clusteredEntities);
+  
+  // 疎分布部分
+  const scatteredEntities = generateScatteredPattern(bounds, scatteredCount);
+  entities.push(...scatteredEntities);
+  
+  return entities;
+}
+
+/**
+ * Density pattern generators map (ADR-0011 Phase 1)
+ * パラメータ最適化用密度パターンマップ
+ */
+export const DENSITY_PATTERNS = {
+  clustered: generateClusteredPattern,
+  scattered: generateScatteredPattern,
+  gradient: generateGradientPattern,
+  mixed: generateMixedPattern
+};
+
+/**
+ * Generate test dataset with specified pattern
+ * 指定したパターンでテストデータセットを生成
+ * @param {string} pattern - Pattern name ('clustered', 'scattered', 'gradient', 'mixed')
+ * @param {Object} bounds - Bounding box
+ * @param {number} count - Total entity count
+ * @returns {Array<Cesium.Entity>} Generated entities
+ */
+export function generatePatternData(pattern, bounds, count) {
+  const generator = DENSITY_PATTERNS[pattern];
+  if (!generator) {
+    throw new Error(`Unknown pattern: ${pattern}. Available: ${Object.keys(DENSITY_PATTERNS).join(', ')}`);
+  }
+  return generator(bounds, count);
+}

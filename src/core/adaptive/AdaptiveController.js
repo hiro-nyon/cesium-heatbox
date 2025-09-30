@@ -97,6 +97,34 @@ export class AdaptiveController {
   }
 
   /**
+   * Calculate Z-axis scale compensation factor
+   * Z軸スケール補正係数を計算（v0.1.15 Phase 1 - ADR-0011）
+   * 
+   * @param {Object} voxelInfo - Target voxel information / 対象ボクセル情報
+   * @param {Object} grid - Grid information with cellSizeX/Y/Z / グリッド情報
+   * @returns {number} Scale compensation factor / スケール補正係数
+   */
+  _calculateZScaleCompensation(voxelInfo, grid) {
+    if (!grid || !this.options.adaptiveParams.zScaleCompensation) {
+      return 1.0;
+    }
+    
+    const { cellSizeX, cellSizeY, cellSizeZ } = grid;
+    if (!cellSizeX || !cellSizeY || !cellSizeZ) {
+      return 1.0;
+    }
+    
+    const avgHorizontalSize = (cellSizeX + cellSizeY) / 2;
+    const aspectRatio = cellSizeZ / avgHorizontalSize;
+    
+    // Z軸が極小の場合は補正を適用
+    if (aspectRatio < 0.1) {
+      return Math.max(0.7, Math.min(1.3, 1.0 + (0.1 - aspectRatio) * 2));
+    }
+    return 1.0;
+  }
+
+  /**
    * Apply preset-specific adaptive logic
    * プリセット固有の適応ロジックを適用
    * 
@@ -133,10 +161,17 @@ export class AdaptiveController {
 
       case 'adaptive':
       case 'adaptive-density': {
-        // v0.1.12-alpha.10: 安全な値範囲でRangeError防止（0.8-3.0倍に制限）
-        const densityFactor = isDenseArea ? (0.8 + normalizedDensity * 0.4) : 1.0; // 0.8-1.2倍
+        // v0.1.15 Phase 1: より柔軟で安定した調整（ADR-0011）
+        // 密度に応じたベース係数（中央値を基準に調整）
+        const baseFactor = isDenseArea ? 
+          Math.max(0.6, 0.8 + (normalizedDensity - 0.5) * 0.3) : 1.0; // 0.6-0.95倍（密集時）
+        
+        // Z軸スケール補正を適用（有効な場合）
+        // 注: voxelInfoとgridはcalculateAdaptiveParams内でのみ利用可能
+        // ここではbaseFactor * zScaleFactorの形で後段で適用される想定
+        
         adaptiveWidth = Math.max(1.0, Math.min(baseOptions.outlineWidth * 3.0,
-          baseOptions.outlineWidth * densityFactor));
+          baseOptions.outlineWidth * baseFactor));
         adaptiveBoxOpacity = isDenseArea ? baseOptions.opacity * 0.8 : baseOptions.opacity;
         adaptiveOutlineOpacity = isDenseArea ? 0.6 : 1.0;
         break;
@@ -178,9 +213,10 @@ export class AdaptiveController {
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @param {Object} statistics - Statistics information / 統計情報
    * @param {Object} renderOptions - Rendering options / 描画オプション
+   * @param {Object} [grid] - Grid information (optional, for Z-scale compensation) / グリッド情報（オプション、Z軸補正用）
    * @returns {Object} Adaptive parameters / 適応的パラメータ
    */
-  calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, renderOptions) {
+  calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, renderOptions, grid = null) {
     // 引数の安全性チェック
     if (!voxelInfo || !statistics || !renderOptions) {
       return {
@@ -209,6 +245,9 @@ export class AdaptiveController {
     const neighborhoodResult = this.calculateNeighborhoodDensity(voxelInfo, voxelData);
     const { isDenseArea } = neighborhoodResult;
     
+    // v0.1.15 Phase 1: Z軸スケール補正を適用（ADR-0011）
+    const zScaleFactor = this._calculateZScaleCompensation(voxelInfo, grid);
+    
     // カメラ距離は簡略化（実装では固定値を使用）
     const cameraDistance = 1000; // 固定値、実際の実装ではカメラからの距離を取得
     const cameraFactor = Math.min(1.0, 1000 / cameraDistance) * this.options.adaptiveParams.cameraDistanceFactor;
@@ -225,8 +264,8 @@ export class AdaptiveController {
       renderOptions
     );
     
-    // カメラ距離と重なりリスクで調整
-    const finalWidth = presetResult.adaptiveWidth * cameraFactor;
+    // v0.1.15 Phase 1: Z軸補正を含めた最終調整（ADR-0011）
+    const finalWidth = presetResult.adaptiveWidth * cameraFactor * zScaleFactor;
     const finalOutlineOpacity = Math.max(0.2, presetResult.adaptiveOutlineOpacity * (1 - overlapRisk));
     
     return {
@@ -241,6 +280,7 @@ export class AdaptiveController {
         neighborhoodResult,
         cameraFactor,
         overlapRisk,
+        zScaleFactor, // v0.1.15: Z軸補正係数を追加
         preset: renderOptions.outlineWidthPreset
       }
     };
