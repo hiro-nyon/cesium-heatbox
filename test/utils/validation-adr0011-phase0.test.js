@@ -107,41 +107,62 @@ describe('ADR-0011 Phase 0: adaptiveParams validation and normalization', () => 
   });
   
   describe('boolean flag validation', () => {
-    it('should coerce overlapDetection to boolean', () => {
+    it('should coerce overlapDetection to boolean and respect string inputs', () => {
       const options = {
         adaptiveParams: {
-          overlapDetection: 'true'
+          overlapDetection: 'false'
         }
       };
-      
+
       const normalized = validateAndNormalizeOptions(options);
-      
-      expect(typeof normalized.adaptiveParams.overlapDetection).toBe('boolean');
+
+      expect(normalized.adaptiveParams.overlapDetection).toBe(false);
+
+      const enabled = validateAndNormalizeOptions({
+        adaptiveParams: {
+          overlapDetection: 'TRUE'
+        }
+      });
+
+      expect(enabled.adaptiveParams.overlapDetection).toBe(true);
     });
-    
-    it('should coerce zScaleCompensation to boolean', () => {
+
+    it('should coerce zScaleCompensation numbers to boolean', () => {
       const options = {
+        adaptiveParams: {
+          zScaleCompensation: 0
+        }
+      };
+
+      const normalized = validateAndNormalizeOptions(options);
+
+      expect(normalized.adaptiveParams.zScaleCompensation).toBe(false);
+
+      const enabled = validateAndNormalizeOptions({
         adaptiveParams: {
           zScaleCompensation: 1
         }
-      };
-      
-      const normalized = validateAndNormalizeOptions(options);
-      
-      expect(typeof normalized.adaptiveParams.zScaleCompensation).toBe('boolean');
-      expect(normalized.adaptiveParams.zScaleCompensation).toBe(true);
+      });
+
+      expect(enabled.adaptiveParams.zScaleCompensation).toBe(true);
     });
-    
-    it('should coerce adaptiveOpacityEnabled to boolean', () => {
-      const options = {
+
+    it('should coerce adaptiveOpacityEnabled to boolean and respect "0"/"1" strings', () => {
+      const disabled = validateAndNormalizeOptions({
         adaptiveParams: {
-          adaptiveOpacityEnabled: 'false'
+          adaptiveOpacityEnabled: '0'
         }
-      };
-      
-      const normalized = validateAndNormalizeOptions(options);
-      
-      expect(typeof normalized.adaptiveParams.adaptiveOpacityEnabled).toBe('boolean');
+      });
+
+      expect(disabled.adaptiveParams.adaptiveOpacityEnabled).toBe(false);
+
+      const enabled = validateAndNormalizeOptions({
+        adaptiveParams: {
+          adaptiveOpacityEnabled: '1'
+        }
+      });
+
+      expect(enabled.adaptiveParams.adaptiveOpacityEnabled).toBe(true);
     });
   });
   

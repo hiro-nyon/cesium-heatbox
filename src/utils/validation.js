@@ -10,6 +10,51 @@ import { warnOnce } from './deprecate.js';
 import { applyProfile, isValidProfile } from './profiles.js';
 
 /**
+ * Coerce various input types to boolean while respecting common string representations.
+ * 文字列で渡された真偽値表現にも対応した安全な真偽値変換を行う。
+ *
+ * @param {*} value - 値
+ * @param {boolean} [fallback=false] - 未定義/無効値時のフォールバック
+ * @returns {boolean} 変換後の真偽値
+ */
+function coerceBoolean(value, fallback = false) {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+
+    if (normalized === '') {
+      return fallback;
+    }
+
+    if (['true', '1', 'yes', 'on'].includes(normalized)) {
+      return true;
+    }
+
+    if (['false', '0', 'no', 'off'].includes(normalized)) {
+      return false;
+    }
+
+    return Boolean(normalized);
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return fallback;
+    }
+    return value !== 0;
+  }
+
+  return Boolean(value);
+}
+
+/**
  * Check whether a CesiumJS Viewer is valid.
  * CesiumJS Viewerが有効かチェックします。
  * @param {Object} viewer - CesiumJS Viewer
@@ -322,7 +367,7 @@ export function validateAndNormalizeOptions(options = {}) {
   
   // 厚い枠線表示
   if (normalized.enableThickFrames !== undefined) {
-    normalized.enableThickFrames = Boolean(normalized.enableThickFrames);
+    normalized.enableThickFrames = coerceBoolean(normalized.enableThickFrames);
   }
   
   // v0.1.9: 適応的レンダリング制限のバリデーション
@@ -461,15 +506,15 @@ export function validateAndNormalizeOptions(options = {}) {
   
   // 既定値の検証
   if (ap.overlapDetection !== undefined) {
-    ap.overlapDetection = Boolean(ap.overlapDetection);
+    ap.overlapDetection = coerceBoolean(ap.overlapDetection);
   }
   
   if (ap.zScaleCompensation !== undefined) {
-    ap.zScaleCompensation = Boolean(ap.zScaleCompensation);
+    ap.zScaleCompensation = coerceBoolean(ap.zScaleCompensation);
   }
   
   if (ap.adaptiveOpacityEnabled !== undefined) {
-    ap.adaptiveOpacityEnabled = Boolean(ap.adaptiveOpacityEnabled);
+    ap.adaptiveOpacityEnabled = coerceBoolean(ap.adaptiveOpacityEnabled);
   }
   
   // 数値パラメータの検証
