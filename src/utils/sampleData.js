@@ -182,13 +182,24 @@ export function createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMete
  */
 function generateClusteredPattern(bounds, count, clusterCount = 3) {
   const entities = [];
-  const entitiesPerCluster = Math.floor(count / clusterCount);
-  
+  if (!Number.isFinite(count) || count <= 0) {
+    return entities;
+  }
+
+  const clusters = Math.max(1, Math.min(Math.floor(clusterCount) || 1, count));
+  const basePerCluster = Math.floor(count / clusters);
+  const remainder = count - basePerCluster * clusters;
+
   const centerLon = (bounds.minLon + bounds.maxLon) / 2;
   const centerLat = (bounds.minLat + bounds.maxLat) / 2;
   const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
   
-  for (let c = 0; c < clusterCount; c++) {
+  let globalIndex = 0;
+  for (let c = 0; c < clusters; c++) {
+    const clusterSize = basePerCluster + (c < remainder ? 1 : 0);
+    if (clusterSize <= 0) {
+      continue;
+    }
     // クラスター中心をランダムに配置
     const clusterLon = centerLon + (Math.random() - 0.5) * (bounds.maxLon - bounds.minLon) * 0.6;
     const clusterLat = centerLat + (Math.random() - 0.5) * (bounds.maxLat - bounds.minLat) * 0.6;
@@ -200,7 +211,7 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
       (bounds.maxLat - bounds.minLat)
     ) * 0.1;
     
-    for (let i = 0; i < entitiesPerCluster; i++) {
+    for (let i = 0; i < clusterSize; i++) {
       const r = Math.sqrt(Math.random()) * clusterRadius;
       const theta = Math.random() * Math.PI * 2;
       
@@ -209,9 +220,10 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
       const alt = clusterAlt + (Math.random() - 0.5) * (bounds.maxAlt - bounds.minAlt) * 0.2;
       
       entities.push(new Cesium.Entity({
-        id: `clustered-${c}-${i}-${Math.random().toString(36).slice(2, 8)}`,
+        id: `clustered-${c}-${i}-${globalIndex}-${Math.random().toString(36).slice(2, 8)}`,
         position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
       }));
+      globalIndex++;
     }
   }
   
