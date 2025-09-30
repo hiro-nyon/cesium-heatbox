@@ -9,6 +9,30 @@ let isHeatmapVisible = true; // 表示状態を追跡
 let _qsFitOnceHandler = null;
 let _qsFitViewOptions = null;
 
+function setTextContent(id, value) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = value;
+  }
+  return el;
+}
+
+function showElement(id, display = 'block') {
+  const el = document.getElementById(id);
+  if (el && el.style) {
+    el.style.display = display;
+  }
+  return el;
+}
+
+function hideElement(id) {
+  const el = document.getElementById(id);
+  if (el && el.style) {
+    el.style.display = 'none';
+  }
+  return el;
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
   initializeCesium();
@@ -850,13 +874,14 @@ function clearHeatmap() {
       updateStatus('Heatmap cleared', 'success');
       
       // Update statistics - より完全なリセット
-      document.getElementById('voxelCount').textContent = '0';
-      document.getElementById('emptyVoxelCount').textContent = '0';
-      document.getElementById('autoSizeInfo').style.display = 'none';
-      document.getElementById('v019Stats').style.display = 'none';
+      setTextContent('voxelCount', '0');
+      setTextContent('emptyVoxelCount', '0');
+      hideElement('autoSizeInfo');
+      hideElement('v019Stats');
       
       // Disable controls and reset button text
-      document.getElementById('clearHeatmap').disabled = true;
+      const clearBtn = document.getElementById('clearHeatmap');
+      if (clearBtn) clearBtn.disabled = true;
       const toggleButton = document.getElementById('toggleVisibility');
       if (toggleButton) {
         toggleButton.disabled = true;
@@ -929,24 +954,27 @@ function updateStatisticsWithHeatmap(options) {
     if (heatboxInstance && typeof heatboxInstance.getStats === 'function') {
       const stats = heatboxInstance.getStats();
       if (stats) {
-        document.getElementById('voxelCount').textContent = stats.totalVoxels?.toLocaleString() || '0';
+        setTextContent('voxelCount', stats.totalVoxels?.toLocaleString() || '0');
         if (stats.emptyVoxels !== undefined) {
-          document.getElementById('emptyVoxelCount').textContent = stats.emptyVoxels.toLocaleString();
+          setTextContent('emptyVoxelCount', stats.emptyVoxels.toLocaleString());
         }
         
         // VoxelSelector統計 (v0.1.11-alpha対応)
-        if (stats.selectionStats && document.getElementById('v019Stats')) {
-          document.getElementById('selectionStrategy').textContent = stats.selectionStats.strategy || '-';
-          document.getElementById('renderedVoxels').textContent = stats.selectionStats.selectedCount?.toLocaleString() || '0';
-          document.getElementById('coverageRatio').textContent = (stats.selectionStats.coverageRatio * 100).toFixed(1) || '0';
-          document.getElementById('v019Stats').style.display = 'block';
+        if (stats.selectionStats && showElement('v019Stats')) {
+          setTextContent('selectionStrategy', stats.selectionStats.strategy || '-');
+          setTextContent('renderedVoxels', stats.selectionStats.selectedCount?.toLocaleString() || '0');
+          const coverage = stats.selectionStats.coverageRatio;
+          if (typeof coverage === 'number' && isFinite(coverage)) {
+            setTextContent('coverageRatio', (coverage * 100).toFixed(1));
+          }
         }
         
         // 自動サイズ情報表示
-        if (stats.autoSizeInfo && document.getElementById('autoSizeInfo')) {
-          document.getElementById('autoAdjusted').textContent = stats.autoSizeInfo.adjusted ? 'Yes' : 'No';
-          document.getElementById('sizeInfo').textContent = `${stats.autoSizeInfo.voxelSize}m`;
-          document.getElementById('autoSizeInfo').style.display = 'block';
+        if (stats.autoSizeInfo && showElement('autoSizeInfo')) {
+          setTextContent('autoAdjusted', stats.autoSizeInfo.adjusted ? 'Yes' : 'No');
+          if (stats.autoSizeInfo.voxelSize !== undefined) {
+            setTextContent('sizeInfo', `${stats.autoSizeInfo.voxelSize}m`);
+          }
         }
         return; // 新API使用時は以下の推定処理をスキップ
       }
@@ -959,8 +987,8 @@ function updateStatisticsWithHeatmap(options) {
     
     if (autoVoxelSize) {
       // Show auto size information
-      document.getElementById('autoSizeInfo').style.display = 'block';
-      document.getElementById('autoAdjusted').textContent = options.autoVoxelSizeMode || 'basic';
+      showElement('autoSizeInfo');
+      setTextContent('autoAdjusted', options.autoVoxelSizeMode || 'basic');
       
       // Estimate based on data density
       const dataCount = currentEntities.length;
@@ -972,15 +1000,15 @@ function updateStatisticsWithHeatmap(options) {
         finalSize = 'Balanced performance';
       }
       
-      document.getElementById('sizeInfo').textContent = finalSize;
+      setTextContent('sizeInfo', finalSize);
     } else {
-      document.getElementById('autoSizeInfo').style.display = 'none';
+      hideElement('autoSizeInfo');
       // Manual size calculation
       const gridSize = options.gridSize || 20;
       estimatedVoxels = Math.pow(gridSize, 3);
     }
     
-    document.getElementById('voxelCount').textContent = estimatedVoxels.toLocaleString();
+    setTextContent('voxelCount', estimatedVoxels.toLocaleString());
     
   } catch (error) {
     console.error('Error updating heatmap statistics:', error);
