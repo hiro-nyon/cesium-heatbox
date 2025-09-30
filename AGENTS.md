@@ -65,6 +65,7 @@
 - Follow Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:` with optional scope (e.g., `feat(core): add diverging colors`).
 - PRs include summary, rationale, screenshots/logs, linked issues. Ensure `npm run lint && npm test` pass.
 - Update docs and examples when changing public APIs; regenerate API docs with `npm run docs`.
+- Commit messages and PR titles must be in English (even though assistant responses are in Japanese).
 
 ## Pre-Push Checklist
 - Run locally (silenced for agents):

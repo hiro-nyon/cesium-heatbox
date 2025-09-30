@@ -147,6 +147,10 @@ Risks & Mitigations
 Priority: Medium | Target: 2026-02
 
 - コア機能（仕上げ・検証）
+  - [ ] **Phase 0（先行）**: 正規化/既定値の整備
+    - minOutlineWidth/maxOutlineWidth → outlineWidthRange への統一
+    - adaptiveParams.overlapDetection の既定値追加（既定: false）
+    - 優先順位（Resolver > Adaptive > Base）の仕様テスト（rangeクランプ含む）
   - [ ] 適応的制御のパラメータチューニングとデフォルト見直し（`adaptiveParams`/プリセットの係数微調整）
   - [ ] エッジケースの最適化：`emulation-only` と `inset`/`standard` の切り替え条件、隣接重なり時の線の視認性
   - [ ] 解像度差（`cellSizeZ` が極小など）の安定化（下限クランプ/積み上げ規則の見直し）
@@ -163,6 +167,20 @@ Priority: Medium | Target: 2026-02
   - [ ] 受け入れ基準：密集・疎・混在パターンで視認性が一律太さ/固定透明度より改善、TopN/選択が埋もれない
   - [ ] 受け入れ基準：アウトライン描画モード（`standard`/`inset`/`emulation-only`）の切替が安定
   - [ ] 受け入れ基準：カスタム透明度リゾルバ（box/outline）併用時の優先順位・クランプが一貫
+  - [ ] 新機能有効時の計算時間増加 ≤ +15%（既存比）
+  - [ ] メモリ使用量の増加 ≤ +10%（既存比）
+  - [ ] 1000–5000ボクセル規模でのフレーム時間安定性（±20%以内）
+
+#### v0.1.15の非目標（v1.0.0へ延期）
+- opacity/width の classification 連携
+- resolver の完全置き換え（削除は v1.x 以降の段階的対応）
+
+#### Phase間のマージ基準
+- Phase 0→1: validation/正規化の単体テストが100%パス
+- Phase 1→2: 新デフォルト値での視覚的回帰テスト（3データセット）が承認
+- Phase 2→3: エッジケーステスト（Z軸極小・高密度重なり）が緑
+- Phase 3→4: Advanced Examplesが白画面/エラーなく動作
+- Phase 4→main: 全受け入れ基準を満たし、リリースノート/移行ガイド完成
 
 > 注: 0.1系では「コアのデータモデル変更や新レイヤー」は行わず、安定化と利用性向上に限定します。
 
@@ -302,7 +320,7 @@ Resolver 置き換え計画（v1.0.0で「別の形ですべて再実装」）
 - emulation-only 時の透明度/太さの適用順序を明記（Adaptive → Emulation Hook の順）。
 
 スケジュール
-- 0.1.15: AdaptiveController に `box/outlineOpacityRange` 実装（幅の安全クランプ + テスト）。
+- 0.1.15: range の正規化＋クランプ基盤（AdaptiveController 側の最終値クランプ & テスト）。補間は v1.0.0 で実装。
 - 1.0.0: `outlineWidthRange` / classification 連携 / emulation hook を統合、Resolver を非推奨のまま維持。
 - 1.x: Resolver API の段階的削除（少なくとも2リリース以上のグレイス期間）。
 - 受け入れ基準:
