@@ -402,13 +402,26 @@ Priority: Low | Target: 2026 H2
 
 ---
 
-## 1.0.0（メジャー）
+## 4.x 系（標準化連携フェーズ）
 
-Priority: Future | Target: TBD
-- [ ] レガシー削除（`batchMode`削除 ほか）
-- [ ] しきい値面（等値面; Marching Cubes）
-- [ ] 高度な統計分析/監視
-- 互換性: 破壊的変更を伴う可能性
+### v4.0.0 - 空間ID（Spatial ID）対応（標準化が確定した場合）
+Priority: Conditional | Target: TBD
+
+- 条件
+  - 国内外で「空間ID（Spatial ID）」の仕様が正式に標準化・安定化し、利用条件（ライセンス/参照実装/仕様公開）が明確であること。
+- スコープ
+  - アダプタ追加: `src/core/spatial/SpatialIdIndex.js` を実装し、`encode(lon,lat,level)`, `bounds(id)`, `center(id)`, `parent(id)`, `children(id)`, `neighbors(id)` を提供（既存の OLC/JapanMesh/Quadkey と同一IF）。
+  - オプション: `spatialIndex: 'spatialid'` と `spatialLevel` をサポート。高さは `heightBin`（Zビン）と併用。
+  - 互換性: 低（新オプション追加のみ、既存デフォルトは維持）。
+- 受け入れ基準（Acceptance Criteria）
+  - 空間ID→境界（bbox）→ボックス生成の往復で1セル以内の誤差に収まる単体テストが緑。
+  - 代表ケースで `neighbors(id)` が仕様通りに近傍セルを返す（極域/子午線跨ぎを含む）。
+  - examples に解像度切替デモを追加し、Docs/Wiki/API を更新。
+- リスク & 対応
+  - 標準仕様の更新・後追い: アダプタ層で差分吸収（IFは固定、マッピング/パラメータを差し替え）。
+  - 実装/配布条件の変更: 参照実装のライセンス確認をゲートに設定、代替の暫定アダプタを用意。
+
+> 注: 標準化が延期/不成立の場合、本項目は次期版へ移動または見送りとします。
 
 ---
 
