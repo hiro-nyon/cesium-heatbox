@@ -649,7 +649,12 @@ describe('AdaptiveController', () => {
         
         const recommendation = controller._detectOverlapAndRecommendMode(
           { x: 0, y: 0, z: 0 },
-          voxelData
+          voxelData,
+          {
+            outlineRenderMode: 'standard',
+            outlineInset: 0,
+            adaptiveParams: { overlapDetection: false }
+          }
         );
         
         expect(recommendation.recommendedMode).toBe('standard');
@@ -674,7 +679,12 @@ describe('AdaptiveController', () => {
         
         const recommendation = controller._detectOverlapAndRecommendMode(
           { x: 0, y: 0, z: 0 },
-          voxelData
+          voxelData,
+          {
+            outlineRenderMode: 'standard',
+            outlineInset: 0,
+            adaptiveParams: { overlapDetection: true }
+          }
         );
         
         expect(recommendation.recommendedMode).toBe('inset');
@@ -697,7 +707,12 @@ describe('AdaptiveController', () => {
         
         const recommendation = controller._detectOverlapAndRecommendMode(
           { x: 0, y: 0, z: 0 },
-          voxelData
+          voxelData,
+          {
+            outlineRenderMode: 'standard',
+            outlineInset: 0,
+            adaptiveParams: { overlapDetection: true }
+          }
         );
         
         expect(recommendation.recommendedMode).toBe('standard');
@@ -720,18 +735,55 @@ describe('AdaptiveController', () => {
           { x: 0, y: -1, z: 0, count: 10 }
         ]);
         
-        const recommendation = controller._detectOverlapAndRecommendMode(
-          { x: 0, y: 0, z: 0 },
-          voxelData
-        );
-        
-        // Should maintain emulation-only mode, not recommend inset
-        expect(recommendation.recommendedMode).toBe('emulation-only');
-        expect(recommendation.recommendedInset).toBe(0);
-      });
+      const recommendation = controller._detectOverlapAndRecommendMode(
+        { x: 0, y: 0, z: 0 },
+        voxelData,
+        {
+          outlineRenderMode: 'emulation-only',
+          outlineInset: 0,
+          adaptiveParams: { overlapDetection: true }
+        }
+      );
+      
+      // Should maintain emulation-only mode, not recommend inset
+      expect(recommendation.recommendedMode).toBe('emulation-only');
+      expect(recommendation.recommendedInset).toBe(0);
     });
 
-    describe('Z-axis extreme aspect ratio edge cases', () => {
+    test('Should respect live render options after runtime change', () => {
+      const controller = new AdaptiveController({
+        adaptiveParams: { overlapDetection: true },
+        outlineRenderMode: 'standard',
+        outlineInset: 0
+      });
+
+      const voxelData = createMockVoxelData([
+        { x: 0, y: 0, z: 0, count: 12 },
+        { x: 1, y: 0, z: 0, count: 12 },
+        { x: -1, y: 0, z: 0, count: 12 },
+        { x: 0, y: 1, z: 0, count: 12 },
+        { x: 0, y: -1, z: 0, count: 12 }
+      ]);
+
+      const runtimeOptions = {
+        outlineRenderMode: 'emulation-only',
+        outlineInset: 0.4,
+        adaptiveParams: { overlapDetection: true }
+      };
+
+      const recommendation = controller._detectOverlapAndRecommendMode(
+        { x: 0, y: 0, z: 0 },
+        voxelData,
+        runtimeOptions
+      );
+
+      expect(recommendation.recommendedMode).toBe('emulation-only');
+      expect(recommendation.recommendedInset).toBeCloseTo(0.4);
+      expect(recommendation.reason).toBeUndefined();
+    });
+  });
+
+  describe('Z-axis extreme aspect ratio edge cases', () => {
       test('Should apply compensation for extremely thin Z-axis', () => {
         const controller = new AdaptiveController({
           adaptiveParams: {

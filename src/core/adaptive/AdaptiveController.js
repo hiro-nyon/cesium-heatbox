@@ -52,7 +52,7 @@ export class AdaptiveController {
    * @param {number} [radius] - Search radius override / 探索半径オーバーライド
    * @returns {Object} Neighborhood density result / 近傍密度結果
    */
-  calculateNeighborhoodDensity(voxelInfo, voxelData, radius = null) {
+  calculateNeighborhoodDensity(voxelInfo, voxelData, radius = null, renderOptions = null) {
     // voxelDataのnull/undefined安全性チェック
     if (!voxelData || typeof voxelData.get !== 'function') {
       return {
@@ -63,7 +63,11 @@ export class AdaptiveController {
     }
 
     const { x, y, z } = voxelInfo;
-    const controllerAdaptiveParams = this.options.adaptiveParams || DEFAULT_ADAPTIVE_PARAMS;
+    const controllerAdaptiveParams = {
+      ...DEFAULT_ADAPTIVE_PARAMS,
+      ...(this.options?.adaptiveParams || {}),
+      ...(renderOptions?.adaptiveParams || {})
+    };
     const effectiveRadius = controllerAdaptiveParams.neighborhoodRadius ?? DEFAULT_ADAPTIVE_PARAMS.neighborhoodRadius ?? 30;
     const searchRadius = radius !== null ? radius :
       Math.max(1, Math.floor(effectiveRadius / 20)); // 簡略化
@@ -178,14 +182,22 @@ export class AdaptiveController {
    * @returns {number} returns.recommendedInset - Recommended inset value / 推奨インセット値
    * @returns {string} [returns.reason] - Reason for recommendation / 推奨理由
    */
-  _detectOverlapAndRecommendMode(voxelInfo, voxelData) {
-    const controllerAdaptiveParams = this.options.adaptiveParams || DEFAULT_ADAPTIVE_PARAMS;
-    
+  _detectOverlapAndRecommendMode(voxelInfo, voxelData, renderOptions = null) {
+    const liveOptions = renderOptions || this.options || {};
+    const liveAdaptiveParams = {
+      ...DEFAULT_ADAPTIVE_PARAMS,
+      ...(this.options?.adaptiveParams || {}),
+      ...(renderOptions?.adaptiveParams || {})
+    };
+
+    const currentMode = liveOptions.outlineRenderMode || 'standard';
+    const currentInset = liveOptions.outlineInset || 0;
+
     // overlapDetection が無効な場合は現在の設定を返す
-    if (!controllerAdaptiveParams.overlapDetection) {
+    if (!liveAdaptiveParams.overlapDetection) {
       return {
-        recommendedMode: this.options.outlineRenderMode || 'standard',
-        recommendedInset: this.options.outlineInset || 0
+        recommendedMode: currentMode,
+        recommendedInset: currentInset
       };
     }
 
@@ -193,7 +205,7 @@ export class AdaptiveController {
     const overlapRisk = adjacentCount / 6; // 最大6方向
 
     // 重なりリスクが高い場合、insetモードを推奨
-    if (overlapRisk > 0.5 && this.options.outlineRenderMode !== 'emulation-only') {
+    if (overlapRisk > 0.5 && currentMode !== 'emulation-only') {
       return {
         recommendedMode: 'inset',
         recommendedInset: Math.max(0.3, 0.8 - overlapRisk * 0.4),
@@ -202,8 +214,8 @@ export class AdaptiveController {
     }
 
     return {
-      recommendedMode: this.options.outlineRenderMode || 'standard',
-      recommendedInset: this.options.outlineInset || 0
+      recommendedMode: currentMode,
+      recommendedInset: currentInset
     };
   }
 
@@ -325,18 +337,22 @@ export class AdaptiveController {
       (count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
     
     // 近傍密度を計算
-    const neighborhoodResult = this.calculateNeighborhoodDensity(voxelInfo, voxelData);
+    const neighborhoodResult = this.calculateNeighborhoodDensity(voxelInfo, voxelData, null, renderOptions);
     const { isDenseArea } = neighborhoodResult;
 
     // v0.1.15 Phase 1: Z軸スケール補正を適用（ADR-0011）
     const zScaleFactor = this._calculateZScaleCompensation(voxelInfo, grid);
 
     // v0.1.15 Phase 2: 重なり検出と推奨モード判定（ADR-0011）
-    const overlapRecommendation = this._detectOverlapAndRecommendMode(voxelInfo, voxelData);
+    const overlapRecommendation = this._detectOverlapAndRecommendMode(voxelInfo, voxelData, renderOptions);
 
     // カメラ距離は簡略化（実装では固定値を使用）
     const cameraDistance = 1000; // 固定値、実際の実装ではカメラからの距離を取得
-    const controllerAdaptiveParams = this.options.adaptiveParams || DEFAULT_ADAPTIVE_PARAMS;
+    const controllerAdaptiveParams = {
+      ...DEFAULT_ADAPTIVE_PARAMS,
+      ...(this.options?.adaptiveParams || {}),
+      ...(renderOptions?.adaptiveParams || {})
+    };
     const cameraDistanceFactor = controllerAdaptiveParams.cameraDistanceFactor ?? 1.0;
     const overlapRiskFactor = controllerAdaptiveParams.overlapRiskFactor ?? 0;
     const cameraFactor = Math.min(1.0, 1000 / cameraDistance) * cameraDistanceFactor;

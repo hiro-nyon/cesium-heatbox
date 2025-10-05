@@ -494,6 +494,13 @@ export class Heatbox {
   updateOptions(newOptions) {
     this.options = validateAndNormalizeOptions({ ...this.options, ...newOptions });
     this.renderer.options = this.options;
+
+    if (this.renderer.adaptiveController && typeof this.renderer.adaptiveController.updateOptions === 'function') {
+      this.renderer.adaptiveController.updateOptions(this.options);
+    }
+    if (this.renderer.geometryRenderer && typeof this.renderer.geometryRenderer.updateOptions === 'function') {
+      this.renderer.geometryRenderer.updateOptions(this.options);
+    }
     
     // 既存のヒートマップがある場合は再描画
     if (this._voxelData) {
