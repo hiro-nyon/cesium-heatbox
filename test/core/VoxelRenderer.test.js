@@ -351,6 +351,7 @@ describe('VoxelRenderer', () => {
     let renderer;
     let mockVoxelData;
     let mockStatistics;
+    let mockGrid;
     
     beforeEach(() => {
       const viewer = testUtils.createMockViewer();
@@ -368,13 +369,22 @@ describe('VoxelRenderer', () => {
         maxCount: 10,
         totalEntities: 15
       };
+
+      mockGrid = {
+        cellSizeX: 20,
+        cellSizeY: 20,
+        cellSizeZ: 5,
+        numVoxelsX: 2,
+        numVoxelsY: 2,
+        numVoxelsZ: 2
+      };
     });
     
     test('_calculateAdaptiveParams メソッドが存在し、適応的パラメータを計算', () => {
       expect(typeof renderer._calculateAdaptiveParams).toBe('function');
       
       const voxelInfo = { x: 0, y: 0, z: 0, count: 5 };
-      const result = renderer._calculateAdaptiveParams(voxelInfo, false, mockVoxelData, mockStatistics);
+      const result = renderer._calculateAdaptiveParams(voxelInfo, false, mockVoxelData, mockStatistics, mockGrid);
       
       expect(result).toHaveProperty('outlineWidth');
       expect(result).toHaveProperty('boxOpacity');
@@ -386,7 +396,7 @@ describe('VoxelRenderer', () => {
       renderer.options.adaptiveOutlines = false;
       
       const voxelInfo = { x: 0, y: 0, z: 0, count: 5 };
-      const result = renderer._calculateAdaptiveParams(voxelInfo, false, mockVoxelData, mockStatistics);
+      const result = renderer._calculateAdaptiveParams(voxelInfo, false, mockVoxelData, mockStatistics, mockGrid);
       
       expect(result.outlineWidth).toBeNull();
       expect(result.boxOpacity).toBeNull();
@@ -398,13 +408,13 @@ describe('VoxelRenderer', () => {
       const voxelInfo = { x: 0, y: 0, z: 0, count: 8 };
       
       renderer.options.outlineWidthPreset = 'adaptive-density';
-      const adaptiveResult = renderer._calculateAdaptiveParams(voxelInfo, false, mockVoxelData, mockStatistics);
+      const adaptiveResult = renderer._calculateAdaptiveParams(voxelInfo, false, mockVoxelData, mockStatistics, mockGrid);
       
       renderer.options.outlineWidthPreset = 'topn-focus';
-      const topnResult = renderer._calculateAdaptiveParams(voxelInfo, true, mockVoxelData, mockStatistics);
+      const topnResult = renderer._calculateAdaptiveParams(voxelInfo, true, mockVoxelData, mockStatistics, mockGrid);
       
       renderer.options.outlineWidthPreset = 'uniform';
-      const uniformResult = renderer._calculateAdaptiveParams(voxelInfo, false, mockVoxelData, mockStatistics);
+      const uniformResult = renderer._calculateAdaptiveParams(voxelInfo, false, mockVoxelData, mockStatistics, mockGrid);
       
       expect(adaptiveResult).toBeDefined();
       expect(topnResult).toBeDefined();

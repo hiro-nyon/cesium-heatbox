@@ -44,6 +44,16 @@ describe('AdaptiveController', () => {
     voxelCount: 50
   });
 
+  const createMockGrid = (overrides = {}) => ({
+    cellSizeX: 20,
+    cellSizeY: 20,
+    cellSizeZ: 5,
+    numVoxelsX: 10,
+    numVoxelsY: 10,
+    numVoxelsZ: 4,
+    ...overrides
+  });
+
   /**
    * Create mock render options
    * モック描画オプションを作成
@@ -62,11 +72,19 @@ describe('AdaptiveController', () => {
     test('Should initialize with default options', () => {
       const controller = new AdaptiveController();
       
-      expect(controller.options.adaptiveParams).toEqual({
-        neighborhoodRadius: 50,
-        densityThreshold: 5,
-        cameraDistanceFactor: 1.0,
-        overlapRiskFactor: 0.3
+      expect(controller.options.adaptiveParams).toMatchObject({
+        neighborhoodRadius: 30,
+        densityThreshold: 3,
+        cameraDistanceFactor: 0.8,
+        overlapRiskFactor: 0.4,
+        minOutlineWidth: 1.0,
+        maxOutlineWidth: 5.0,
+        outlineWidthRange: null,
+        boxOpacityRange: null,
+        outlineOpacityRange: null,
+        adaptiveOpacityEnabled: false,
+        zScaleCompensation: true,
+        overlapDetection: false
       });
     });
 
@@ -82,7 +100,9 @@ describe('AdaptiveController', () => {
 
       const controller = new AdaptiveController(customOptions);
       
-      expect(controller.options.adaptiveParams).toEqual(customOptions.adaptiveParams);
+      expect(controller.options.adaptiveParams).toMatchObject(customOptions.adaptiveParams);
+      expect(controller.options.adaptiveParams.minOutlineWidth).toBe(1.0);
+      expect(controller.options.adaptiveParams.maxOutlineWidth).toBe(5.0);
     });
 
     test('Should merge custom options with defaults', () => {
@@ -96,7 +116,7 @@ describe('AdaptiveController', () => {
       const controller = new AdaptiveController(customOptions);
       
       expect(controller.options.adaptiveParams.neighborhoodRadius).toBe(75);
-      expect(controller.options.adaptiveParams.densityThreshold).toBe(5); // default
+      expect(controller.options.adaptiveParams.densityThreshold).toBe(3); // default
       expect(controller.options.customProperty).toBe('test');
     });
   });
@@ -311,7 +331,8 @@ describe('AdaptiveController', () => {
         false,
         voxelData,
         statistics,
-        renderOptions
+        renderOptions,
+        createMockGrid()
       );
 
       expect(result).toEqual({
@@ -339,7 +360,8 @@ describe('AdaptiveController', () => {
         false, // isTopN
         voxelData,
         statistics,
-        renderOptions
+        renderOptions,
+        createMockGrid()
       );
 
       expect(result.outlineWidth).toBeGreaterThanOrEqual(0.5);
@@ -373,7 +395,8 @@ describe('AdaptiveController', () => {
         true, // isTopN
         voxelData,
         statistics,
-        renderOptions
+        renderOptions,
+        createMockGrid()
       );
 
       const regularResult = controller.calculateAdaptiveParams(
@@ -381,7 +404,8 @@ describe('AdaptiveController', () => {
         false, // not TopN
         voxelData,
         statistics,
-        renderOptions
+        renderOptions,
+        createMockGrid()
       );
 
       // TopNボクセルはより太い枠線を持つはず
@@ -400,7 +424,8 @@ describe('AdaptiveController', () => {
         false,
         voxelData,
         statistics,
-        renderOptions
+        renderOptions,
+        createMockGrid()
       );
 
       expect(result.outlineWidth).toBeGreaterThanOrEqual(0.5);
@@ -423,7 +448,8 @@ describe('AdaptiveController', () => {
         false,
         voxelData,
         statistics,
-        renderOptions
+        renderOptions,
+        createMockGrid()
       );
 
       // 太い枠線の場合はエミュレーションが有効になるはず
@@ -449,7 +475,7 @@ describe('AdaptiveController', () => {
 
       expect(controller.options.adaptiveParams.neighborhoodRadius).toBe(75);
       expect(controller.options.adaptiveParams.densityThreshold).toBe(8);
-      expect(controller.options.adaptiveParams.cameraDistanceFactor).toBe(1.0); // unchanged
+      expect(controller.options.adaptiveParams.cameraDistanceFactor).toBe(0.8); // unchanged default
       expect(controller.options.newProperty).toBe('updated');
     });
 
@@ -478,7 +504,8 @@ describe('AdaptiveController', () => {
         false,
         emptyVoxelData,
         statistics,
-        renderOptions
+        renderOptions,
+        createMockGrid()
       );
 
       expect(result).toBeDefined();
@@ -497,7 +524,8 @@ describe('AdaptiveController', () => {
         false,
         voxelData,
         statistics,
-        renderOptions
+        renderOptions,
+        createMockGrid()
       );
 
       expect(result).toBeDefined();
@@ -517,7 +545,8 @@ describe('AdaptiveController', () => {
         false,
         voxelData,
         invalidStats,
-        renderOptions
+        renderOptions,
+        createMockGrid()
       );
 
       expect(result).toBeDefined();

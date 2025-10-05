@@ -1,4 +1,7 @@
 import { Logger } from '../../utils/logger.js';
+import { DEFAULT_OPTIONS } from '../../utils/constants.js';
+
+const DEFAULT_ADAPTIVE_PARAMS = DEFAULT_OPTIONS.adaptiveParams || {};
 
 /**
  * AdaptiveController - Adaptive control logic for VoxelRenderer
@@ -24,16 +27,14 @@ export class AdaptiveController {
    * @param {number} options.adaptiveParams.overlapRiskFactor - Overlap risk factor / 重なりリスク係数
    */
   constructor(options = {}) {
+    const mergedAdaptiveParams = {
+      ...DEFAULT_ADAPTIVE_PARAMS,
+      ...(options.adaptiveParams || {})
+    };
+
     this.options = {
       ...options,
-      // v0.1.11-alpha: AdaptiveController適応制御デフォルト設定 (ADR-0009 Phase 3)
-      adaptiveParams: {
-        neighborhoodRadius: 50,
-        densityThreshold: 5,
-        cameraDistanceFactor: 1.0,
-        overlapRiskFactor: 0.3, // デフォルト値を追加
-        ...options.adaptiveParams
-      }
+      adaptiveParams: mergedAdaptiveParams
     };
 
     Logger.debug('AdaptiveController initialized with options:', this.options);
@@ -62,8 +63,10 @@ export class AdaptiveController {
     }
 
     const { x, y, z } = voxelInfo;
-    const searchRadius = radius !== null ? radius : 
-      Math.max(1, Math.floor(this.options.adaptiveParams.neighborhoodRadius / 20)); // 簡略化
+    const controllerAdaptiveParams = this.options.adaptiveParams || DEFAULT_ADAPTIVE_PARAMS;
+    const effectiveRadius = controllerAdaptiveParams.neighborhoodRadius ?? DEFAULT_ADAPTIVE_PARAMS.neighborhoodRadius ?? 30;
+    const searchRadius = radius !== null ? radius :
+      Math.max(1, Math.floor(effectiveRadius / 20)); // 簡略化
 
     let neighborhoodDensity = 0;
     let neighborCount = 0;
@@ -85,7 +88,8 @@ export class AdaptiveController {
     }
     
     const avgNeighborhoodDensity = neighborCount > 0 ? neighborhoodDensity / neighborCount : 0;
-    const isDenseArea = avgNeighborhoodDensity > this.options.adaptiveParams.densityThreshold;
+    const densityThreshold = controllerAdaptiveParams.densityThreshold ?? DEFAULT_ADAPTIVE_PARAMS.densityThreshold ?? 5;
+    const isDenseArea = avgNeighborhoodDensity > densityThreshold;
     
     return {
       totalDensity: neighborhoodDensity,
@@ -105,7 +109,9 @@ export class AdaptiveController {
    * @returns {number} Scale compensation factor / スケール補正係数
    */
   _calculateZScaleCompensation(voxelInfo, grid) {
-    if (!grid || !this.options.adaptiveParams.zScaleCompensation) {
+    const controllerAdaptiveParams = this.options.adaptiveParams || DEFAULT_ADAPTIVE_PARAMS;
+
+    if (!grid || !controllerAdaptiveParams.zScaleCompensation) {
       return 1.0;
     }
     
@@ -244,17 +250,20 @@ export class AdaptiveController {
     // 近傍密度を計算
     const neighborhoodResult = this.calculateNeighborhoodDensity(voxelInfo, voxelData);
     const { isDenseArea } = neighborhoodResult;
-    
+
     // v0.1.15 Phase 1: Z軸スケール補正を適用（ADR-0011）
     const zScaleFactor = this._calculateZScaleCompensation(voxelInfo, grid);
-    
+
     // カメラ距離は簡略化（実装では固定値を使用）
     const cameraDistance = 1000; // 固定値、実際の実装ではカメラからの距離を取得
-    const cameraFactor = Math.min(1.0, 1000 / cameraDistance) * this.options.adaptiveParams.cameraDistanceFactor;
-    
+    const controllerAdaptiveParams = this.options.adaptiveParams || DEFAULT_ADAPTIVE_PARAMS;
+    const cameraDistanceFactor = controllerAdaptiveParams.cameraDistanceFactor ?? 1.0;
+    const overlapRiskFactor = controllerAdaptiveParams.overlapRiskFactor ?? 0;
+    const cameraFactor = Math.min(1.0, 1000 / cameraDistance) * cameraDistanceFactor;
+
     // 重なりリスクの算出
-    const overlapRisk = isDenseArea ? this.options.adaptiveParams.overlapRiskFactor : 0;
-    
+    const overlapRisk = isDenseArea ? overlapRiskFactor : 0;
+
     // プリセットによる調整
     const presetResult = this.applyPresetLogic(
       renderOptions.outlineWidthPreset,
@@ -263,16 +272,57 @@ export class AdaptiveController {
       isDenseArea,
       renderOptions
     );
-    
+
     // v0.1.15 Phase 1: Z軸補正を含めた最終調整（ADR-0011）
     const finalWidth = presetResult.adaptiveWidth * cameraFactor * zScaleFactor;
     const finalOutlineOpacity = Math.max(0.2, presetResult.adaptiveOutlineOpacity * (1 - overlapRisk));
-    
+
+    // Range & clamp adjustments (v0.1.15 Phase 0/1)
+    const rangeConfig = (renderOptions && renderOptions.adaptiveParams) || controllerAdaptiveParams || {};
+
+    const clampWithRange = (value, range, hardMin, hardMax) => {
+      let clamped = value;
+      if (Array.isArray(range) && range.length === 2) {
+        const [minRange, maxRange] = range;
+        const minVal = (minRange !== undefined && minRange !== null) ? minRange : hardMin;
+        const maxVal = (maxRange !== undefined && maxRange !== null) ? maxRange : hardMax;
+        clamped = Math.min(maxVal ?? clamped, Math.max(minVal ?? clamped, clamped));
+      }
+      if (hardMin !== undefined && hardMin !== null) {
+        clamped = Math.max(hardMin, clamped);
+      }
+      if (hardMax !== undefined && hardMax !== null) {
+        clamped = Math.min(hardMax, clamped);
+      }
+      return clamped;
+    };
+
+    const clampedOutlineWidth = clampWithRange(
+      Math.max(1.0, finalWidth),
+      rangeConfig.outlineWidthRange,
+      controllerAdaptiveParams.minOutlineWidth ?? 1.0,
+      controllerAdaptiveParams.maxOutlineWidth ?? null
+    );
+
+    const clampedBoxOpacity = clampWithRange(
+      Math.max(0.0, Math.min(1.0, presetResult.adaptiveBoxOpacity)),
+      rangeConfig.boxOpacityRange,
+      0,
+      1
+    );
+
+    const clampedOutlineOpacity = clampWithRange(
+      Math.max(0.2, Math.min(1.0, finalOutlineOpacity)),
+      rangeConfig.outlineOpacityRange,
+      0,
+      1
+    );
+
     return {
       // v0.1.12-alpha.10: RangeError防止のため最小値を1.0に設定
-      outlineWidth: Math.max(1.0, finalWidth),
-      boxOpacity: Math.max(0.1, Math.min(1.0, presetResult.adaptiveBoxOpacity)),
-      outlineOpacity: Math.max(0.2, Math.min(1.0, finalOutlineOpacity)),
+      outlineWidth: clampedOutlineWidth,
+      boxOpacity: clampedBoxOpacity,
+      outlineOpacity: clampedOutlineOpacity,
       shouldUseEmulation: isDenseArea || (finalWidth > 2 && renderOptions.outlineRenderMode !== 'standard'),
       // Debug info for testing / テスト用デバッグ情報
       _debug: {

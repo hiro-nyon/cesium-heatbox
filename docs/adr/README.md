@@ -40,7 +40,7 @@ Accepted / Deprecated / Superseded by ADR-YYYY
 | [ADR-0008](ADR-0008-v0.1.10-refactor-and-api-cleanup.md) | v0.1.10 モジュール分割とAPIクリーンアップ（互換性見直し） | Superseded by ADR-0009 | 2025-09-04 |
 | [ADR-0009](ADR-0009-voxel-renderer-responsibility-separation.md) | VoxelRenderer責任分離とSingle Responsibility Principle適用 | Accepted | 2025-09-07 |
 | [ADR-0010](ADR-0010-v0.1.12-api-cleanup-and-observability.md) | v0.1.12 APIクリーンアップ・観測可能性 | Proposed | 2025-09-14 |
-| [ADR-0011](ADR-0011-v0.1.15-adaptive-visualization-finalization.md) | v0.1.15 適応的表示の核・視認性最適化の仕上げ | Proposed | 2025-09-20 |
+| [ADR-0011](ADR-0011-v0.1.15-adaptive-visualization-finalization.md) | v0.1.15 適応的表示の核・視認性最適化の仕上げ | In Progress | 2025-09-20 |
 
 ## 参考資料
 
