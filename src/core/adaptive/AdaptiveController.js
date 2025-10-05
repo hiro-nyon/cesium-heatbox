@@ -131,6 +131,83 @@ export class AdaptiveController {
   }
 
   /**
+   * Count adjacent voxels (6 directions: ±X, ±Y, ±Z)
+   * 隣接ボクセルをカウント（6方向：±X, ±Y, ±Z）（v0.1.15 Phase 2 - ADR-0011）
+   * 
+   * @param {Object} voxelInfo - Target voxel information / 対象ボクセル情報
+   * @param {number} voxelInfo.x - X coordinate / X座標
+   * @param {number} voxelInfo.y - Y coordinate / Y座標
+   * @param {number} voxelInfo.z - Z coordinate / Z座標
+   * @param {Map} voxelData - All voxel data / 全ボクセルデータ
+   * @returns {number} Number of adjacent voxels / 隣接ボクセル数
+   */
+  _countAdjacentVoxels(voxelInfo, voxelData) {
+    if (!voxelInfo || !voxelData || typeof voxelData.get !== 'function') {
+      return 0;
+    }
+
+    const { x, y, z } = voxelInfo;
+    const adjacentDirections = [
+      [1, 0, 0],   // +X
+      [-1, 0, 0],  // -X
+      [0, 1, 0],   // +Y
+      [0, -1, 0],  // -Y
+      [0, 0, 1],   // +Z
+      [0, 0, -1]   // -Z
+    ];
+
+    let adjacentCount = 0;
+    for (const [dx, dy, dz] of adjacentDirections) {
+      const neighborKey = `${x + dx},${y + dy},${z + dz}`;
+      if (voxelData.get(neighborKey)) {
+        adjacentCount++;
+      }
+    }
+
+    return adjacentCount;
+  }
+
+  /**
+   * Detect overlap and recommend rendering mode
+   * 隣接重なりを検出してレンダリングモードを推奨（v0.1.15 Phase 2 - ADR-0011）
+   * 
+   * @param {Object} voxelInfo - Target voxel information / 対象ボクセル情報
+   * @param {Map} voxelData - All voxel data / 全ボクセルデータ
+   * @returns {Object} Recommended rendering settings / 推奨レンダリング設定
+   * @returns {string} returns.recommendedMode - Recommended outline render mode / 推奨アウトライン描画モード
+   * @returns {number} returns.recommendedInset - Recommended inset value / 推奨インセット値
+   * @returns {string} [returns.reason] - Reason for recommendation / 推奨理由
+   */
+  _detectOverlapAndRecommendMode(voxelInfo, voxelData) {
+    const controllerAdaptiveParams = this.options.adaptiveParams || DEFAULT_ADAPTIVE_PARAMS;
+    
+    // overlapDetection が無効な場合は現在の設定を返す
+    if (!controllerAdaptiveParams.overlapDetection) {
+      return {
+        recommendedMode: this.options.outlineRenderMode || 'standard',
+        recommendedInset: this.options.outlineInset || 0
+      };
+    }
+
+    const adjacentCount = this._countAdjacentVoxels(voxelInfo, voxelData);
+    const overlapRisk = adjacentCount / 6; // 最大6方向
+
+    // 重なりリスクが高い場合、insetモードを推奨
+    if (overlapRisk > 0.5 && this.options.outlineRenderMode !== 'emulation-only') {
+      return {
+        recommendedMode: 'inset',
+        recommendedInset: Math.max(0.3, 0.8 - overlapRisk * 0.4),
+        reason: `High overlap risk (${(overlapRisk * 100).toFixed(0)}%)`
+      };
+    }
+
+    return {
+      recommendedMode: this.options.outlineRenderMode || 'standard',
+      recommendedInset: this.options.outlineInset || 0
+    };
+  }
+
+  /**
    * Apply preset-specific adaptive logic
    * プリセット固有の適応ロジックを適用
    * 
@@ -254,6 +331,9 @@ export class AdaptiveController {
     // v0.1.15 Phase 1: Z軸スケール補正を適用（ADR-0011）
     const zScaleFactor = this._calculateZScaleCompensation(voxelInfo, grid);
 
+    // v0.1.15 Phase 2: 重なり検出と推奨モード判定（ADR-0011）
+    const overlapRecommendation = this._detectOverlapAndRecommendMode(voxelInfo, voxelData);
+
     // カメラ距離は簡略化（実装では固定値を使用）
     const cameraDistance = 1000; // 固定値、実際の実装ではカメラからの距離を取得
     const controllerAdaptiveParams = this.options.adaptiveParams || DEFAULT_ADAPTIVE_PARAMS;
@@ -330,7 +410,8 @@ export class AdaptiveController {
         neighborhoodResult,
         cameraFactor,
         overlapRisk,
-        zScaleFactor, // v0.1.15: Z軸補正係数を追加
+        zScaleFactor, // v0.1.15 Phase 1: Z軸補正係数
+        overlapRecommendation, // v0.1.15 Phase 2: 重なり検出結果
         preset: renderOptions.outlineWidthPreset
       }
     };

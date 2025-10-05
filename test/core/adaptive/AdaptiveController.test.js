@@ -553,4 +553,319 @@ describe('AdaptiveController', () => {
       expect(result._debug.normalizedDensity).toBe(0); // Should be 0 when max <= min
     });
   });
+
+  /**
+   * Phase 2: Edge case tests (ADR-0011)
+   * Phase 2: エッジケーステスト
+   */
+  describe('Phase 2: Edge Case Handling', () => {
+    describe('_countAdjacentVoxels', () => {
+      test('Should count 0 adjacent voxels for isolated voxel', () => {
+        const controller = new AdaptiveController();
+        
+        const voxelData = createMockVoxelData([
+          { x: 0, y: 0, z: 0, count: 10 }
+        ]);
+        
+        const adjacentCount = controller._countAdjacentVoxels(
+          { x: 0, y: 0, z: 0 },
+          voxelData
+        );
+        
+        expect(adjacentCount).toBe(0);
+      });
+
+      test('Should count 3 adjacent voxels in partial neighborhood', () => {
+        const controller = new AdaptiveController();
+        
+        const voxelData = createMockVoxelData([
+          { x: 0, y: 0, z: 0, count: 10 },
+          { x: 1, y: 0, z: 0, count: 10 }, // +X
+          { x: 0, y: 1, z: 0, count: 10 }, // +Y
+          { x: 0, y: 0, z: 1, count: 10 }  // +Z
+        ]);
+        
+        const adjacentCount = controller._countAdjacentVoxels(
+          { x: 0, y: 0, z: 0 },
+          voxelData
+        );
+        
+        expect(adjacentCount).toBe(3);
+      });
+
+      test('Should count 6 adjacent voxels when fully surrounded', () => {
+        const controller = new AdaptiveController();
+        
+        const voxelData = createMockVoxelData([
+          { x: 0, y: 0, z: 0, count: 10 },
+          { x: 1, y: 0, z: 0, count: 10 },  // +X
+          { x: -1, y: 0, z: 0, count: 10 }, // -X
+          { x: 0, y: 1, z: 0, count: 10 },  // +Y
+          { x: 0, y: -1, z: 0, count: 10 }, // -Y
+          { x: 0, y: 0, z: 1, count: 10 },  // +Z
+          { x: 0, y: 0, z: -1, count: 10 }  // -Z
+        ]);
+        
+        const adjacentCount = controller._countAdjacentVoxels(
+          { x: 0, y: 0, z: 0 },
+          voxelData
+        );
+        
+        expect(adjacentCount).toBe(6);
+      });
+
+      test('Should handle invalid voxelData gracefully', () => {
+        const controller = new AdaptiveController();
+        
+        expect(controller._countAdjacentVoxels({ x: 0, y: 0, z: 0 }, null)).toBe(0);
+        expect(controller._countAdjacentVoxels({ x: 0, y: 0, z: 0 }, undefined)).toBe(0);
+        expect(controller._countAdjacentVoxels({ x: 0, y: 0, z: 0 }, {})).toBe(0);
+      });
+
+      test('Should handle invalid voxelInfo gracefully', () => {
+        const controller = new AdaptiveController();
+        const voxelData = createMockVoxelData([]);
+        
+        expect(controller._countAdjacentVoxels(null, voxelData)).toBe(0);
+        expect(controller._countAdjacentVoxels(undefined, voxelData)).toBe(0);
+      });
+    });
+
+    describe('_detectOverlapAndRecommendMode', () => {
+      test('Should return current mode when overlapDetection is disabled', () => {
+        const controller = new AdaptiveController({
+          adaptiveParams: { overlapDetection: false },
+          outlineRenderMode: 'standard',
+          outlineInset: 0
+        });
+        
+        const voxelData = createMockVoxelData([
+          { x: 0, y: 0, z: 0, count: 10 },
+          { x: 1, y: 0, z: 0, count: 10 },
+          { x: -1, y: 0, z: 0, count: 10 },
+          { x: 0, y: 1, z: 0, count: 10 },
+          { x: 0, y: -1, z: 0, count: 10 }
+        ]);
+        
+        const recommendation = controller._detectOverlapAndRecommendMode(
+          { x: 0, y: 0, z: 0 },
+          voxelData
+        );
+        
+        expect(recommendation.recommendedMode).toBe('standard');
+        expect(recommendation.recommendedInset).toBe(0);
+        expect(recommendation.reason).toBeUndefined();
+      });
+
+      test('Should recommend inset mode for high overlap risk', () => {
+        const controller = new AdaptiveController({
+          adaptiveParams: { overlapDetection: true },
+          outlineRenderMode: 'standard',
+          outlineInset: 0
+        });
+        
+        const voxelData = createMockVoxelData([
+          { x: 0, y: 0, z: 0, count: 10 },
+          { x: 1, y: 0, z: 0, count: 10 },  // +X
+          { x: -1, y: 0, z: 0, count: 10 }, // -X
+          { x: 0, y: 1, z: 0, count: 10 },  // +Y
+          { x: 0, y: -1, z: 0, count: 10 }  // -Y (4/6 = 66%)
+        ]);
+        
+        const recommendation = controller._detectOverlapAndRecommendMode(
+          { x: 0, y: 0, z: 0 },
+          voxelData
+        );
+        
+        expect(recommendation.recommendedMode).toBe('inset');
+        expect(recommendation.recommendedInset).toBeGreaterThanOrEqual(0.3);
+        expect(recommendation.recommendedInset).toBeLessThanOrEqual(0.8);
+        expect(recommendation.reason).toContain('overlap risk');
+      });
+
+      test('Should maintain current mode for low overlap risk', () => {
+        const controller = new AdaptiveController({
+          adaptiveParams: { overlapDetection: true },
+          outlineRenderMode: 'standard',
+          outlineInset: 0
+        });
+        
+        const voxelData = createMockVoxelData([
+          { x: 0, y: 0, z: 0, count: 10 },
+          { x: 1, y: 0, z: 0, count: 10 }  // Only +X (1/6 = 16%)
+        ]);
+        
+        const recommendation = controller._detectOverlapAndRecommendMode(
+          { x: 0, y: 0, z: 0 },
+          voxelData
+        );
+        
+        expect(recommendation.recommendedMode).toBe('standard');
+        expect(recommendation.recommendedInset).toBe(0);
+        expect(recommendation.reason).toBeUndefined();
+      });
+
+      test('Should not recommend inset when already in emulation-only mode', () => {
+        const controller = new AdaptiveController({
+          adaptiveParams: { overlapDetection: true },
+          outlineRenderMode: 'emulation-only',
+          outlineInset: 0
+        });
+        
+        const voxelData = createMockVoxelData([
+          { x: 0, y: 0, z: 0, count: 10 },
+          { x: 1, y: 0, z: 0, count: 10 },
+          { x: -1, y: 0, z: 0, count: 10 },
+          { x: 0, y: 1, z: 0, count: 10 },
+          { x: 0, y: -1, z: 0, count: 10 }
+        ]);
+        
+        const recommendation = controller._detectOverlapAndRecommendMode(
+          { x: 0, y: 0, z: 0 },
+          voxelData
+        );
+        
+        // Should maintain emulation-only mode, not recommend inset
+        expect(recommendation.recommendedMode).toBe('emulation-only');
+        expect(recommendation.recommendedInset).toBe(0);
+      });
+    });
+
+    describe('Z-axis extreme aspect ratio edge cases', () => {
+      test('Should apply compensation for extremely thin Z-axis', () => {
+        const controller = new AdaptiveController({
+          adaptiveParams: {
+            zScaleCompensation: true
+          }
+        });
+        
+        const extremeGrid = createMockGrid({
+          cellSizeX: 100,
+          cellSizeY: 100,
+          cellSizeZ: 1  // Aspect ratio = 1/100 = 0.01 << 0.1
+        });
+        
+        const zScaleFactor = controller._calculateZScaleCompensation(
+          { x: 0, y: 0, z: 0, count: 10 },
+          extremeGrid
+        );
+        
+        expect(zScaleFactor).toBeGreaterThan(1.0); // Should increase
+        expect(zScaleFactor).toBeLessThanOrEqual(1.3); // Should be clamped
+      });
+
+      test('Should not apply compensation for normal aspect ratio', () => {
+        const controller = new AdaptiveController({
+          adaptiveParams: {
+            zScaleCompensation: true
+          }
+        });
+        
+        const normalGrid = createMockGrid({
+          cellSizeX: 20,
+          cellSizeY: 20,
+          cellSizeZ: 20  // Aspect ratio = 1.0 > 0.1
+        });
+        
+        const zScaleFactor = controller._calculateZScaleCompensation(
+          { x: 0, y: 0, z: 0, count: 10 },
+          normalGrid
+        );
+        
+        expect(zScaleFactor).toBe(1.0);
+      });
+
+      test('Should respect compensation bounds (0.7 - 1.3)', () => {
+        const controller = new AdaptiveController({
+          adaptiveParams: {
+            zScaleCompensation: true
+          }
+        });
+        
+        const extremeGrid = createMockGrid({
+          cellSizeX: 1000,
+          cellSizeY: 1000,
+          cellSizeZ: 0.1  // Aspect ratio = 0.0001 << 0.1
+        });
+        
+        const zScaleFactor = controller._calculateZScaleCompensation(
+          { x: 0, y: 0, z: 0, count: 10 },
+          extremeGrid
+        );
+        
+        expect(zScaleFactor).toBeGreaterThanOrEqual(0.7);
+        expect(zScaleFactor).toBeLessThanOrEqual(1.3);
+      });
+    });
+
+    describe('calculateAdaptiveParams with overlap detection', () => {
+      test('Should include overlapRecommendation in debug info', () => {
+        const controller = new AdaptiveController({
+          adaptiveParams: {
+            overlapDetection: true
+          },
+          outlineRenderMode: 'standard'
+        });
+        
+        const voxelData = createMockVoxelData([
+          { x: 0, y: 0, z: 0, count: 50 },
+          { x: 1, y: 0, z: 0, count: 50 },
+          { x: -1, y: 0, z: 0, count: 50 },
+          { x: 0, y: 1, z: 0, count: 50 },
+          { x: 0, y: -1, z: 0, count: 50 }
+        ]);
+        
+        const statistics = createMockStatistics(1, 100);
+        const renderOptions = createMockRenderOptions();
+        
+        const result = controller.calculateAdaptiveParams(
+          { x: 0, y: 0, z: 0, count: 50 },
+          false,
+          voxelData,
+          statistics,
+          renderOptions,
+          createMockGrid()
+        );
+        
+        expect(result._debug).toBeDefined();
+        expect(result._debug.overlapRecommendation).toBeDefined();
+        expect(result._debug.overlapRecommendation.recommendedMode).toBe('inset');
+      });
+
+      test('Should work correctly with dense area and high overlap', () => {
+        const controller = new AdaptiveController({
+          adaptiveParams: {
+            densityThreshold: 2,
+            overlapDetection: true
+          }
+        });
+        
+        // Create a dense cluster with high overlap
+        const voxelData = createMockVoxelData([
+          { x: 0, y: 0, z: 0, count: 80 },
+          { x: 1, y: 0, z: 0, count: 70 },
+          { x: -1, y: 0, z: 0, count: 75 },
+          { x: 0, y: 1, z: 0, count: 85 },
+          { x: 0, y: -1, z: 0, count: 90 },
+          { x: 0, y: 0, z: 1, count: 78 }
+        ]);
+        
+        const statistics = createMockStatistics(1, 100);
+        const renderOptions = createMockRenderOptions({ outlineWidthPreset: 'adaptive' });
+        
+        const result = controller.calculateAdaptiveParams(
+          { x: 0, y: 0, z: 0, count: 80 },
+          false,
+          voxelData,
+          statistics,
+          renderOptions,
+          createMockGrid()
+        );
+        
+        expect(result).toBeDefined();
+        expect(result._debug.neighborhoodResult.isDenseArea).toBe(true);
+        expect(result._debug.overlapRecommendation.recommendedMode).toBe('inset');
+      });
+    });
+  });
 });
