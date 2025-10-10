@@ -7,55 +7,48 @@ const outDir = path.join(__dirname, '..', 'types');
 const outFile = path.join(outDir, 'index.d.ts');
 
 const dts = `
-// Minimal type declarations for cesium-heatbox
+// Type definitions for cesium-heatbox
 
-export interface HeatboxOptions {
-  voxelSize?: number;
-  opacity?: number;
-  emptyOpacity?: number;
-  showOutline?: boolean;
-  showEmptyVoxels?: boolean;
-  minColor?: [number, number, number];
-  maxColor?: [number, number, number];
-  maxRenderVoxels?: number;
-  /** @deprecated v0.1.5: ignored and scheduled for removal */
-  batchMode?: 'auto' | 'primitive' | 'entity';
-  // v0.1.3 追加 / v0.1.5: object form supported
-  debug?: boolean | { showBounds?: boolean };
-  // v0.1.2 新機能
-  wireframeOnly?: boolean;
-  heightBased?: boolean;
-  outlineWidth?: number;
-  // v0.1.4 新機能
-  autoVoxelSize?: boolean;           // 自動ボクセルサイズ決定
-  // v0.1.5 新機能
-  colorMap?: 'custom' | 'viridis' | 'inferno';
-  diverging?: boolean;
-  divergingPivot?: number;
-  highlightTopN?: number | null;
-  highlightStyle?: { outlineWidth?: number; boostOpacity?: number };
-  // v0.1.6 新機能
-  voxelGap?: number; // ボクセル間ギャップ（メートル）
-  outlineOpacity?: number; // 枠線透明度（0-1）
-  // v0.1.6.1: Inset outline
-  outlineInset?: number;
-  outlineInsetMode?: 'all' | 'topn';
-  // v0.1.7: Adaptive outline control
-  outlineRenderMode?: 'standard' | 'inset' | 'emulation-only';
-  adaptiveOutlines?: boolean;
-  outlineWidthPreset?: 'uniform' | 'adaptive-density' | 'topn-focus';
-  // v0.1.9: Auto view fitting
-  autoView?: boolean;
-  fitViewOptions?: {
-    paddingPercent?: number;
-    pitchDegrees?: number;
-    headingDegrees?: number;
-    altitudeStrategy?: 'auto' | 'manual';
-  };
-  // v0.1.9: Rendering limits and strategies  
-  renderLimitStrategy?: 'density' | 'coverage' | 'hybrid';
-  minCoverageRatio?: number;
-  coverageBinsXY?: 'auto' | number;
+export type HeatboxProfileName = 'mobile-fast' | 'desktop-balanced' | 'dense-data' | 'sparse-data';
+export type OutlineRenderMode = 'standard' | 'inset' | 'emulation-only';
+export type EmulationScope = 'off' | 'topn' | 'non-topn' | 'all';
+export type OutlineWidthPreset = 'thin' | 'medium' | 'thick' | 'adaptive';
+export type RenderLimitStrategy = 'density' | 'coverage' | 'hybrid';
+export type AutoVoxelSizeMode = 'basic' | 'occupancy';
+export type RenderBudgetMode = 'manual' | 'auto';
+export type PerformanceOverlayPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
+export interface HeatboxPerformanceOverlayOptions {
+  enabled?: boolean;
+  position?: PerformanceOverlayPosition;
+  autoShow?: boolean;
+  autoUpdate?: boolean;
+  updateIntervalMs?: number;
+  fpsAveragingWindowMs?: number;
+}
+
+export type HeatboxRange = [number, number] | null;
+
+export interface HeatboxAdaptiveParams {
+  neighborhoodRadius?: number;
+  densityThreshold?: number;
+  cameraDistanceFactor?: number;
+  overlapRiskFactor?: number;
+  minOutlineWidth?: number;
+  maxOutlineWidth?: number;
+  outlineWidthRange?: HeatboxRange;
+  boxOpacityRange?: HeatboxRange;
+  outlineOpacityRange?: HeatboxRange;
+  adaptiveOpacityEnabled?: boolean;
+  zScaleCompensation?: boolean;
+  overlapDetection?: boolean;
+}
+
+export interface HeatboxResolverVoxelInfo {
+  x: number;
+  y: number;
+  z: number;
+  count: number;
 }
 
 export interface HeatboxStatistics {
@@ -67,27 +60,176 @@ export interface HeatboxStatistics {
   minCount: number;
   maxCount: number;
   averageCount: number;
-  // v0.1.4 自動調整情報
   autoAdjusted?: boolean;
-  originalVoxelSize?: number;
-  finalVoxelSize?: number;
-  adjustmentReason?: string;
+  originalVoxelSize?: number | null;
+  finalVoxelSize?: number | null;
+  adjustmentReason?: string | null;
+  renderTimeMs?: number;
+  selectionStrategy?: string;
+  clippedNonEmpty?: number;
+  coverageRatio?: number;
+  renderBudgetTier?: string;
+  autoMaxRenderVoxels?: number;
+  occupancyRatio?: number | null;
+}
+
+export interface HeatboxOutlineWidthResolverParams {
+  voxel: HeatboxResolverVoxelInfo;
+  isTopN: boolean;
+  normalizedDensity: number;
+  statistics: HeatboxStatistics;
+  adaptiveParams?: HeatboxAdaptiveParams | null;
+}
+
+export interface HeatboxOpacityResolverContext {
+  voxel: HeatboxResolverVoxelInfo;
+  isTopN: boolean;
+  normalizedDensity: number;
+  statistics: HeatboxStatistics;
+  adaptiveParams?: HeatboxAdaptiveParams | null;
+}
+
+export interface HeatboxHighlightStyle {
+  outlineWidth?: number;
+  boostOpacity?: number;
+  boostOutlineWidth?: number;
+}
+
+export interface HeatboxFitViewOptions {
+  paddingPercent?: number;
+  pitchDegrees?: number;
+  headingDegrees?: number;
+  altitudeStrategy?: 'auto' | 'manual';
+}
+
+export interface HeatboxOptions {
+  profile?: HeatboxProfileName;
+  voxelSize?: number;
+  opacity?: number;
+  emptyOpacity?: number;
+  showOutline?: boolean;
+  showEmptyVoxels?: boolean;
+  minColor?: [number, number, number];
+  maxColor?: [number, number, number];
+  maxRenderVoxels?: number;
+  /** @deprecated v0.1.5: retained for backward compatibility */
+  batchMode?: 'auto' | 'primitive' | 'entity';
+  debug?: boolean | { showBounds?: boolean };
+  wireframeOnly?: boolean;
+  heightBased?: boolean;
+  outlineWidth?: number;
+  autoVoxelSize?: boolean;
+  autoVoxelSizeMode?: AutoVoxelSizeMode;
+  autoVoxelTargetFill?: number;
+  colorMap?: 'custom' | 'viridis' | 'inferno';
+  diverging?: boolean;
+  divergingPivot?: number;
+  highlightTopN?: number | null;
+  highlightStyle?: HeatboxHighlightStyle;
+  voxelGap?: number;
+  outlineOpacity?: number;
+  outlineRenderMode?: OutlineRenderMode;
+  emulationScope?: EmulationScope;
+  adaptiveOutlines?: boolean;
+  outlineWidthPreset?: OutlineWidthPreset;
+  outlineWidthResolver?: ((params: HeatboxOutlineWidthResolverParams) => number) | null;
+  outlineOpacityResolver?: ((ctx: HeatboxOpacityResolverContext) => number) | null;
+  boxOpacityResolver?: ((ctx: HeatboxOpacityResolverContext) => number) | null;
+  outlineInset?: number;
+  outlineInsetMode?: 'all' | 'topn' | 'none';
+  enableThickFrames?: boolean;
+  renderLimitStrategy?: RenderLimitStrategy;
+  minCoverageRatio?: number;
+  coverageBinsXY?: 'auto' | number;
+  renderBudgetMode?: RenderBudgetMode;
+  autoView?: boolean;
+  fitViewOptions?: HeatboxFitViewOptions;
+  performanceOverlay?: HeatboxPerformanceOverlayOptions | null;
+  adaptiveParams?: HeatboxAdaptiveParams | null;
+  [key: string]: any;
+}
+
+export interface HeatboxBounds {
+  minLon: number;
+  maxLon: number;
+  minLat: number;
+  maxLat: number;
+  minAlt: number;
+  maxAlt: number;
+  centerLon?: number;
+  centerLat?: number;
+  centerAlt?: number;
+}
+
+export interface HeatboxGridInfo {
+  numVoxelsX: number;
+  numVoxelsY: number;
+  numVoxelsZ: number;
+  voxelSizeMeters?: number;
+  cellSizeX?: number;
+  cellSizeY?: number;
+  cellSizeZ?: number;
+  totalVoxels?: number;
+}
+
+export interface HeatboxAutoVoxelSizeInfo {
+  enabled: boolean;
+  originalSize: number | null;
+  finalSize: number | null;
+  adjusted: boolean;
+  reason: string | null;
+  dataRange?: {
+    x: number;
+    y: number;
+    z: number;
+  } | null;
+  estimatedDensity?: number | null;
+}
+
+export interface HeatboxDebugInfo {
+  options: HeatboxOptions;
+  bounds: HeatboxBounds | null;
+  grid: HeatboxGridInfo | null;
+  statistics: HeatboxStatistics | null;
+  autoVoxelSizeInfo?: HeatboxAutoVoxelSizeInfo;
+}
+
+export interface HeatboxProfileDefinition extends HeatboxOptions {
+  description: string;
+}
+
+export interface HeatboxEnvironmentInfo {
+  version: string;
+  cesiumVersion: string;
+  userAgent: string;
+  webglSupport: boolean;
+  timestamp: string;
 }
 
 export default class Heatbox {
   constructor(viewer: any, options?: HeatboxOptions);
-  setData(entities: any[]): void;
-  createFromEntities(entities: any[]): Promise<HeatboxStatistics>;
+
+  static listProfiles(): HeatboxProfileName[];
+  static getProfileDetails(profileName: HeatboxProfileName): HeatboxProfileDefinition | null;
+  static filterEntities<T = any>(entities: T[], predicate: (entity: T) => boolean): T[];
+
+  setData(entities: any[]): Promise<void>;
+  createFromEntities(entities: any[]): Promise<HeatboxStatistics | null>;
   setVisible(show: boolean): void;
   clear(): void;
   destroy(): void;
-  getOptions(): HeatboxOptions;
+  dispose(): void;
   updateOptions(newOptions: HeatboxOptions): void;
+  getOptions(): HeatboxOptions;
+  getEffectiveOptions(): HeatboxOptions;
   getStatistics(): HeatboxStatistics | null;
-  getBounds(): any | null;
-  getDebugInfo(): any;
-  fitView(bounds?: any, options?: any): Promise<void>;
-  static filterEntities<T = any>(entities: T[], predicate: (e: T) => boolean): T[];
+  getBounds(): HeatboxBounds | null;
+  getDebugInfo(): HeatboxDebugInfo;
+  fitView(bounds?: HeatboxBounds | null, options?: HeatboxFitViewOptions): Promise<void>;
+  togglePerformanceOverlay(): boolean;
+  showPerformanceOverlay(): void;
+  hidePerformanceOverlay(): void;
+  setPerformanceOverlayEnabled(enabled: boolean, options?: HeatboxPerformanceOverlayOptions): boolean;
 }
 
 export { Heatbox };
@@ -95,7 +237,7 @@ export { Heatbox };
 export function getAllEntities(viewer: any): any[];
 export function generateTestEntities(viewer: any, bounds: any, count?: number): any[];
 export function createHeatbox(viewer: any, options?: HeatboxOptions): Heatbox;
-export function getEnvironmentInfo(): any;
+export function getEnvironmentInfo(): HeatboxEnvironmentInfo;
 
 export const CesiumHeatbox: typeof Heatbox;
 export const VERSION: string;

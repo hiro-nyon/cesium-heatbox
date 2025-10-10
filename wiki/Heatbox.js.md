@@ -260,7 +260,18 @@ export class Heatbox {
       // Rough estimation based on rendered entities and data
       const entityCount = (this.renderer?.geometryRenderer?.entities?.length) 
         || (this.renderer?.voxelEntities?.length) || 0;
-      const voxelDataSize = this._voxelData ? Object.keys(this._voxelData).length : 0;
+      let voxelDataSize = 0;
+      if (this._voxelData) {
+        if (this._voxelData instanceof Map) {
+          voxelDataSize = this._voxelData.size;
+        } else if (typeof this._voxelData.size === 'number') {
+          voxelDataSize = this._voxelData.size;
+        } else if (Array.isArray(this._voxelData)) {
+          voxelDataSize = this._voxelData.length;
+        } else if (typeof this._voxelData === 'object') {
+          voxelDataSize = Object.keys(this._voxelData).length;
+        }
+      }
       
       // Estimate: ~1KB per entity + ~100B per voxel data entry
       const estimated = (entityCount * 1024 + voxelDataSize * 100) / (1024 * 1024);
@@ -1205,7 +1216,18 @@ export class Heatbox {
       // Rough estimation based on rendered entities and data
       const entityCount = (this.renderer?.geometryRenderer?.entities?.length) 
         || (this.renderer?.voxelEntities?.length) || 0;
-      const voxelDataSize = this._voxelData ? Object.keys(this._voxelData).length : 0;
+      let voxelDataSize = 0;
+      if (this._voxelData) {
+        if (this._voxelData instanceof Map) {
+          voxelDataSize = this._voxelData.size;
+        } else if (typeof this._voxelData.size === 'number') {
+          voxelDataSize = this._voxelData.size;
+        } else if (Array.isArray(this._voxelData)) {
+          voxelDataSize = this._voxelData.length;
+        } else if (typeof this._voxelData === 'object') {
+          voxelDataSize = Object.keys(this._voxelData).length;
+        }
+      }
       
       // Estimate: ~1KB per entity + ~100B per voxel data entry
       const estimated = (entityCount * 1024 + voxelDataSize * 100) / (1024 * 1024);
