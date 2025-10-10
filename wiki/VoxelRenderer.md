@@ -17,7 +17,7 @@ ColorCalculator, VoxelSelector, AdaptiveController, and GeometryRenderer.
 
 #### clear()
 
-> English translation pending. See Japanese section below.
+Clear all rendered Cesium entities (delegates to `GeometryRenderer.clear()`).
 
 #### getSelectionStats() → {Object|null}
 
@@ -34,16 +34,9 @@ Interpolate color based on density (v0.1.5: color maps supported).
 
 #### render(voxelData, bounds, grid, statistics) → {number}
 
-Render voxel data - Orchestrated rendering process.
-v0.1.11: Fully orchestrated implementation (ADR-0009 Phase 5):
-**Process Flow**:
-1. **GeometryRenderer.clear()** - Clear existing entities
-2. **VoxelSelector.selectVoxels()** - Apply selection strategy if needed
-3. **For each voxel**: Delegate to `_renderSingleVoxel()` for orchestration:
-- **AdaptiveController** - Calculate adaptive parameters
-- **ColorCalculator** - Compute colors based on density
-- **GeometryRenderer** - Create voxel box, outlines, and polylines
-4. **Return count** - Number of successfully rendered voxels
+Render the supplied voxel dataset.  
+The renderer clears previous entities, selects voxels according to the configured strategy, calculates adaptive parameters, and emits Cesium entities.  
+Returns the number of voxels rendered successfully.
 
 | Name | Type | Description |
 |---|---|---|

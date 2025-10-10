@@ -64,7 +64,7 @@ Get statistics information.
 
 #### hidePerformanceOverlay()
 
-Hide performance overlay
+Hide the performance overlay.
 
 #### (async) setData(entities)
 
@@ -93,15 +93,15 @@ Toggle visibility.
 
 #### showPerformanceOverlay()
 
-Show performance overlay
+Show the performance overlay.
 
 #### togglePerformanceOverlay() → {boolean}
 
-Toggle performance overlay visibility
+Toggle the performance overlay and return the new visibility state.
 
 #### updateOptions(newOptions)
 
-Update options and re-render if applicable.
+Merge new options and re-render if a dataset is already loaded.
 
 | Name | Type | Description |
 |---|---|---|

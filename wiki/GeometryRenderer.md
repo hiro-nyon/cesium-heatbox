@@ -4,9 +4,8 @@
 
 ## English
 
-GeometryRenderer - 3D geometry rendering for VoxelRenderer
-Responsibilities:
-ADR-0009 Phase 4: VoxelRenderer responsibility separation
+GeometryRenderer creates the Cesium entities (boxes, inset outlines, polylines) used by VoxelRenderer.
+It cleanly owns geometry construction so the renderer can focus on orchestration (ADR-0009 Phase 4).
 
 ### Constructor
 

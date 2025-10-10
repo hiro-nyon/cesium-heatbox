@@ -4,9 +4,8 @@
 
 ## English
 
-AdaptiveController - Adaptive control logic for VoxelRenderer
-Responsibilities:
-ADR-0009 Phase 3: VoxelRenderer responsibility separation
+AdaptiveController powers the adaptive outline logic delegated from VoxelRenderer.
+It evaluates neighbourhood density, applies presets, performs Z-scale compensation, and reports overlap recommendations (ADR-0011).
 
 ### Constructor
 
@@ -44,95 +43,7 @@ Calculate neighborhood density around a voxel
 
 | Name | Type | Attributes | Description |
 |---|---|---|---|
-| voxelInfo | Object |  | Target voxel information / 対象ボクセル情報
-                Properties
-                
-
-
-    
-    
-        
-        Name
-        
-
-        Type
-
-        
-
-        
-
-        Description
-    
-    
-
-    
-    
-
-        
-            
-                x
-            
-
-            
-            
-                
-number
-
-
-            
-            
-
-            
-
-            
-
-            X coordinate / X座標
-        
-
-    
-
-        
-            
-                y
-            
-
-            
-            
-                
-number
-
-
-            
-            
-
-            
-
-            
-
-            Y coordinate / Y座標
-        
-
-    
-
-        
-            
-                z
-            
-
-            
-            
-                
-number
-
-
-            
-            
-
-            
-
-            
-
-            Z coordinate / Z座標 | x | number | X coordinate / X座標 | y | number | Y coordinate / Y座標 | z | number | Z coordinate / Z座標 |
+| voxelInfo | Object |  | Target voxel information / 対象ボクセル情報 |
 | x | number | X coordinate / X座標 |
 | y | number | Y coordinate / Y座標 |
 | z | number | Z coordinate / Z座標 |
@@ -196,95 +107,7 @@ Update adaptive control options
 
 | 名前 | 型 | 属性 | 説明 |
 |---|---|---|---|
-| voxelInfo | Object |  | Target voxel information / 対象ボクセル情報
-                Properties
-                
-
-
-    
-    
-        
-        Name
-        
-
-        Type
-
-        
-
-        
-
-        Description
-    
-    
-
-    
-    
-
-        
-            
-                x
-            
-
-            
-            
-                
-number
-
-
-            
-            
-
-            
-
-            
-
-            X coordinate / X座標
-        
-
-    
-
-        
-            
-                y
-            
-
-            
-            
-                
-number
-
-
-            
-            
-
-            
-
-            
-
-            Y coordinate / Y座標
-        
-
-    
-
-        
-            
-                z
-            
-
-            
-            
-                
-number
-
-
-            
-            
-
-            
-
-            
-
-            Z coordinate / Z座標 | x | number | X coordinate / X座標 | y | number | Y coordinate / Y座標 | z | number | Z coordinate / Z座標 |
+| voxelInfo | Object |  | Target voxel information / 対象ボクセル情報 |
 | x | number | X coordinate / X座標 |
 | y | number | Y coordinate / Y座標 |
 | z | number | Z coordinate / Z座標 |
