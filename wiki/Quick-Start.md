@@ -22,9 +22,15 @@ npm install cesium cesium-heatbox
 import Heatbox from 'cesium-heatbox';
 
 const viewer = new Cesium.Viewer('cesiumContainer');
-const heatbox = new Heatbox(viewer, { voxelSize: 25, opacity: 0.8 });
-// v0.1.4以降は voxelSize を省略し、autoVoxelSize: true で自動決定も可能
-// const heatbox = new Heatbox(viewer, { autoVoxelSize: true, opacity: 0.8 });
+const heatbox = new Heatbox(viewer, {
+  profile: 'desktop-balanced',
+  autoVoxelSize: true,
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    outlineWidthRange: [1.0, 3.0],
+    zScaleCompensation: true
+  }
+});
 
 const entities = viewer.entities.values; // 既存のエンティティ
 await heatbox.createFromEntities(entities);
@@ -42,9 +48,15 @@ npm install cesium cesium-heatbox
 import Heatbox from 'cesium-heatbox';
 
 const viewer = new Cesium.Viewer('cesiumContainer');
-const heatbox = new Heatbox(viewer, { voxelSize: 25, opacity: 0.8 });
-// Since v0.1.4, you can omit voxelSize and enable auto sizing
-// const heatbox = new Heatbox(viewer, { autoVoxelSize: true, opacity: 0.8 });
+const heatbox = new Heatbox(viewer, {
+  profile: 'desktop-balanced',
+  autoVoxelSize: true,
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    outlineWidthRange: [1.0, 3.0],
+    zScaleCompensation: true
+  }
+});
 
 const entities = viewer.entities.values; // existing entities
 await heatbox.createFromEntities(entities);
@@ -76,9 +88,11 @@ cp dist/cesium-heatbox.umd.min.js /path/to/your/project/libs/
 import Heatbox from 'cesium-heatbox';
 
 const viewer = new Cesium.Viewer('cesiumContainer');
-const heatbox = new Heatbox(viewer, { voxelSize: 25, opacity: 0.8 });
-// v0.1.4以降は voxelSize を省略し、autoVoxelSize: true で自動決定も可能
-// const heatbox = new Heatbox(viewer, { autoVoxelSize: true, opacity: 0.8 });
+const heatbox = new Heatbox(viewer, {
+  profile: 'desktop-balanced',
+  autoVoxelSize: true,
+  adaptiveOutlines: true
+});
 
 const entities = viewer.entities.values; // 既存のエンティティ
 await heatbox.createFromEntities(entities);
@@ -108,9 +122,11 @@ cp dist/cesium-heatbox.umd.min.js /path/to/your/project/libs/
 import Heatbox from 'cesium-heatbox';
 
 const viewer = new Cesium.Viewer('cesiumContainer');
-const heatbox = new Heatbox(viewer, { voxelSize: 25, opacity: 0.8 });
-// Since v0.1.4, you can omit voxelSize and enable auto sizing
-// const heatbox = new Heatbox(viewer, { autoVoxelSize: true, opacity: 0.8 });
+const heatbox = new Heatbox(viewer, {
+  profile: 'desktop-balanced',
+  autoVoxelSize: true,
+  adaptiveOutlines: true
+});
 
 const entities = viewer.entities.values; // existing entities
 await heatbox.createFromEntities(entities);
@@ -126,7 +142,10 @@ await heatbox.createFromEntities(entities);
 <div id="cesiumContainer" style="width:100%;height:100%"></div>
 <script>
   const viewer = new Cesium.Viewer('cesiumContainer');
-  const heatbox = new CesiumHeatbox(viewer, { voxelSize: 30 });
+  const heatbox = new CesiumHeatbox(viewer, {
+    profile: 'mobile-fast',
+    adaptiveOutlines: true
+  });
   const entities = viewer.entities.values;
   heatbox.createFromEntities(entities);
   // 非同期の戻り値が必要な場合は Promise を扱ってください
@@ -144,7 +163,10 @@ await heatbox.createFromEntities(entities);
 <div id="cesiumContainer" style="width:100%;height:100%"></div>
 <script>
   const viewer = new Cesium.Viewer('cesiumContainer');
-  const heatbox = new CesiumHeatbox(viewer, { voxelSize: 30 });
+  const heatbox = new CesiumHeatbox(viewer, {
+    profile: 'mobile-fast',
+    adaptiveOutlines: true
+  });
   const entities = viewer.entities.values;
   heatbox.createFromEntities(entities);
   // Handle Promise if you need async return value

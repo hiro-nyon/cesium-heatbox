@@ -64,26 +64,20 @@ import Heatbox from 'cesium-heatbox';
 // 1) Cesium Viewer の用意
 const viewer = new Cesium.Viewer('cesiumContainer');
 
-// 2) Heatbox を初期化（v0.1.11）
+// 2) Heatbox を初期化（v0.1.15）
 const heatbox = new Heatbox(viewer, {
-  // v0.1.4: voxelSize を省略して autoVoxelSize で自動決定も可能
-  // voxelSize: 20,      // 明示指定する場合はコメント解除
-  autoVoxelSize: true,   // 自動ボクセルサイズ決定
-  opacity: 0.8,          // データボクセル不透明度
-  emptyOpacity: 0.03,    // 空ボクセル不透明度
-  showOutline: true,     // 枠線表示
-  showEmptyVoxels: false,// 空ボクセル描画
-  wireframeOnly: false,  // 枠線のみ表示（v0.1.2）
-  heightBased: false,    // 高さベース表現（v0.1.2）
-  outlineWidth: 2,       // 枠線の太さ（v0.1.2）
-  // v0.1.5: デバッグ境界表示を明示制御
-  debug: { showBounds: false },
-  // v0.1.5: 知覚均等カラーマップ/発散配色/TopN強調
-  colorMap: 'custom',    // 'viridis' | 'inferno'
-  diverging: false,
-  divergingPivot: 0,
-  highlightTopN: null,
-  highlightStyle: { outlineWidth: 4, boostOpacity: 0.2 }
+  profile: 'desktop-balanced', // 端末に応じた推奨設定（v0.1.12+）
+  autoVoxelSize: true,         // voxelSize 未指定時に自動決定
+  adaptiveOutlines: true,      // v0.1.15 の適応制御
+  adaptiveParams: {
+    outlineWidthRange: [1.2, 3.0],
+    zScaleCompensation: true,
+    overlapDetection: true
+  },
+  performanceOverlay: {
+    enabled: true,
+    position: 'top-right'
+  }
 });
 
 // 3) エンティティからヒートマップ生成（非同期）
@@ -105,26 +99,20 @@ import Heatbox from 'cesium-heatbox';
 // 1) Prepare a Cesium Viewer
 const viewer = new Cesium.Viewer('cesiumContainer');
 
-// 2) Initialize Heatbox (v0.1.11)
+// 2) Initialize Heatbox (v0.1.15)
 const heatbox = new Heatbox(viewer, {
-  // v0.1.4: You can omit voxelSize and use autoVoxelSize
-  // voxelSize: 20,      // Uncomment to explicitly set
-  autoVoxelSize: true,   // Auto determine voxel size
-  opacity: 0.8,          // Opacity for data voxels
-  emptyOpacity: 0.03,    // Opacity for empty voxels
-  showOutline: true,     // Show outlines
-  showEmptyVoxels: false,// Draw empty voxels
-  wireframeOnly: false,  // Wireframe-only (v0.1.2)
-  heightBased: false,    // Height-based (v0.1.2)
-  outlineWidth: 2,       // Outline thickness (v0.1.2)
-  // v0.1.5: Explicit control of debug boundary display
-  debug: { showBounds: false },
-  // v0.1.5: Perceptual colormaps/diverging/TopN highlight
-  colorMap: 'custom',    // 'viridis' | 'inferno'
-  diverging: false,
-  divergingPivot: 0,
-  highlightTopN: null,
-  highlightStyle: { outlineWidth: 4, boostOpacity: 0.2 }
+  profile: 'desktop-balanced', // Recommended bundle for desktop GPUs
+  autoVoxelSize: true,
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    outlineWidthRange: [1.2, 3.0],
+    zScaleCompensation: true,
+    overlapDetection: true
+  },
+  performanceOverlay: {
+    enabled: true,
+    position: 'top-right'
+  }
 });
 
 // 3) Create heatmap from entities (async)
@@ -138,53 +126,27 @@ heatbox.setVisible(true);
 // heatbox.destroy();
 ```
 
-## オプション一覧 / Options (v0.1.5+)
-- `voxelSize` number（既定: 20）
-- `opacity` number 0–1（既定: 0.8）
-- `emptyOpacity` number 0–1（既定: 0.03）
-- `showOutline` boolean（既定: true）
-- `showEmptyVoxels` boolean（既定: false）
-- `minColor` [r,g,b]（既定: [0,32,255]）
-- `maxColor` [r,g,b]（既定: [255,64,0]）
-- `maxRenderVoxels` number（描画上限）
-- **`wireframeOnly` boolean（v0.1.2新機能）** - 枠線のみ表示
-- **`heightBased` boolean（v0.1.2新機能）** - 密度を高さで表現
-- **`outlineWidth` number（v0.1.2新機能）** - 枠線の太さ（既定: 2）
-- **`debug` boolean | { showBounds?: boolean }（v0.1.3→v0.1.5）** - ログ制御と境界表示
-- **`autoVoxelSize` boolean（v0.1.4新機能）** - `voxelSize` 未指定時に自動決定
-- **`colorMap` 'custom'|'viridis'|'inferno'（v0.1.5）** - 知覚均等カラーマップ
-- **`diverging` boolean / `divergingPivot` number（v0.1.5）** - 発散配色（青-白-赤）
-- **`highlightTopN` number|null / `highlightStyle`（v0.1.5）** - 上位Nボクセルを強調
-- `batchMode` は v0.1.5 で非推奨（互換のため受理するが無視）
+## オプション一覧 / Options (v0.1.15)
+
+### 日本語
+- **基本描画**: `voxelSize` / `autoVoxelSize` / `maxRenderVoxels` / `opacity` / `emptyOpacity`
+- **プロファイル**: `profile`（`mobile-fast` / `desktop-balanced` / `dense-data` / `sparse-data`）で推奨値を一括適用
+- **適応制御**: `adaptiveOutlines`, `outlineWidthPreset`, `adaptiveParams.neighborhoodRadius`, `adaptiveParams.zScaleCompensation`, `adaptiveParams.overlapDetection`
+- **表示モード**: `outlineRenderMode`, `emulationScope`, `wireframeOnly`, `heightBased`
+- **カラーマップ**: `colorMap`, `diverging`, `divergingPivot`, `highlightTopN`, `highlightStyle`
+- **観測性**: `performanceOverlay`, `togglePerformanceOverlay()`, `getStatistics()`
+- **チューニング**: `renderLimitStrategy`, `renderBudgetMode`, `debug.showBounds`
 
 ### English
-- `voxelSize` number (default: 20)
-- `opacity` number 0–1 (default: 0.8)
-- `emptyOpacity` number 0–1 (default: 0.03)
-- `showOutline` boolean (default: true)
-- `showEmptyVoxels` boolean (default: false)
-- `minColor` [r,g,b] (default: [0,32,255])
-- `maxColor` [r,g,b] (default: [255,64,0])
-- `maxRenderVoxels` number (render cap)
-- `wireframeOnly` boolean (v0.1.2) — outlines only
-- `heightBased` boolean (v0.1.2) — represent density with height
-- `outlineWidth` number (v0.1.2) — outline thickness (default: 2)
-- `debug` boolean | { showBounds?: boolean } (v0.1.3→v0.1.5) — logs/bounds
-- `autoVoxelSize` boolean (v0.1.4) — auto size when `voxelSize` is omitted
-- `colorMap` 'custom'|'viridis'|'inferno' (v0.1.5) — perceptual maps
-- `diverging` boolean / `divergingPivot` number (v0.1.5) — diverging scheme
-- `highlightTopN` number|null / `highlightStyle` (v0.1.5) — emphasize top N
-- `batchMode` deprecated in v0.1.5 (accepted for compat but ignored)
+- **Core rendering**: `voxelSize`, `autoVoxelSize`, `maxRenderVoxels`, `opacity`, `emptyOpacity`
+- **Profiles**: `profile` (`mobile-fast`, `desktop-balanced`, `dense-data`, `sparse-data`) apply curated presets
+- **Adaptive control**: `adaptiveOutlines`, `outlineWidthPreset`, `adaptiveParams.neighborhoodRadius`, `adaptiveParams.zScaleCompensation`, `adaptiveParams.overlapDetection`
+- **Display modes**: `outlineRenderMode`, `emulationScope`, `wireframeOnly`, `heightBased`
+- **Colour & highlight**: `colorMap`, `diverging`, `divergingPivot`, `highlightTopN`, `highlightStyle`
+- **Observability**: `performanceOverlay`, overlay helper methods, `getStatistics()`
+- **Tuning knobs**: `renderLimitStrategy`, `renderBudgetMode`, `debug.showBounds`
 
-### v0.1.7 Additions / 追加
-- `adaptiveOutlines` boolean — adaptive outline behavior
-- `outlineRenderMode` 'standard'|'inset'|'emulation-only' — rendering mode
-- `outlineWidthPreset` 'uniform'|'adaptive-density'|'topn-focus'
-- `boxOpacityResolver(ctx)` / `outlineOpacityResolver(ctx)` — opacity resolvers (priority: resolver > adaptive > fixed)
-- `adaptiveParams` — tunables for adaptive logic
-
-更新は `heatbox.updateOptions({ ... })` で反映できます。
-Apply updates via `heatbox.updateOptions({ ... })`.
+最新の型情報は `types/index.d.ts` と [API Reference](API-Reference.md) を参照し、`heatbox.updateOptions({...})` で動的に切り替えられます。
 
 ## 統計情報 / Statistics
 `getStatistics()` で取得できる主な項目:
@@ -198,6 +160,8 @@ Apply updates via `heatbox.updateOptions({ ... })`.
 Key fields from `getStatistics()`:
 - `totalVoxels`, `renderedVoxels`, `nonEmptyVoxels`, `emptyVoxels`
 - `totalEntities`, `minCount`, `maxCount`, `averageCount`
+
+> v0.1.15 以降は `renderTimeMs` や `occupancyRatio` などのメトリクスも取得できます。
 
 ## TypeScript / 型定義
 型定義（`types/index.d.ts`）を同梱しています。ESM 環境でそのまま利用可能です。  

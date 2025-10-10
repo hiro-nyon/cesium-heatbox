@@ -6,6 +6,15 @@
 
 ## 日本語
 
+## 0.1.15-alpha.3 (2025-10-10)
+- ADR-0011 Phase 4 を完了し、適応制御の最終調整を実装
+  - `adaptiveParams.zScaleCompensation` の既定を有効化
+  - `adaptiveParams.overlapDetection` による重なり診断と推奨モードの導入
+  - `outlineWidthRange` / `boxOpacityRange` / `outlineOpacityRange` の正規化を統一
+- `PerformanceOverlay` を拡張し、レンダリング時間・メモリ推定・適応メトリクスを表示
+- `profile` と `adaptiveParams` のドキュメント/型定義を整理、TypeScript 用 `types/index.d.ts` を更新
+- Wiki/ガイドを全面的に日英併記へ刷新
+
 ## 0.1.11 (2025-09-08)
 - ADR-0009 に基づく責務分離を完了（`VoxelRenderer` をオーケストレーションに特化）
 - 新コア: `ColorCalculator` / `VoxelSelector` / `AdaptiveController` / `GeometryRenderer`
@@ -92,6 +101,15 @@ npm run build:umd
 > 詳細は `CHANGELOG.md` を参照してください。
 
 ## English
+
+### v0.1.15-alpha.3 (2025-10-10)
+- Completed ADR-0011 Phase 4, finalising adaptive visualisation
+  - Enabled `adaptiveParams.zScaleCompensation` by default
+  - Added `adaptiveParams.overlapDetection` to surface recommended outline modes
+  - Unified normalisation for `outlineWidthRange`, `boxOpacityRange`, `outlineOpacityRange`
+- Expanded `PerformanceOverlay` with render time, memory estimates, and adaptive metrics
+- Refined `profile` and `adaptiveParams` documentation and regenerated the public type definition (`types/index.d.ts`)
+- Refreshed the Wiki/guides with bilingual (JA/EN) coverage
 
 ### v0.1.11 (2025-09-08)
 - Completed responsibility separation per ADR-0009 (`VoxelRenderer` acts as orchestrator)

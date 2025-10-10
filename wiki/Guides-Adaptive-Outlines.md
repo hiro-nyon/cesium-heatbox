@@ -5,8 +5,8 @@
 ## 日本語
 `adaptiveOutlines: true` で密度や近傍状況に応じて枠線/不透明度を自動調整します。
 
-- `outlineWidthPreset`: 'uniform' | 'adaptive-density' | 'topn-focus'
-- `adaptiveParams`: 近傍半径/しきい値/カメラ距離係数/重なり係数
+- `outlineWidthPreset`: 'thin' | 'medium' | 'thick' | 'adaptive'
+- `adaptiveParams`: 近傍半径/しきい値/Z軸補正/重なり検出 など
 - 透過制御: `boxOpacityResolver` / `outlineOpacityResolver`（優先度: resolver > adaptive > fixed）
 - 表示モード: `outlineRenderMode`: 'standard' | 'inset' | 'emulation-only'
 
@@ -15,16 +15,15 @@
 // 密集域は細め、疎な場所とTopNは太め
 const heatbox = new Heatbox(viewer, {
   adaptiveOutlines: true,
-  outlineWidthPreset: 'adaptive-density',
+  outlineWidthPreset: 'adaptive',
   adaptiveParams: {
     neighborhoodRadius: 50,
     densityThreshold: 5,
-    cameraDistanceFactor: 1.0,
-    overlapRiskFactor: 0.3
+    zScaleCompensation: true,
+    overlapDetection: true
   },
   outlineRenderMode: 'inset',
-  outlineInset: 2.0,
-  outlineInsetMode: 'all'
+  outlineInset: 1.5
 });
 ```
 
@@ -32,7 +31,7 @@ const heatbox = new Heatbox(viewer, {
 // TopN を強調しつつ、その他は抑制
 const heatbox = new Heatbox(viewer, {
   adaptiveOutlines: true,
-  outlineWidthPreset: 'topn-focus',
+  outlineWidthPreset: 'thick',
   highlightTopN: 20,
   boxOpacityResolver: ({ isTopN }) => (isTopN ? 0.9 : 0.5),
   outlineOpacityResolver: ({ isTopN }) => (isTopN ? 1.0 : 0.4)
@@ -47,8 +46,8 @@ const heatbox = new Heatbox(viewer, {
 ## English
 Enable `adaptiveOutlines: true` to adjust outline width and opacity based on density and context.
 
-- `outlineWidthPreset`: 'uniform' | 'adaptive-density' | 'topn-focus'
-- `adaptiveParams`: neighborhood radius/threshold/camera distance/overlap risk
+- `outlineWidthPreset`: 'thin' | 'medium' | 'thick' | 'adaptive'
+- `adaptiveParams`: neighborhood radius, density threshold, Z-scale compensation, overlap detection, etc.
 - Opacity control via resolvers: `boxOpacityResolver` / `outlineOpacityResolver`
 - Display mode: `outlineRenderMode`: 'standard' | 'inset' | 'emulation-only'
 
@@ -56,16 +55,16 @@ Enable `adaptiveOutlines: true` to adjust outline width and opacity based on den
 ```js
 const heatbox = new Heatbox(viewer, {
   adaptiveOutlines: true,
-  outlineWidthPreset: 'adaptive-density',
-  adaptiveParams: { neighborhoodRadius: 50, densityThreshold: 5, cameraDistanceFactor: 1.0, overlapRiskFactor: 0.3 },
-  outlineRenderMode: 'inset', outlineInset: 2.0
+  outlineWidthPreset: 'adaptive',
+  adaptiveParams: { neighborhoodRadius: 50, densityThreshold: 5, zScaleCompensation: true, overlapDetection: true },
+  outlineRenderMode: 'inset', outlineInset: 1.5
 });
 ```
 
 ```js
 const heatbox = new Heatbox(viewer, {
   adaptiveOutlines: true,
-  outlineWidthPreset: 'topn-focus',
+  outlineWidthPreset: 'thick',
   highlightTopN: 20,
   boxOpacityResolver: ({ isTopN }) => (isTopN ? 0.9 : 0.5),
   outlineOpacityResolver: ({ isTopN }) => (isTopN ? 1.0 : 0.4)
@@ -73,7 +72,6 @@ const heatbox = new Heatbox(viewer, {
 ```
 
 Tips:
-- Thick lines in dense areas → increase `overlapRiskFactor` or use `'emulation-only'`
-- Thin at far distance → increase `cameraDistanceFactor`
-- Missing details → switch to `'uniform'` or reduce `outlineInset`
-
+- Thick lines in dense areas → enable `overlapDetection` and consider `'inset'` mode
+- Thin at far distance → clamp with `adaptiveParams.outlineWidthRange`
+- Missing details → switch to `'medium'` preset or reduce `outlineInset`
