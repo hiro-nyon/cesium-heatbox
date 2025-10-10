@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>CesiumJS Heatbox - Adaptive Control Phase 3 Demo (ADR-0011)</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html, body, #cesiumContainer {
+            width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(42, 42, 42, 0.95);
+            padding: 15px;
+            border-radius: 5px;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 13px;
+            z-index: 100;
+            max-width: 350px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        #controls h3 {
+            margin: 0 0 15px 0;
+            color: #4CAF50;
+            font-size: 16px;
+        }
+        
+        #controls h4 {
+            margin: 15px 0 8px 0;
+            color: #2196F3;
+            font-size: 14px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+        
+        .control-group {
+            margin-bottom: 12px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button.secondary {
+            background: #2196F3;
+        }
+        
+        button.secondary:hover {
+            background: #1976D2;
+        }
+        
+        button.danger {
+            background: #F44336;
+        }
+        
+        button.danger:hover {
+            background: #D32F2F;
+        }
+        
+        select, input[type="range"] {
+            width: 100%;
+            margin-bottom: 8px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .value-display {
+            float: right;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .info {
+            background: rgba(33, 150, 243, 0.2);
+            border-left: 3px solid #2196F3;
+            padding: 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+        
+        .warning {
+            background: rgba(255, 152, 0, 0.2);
+            border-left: 3px solid #FF9800;
+            padding: 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    
+    <div id="controls">
+        <h3>📊 Adaptive Control Demo (Phase 3)</h3>
+        
+        <h4>🎯 Density Pattern</h4>
+        <div class="control-group">
+            <label>Pattern Type:</label>
+            <select id="patternSelect">
+                <option value="clustered">Clustered (Dense)</option>
+                <option value="scattered">Scattered (Sparse)</option>
+                <option value="gradient">Gradient</option>
+                <option value="mixed" selected>Mixed</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Entity Count: <span class="value-display" id="countLabel">1000</span></label>
+            <input type="range" id="countSlider" min="100" max="3000" value="1000" step="100">
+        </div>
+        
+        <h4>⚙️ Adaptive Parameters</h4>
+        <div class="control-group">
+            <label>
+                <input type="checkbox" id="zScaleCompensation" checked>
+                Z-Axis Scale Compensation
+            </label>
+            <label>
+                <input type="checkbox" id="overlapDetection" checked>
+                Overlap Detection
+            </label>
+            <label>
+                <input type="checkbox" id="adaptiveOutlines" checked>
+                Adaptive Outlines
+            </label>
+        </div>
+        
+        <div class="control-group">
+            <label>Outline Render Mode:</label>
+            <select id="renderModeSelect">
+                <option value="standard">Standard</option>
+                <option value="inset">Inset</option>
+                <option value="emulation-only" selected>Emulation Only</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Outline Preset:</label>
+            <select id="presetSelect">
+                <option value="thin">Thin</option>
+                <option value="medium">Medium</option>
+                <option value="thick">Thick</option>
+                <option value="adaptive" selected>Adaptive</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Density Threshold: <span class="value-display" id="densityThresholdLabel">3</span></label>
+            <input type="range" id="densityThresholdSlider" min="1" max="10" value="3" step="1">
+        </div>
+        
+        <div class="control-group">
+            <label>Neighborhood Radius: <span class="value-display" id="neighborhoodRadiusLabel">30</span></label>
+            <input type="range" id="neighborhoodRadiusSlider" min="10" max="100" value="30" step="10">
+        </div>
+        
+        <h4>🚀 Actions</h4>
+        <div class="control-row">
+            <button id="generateBtn">Generate Data</button>
+            <button id="overlayBtn" class="secondary">Show Overlay</button>
+        </div>
+        <div class="control-row">
+            <button id="clearBtn" class="danger">Clear</button>
+            <button id="benchmarkBtn" class="secondary">Benchmark</button>
+        </div>
+        
+        <div class="info">
+            <strong>📘 Phase 3 Features:</strong><br>
+            • Enhanced performance overlay with adaptive metrics<br>
+            • Density pattern generation (clustered/scattered/gradient/mixed)<br>
+            • Real-time Z-scale compensation<br>
+            • Overlap detection and auto-mode recommendation<br>
+            • Adaptive parameter fine-tuning
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Note:</strong> Performance overlay shows adaptive control statistics including dense area detection, emulation usage, and overlap counts.
+        </div>
+    </div>
+
+    <script type="module">
+        // This demo requires the UMD build or ESM build of Heatbox
+        const Heatbox = window.CesiumHeatbox || window.Heatbox;
+        
+        if (!Heatbox) {
+            alert('Heatbox library not found. Please ensure the library is loaded.');
+        }
+
+        // Initialize Cesium viewer
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            terrainProvider: Cesium.createWorldTerrain(),
+            timeline: false,
+            animation: false
+        });
+
+        // Global state
+        let heatbox = null;
+        let currentEntities = [];
+        
+        // DOM elements
+        const patternSelect = document.getElementById('patternSelect');
+        const countSlider = document.getElementById('countSlider');
+        const countLabel = document.getElementById('countLabel');
+        const zScaleCompensationCheck = document.getElementById('zScaleCompensation');
+        const overlapDetectionCheck = document.getElementById('overlapDetection');
+        const adaptiveOutlinesCheck = document.getElementById('adaptiveOutlines');
+        const renderModeSelect = document.getElementById('renderModeSelect');
+        const presetSelect = document.getElementById('presetSelect');
+        const densityThresholdSlider = document.getElementById('densityThresholdSlider');
+        const densityThresholdLabel = document.getElementById('densityThresholdLabel');
+        const neighborhoodRadiusSlider = document.getElementById('neighborhoodRadiusSlider');
+        const neighborhoodRadiusLabel = document.getElementById('neighborhoodRadiusLabel');
+        const generateBtn = document.getElementById('generateBtn');
+        const overlayBtn = document.getElementById('overlayBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const benchmarkBtn = document.getElementById('benchmarkBtn');
+
+        // Update value labels
+        countSlider.addEventListener('input', () => {
+            countLabel.textContent = countSlider.value;
+        });
+        
+        densityThresholdSlider.addEventListener('input', () => {
+            densityThresholdLabel.textContent = densityThresholdSlider.value;
+        });
+        
+        neighborhoodRadiusSlider.addEventListener('input', () => {
+            neighborhoodRadiusLabel.textContent = neighborhoodRadiusSlider.value;
+        });
+
+        // Generate sample data using density patterns
+        function generateData(pattern, count) {
+            const bounds = {
+                minLon: 139.5,
+                maxLon: 139.9,
+                minLat: 35.5,
+                maxLat: 35.9,
+                minAlt: 0,
+                maxAlt: 150
+            };
+
+            // Generate entities based on pattern
+            let positions = [];
+            
+            switch (pattern) {
+                case 'clustered':
+                    positions = generateClusteredPositions(bounds, count, 3);
+                    break;
+                case 'scattered':
+                    positions = generateScatteredPositions(bounds, count);
+                    break;
+                case 'gradient':
+                    positions = generateGradientPositions(bounds, count);
+                    break;
+                case 'mixed':
+                    positions = generateMixedPositions(bounds, count);
+                    break;
+            }
+
+            const entities = positions.map((pos, idx) => {
+                return viewer.entities.add({
+                    id: `entity-${pattern}-${idx}-${Date.now()}`,
+                    position: Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, pos.alt),
+                    point: { pixelSize: 1, show: false }
+                });
+            });
+
+            return entities;
+        }
+
+        function generateClusteredPositions(bounds, count, clusterCount = 3) {
+            const positions = [];
+            const entitiesPerCluster = Math.floor(count / clusterCount);
+            
+            for (let c = 0; c < clusterCount; c++) {
+                const centerLon = bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon);
+                const centerLat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
+                const centerAlt = bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt);
+                const radius = 0.02; // ~2km cluster radius
+                
+                const clusterSize = c < clusterCount - 1 ? entitiesPerCluster : (count - positions.length);
+                
+                for (let i = 0; i < clusterSize; i++) {
+                    const r = Math.sqrt(Math.random()) * radius;
+                    const theta = Math.random() * Math.PI * 2;
+                    
+                    positions.push({
+                        lon: centerLon + r * Math.cos(theta),
+                        lat: centerLat + r * Math.sin(theta),
+                        alt: centerAlt + (Math.random() - 0.5) * 30
+                    });
+                }
+            }
+            
+            return positions;
+        }
+
+        function generateScatteredPositions(bounds, count) {
+            const positions = [];
+            
+            for (let i = 0; i < count; i++) {
+                positions.push({
+                    lon: bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon),
+                    lat: bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat),
+                    alt: bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt)
+                });
+            }
+            
+            return positions;
+        }
+
+        function generateGradientPositions(bounds, count) {
+            const positions = [];
+            
+            for (let i = 0; i < count; i++) {
+                const x = Math.random();
+                const densityWeight = x * x; // Quadratic gradient
+                
+                positions.push({
+                    lon: bounds.minLon + x * (bounds.maxLon - bounds.minLon),
+                    lat: bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat),
+                    alt: bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt)
+                });
+                
+                // Add extra entities in high-density areas
+                if (densityWeight > 0.7 && Math.random() > 0.5) {
+                    const offset = 0.001;
+                    positions.push({
+                        lon: positions[positions.length - 1].lon + (Math.random() - 0.5) * offset,
+                        lat: positions[positions.length - 1].lat + (Math.random() - 0.5) * offset,
+                        alt: positions[positions.length - 1].alt
+                    });
+                }
+            }
+            
+            return positions;
+        }
+
+        function generateMixedPositions(bounds, count) {
+            const clusteredCount = Math.floor(count * 0.4);
+            const scatteredCount = count - clusteredCount;
+            
+            return [
+                ...generateClusteredPositions(bounds, clusteredCount, 2),
+                ...generateScatteredPositions(bounds, scatteredCount)
+            ];
+        }
+
+        // Initialize Heatbox with current parameters
+        function initializeHeatbox() {
+            const options = {
+                adaptiveOutlines: adaptiveOutlinesCheck.checked,
+                outlineRenderMode: renderModeSelect.value,
+                outlineWidthPreset: presetSelect.value,
+                adaptiveParams: {
+                    zScaleCompensation: zScaleCompensationCheck.checked,
+                    overlapDetection: overlapDetectionCheck.checked,
+                    densityThreshold: parseInt(densityThresholdSlider.value),
+                    neighborhoodRadius: parseInt(neighborhoodRadiusSlider.value)
+                },
+                performanceOverlay: {
+                    enabled: true,
+                    position: 'top-right',
+                    autoShow: false
+                }
+            };
+
+            if (heatbox) {
+                heatbox.clear();
+            }
+
+            try {
+                heatbox = new Heatbox(viewer, options);
+                console.log('Heatbox initialized with options:', options);
+            } catch (error) {
+                console.error('Failed to initialize Heatbox:', error);
+                alert('Failed to initialize Heatbox. See console for details.');
+            }
+        }
+
+        // Event handlers
+        generateBtn.addEventListener('click', () => {
+            const pattern = patternSelect.value;
+            const count = parseInt(countSlider.value);
+            
+            console.log(`Generating ${count} entities with ${pattern} pattern...`);
+            
+            // Clear existing entities
+            if (currentEntities.length > 0) {
+                currentEntities.forEach(entity => viewer.entities.remove(entity));
+                currentEntities = [];
+            }
+            
+            // Re-initialize heatbox with current parameters
+            initializeHeatbox();
+            
+            // Generate new data
+            const startTime = performance.now();
+            currentEntities = generateData(pattern, count);
+            
+            if (heatbox) {
+                heatbox.setData(currentEntities);
+                const endTime = performance.now();
+                
+                console.log(`Data generated and processed in ${(endTime - startTime).toFixed(2)}ms`);
+                console.log('Statistics:', heatbox.getStatistics());
+                
+                // Fit view to data
+                setTimeout(() => {
+                    if (heatbox.fitView) {
+                        heatbox.fitView({ paddingPercent: 0.15 });
+                    }
+                }, 100);
+            }
+        });
+
+        overlayBtn.addEventListener('click', () => {
+            if (heatbox) {
+                const isVisible = heatbox.togglePerformanceOverlay();
+                overlayBtn.textContent = isVisible ? 'Hide Overlay' : 'Show Overlay';
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            if (heatbox) {
+                heatbox.clear();
+            }
+            
+            if (currentEntities.length > 0) {
+                currentEntities.forEach(entity => viewer.entities.remove(entity));
+                currentEntities = [];
+            }
+            
+            console.log('Data cleared');
+        });
+
+        benchmarkBtn.addEventListener('click', () => {
+            if (!heatbox || currentEntities.length === 0) {
+                alert('Please generate data first');
+                return;
+            }
+
+            console.log('Running benchmark...');
+            const iterations = 5;
+            const results = [];
+
+            for (let i = 0; i < iterations; i++) {
+                heatbox.clear();
+                const start = performance.now();
+                heatbox.setData(currentEntities);
+                const end = performance.now();
+                results.push(end - start);
+            }
+
+            const avg = results.reduce((a, b) => a + b, 0) / results.length;
+            const min = Math.min(...results);
+            const max = Math.max(...results);
+            const stats = heatbox.getStatistics();
+
+            console.log('Benchmark Results:');
+            console.log(`  Pattern: ${patternSelect.value}`);
+            console.log(`  Entities: ${currentEntities.length}`);
+            console.log(`  Average: ${avg.toFixed(2)}ms`);
+            console.log(`  Min: ${min.toFixed(2)}ms`);
+            console.log(`  Max: ${max.toFixed(2)}ms`);
+            console.log(`  Rendered Voxels: ${stats.renderedVoxels}/${stats.totalVoxels}`);
+            
+            if (stats.adaptive) {
+                console.log('  Adaptive Stats:', stats.adaptive);
+            }
+
+            alert(`Benchmark Complete!\n` +
+                  `Pattern: ${patternSelect.value}\n` +
+                  `Average: ${avg.toFixed(2)}ms\n` +
+                  `Rendered: ${stats.renderedVoxels}/${stats.totalVoxels} voxels`);
+        });
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            initializeHeatbox();
+            
+            // Auto-generate initial data
+            setTimeout(() => {
+                generateBtn.click();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
