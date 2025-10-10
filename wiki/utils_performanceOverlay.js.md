@@ -251,6 +251,45 @@ export class PerformanceOverlay {
         lines.push('');
       }
 
+      // v0.1.15 Phase 3: Adaptive Control Metrics (ADR-0011)
+      if (stats.adaptive) {
+        lines.push('<div style="font-weight: bold; color: #2196F3;">📊 Adaptive Control:</div>');
+        
+        if (stats.adaptive.denseModeCount !== undefined) {
+          const densePct = stats.renderedVoxels > 0 
+            ? ((stats.adaptive.denseModeCount / stats.renderedVoxels) * 100).toFixed(1)
+            : '0.0';
+          lines.push(`  Dense Areas: ${stats.adaptive.denseModeCount} (${densePct}%)`);
+        }
+        
+        if (stats.adaptive.emulationModeCount !== undefined) {
+          const emuPct = stats.renderedVoxels > 0 
+            ? ((stats.adaptive.emulationModeCount / stats.renderedVoxels) * 100).toFixed(1)
+            : '0.0';
+          lines.push(`  Emulation: ${stats.adaptive.emulationModeCount} (${emuPct}%)`);
+        }
+        
+        if (stats.adaptive.avgOutlineWidth !== undefined) {
+          const widthColor = stats.adaptive.avgOutlineWidth >= 1.0 && stats.adaptive.avgOutlineWidth <= 3.0 
+            ? '#4CAF50' : '#FF9800';
+          lines.push(`  <span style="color: ${widthColor};">Avg Width: ${stats.adaptive.avgOutlineWidth.toFixed(2)}px</span>`);
+        }
+        
+        if (stats.adaptive.overlapDetections !== undefined) {
+          const overlapPct = stats.renderedVoxels > 0 
+            ? ((stats.adaptive.overlapDetections / stats.renderedVoxels) * 100).toFixed(1)
+            : '0.0';
+          const overlapColor = stats.adaptive.overlapDetections > 0 ? '#FF9800' : '#4CAF50';
+          lines.push(`  <span style="color: ${overlapColor};">Overlaps: ${stats.adaptive.overlapDetections} (${overlapPct}%)</span>`);
+        }
+        
+        if (stats.adaptive.zScaleAdjustments !== undefined && stats.adaptive.zScaleAdjustments > 0) {
+          lines.push(`  Z-Scale Adj: ${stats.adaptive.zScaleAdjustments}`);
+        }
+        
+        lines.push('');
+      }
+
       // Performance Metrics
       if (stats.renderTimeMs !== undefined) {
         const renderColor = stats.renderTimeMs <= 50 ? '#4CAF50' : stats.renderTimeMs <= 100 ? '#FF9800' : '#F44336';
@@ -551,6 +590,45 @@ export class PerformanceOverlay {
         if (stats.renderBudgetTier) {
           lines.push(`  Budget Tier: ${stats.renderBudgetTier}`);
         }
+        lines.push('');
+      }
+
+      // v0.1.15 Phase 3: Adaptive Control Metrics (ADR-0011)
+      if (stats.adaptive) {
+        lines.push('<div style="font-weight: bold; color: #2196F3;">📊 Adaptive Control:</div>');
+        
+        if (stats.adaptive.denseModeCount !== undefined) {
+          const densePct = stats.renderedVoxels > 0 
+            ? ((stats.adaptive.denseModeCount / stats.renderedVoxels) * 100).toFixed(1)
+            : '0.0';
+          lines.push(`  Dense Areas: ${stats.adaptive.denseModeCount} (${densePct}%)`);
+        }
+        
+        if (stats.adaptive.emulationModeCount !== undefined) {
+          const emuPct = stats.renderedVoxels > 0 
+            ? ((stats.adaptive.emulationModeCount / stats.renderedVoxels) * 100).toFixed(1)
+            : '0.0';
+          lines.push(`  Emulation: ${stats.adaptive.emulationModeCount} (${emuPct}%)`);
+        }
+        
+        if (stats.adaptive.avgOutlineWidth !== undefined) {
+          const widthColor = stats.adaptive.avgOutlineWidth >= 1.0 && stats.adaptive.avgOutlineWidth <= 3.0 
+            ? '#4CAF50' : '#FF9800';
+          lines.push(`  <span style="color: ${widthColor};">Avg Width: ${stats.adaptive.avgOutlineWidth.toFixed(2)}px</span>`);
+        }
+        
+        if (stats.adaptive.overlapDetections !== undefined) {
+          const overlapPct = stats.renderedVoxels > 0 
+            ? ((stats.adaptive.overlapDetections / stats.renderedVoxels) * 100).toFixed(1)
+            : '0.0';
+          const overlapColor = stats.adaptive.overlapDetections > 0 ? '#FF9800' : '#4CAF50';
+          lines.push(`  <span style="color: ${overlapColor};">Overlaps: ${stats.adaptive.overlapDetections} (${overlapPct}%)</span>`);
+        }
+        
+        if (stats.adaptive.zScaleAdjustments !== undefined && stats.adaptive.zScaleAdjustments > 0) {
+          lines.push(`  Z-Scale Adj: ${stats.adaptive.zScaleAdjustments}`);
+        }
+        
         lines.push('');
       }
 

@@ -6,10 +6,11 @@
 
 Main class of CesiumJS Heatbox.
 Provides 3D voxel-based heatmap visualization in CesiumJS environments.
+Refer to HeatboxOptions for the full option catalogue with defaults.
 
 ### Constructor
 
-#### new Heatbox(viewer, options)
+#### new Heatbox(viewer, optionsopt)
 
 ### Methods
 
@@ -17,9 +18,10 @@ Provides 3D voxel-based heatmap visualization in CesiumJS environments.
 
 Clear the heatmap and internal state.
 
-#### (async) createFromEntities(entities) → {Promise.<Object>}
+#### (async) createFromEntities(entities) → {Promise.<HeatboxStatistics>}
 
 Create heatmap from entities (async).
+Resolves with the statistics snapshot calculated by getStatistics.
 
 | Name | Type | Description |
 |---|---|---|
@@ -33,42 +35,46 @@ Destroy the instance and release event listeners.
 
 Alias for destroy() to match examples and tests.
 
-#### (async) fitView(bounds, options) → {Promise}
+#### (async) fitView(boundsopt, optionsopt) → {Promise.<void>}
 
 Fit view to data bounds with smart camera positioning.
 
-| Name | Type | Default | Description |
-|---|---|---|---|
-| bounds | Object | null | Target bounds (optional, uses current data bounds if not provided) / 対象境界 |
-| options | Object |  | Fit view options / フィットビューオプション |
+| Name | Type | Attributes | Default | Description |
+|---|---|---|---|---|
+| bounds | HeatboxBounds
+\|
 
-#### getBounds() → {Object|null}
+null | <optional> | null | Target bounds（省略時は現在のデータ境界） |
+| options | HeatboxFitViewOptions | <optional> | {} | Fit view options / フィットビュー設定 |
+
+#### getBounds() → {HeatboxBounds|null}
 
 Get bounds info if available.
 
-#### getDebugInfo() → {Object}
+#### getDebugInfo() → {HeatboxDebugInfo}
 
 Get debug information.
 
-#### getEffectiveOptions() → {Object}
+#### getEffectiveOptions() → {HeatboxOptions}
 
 Get effective normalized options snapshot.
 
-#### getOptions() → {Object}
+#### getOptions() → {HeatboxOptions}
 
 Get current options.
 
-#### getStatistics() → {Object|null}
+#### getStatistics() → {HeatboxStatistics|null}
 
 Get statistics information.
 
 #### hidePerformanceOverlay()
 
-Hide the performance overlay.
+Hide performance overlay
 
-#### (async) setData(entities)
+#### (async) setData(entities) → {Promise.<void>}
 
 Set heatmap data and render.
+Calculates bounds, prepares the voxel grid, runs classification, and finally renders.
 
 | Name | Type | Description |
 |---|---|---|
@@ -81,7 +87,7 @@ Enable or disable performance overlay at runtime.
 | Name | Type | Attributes | Description |
 |---|---|---|---|
 | enabled | boolean |  | true to enable, false to disable |
-| options | Object | <optional> | Optional overlay options to apply |
+| options | PerformanceOverlayConfig | <optional> | Optional overlay options to apply / 追加設定 |
 
 #### setVisible(show)
 
@@ -93,19 +99,19 @@ Toggle visibility.
 
 #### showPerformanceOverlay()
 
-Show the performance overlay.
+Show performance overlay
 
 #### togglePerformanceOverlay() → {boolean}
 
-Toggle the performance overlay and return the new visibility state.
+Toggle performance overlay visibility
 
 #### updateOptions(newOptions)
 
-Merge new options and re-render if a dataset is already loaded.
+Update options and re-render if applicable.
 
 | Name | Type | Description |
 |---|---|---|
-| newOptions | Object | New options / 新しいオプション |
+| newOptions | HeatboxOptions | New options (partial allowed) / 新しいオプション（部分指定可） |
 
 #### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
 
@@ -122,9 +128,11 @@ Get configuration profile details
 
 | Name | Type | Description |
 |---|---|---|
-| profileName | string | Profile name / プロファイル名 |
+| profileName | string | Profile name / プロファイル名
+Returned object shares the same keys as HeatboxOptions plus an optional `description`.
+戻り値は HeatboxOptions と同じキーに加えて `description` フィールドを含みます。 |
 
-#### (static) listProfiles() → {Array.<string>}
+#### (static) listProfiles() → {Array.<ProfileName>}
 
 Get list of available configuration profiles
 
@@ -163,10 +171,11 @@ const options = {
 
 CesiumJS Heatbox メインクラス。
 CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提供します。
+利用可能なオプションと既定値は HeatboxOptions を参照してください。
 
 ### コンストラクタ
 
-#### new Heatbox(viewer, options)
+#### new Heatbox(viewer, optionsopt)
 
 ### メソッド
 
@@ -174,9 +183,10 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 
 ヒートマップと内部状態をクリアします。
 
-#### (async) createFromEntities(entities) → {Promise.<Object>}
+#### (async) createFromEntities(entities) → {Promise.<HeatboxStatistics>}
 
 エンティティからヒートマップを作成（非同期 API）。
+描画完了後に getStatistics と同じ統計スナップショットを返します。
 
 | 名前 | 型 | 説明 |
 |---|---|---|
@@ -190,32 +200,41 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 
 互換性のための別名。destroy() を呼び出します。
 
-#### (async) fitView(bounds, options) → {Promise}
+#### (async) fitView(boundsopt, optionsopt) → {Promise.<void>}
 
 データ境界にスマートなカメラ位置でビューをフィットします。
+実装メモ（v0.1.12）：
+- 描画とカメラ移動の競合を避けるため、`viewer.scene.postRender` で1回だけ実行します。
+- 矩形境界（経緯度）から `Cesium.Rectangle` → `Cesium.BoundingSphere` を生成し、
+`camera.flyToBoundingSphere` + `HeadingPitchRange` で安定的にズームします。
+- 俯角は安全範囲にクランプ（既定: -35°, 範囲: [-85°, -10°]）。
+- 失敗時は `viewer.zoomTo(viewer.entities)` へフォールバックします。
 
-| 名前 | 型 | 既定値 | 説明 |
-|---|---|---|---|
-| bounds | Object | null | Target bounds (optional, uses current data bounds if not provided) / 対象境界 |
-| options | Object |  | Fit view options / フィットビューオプション |
+| 名前 | 型 | 属性 | 既定値 | 説明 |
+|---|---|---|---|---|
+| bounds | HeatboxBounds
+\|
 
-#### getBounds() → {Object|null}
+null | <optional> | null | Target bounds（省略時は現在のデータ境界） |
+| options | HeatboxFitViewOptions | <optional> | {} | Fit view options / フィットビュー設定 |
+
+#### getBounds() → {HeatboxBounds|null}
 
 境界情報を取得します（未作成の場合は null）。
 
-#### getDebugInfo() → {Object}
+#### getDebugInfo() → {HeatboxDebugInfo}
 
 デバッグ情報を取得します。
 
-#### getEffectiveOptions() → {Object}
+#### getEffectiveOptions() → {HeatboxOptions}
 
 正規化済みオプションのスナップショットを取得します。
 
-#### getOptions() → {Object}
+#### getOptions() → {HeatboxOptions}
 
 現在のオプションを取得します。
 
-#### getStatistics() → {Object|null}
+#### getStatistics() → {HeatboxStatistics|null}
 
 統計情報を取得します（未作成の場合は null）。
 
@@ -223,9 +242,9 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 
 パフォーマンスオーバーレイを非表示
 
-#### (async) setData(entities)
+#### (async) setData(entities) → {Promise.<void>}
 
-ヒートマップデータを設定し、描画を実行します。
+ヒートマップデータを設定し、境界計算→ボクセル分類→描画の順で処理します。
 
 | 名前 | 型 | 説明 |
 |---|---|---|
@@ -238,7 +257,7 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 | 名前 | 型 | 属性 | 説明 |
 |---|---|---|---|
 | enabled | boolean |  | true to enable, false to disable |
-| options | Object | <optional> | Optional overlay options to apply |
+| options | PerformanceOverlayConfig | <optional> | Optional overlay options to apply / 追加設定 |
 
 #### setVisible(show)
 
@@ -262,7 +281,7 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| newOptions | Object | New options / 新しいオプション |
+| newOptions | HeatboxOptions | New options (partial allowed) / 新しいオプション（部分指定可） |
 
 #### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
 
@@ -279,8 +298,10 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| profileName | string | Profile name / プロファイル名 |
+| profileName | string | Profile name / プロファイル名
+Returned object shares the same keys as HeatboxOptions plus an optional `description`.
+戻り値は HeatboxOptions と同じキーに加えて `description` フィールドを含みます。 |
 
-#### (static) listProfiles() → {Array.<string>}
+#### (static) listProfiles() → {Array.<ProfileName>}
 
 利用可能な設定プロファイルの一覧を取得

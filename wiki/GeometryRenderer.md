@@ -4,8 +4,9 @@
 
 ## English
 
-GeometryRenderer creates the Cesium entities (boxes, inset outlines, polylines) used by VoxelRenderer.
-It cleanly owns geometry construction so the renderer can focus on orchestration (ADR-0009 Phase 4).
+GeometryRenderer - Creates Cesium entities consumed by VoxelRenderer.
+Responsibilities:
+ADR-0009 Phase 4
 
 ### Constructor
 
@@ -1425,10 +1426,10 @@ Update rendering options
 
 ## 日本語
 
-ジオメトリレンダラー - ボクセル描画のための3Dジオメトリ描画
+ジオメトリレンダラー - VoxelRenderer が利用する Cesium エンティティを生成・管理
 - ボクセルボックス描画 (Voxel box rendering)
 - インセット枠線描画 (Inset outline rendering)
-- エッジポリライン描画 (Edge polyline rendering)
+- エッジポリライン描画 (Edge polyline rendering for emulation)
 - エンティティライフサイクル管理 (Entity lifecycle management)
 
 ### コンストラクタ

@@ -620,7 +620,8 @@ export class VoxelRenderer {
 
 
   /**
-   * 描画されたエンティティを全てクリア
+   * Remove all rendered entities from the scene.
+   * 描画されたエンティティを全てクリアします。
    * v0.1.11: GeometryRendererに委譲 (ADR-0009 Phase 4)
    */
   clear() {

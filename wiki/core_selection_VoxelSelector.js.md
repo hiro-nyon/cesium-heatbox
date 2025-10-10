@@ -22,8 +22,9 @@ See also: [Class: VoxelSelector](VoxelSelector)
 import { Logger } from '../../utils/logger.js';
 
 /**
- * VoxelSelector - ボクセル選択戦略の実装
- * 
+ * Voxel selection strategy executor.
+ * VoxelSelector - ボクセル選択戦略の実装。
+ *
  * Single Responsibility: ボクセル選択ロジックのみを担当
  * - 戦略パターンを使用して選択アルゴリズムを切り替え可能
  * - 純粋関数として設計（Cesium依存なし）
@@ -433,8 +434,9 @@ export class VoxelSelector {
 import { Logger } from '../../utils/logger.js';
 
 /**
- * VoxelSelector - ボクセル選択戦略の実装
- * 
+ * Voxel selection strategy executor.
+ * VoxelSelector - ボクセル選択戦略の実装。
+ *
  * Single Responsibility: ボクセル選択ロジックのみを担当
  * - 戦略パターンを使用して選択アルゴリズムを切り替え可能
  * - 純粋関数として設計（Cesium依存なし）

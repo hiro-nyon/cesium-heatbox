@@ -257,6 +257,21 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.outlineOpacity = Math.max(0, Math.min(1, parseFloat(normalized.outlineOpacity) || 1));
   }
   
+  if (normalized.outlineWidth !== undefined) {
+    const width = parseFloat(normalized.outlineWidth);
+    normalized.outlineWidth = Number.isFinite(width)
+      ? Math.max(0.5, Math.min(20, width))
+      : DEFAULT_OPTIONS.outlineWidth;
+  }
+  
+  if (normalized.wireframeOnly !== undefined) {
+    normalized.wireframeOnly = coerceBoolean(normalized.wireframeOnly);
+  }
+  
+  if (normalized.heightBased !== undefined) {
+    normalized.heightBased = coerceBoolean(normalized.heightBased);
+  }
+  
   // v0.1.12: Deprecated Resolver systems - show warnings and remove
   if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
     warnOnce('outlineWidthResolver',
@@ -539,6 +554,25 @@ export function validateAndNormalizeOptions(options = {}) {
   }
   
   normalized.adaptiveParams = ap;
+
+  if (normalized.performanceOverlay) {
+    const overlay = { ...normalized.performanceOverlay };
+    overlay.enabled = coerceBoolean(overlay.enabled, false);
+    overlay.autoShow = coerceBoolean(overlay.autoShow, false);
+    overlay.autoUpdate = coerceBoolean(overlay.autoUpdate, true);
+    overlay.position = ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(overlay.position)
+      ? overlay.position
+      : 'top-right';
+    if (overlay.updateIntervalMs !== undefined) {
+      const interval = parseFloat(overlay.updateIntervalMs);
+      overlay.updateIntervalMs = Number.isFinite(interval) ? Math.max(100, interval) : 500;
+    }
+    if (overlay.fpsAveragingWindowMs !== undefined) {
+      const windowMs = parseFloat(overlay.fpsAveragingWindowMs);
+      overlay.fpsAveragingWindowMs = Number.isFinite(windowMs) ? Math.max(200, windowMs) : 1000;
+    }
+    normalized.performanceOverlay = overlay;
+  }
   
   return normalized;
 }
@@ -687,9 +721,10 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
 }
 
 /**
- * 境界からデータ範囲を計算
- * @param {Object} bounds - 境界情報
- * @returns {Object} データ範囲 {x, y, z}（メートル）
+ * Calculate physical span (meters) from geographic bounds.
+ * 境界からデータ範囲（メートル）を計算します。
+ * @param {Object} bounds - Bounds information / 境界情報
+ * @returns {Object} Data range `{x, y, z}` in meters / データ範囲 {x, y, z}（メートル）
  */
 export function calculateDataRange(bounds) {
   try {

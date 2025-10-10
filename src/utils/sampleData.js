@@ -1,10 +1,12 @@
 /**
- * サンプルデータ生成のユーティリティ関数
+ * Utility helpers for generating sample datasets.
+ * サンプルデータ生成ユーティリティ群。
  */
 import * as Cesium from 'cesium';
 
 /**
- * 指定された範囲内にランダムなテストエンティティを生成
+ * Generate pseudo-random test entities within the specified bounds.
+ * 指定範囲内にランダムなテストエンティティを生成します。
  * @param {Object} viewer - CesiumJS Viewer
  * @param {Object} bounds - 生成範囲 {minLon, maxLon, minLat, maxLat, minAlt, maxAlt}
  * @param {number} count - 生成数（デフォルト: 500）
@@ -57,7 +59,8 @@ export function generateTestEntities(viewer, bounds, count = 500) {
 }
 
 /**
- * 指定されたviewerの全エンティティを取得
+ * Retrieve every entity registered on the given viewer.
+ * 指定された Viewer の全エンティティを取得します。
  * @param {Object} viewer - CesiumJS Viewer
  * @returns {Array} エンティティ配列
  */
@@ -124,7 +127,8 @@ export function generateSampleData(total, config = {}) {
 }
 
 /**
- * 東京駅周辺の境界を取得
+ * Return a convenience bounding box covering the Tokyo Station area.
+ * 東京駅周辺の境界情報を返します。
  * @returns {Object} 東京駅周辺の境界情報
  */
 export function getTokyoStationBounds() {
@@ -142,7 +146,8 @@ export function getTokyoStationBounds() {
 }
 
 /**
- * 指定された中心点とサイズから境界を生成
+ * Create an axis-aligned bounding box from a centre point and edge length.
+ * 指定された中心点とサイズから境界を生成します。
  * @param {number} centerLon - 中心経度
  * @param {number} centerLat - 中心緯度
  * @param {number} centerAlt - 中心高度
@@ -174,7 +179,8 @@ export function createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMete
  */
 
 /**
- * Generate clustered density pattern (高密度クラスター)
+ * Generate a clustered density pattern.
+ * 高密度クラスターの分布を生成します。
  * @param {Object} bounds - Bounding box
  * @param {number} count - Total entity count
  * @param {number} clusterCount - Number of clusters (default: 3)
@@ -231,7 +237,8 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
 }
 
 /**
- * Generate scattered density pattern (疎分布)
+ * Generate a scattered density pattern.
+ * 疎分布のデータセットを生成します。
  * @param {Object} bounds - Bounding box
  * @param {number} count - Total entity count
  * @returns {Array<Cesium.Entity>} Generated entities
@@ -254,7 +261,8 @@ function generateScatteredPattern(bounds, count) {
 }
 
 /**
- * Generate gradient density pattern (グラデーション分布)
+ * Generate a gradient-based density pattern.
+ * グラデーション分布のデータセットを生成します。
  * @param {Object} bounds - Bounding box
  * @param {number} count - Total entity count
  * @returns {Array<Cesium.Entity>} Generated entities
@@ -294,7 +302,8 @@ function generateGradientPattern(bounds, count) {
 }
 
 /**
- * Generate mixed density pattern (混在分布)
+ * Generate a mixed density pattern.
+ * 混在分布のデータセットを生成します。
  * @param {Object} bounds - Bounding box
  * @param {number} count - Total entity count
  * @returns {Array<Cesium.Entity>} Generated entities

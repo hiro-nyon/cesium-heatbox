@@ -146,6 +146,19 @@ heatbox.setVisible(true);
 - **Observability**: `performanceOverlay`, overlay helper methods, `getStatistics()`
 - **Tuning knobs**: `renderLimitStrategy`, `renderBudgetMode`, `debug.showBounds`
 
+| オプション / Option | 既定値 / Default | 説明 / Description |
+|---|---|---|
+| `profile` | _unset_ | 推奨プリセットで `voxelSize` や `maxRenderVoxels` をまとめて設定。<br>Apply curated bundles tuned for mobile/desktop/dataset density. |
+| `voxelSize` | `20` | 単位メートルでのボクセルサイズ。<br>Base voxel size in metres (overridden when `autoVoxelSize` succeeds). |
+| `autoVoxelSize` | `false` | 範囲とエンティティ数から `voxelSize` を自動推定。<br>Enables automatic voxel size estimation (`autoVoxelSizeMode` / `autoVoxelTargetFill`). |
+| `maxRenderVoxels` | `50000` | 描画上限。超過すると密度で間引き。<br>Upper bound for rendered voxels; excess voxels are thinned. |
+| `wireframeOnly` | `false` | 枠線のみ表示で重なりを判別しやすく。<br>Render outlines only to keep dense scenes readable. |
+| `heightBased` | `false` | 密度に応じて高さを調整。<br>Scale voxel height by normalised density. |
+| `outlineRenderMode` | `'standard'` | `'inset'` / `'emulation-only'` で線の重なり対策。<br>Switch to inset or emulation-only outlines for cluttered data. |
+| `adaptiveOutlines` | `false` | `adaptiveParams` に基づく太さ・透明度の自動制御。<br>Enables ADR-0011 adaptive outline logic. |
+| `performanceOverlay.enabled` | `false` | ブラウザ上にレンダリング負荷を表示。<br>Shows FPS / render time overlay when true. |
+| `renderLimitStrategy` | `'density'` | `'coverage'` / `'hybrid'` で均等抽出。<br>Choose voxel selection strategy when hitting budgets. |
+
 最新の型情報は `types/index.d.ts` と [API Reference](API-Reference.md) を参照し、`heatbox.updateOptions({...})` で動的に切り替えられます。
 
 ## 統計情報 / Statistics

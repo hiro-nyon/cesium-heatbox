@@ -4,7 +4,7 @@
 
 ## English
 
-> English translation pending. See Japanese section below.
+Voxel selection strategy executor.
 
 ### Constructor
 
@@ -116,7 +116,7 @@ Object
 
 ## 日本語
 
-VoxelSelector - ボクセル選択戦略の実装
+VoxelSelector - ボクセル選択戦略の実装。
 Single Responsibility: ボクセル選択ロジックのみを担当
 - 戦略パターンを使用して選択アルゴリズムを切り替え可能
 - 純粋関数として設計（Cesium依存なし）
