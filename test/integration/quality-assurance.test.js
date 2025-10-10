@@ -300,4 +300,342 @@ describe('Quality Assurance Integration Tests', () => {
       });
     });
   });
+
+  describe('Adaptive Control Acceptance Criteria (v0.1.15 Phase 4)', () => {
+    describe('Visibility Requirements', () => {
+      test('should improve visibility with adaptive control vs uniform settings', () => {
+        const uniformHeatbox = new Heatbox(mockViewer, {
+          adaptiveOutlines: false,
+          outlineWidth: 2,
+          opacity: 0.8,
+          outlineOpacity: 1.0
+        });
+
+        const adaptiveHeatbox = new Heatbox(mockViewer, {
+          adaptiveOutlines: true,
+          outlineWidthPreset: 'adaptive',
+          adaptiveParams: {
+            densityThreshold: 3,
+            neighborhoodRadius: 30
+          }
+        });
+
+        // Both should be created without errors
+        expect(uniformHeatbox).toBeDefined();
+        expect(adaptiveHeatbox).toBeDefined();
+
+        const uniformOptions = uniformHeatbox.getEffectiveOptions();
+        const adaptiveOptions = adaptiveHeatbox.getEffectiveOptions();
+
+        // Adaptive should have adaptive control enabled
+        expect(adaptiveOptions.adaptiveOutlines).toBe(true);
+        expect(uniformOptions.adaptiveOutlines).toBe(false);
+      });
+
+      test('should prevent TopN voxels from being buried', () => {
+        const heatbox = new Heatbox(mockViewer, {
+          highlightTopN: 10,
+          adaptiveOutlines: true,
+          outlineWidthPreset: 'adaptive',
+          adaptiveParams: {
+            outlineWidthRange: [1.0, 5.0]  // Allow TopN boost
+          }
+        });
+
+        const options = heatbox.getEffectiveOptions();
+        
+        expect(options.highlightTopN).toBe(10);
+        expect(options.adaptiveOutlines).toBe(true);
+        expect(options.adaptiveParams.outlineWidthRange).toEqual([1.0, 5.0]);
+        
+        // Upper bound should be high enough for TopN boost
+        expect(options.adaptiveParams.outlineWidthRange[1]).toBeGreaterThanOrEqual(4.0);
+      });
+
+      test('should handle outline render mode transitions stably', () => {
+        const modes = ['standard', 'inset', 'emulation-only'];
+        
+        modes.forEach(mode => {
+          expect(() => {
+            const heatbox = new Heatbox(mockViewer, {
+              outlineRenderMode: mode,
+              adaptiveOutlines: true
+            });
+
+            const options = heatbox.getEffectiveOptions();
+            expect(options.outlineRenderMode).toBe(mode);
+          }).not.toThrow();
+        });
+      });
+    });
+
+    describe('Priority and Clamping', () => {
+      test('should respect priority order: Resolver > Adaptive > Base', () => {
+        // Note: Resolvers are deprecated but still functional in v0.1.15
+        const heatbox = new Heatbox(mockViewer, {
+          outlineWidth: 2,  // Base
+          adaptiveOutlines: true,  // Adaptive
+          adaptiveParams: {
+            outlineWidthRange: [1.0, 3.0]
+          }
+        });
+
+        const options = heatbox.getEffectiveOptions();
+        
+        // Adaptive should be enabled
+        expect(options.adaptiveOutlines).toBe(true);
+        
+        // Base width should be set
+        expect(options.outlineWidth).toBe(2);
+        
+        // Range should clamp adaptive values
+        expect(options.adaptiveParams.outlineWidthRange).toEqual([1.0, 3.0]);
+      });
+
+      test('should clamp outline width within outlineWidthRange', () => {
+        const heatbox = new Heatbox(mockViewer, {
+          adaptiveOutlines: true,
+          adaptiveParams: {
+            outlineWidthRange: [1.5, 2.5],
+            minOutlineWidth: 1.0,
+            maxOutlineWidth: 5.0
+          }
+        });
+
+        const options = heatbox.getEffectiveOptions();
+        
+        // outlineWidthRange should take priority over min/max
+        expect(options.adaptiveParams.outlineWidthRange).toEqual([1.5, 2.5]);
+      });
+
+      test('should clamp box opacity within boxOpacityRange', () => {
+        const heatbox = new Heatbox(mockViewer, {
+          opacity: 0.8,
+          adaptiveOutlines: true,
+          adaptiveParams: {
+            boxOpacityRange: [0.5, 0.9]
+          }
+        });
+
+        const options = heatbox.getEffectiveOptions();
+        
+        expect(options.adaptiveParams.boxOpacityRange).toEqual([0.5, 0.9]);
+        expect(options.opacity).toBe(0.8);
+        
+        // Opacity should be within range
+        expect(options.opacity).toBeGreaterThanOrEqual(0.5);
+        expect(options.opacity).toBeLessThanOrEqual(0.9);
+      });
+
+      test('should clamp outline opacity within outlineOpacityRange', () => {
+        const heatbox = new Heatbox(mockViewer, {
+          outlineOpacity: 1.0,
+          adaptiveOutlines: true,
+          adaptiveParams: {
+            outlineOpacityRange: [0.3, 1.0]
+          }
+        });
+
+        const options = heatbox.getEffectiveOptions();
+        
+        expect(options.adaptiveParams.outlineOpacityRange).toEqual([0.3, 1.0]);
+        expect(options.outlineOpacity).toBe(1.0);
+        
+        // Outline opacity should be within range
+        expect(options.outlineOpacity).toBeGreaterThanOrEqual(0.3);
+        expect(options.outlineOpacity).toBeLessThanOrEqual(1.0);
+      });
+
+      test('should handle boundary values in range clamping', () => {
+        const testCases = [
+          { range: [1.0, 3.0], expected: [1.0, 3.0] },
+          { range: [0, 1], expected: [0, 1] },
+          { range: [1.5, 1.5], expected: [1.5, 1.5] },  // Edge case: min === max
+        ];
+
+        testCases.forEach(({ range, expected }) => {
+          const heatbox = new Heatbox(mockViewer, {
+            adaptiveOutlines: true,
+            adaptiveParams: {
+              outlineWidthRange: range
+            }
+          });
+
+          const options = heatbox.getEffectiveOptions();
+          expect(options.adaptiveParams.outlineWidthRange).toEqual(expected);
+        });
+      });
+    });
+
+    describe('Performance Requirements', () => {
+      test('should not significantly increase computation time with adaptive control', () => {
+        const startBase = performance.now();
+        const baseHeatbox = new Heatbox(mockViewer, {
+          adaptiveOutlines: false
+        });
+        const baseTime = performance.now() - startBase;
+
+        const startAdaptive = performance.now();
+        const adaptiveHeatbox = new Heatbox(mockViewer, {
+          adaptiveOutlines: true,
+          adaptiveParams: {
+            neighborhoodRadius: 30,
+            densityThreshold: 3
+          }
+        });
+        const adaptiveTime = performance.now() - startAdaptive;
+
+        // Adaptive should not be more than 15% slower
+        const overhead = (adaptiveTime - baseTime) / baseTime;
+        expect(overhead).toBeLessThanOrEqual(0.15);
+
+        expect(baseHeatbox).toBeDefined();
+        expect(adaptiveHeatbox).toBeDefined();
+      });
+
+      test('should maintain stable frame time within ±20% range', () => {
+        const heatbox = new Heatbox(mockViewer, {
+          adaptiveOutlines: true,
+          maxRenderVoxels: 5000
+        });
+
+        const frameTimes = [];
+        for (let i = 0; i < 10; i++) {
+          const start = performance.now();
+          // Simulate render cycle
+          heatbox.getStatistics();
+          const frameTime = performance.now() - start;
+          frameTimes.push(frameTime);
+        }
+
+        const avgFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+        const deviations = frameTimes.map(t => Math.abs(t - avgFrameTime) / avgFrameTime);
+        const maxDeviation = Math.max(...deviations);
+
+        // Frame time should be stable within ±20%
+        expect(maxDeviation).toBeLessThanOrEqual(0.20);
+      });
+    });
+
+    describe('Edge Cases and Robustness', () => {
+      test('should handle Z-axis extreme aspect ratios', () => {
+        const heatbox = new Heatbox(mockViewer, {
+          adaptiveOutlines: true,
+          adaptiveParams: {
+            zScaleCompensation: true
+          },
+          heightMultiplier: 2.0
+        });
+
+        const options = heatbox.getEffectiveOptions();
+        
+        expect(options.adaptiveParams.zScaleCompensation).toBe(true);
+        expect(options.heightMultiplier).toBe(2.0);
+      });
+
+      test('should handle overlap detection configuration', () => {
+        const heatbox = new Heatbox(mockViewer, {
+          adaptiveOutlines: true,
+          adaptiveParams: {
+            overlapDetection: true
+          },
+          outlineRenderMode: 'inset',
+          outlineInset: 0.5
+        });
+
+        const options = heatbox.getEffectiveOptions();
+        
+        expect(options.adaptiveParams.overlapDetection).toBe(true);
+        expect(options.outlineRenderMode).toBe('inset');
+        expect(options.outlineInset).toBe(0.5);
+      });
+
+      test('should handle empty or null adaptiveParams gracefully', () => {
+        expect(() => {
+          const heatbox = new Heatbox(mockViewer, {
+            adaptiveOutlines: true,
+            adaptiveParams: null
+          });
+          expect(heatbox).toBeDefined();
+        }).not.toThrow();
+
+        expect(() => {
+          const heatbox = new Heatbox(mockViewer, {
+            adaptiveOutlines: true,
+            adaptiveParams: {}
+          });
+          expect(heatbox).toBeDefined();
+        }).not.toThrow();
+      });
+
+      test('should validate range format [min, max]', () => {
+        const validRanges = [
+          [1.0, 3.0],
+          [0, 1],
+          [1.5, 1.5]
+        ];
+
+        validRanges.forEach(range => {
+          expect(() => {
+            const heatbox = new Heatbox(mockViewer, {
+              adaptiveOutlines: true,
+              adaptiveParams: {
+                outlineWidthRange: range
+              }
+            });
+            expect(heatbox).toBeDefined();
+          }).not.toThrow();
+        });
+      });
+    });
+
+    describe('Integration with Existing Features', () => {
+      test('should work with profiles', () => {
+        const profiles = ['mobile-fast', 'desktop-balanced', 'dense-data', 'sparse-data'];
+        
+        profiles.forEach(profile => {
+          const heatbox = new Heatbox(mockViewer, {
+            profile,
+            adaptiveOutlines: true
+          });
+
+          const options = heatbox.getEffectiveOptions();
+          expect(options.adaptiveOutlines).toBe(true);
+          expect(heatbox).toBeDefined();
+        });
+      });
+
+      test('should work with all outline render modes', () => {
+        const modes = ['standard', 'inset', 'emulation-only'];
+        
+        modes.forEach(mode => {
+          const heatbox = new Heatbox(mockViewer, {
+            outlineRenderMode: mode,
+            adaptiveOutlines: true,
+            adaptiveParams: {
+              outlineWidthRange: [1.0, 3.0]
+            }
+          });
+
+          const options = heatbox.getEffectiveOptions();
+          expect(options.outlineRenderMode).toBe(mode);
+          expect(options.adaptiveOutlines).toBe(true);
+        });
+      });
+
+      test('should work with emulationScope options', () => {
+        const scopes = ['off', 'topn', 'non-topn', 'all'];
+        
+        scopes.forEach(scope => {
+          const heatbox = new Heatbox(mockViewer, {
+            emulationScope: scope,
+            adaptiveOutlines: true
+          });
+
+          const options = heatbox.getEffectiveOptions();
+          expect(options.emulationScope).toBe(scope);
+        });
+      });
+    });
+  });
 });

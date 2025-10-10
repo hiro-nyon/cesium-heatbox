@@ -9,8 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
+## [0.1.15] - 2025-10-10
+
+**ADR-0011: 適応的表示の核・視認性最適化の仕上げ（Phase 4: ドキュメント・品質保証完了）**
+
+v0.1系における適応的可視化機能の仕上げバージョン。Phase 0-3で実装された適応制御の基盤に対し、Phase 4ではドキュメント整備・ツール拡張・品質保証を実施し、v1.0.0への移行準備を完了しました。
+
+### Added
+- **ドキュメント強化**
+  - `wiki/Guides-Performance.md` に適応制御のチューニングセクションを追加（データ特性診断・プロファイル選択・パラメータ調整優先順位・視認性検証・コード例3件）
+  - `wiki/Troubleshooting.md` に適応制御FAQ 10項目を追加（各項目200-300語、診断・解決策のコード例付き）
+- **ツール拡張**
+  - `tools/benchmark.js` に適応制御メトリクス（`denseAreaRatio`, `avgOutlineWidth`, `emulationUsage` 等）を追加、`--adaptive` フラグで詳細出力対応
+  - `tools/adr0011/phase4-baseline.js` を作成し、Phase 1 との比較測定を実施（性能劣化なしを確認）
+- **テスト拡充**
+  - `test/integration/quality-assurance.test.js` に適応制御の受け入れ基準テスト（視認性・TopN・モード切替・優先順位・パフォーマンス・エッジケース・統合）を追加
+
+### Changed
+- `test/utils/performanceOverlay.test.js` のlintエラーを修正（unused variable, missing global）
+
 ### Fixed
 - validation.js の数値計算で発生しうる RangeError を修正（正規化処理の端数・境界値で例外となるケースを解消）
+
+### Performance
+- Phase 4 ベースライン測定により、Phase 1 から性能劣化なし（全デルタ +0.000）を確認
+- 適応制御の計算時間増加 ≤ +15%、メモリ使用量増加 ≤ +10% の要件を満たしていることを検証
+
+### Documentation
+- ADR-0011 Phase 4 完了を記録、実施結果テーブルを追加
+- 受け入れ基準（機能・パフォーマンス・品質・ドキュメント）をすべて達成
+- v1.0.0移行準備完了
 
 ## [0.1.14] - 2025-09-14
 

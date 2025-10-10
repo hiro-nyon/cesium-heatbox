@@ -4,8 +4,8 @@
  * 
  * v0.1.15 Phase 3: ADR-0011 - Enhanced with adaptive metrics support
  */
+/* global document */
 
-import { jest } from '@jest/globals';
 import { PerformanceOverlay } from '../../src/utils/performanceOverlay.js';
 
 describe('PerformanceOverlay', () => {
@@ -266,7 +266,7 @@ describe('PerformanceOverlay', () => {
       const autoOverlay = new PerformanceOverlay({ autoUpdate: true });
       
       autoOverlay.show();
-      const interval = autoOverlay.updateInterval;
+      const _interval = autoOverlay.updateInterval;
       
       autoOverlay.hide();
       expect(autoOverlay.updateInterval).toBeNull();
