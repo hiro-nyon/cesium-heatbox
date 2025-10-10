@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
+## [0.1.15-alpha.4] - 2025-10-10
+
+### Added
+- **品質検証の自動化**: `test/integration/quality-assurance.test.js` を追加し、適応制御の受け入れ基準を自動検証。
+- **ベンチマーク強化**: `tools/benchmark.js` に適応メトリクス（`denseAreaRatio`, `avgOutlineWidth`, `emulationUsage` など）と `--adaptive` フラグを追加。
+- **回帰テストスクリプト**: `tools/adr0011/phase4-baseline.js` を新規追加し、Phase 1 との性能比較レポートを自動生成。
+
+### Changed
+- `src/Heatbox.js` を中心に JSDoc を日英併記へ拡充し、API リファレンス記述を整理。
+- 検証ロジック（`utils/validation.js`）を調整し、境界値入力での RangeError を防止。
+- `tools/build-types.js` の出力整理と生成速度を改善。
+
+### Documentation
+- `wiki/Guides-Performance.md` に適応制御チューニング手順を追加。
+- `wiki/Troubleshooting.md` を刷新し、FAQ 10件を追加。
+- API ドキュメント全体を更新し、表レイアウト崩れを解消。
+
+### Notes
+- Phase 4 ベースライン測定により、Phase 1 から性能劣化がないことを確認。
+- ADR-0011 Phase 4 の成果を `CHANGELOG.md` / `RELEASE_NOTES.md` に反映。
+
 ## [0.1.15] - 2025-10-10
 
 **ADR-0011: 適応的表示の核・視認性最適化の仕上げ（Phase 4: ドキュメント・品質保証完了）**

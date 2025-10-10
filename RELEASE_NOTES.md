@@ -1,5 +1,25 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 0.1.15-alpha.4（2025-10-10）
+
+**Phase 4 ドキュメント & 品質保証アップデート（プレリリース）**
+
+### ハイライト
+- **品質保証の自動化**: `test/integration/quality-assurance.test.js` を追加し、視認性・パフォーマンス・優先順位・エッジケースの受け入れ基準を網羅的にテスト。
+- **ベンチマーク拡張**: `tools/benchmark.js` に適応制御専用メトリクスと `--adaptive` フラグを実装。CSV/Markdown/Console で一貫した指標を出力。
+- **回帰テストスクリプト**: `tools/adr0011/phase4-baseline.js` で Phase 1 との比較レポートを自動生成し、性能劣化ゼロを確認。
+
+### ドキュメント整備
+- `wiki/Guides-Performance.md` に適応制御チューニングガイドを追加。
+- `wiki/Troubleshooting.md` を全面刷新し、FAQ 10件・コード例を掲載。
+- API リファレンスと主要クラスの JSDoc を日英併記へ整理、表レイアウトを修正。
+
+### 不具合修正
+- `utils/validation.js` で密度正規化時に発生し得た `RangeError` を修正。
+- テスト補助コード（performance overlay mock）の lint 警告を解消。
+
+---
+
 ## バージョン 0.1.15（2025-10-10）
 
 **ADR-0011 Phase 4完了: 適応的表示の核・視認性最適化の仕上げ**
