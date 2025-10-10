@@ -4,17 +4,17 @@ import { DEFAULT_OPTIONS } from '../../utils/constants.js';
 const DEFAULT_ADAPTIVE_PARAMS = DEFAULT_OPTIONS.adaptiveParams || {};
 
 /**
- * AdaptiveController - Adaptive control logic for VoxelRenderer
- * 適応的制御ロジック - ボクセル描画の適応的制御を担当
+ * AdaptiveController - Adaptive outline logic delegated from VoxelRenderer.
+ * 適応的制御ロジック - ボクセルレンダラーから委譲されるアウトライン制御を担当
  * 
  * Responsibilities:
  * - 近傍密度計算 (Neighborhood density calculation)
- * - プリセット適用ロジック (Preset application logic) 
+ * - プリセット適用ロジック (Preset application logic)
  * - 適応的パラメータ計算 (Adaptive parameter calculation)
- * - カメラ距離・重なりリスク調整 (Camera distance & overlap risk adjustment)
+ * - Z軸スケール補正と重なり検出の推奨提示 (Z scale compensation & overlap recommendations)
  * 
- * ADR-0009 Phase 3: VoxelRenderer responsibility separation
- * @version 0.1.11
+ * ADR-0009 Phase 3 + ADR-0011 Phase 4
+ * @version 0.1.15
  */
 export class AdaptiveController {
   /**
@@ -50,6 +50,7 @@ export class AdaptiveController {
    * @param {number} voxelInfo.z - Z coordinate / Z座標
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @param {number} [radius] - Search radius override / 探索半径オーバーライド
+   * @param {Object} [renderOptions] - Live render options snapshot / 現在の描画オプション
    * @returns {Object} Neighborhood density result / 近傍密度結果
    */
   calculateNeighborhoodDensity(voxelInfo, voxelData, radius = null, renderOptions = null) {

@@ -2,17 +2,17 @@ import * as Cesium from 'cesium';
 import { Logger } from '../../utils/logger.js';
 
 /**
- * GeometryRenderer - 3D geometry rendering for VoxelRenderer
- * ジオメトリレンダラー - ボクセル描画のための3Dジオメトリ描画
- * 
+ * GeometryRenderer - Creates Cesium entities consumed by VoxelRenderer.
+ * ジオメトリレンダラー - VoxelRenderer が利用する Cesium エンティティを生成・管理
+ *
  * Responsibilities:
  * - ボクセルボックス描画 (Voxel box rendering)
- * - インセット枠線描画 (Inset outline rendering) 
- * - エッジポリライン描画 (Edge polyline rendering)
+ * - インセット枠線描画 (Inset outline rendering)
+ * - エッジポリライン描画 (Edge polyline rendering for emulation)
  * - エンティティライフサイクル管理 (Entity lifecycle management)
- * 
- * ADR-0009 Phase 4: VoxelRenderer responsibility separation
- * @version 0.1.11
+ *
+ * ADR-0009 Phase 4
+ * @version 0.1.15
  */
 export class GeometryRenderer {
   /**

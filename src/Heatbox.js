@@ -1,5 +1,6 @@
 /**
- * CesiumJS Heatbox - メインクラス
+ * CesiumJS Heatbox - Main orchestration class.
+ * CesiumJS Heatbox - メインオーケストレーションクラス
  */
 import * as Cesium from 'cesium';
 import { DEFAULT_OPTIONS, ERROR_MESSAGES, PERFORMANCE_LIMITS } from './utils/constants.js';
