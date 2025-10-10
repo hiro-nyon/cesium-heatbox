@@ -196,6 +196,54 @@ const heatbox = new Heatbox(viewer, {
 - [`outlineInset`](API-Reference.md#outlineInset)
 - [`adaptiveParams.overlapDetection`](API-Reference.md#adaptiveParams)
 
+#### English
+
+**Problem**  
+In dense voxel clusters the outlines stack on top of each other, making the lines look oversized and muddy.
+
+**Cause**  
+`outlineRenderMode: 'standard'` draws the outline on the outer edge of every voxel. When neighbours share the same edge the alpha values accumulate, so the line appears thicker and darker.
+
+**Diagnosis**  
+```js
+const heatbox = new Heatbox(viewer, {
+  performanceOverlay: { enabled: true }
+});
+// If the Dense Areas ratio exceeds roughly 80%, overlapping outlines are very likely.
+```
+
+**Solution**  
+```js
+// Before: standard mode (outlines overlap)
+const heatbox = new Heatbox(viewer, {
+  outlineRenderMode: 'standard'
+});
+
+// After 1: move the outline inward with inset mode
+const heatbox = new Heatbox(viewer, {
+  outlineRenderMode: 'inset',
+  outlineInset: 0.5  // Shift the line inward by ~50% (0.3–0.8 recommended)
+});
+
+// After 2: enable overlap detection to receive inset recommendations
+const heatbox = new Heatbox(viewer, {
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    overlapDetection: true  // Opt-in flag
+  }
+});
+
+// After 3: fall back to emulation-only lines
+const heatbox = new Heatbox(viewer, {
+  outlineRenderMode: 'emulation-only'
+});
+```
+
+**Related**  
+- [`outlineRenderMode`](API-Reference.md#outlineRenderMode)
+- [`outlineInset`](API-Reference.md#outlineInset)
+- [`adaptiveParams.overlapDetection`](API-Reference.md#adaptiveParams)
+
 ---
 
 ### 2. Z軸が薄いデータでボクセルが潰れて見える
@@ -233,6 +281,45 @@ const heatbox = new Heatbox(viewer, {
 ```
 
 **関連**  
+- [`adaptiveParams.zScaleCompensation`](API-Reference.md#zScaleCompensation)
+- [`heightMultiplier`](API-Reference.md#heightMultiplier)
+- [Guides: Z-axis Compensation](Guides-Adaptive-Outlines.md#z-axis-compensation)
+
+#### English
+
+**Problem**  
+When the Z resolution is tiny compared to X/Y, voxels look like flat pancakes and the 3D shape disappears.
+
+**Cause**  
+If `cellSizeZ` is far smaller than `cellSizeX`/`cellSizeY` (e.g. 0.5 m vs. 20 m) the aspect ratio becomes extreme. The default adaptive settings do not automatically compensate for that.
+
+**Diagnosis**  
+```js
+// Inspect aspect ratio using grid info (internal API)
+const grid = heatbox._voxelGrid;
+const aspectRatio = grid.cellSizeZ / ((grid.cellSizeX + grid.cellSizeY) / 2);
+console.log('Z aspect ratio:', aspectRatio);
+// If aspectRatio < 0.1 you should enable compensation.
+```
+
+**Solution**  
+```js
+// Before: no compensation (flattened look)
+const heatbox = new Heatbox(viewer, {
+  adaptiveOutlines: true
+});
+
+// After: enable z-scale compensation
+const heatbox = new Heatbox(viewer, {
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    zScaleCompensation: true
+  },
+  heightMultiplier: 2.0  // Optional: exaggerate height visually
+});
+```
+
+**Related**  
 - [`adaptiveParams.zScaleCompensation`](API-Reference.md#zScaleCompensation)
 - [`heightMultiplier`](API-Reference.md#heightMultiplier)
 - [Guides: Z-axis Compensation](Guides-Adaptive-Outlines.md#z-axis-compensation)
@@ -299,6 +386,66 @@ const heatbox = new Heatbox(viewer, {
 - [`outlineWidthPreset`](API-Reference.md#outlineWidthPreset)
 - [`emulationScope`](API-Reference.md#emulationScope)
 
+#### English
+
+**Problem**  
+Even with `highlightTopN`, the densest voxels do not pop out and are buried among normal cells.
+
+**Cause**  
+Adaptive logic also adjusts TopN voxels, so the difference shrinks. In addition, a narrow `outlineWidthRange` may clamp the TopN boost.
+
+**Diagnosis**  
+```js
+const stats = heatbox.getStatistics();
+console.log('TopN count:', stats.topNCount);
+console.log('TopN ratio:', stats.topNCount / stats.renderedVoxels);
+// If the ratio stays below ~0.05, the highlight probably looks weak.
+```
+
+**Solution**  
+```js
+// Before: TopN gets clamped
+const heatbox = new Heatbox(viewer, {
+  highlightTopN: 10,
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    outlineWidthRange: [1.0, 2.0]
+  }
+});
+
+// After 1: raise the upper bound so boosts are allowed
+const heatbox = new Heatbox(viewer, {
+  highlightTopN: 10,
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    outlineWidthRange: [1.0, 4.0]
+  }
+});
+
+// After 2: use a preset focused on TopN voxels
+const heatbox = new Heatbox(viewer, {
+  highlightTopN: 10,
+  adaptiveOutlines: true,
+  outlineWidthPreset: 'thick',  // 'topn-focus' legacy name
+  adaptiveParams: {
+    outlineWidthRange: [1.0, 5.0]
+  }
+});
+
+// After 3: emulate thick lines only for TopN
+const heatbox = new Heatbox(viewer, {
+  highlightTopN: 10,
+  outlineRenderMode: 'standard',
+  emulationScope: 'topn',
+  adaptiveOutlines: true
+});
+```
+
+**Related**  
+- [`highlightTopN`](API-Reference.md#highlightTopN)
+- [`outlineWidthPreset`](API-Reference.md#outlineWidthPreset)
+- [`emulationScope`](API-Reference.md#emulationScope)
+
 ---
 
 ### 4. カメラ距離でアウトライン太さが変わらない
@@ -335,6 +482,39 @@ const heatbox = new Heatbox(viewer, {
 - [ROADMAP: v1.0.0 Camera Distance Integration](../../ROADMAP.md#v1.0.0)
 - [`adaptiveParams.cameraDistanceFactor`](API-Reference.md#cameraDistanceFactor)
 
+#### English
+
+**Problem**  
+Outline width stays the same regardless of zoom level, so faraway lines disappear and close-up lines look oversized.
+
+**Cause**  
+`cameraDistanceFactor` is a placeholder in v0.1.15. The renderer still uses a fixed distance estimate; proper camera-aware scaling lands in v1.0.0.
+
+**Diagnosis**  
+```js
+const cameraPosition = viewer.camera.positionCartographic;
+const height = cameraPosition.height;
+console.log('Camera height:', height, 'm');
+// If height changes but outline width does not, this is the known limitation.
+```
+
+**Workaround**  
+```js
+// Clamp the outline width so it remains visible in the distance
+const heatbox = new Heatbox(viewer, {
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    outlineWidthRange: [1.5, 3.0]
+  }
+});
+
+// Dynamic scaling will be delivered in v1.0.0.
+```
+
+**Related**  
+- [ROADMAP: v1.0.0 Camera Distance Integration](../../ROADMAP.md#v1.0.0)
+- [`adaptiveParams.cameraDistanceFactor`](API-Reference.md#cameraDistanceFactor)
+
 ---
 
 ### 5. 密度に応じた透明度変化が効かない
@@ -368,6 +548,39 @@ const heatbox = new Heatbox(viewer, {
 ```
 
 **関連**  
+- [ROADMAP: v1.0.0 Opacity Range Implementation](../../ROADMAP.md#v1.0.0)
+- [`adaptiveParams.boxOpacityRange`](API-Reference.md#boxOpacityRange)
+- [`adaptiveParams.outlineOpacityRange`](API-Reference.md#outlineOpacityRange)
+
+#### English
+
+**Problem**  
+Opacity does not change with density; everything keeps the same transparency.
+
+**Cause**  
+In v0.1.15 the range settings (`boxOpacityRange`, `outlineOpacityRange`) only clamp values. Continuous interpolation is planned for v1.0.0. Presets like `'adaptive'` still return discrete opacity levels.
+
+**Diagnosis**  
+```js
+const stats = heatbox.getStatistics();
+console.log('Density range:', stats.minCount, '-', stats.maxCount);
+// Large range + flat opacity = expected behaviour in v0.1.15
+```
+
+**Workaround**  
+```js
+const heatbox = new Heatbox(viewer, {
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    boxOpacityRange: [0.5, 0.9],
+    outlineOpacityRange: [0.3, 1.0]
+  }
+});
+
+// Continuous opacity control will ship together with classification in v1.0.0.
+```
+
+**Related**  
 - [ROADMAP: v1.0.0 Opacity Range Implementation](../../ROADMAP.md#v1.0.0)
 - [`adaptiveParams.boxOpacityRange`](API-Reference.md#boxOpacityRange)
 - [`adaptiveParams.outlineOpacityRange`](API-Reference.md#outlineOpacityRange)
@@ -414,6 +627,50 @@ const heatbox = new Heatbox(viewer, {
 ```
 
 **関連**  
+- [`outlineRenderMode`](API-Reference.md#outlineRenderMode)
+- [`emulationScope`](API-Reference.md#emulationScope)
+- [Guides: Emulation-Only Mode](Guides-Emulation-Only.md)
+
+#### English
+
+**Problem**  
+Nothing renders—or only the box fill shows up—when `outlineRenderMode: 'emulation-only'` is enabled.
+
+**Cause**  
+Emulation mode draws additional polyline entities. Rendering fails when:
+1. `emulationScope` is `'off'`
+2. `showOutline` is `false`
+3. `outlineOpacity` is 0 or extremely low
+4. No voxels are selected for rendering
+
+**Diagnosis**  
+```js
+const stats = heatbox.getStatistics();
+console.log('Rendered voxels:', stats.renderedVoxels);
+console.log('Emulation scope:', heatbox.options.emulationScope);
+console.log('Show outline:', heatbox.options.showOutline);
+console.log('Outline opacity:', heatbox.options.outlineOpacity);
+```
+
+**Solution**  
+```js
+// Before: configuration mismatch
+const heatbox = new Heatbox(viewer, {
+  outlineRenderMode: 'emulation-only',
+  emulationScope: 'off'
+});
+
+// After: enable lines visibly
+const heatbox = new Heatbox(viewer, {
+  outlineRenderMode: 'emulation-only',
+  emulationScope: 'all',  // or 'topn' / 'non-topn'
+  showOutline: true,
+  outlineOpacity: 0.8,
+  outlineWidth: 2
+});
+```
+
+**Related**  
 - [`outlineRenderMode`](API-Reference.md#outlineRenderMode)
 - [`emulationScope`](API-Reference.md#emulationScope)
 - [Guides: Emulation-Only Mode](Guides-Emulation-Only.md)
@@ -479,6 +736,64 @@ const heatbox = new Heatbox(viewer, {
 - [`adaptiveParams.neighborhoodRadius`](API-Reference.md#neighborhoodRadius)
 - [`maxRenderVoxels`](API-Reference.md#maxRenderVoxels)
 
+#### English
+
+**Problem**  
+Frame rate drops when `adaptiveOutlines: true` is enabled.
+
+**Cause**  
+Adaptive control calculates neighbourhood density for every voxel. The cost rises with larger `neighborhoodRadius` values and high voxel counts (5,000+).
+
+**Diagnosis**  
+```js
+const stats = heatbox.getStatistics();
+console.log('Rendered voxels:', stats.renderedVoxels);
+// If this exceeds ~5,000 while radius > 50, expect extra load.
+
+const heatbox = new Heatbox(viewer, {
+  performanceOverlay: { enabled: true }
+});
+// When render time exceeds ~100 ms, consider optimisation.
+```
+
+**Solution**  
+```js
+// Before: expensive configuration
+const heatbox = new Heatbox(viewer, {
+  adaptiveOutlines: true,
+  maxRenderVoxels: 10000,
+  adaptiveParams: {
+    neighborhoodRadius: 100
+  }
+});
+
+// After 1: reduce the radius and render budget
+const heatbox = new Heatbox(viewer, {
+  adaptiveOutlines: true,
+  maxRenderVoxels: 5000,
+  adaptiveParams: {
+    neighborhoodRadius: 30
+  }
+});
+
+// After 2: use the lightweight profile
+const heatbox = new Heatbox(viewer, {
+  profile: 'mobile-fast',
+  adaptiveOutlines: true
+});
+
+// After 3: disable adaptive control and rely on presets
+const heatbox = new Heatbox(viewer, {
+  adaptiveOutlines: false,
+  outlineWidthPreset: 'medium'
+});
+```
+
+**Related**  
+- [Guides: Performance Tuning](Guides-Performance.md)
+- [`adaptiveParams.neighborhoodRadius`](API-Reference.md#neighborhoodRadius)
+- [`maxRenderVoxels`](API-Reference.md#maxRenderVoxels)
+
 ---
 
 ### 8. `overlapDetection` を有効にしても効果が見えない
@@ -513,6 +828,38 @@ const heatbox = new Heatbox(viewer, {
 ```
 
 **関連**  
+- [`adaptiveParams.overlapDetection`](API-Reference.md#overlapDetection)
+- [ROADMAP: v1.0.0 Auto Mode Switching](../../ROADMAP.md#v1.0.0)
+
+#### English
+
+**Problem**  
+Turning on `adaptiveParams.overlapDetection` shows no visible difference.
+
+**Cause**  
+In v0.1.15 the feature only reports a recommendation (`recommendedMode`, `recommendedInset`) in debug data. It does not switch the renderer automatically; you need to apply the suggestion yourself.
+
+**Diagnosis**  
+```js
+const controller = heatbox._adaptiveController; // Internal API
+// Examine controller._detectOverlapAndRecommendMode(voxelInfo, data, options)
+```
+
+**Solution**  
+```js
+const heatbox = new Heatbox(viewer, {
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    overlapDetection: true
+  },
+  outlineRenderMode: 'inset',
+  outlineInset: 0.5  // Apply the recommended inset manually
+});
+
+// Automatic switching is planned for v1.0.0.
+```
+
+**Related**  
 - [`adaptiveParams.overlapDetection`](API-Reference.md#overlapDetection)
 - [ROADMAP: v1.0.0 Auto Mode Switching](../../ROADMAP.md#v1.0.0)
 
@@ -572,6 +919,60 @@ const heatbox = new Heatbox(viewer, {
 - [`highlightTopN`](API-Reference.md#highlightTopN)
 - [Guides: Priority Order](Guides-Adaptive-Outlines.md#priority-order)
 
+#### English
+
+**Problem**  
+Even with `adaptiveParams.outlineWidthRange: [1.0, 2.5]`, the final outline sometimes reaches 3 px or more.
+
+**Cause**  
+TopN presets (such as `'thick'` / `topn-focus`) apply an extra multiplier after the range clamp. Also note the priority order: Resolver > Adaptive > Base. A custom `outlineWidthResolver` therefore overrides the adaptive range.
+
+**Diagnosis**  
+```js
+const options = heatbox.getEffectiveOptions();
+console.log('outlineWidthRange:', options.adaptiveParams.outlineWidthRange);
+console.log('outlineWidthPreset:', options.outlineWidthPreset);
+console.log('highlightTopN:', options.highlightTopN);
+// When highlightTopN is active, expect boosted widths.
+```
+
+**Solution**  
+```js
+// Before: capped range prevents the boost
+const heatbox = new Heatbox(viewer, {
+  highlightTopN: 10,
+  adaptiveOutlines: true,
+  outlineWidthPreset: 'thick',
+  adaptiveParams: {
+    outlineWidthRange: [1.0, 2.5]
+  }
+});
+
+// After 1: give the boost headroom
+const heatbox = new Heatbox(viewer, {
+  highlightTopN: 10,
+  adaptiveOutlines: true,
+  outlineWidthPreset: 'adaptive',
+  adaptiveParams: {
+    outlineWidthRange: [1.0, 4.0]
+  }
+});
+
+// After 2: disable TopN to enforce strict clamping
+const heatbox = new Heatbox(viewer, {
+  highlightTopN: null,
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    outlineWidthRange: [1.0, 2.5]
+  }
+});
+```
+
+**Related**  
+- [`adaptiveParams.outlineWidthRange`](API-Reference.md#outlineWidthRange)
+- [`highlightTopN`](API-Reference.md#highlightTopN)
+- [Guides: Priority Order](Guides-Adaptive-Outlines.md#priority-order)
+
 ---
 
 ### 10. プロファイルとカスタム設定の優先順位がわからない
@@ -610,6 +1011,43 @@ console.log('densityThreshold:', effective.adaptiveParams.densityThreshold); // 
 ```
 
 **関連**  
+- [`profile`](API-Reference.md#profile)
+- [`getEffectiveOptions()`](API-Reference.md#getEffectiveOptions)
+- [Guides: Profile Usage](Guides-Rendering-Strategies.md#profiles)
+
+#### English
+
+**Problem**  
+Which value wins when both `profile: 'dense-data'` and explicit overrides (e.g. `maxRenderVoxels: 20000`) are supplied?
+
+**Cause**  
+Profiles act as a baseline. Defaults are applied, the profile overwrites them, and finally your custom options take precedence.
+
+**Diagnosis**  
+```js
+const options = heatbox.getEffectiveOptions();
+console.log('Effective options:', options);
+// This shows the merged snapshot after all overrides.
+```
+
+**Solution**  
+```js
+// Order of precedence: user options > profile > defaults
+const heatbox = new Heatbox(viewer, {
+  profile: 'dense-data',
+  maxRenderVoxels: 20000,
+  adaptiveParams: {
+    densityThreshold: 5,
+    neighborhoodRadius: 30
+  }
+});
+
+const effective = heatbox.getEffectiveOptions();
+console.log('maxRenderVoxels:', effective.maxRenderVoxels); // 20000
+console.log('densityThreshold:', effective.adaptiveParams.densityThreshold); // 5
+```
+
+**Related**  
 - [`profile`](API-Reference.md#profile)
 - [`getEffectiveOptions()`](API-Reference.md#getEffectiveOptions)
 - [Guides: Profile Usage](Guides-Rendering-Strategies.md#profiles)
