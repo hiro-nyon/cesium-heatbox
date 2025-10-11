@@ -39,6 +39,163 @@ const heatbox = new Heatbox(viewer, {
 });
 ```
 
+---
+
+## 適応制御のチューニング / Adaptive Control Tuning (v0.1.15)
+
+### データ特性の把握 / Understanding Data Characteristics
+
+**1. 密度分布の確認 / Check Density Distribution**
+```js
+const stats = heatbox.getStatistics();
+console.log('Density range:', stats.minCount, '-', stats.maxCount);
+console.log('Average:', stats.averageCount);
+console.log('Rendered/Total:', stats.renderedVoxels, '/', stats.totalVoxels);
+```
+
+**2. 空間的偏りの診断 / Diagnose Spatial Bias**
+```js
+// PerformanceOverlay で視覚的に確認
+const heatbox = new Heatbox(viewer, {
+  performanceOverlay: { enabled: true, position: 'top-right' }
+});
+// Dense Areas の割合を確認 → 高密度データか疎データかを判断
+```
+
+**3. Z軸解像度の確認 / Check Z-axis Resolution**
+```js
+// データの Z 軸サイズが極端に小さい場合、zScaleCompensation を有効化
+const aspectRatio = cellSizeZ / ((cellSizeX + cellSizeY) / 2);
+console.log('Z aspect ratio:', aspectRatio);
+// aspectRatio < 0.1 なら zScaleCompensation: true を推奨
+```
+
+### プロファイル選択の指針 / Profile Selection Guide
+
+| データ特性 | 推奨プロファイル | 理由 |
+|-----------|----------------|------|
+| モバイル端末 | `mobile-fast` | 描画上限を低く、軽量な設定 |
+| デスクトップ、バランス重視 | `desktop-balanced` | 品質とパフォーマンスのバランス |
+| 高密度データ（都市部等） | `dense-data` | 密集エリアに最適化 |
+| 疎データ（広域等） | `sparse-data` | 疎領域の可視化を優先 |
+
+```js
+// プロファイル使用例
+const heatbox = new Heatbox(viewer, {
+  profile: 'dense-data',  // 基本設定を適用
+  maxRenderVoxels: 20000  // 個別調整も可能
+});
+```
+
+### `adaptiveParams` の調整優先順位 / Adjustment Priority
+
+**1. `densityThreshold`（密集判定の閾値）**
+```js
+adaptiveParams: {
+  densityThreshold: 3  // デフォルト: 3
+  // 低い値 (1-2): より多くのセルを「密集」と判定
+  // 高い値 (5-10): 本当に密集したエリアのみ判定
+}
+```
+
+**2. `neighborhoodRadius`（近傍探索範囲）**
+```js
+adaptiveParams: {
+  neighborhoodRadius: 30  // デフォルト: 30m
+  // 小さい値 (10-20): 局所的な密度判定、計算コスト低
+  // 大きい値 (50-100): 広域的な密度判定、計算コスト高
+}
+```
+
+**3. 範囲制約（`outlineWidthRange` / `boxOpacityRange` / `outlineOpacityRange`）**
+```js
+adaptiveParams: {
+  outlineWidthRange: [1.0, 3.0],      // 線幅を1-3pxに制限
+  boxOpacityRange: [0.5, 0.9],        // ボックス透明度を制限
+  outlineOpacityRange: [0.3, 1.0]     // 枠線透明度を制限
+}
+```
+
+**4. `zScaleCompensation`（Z軸極小データ用の補正）**
+```js
+adaptiveParams: {
+  zScaleCompensation: true  // Z軸が極小の場合に有効化
+}
+```
+
+**5. `overlapDetection`（高密度重なり対策）**
+```js
+adaptiveParams: {
+  overlapDetection: true  // 重なり検出を有効化（オプトイン）
+}
+```
+
+### 視認性検証の確認項目 / Visibility Verification Checklist
+
+**✓ 重なり：高密度エリアでの枠線視認性**
+- 症状：枠線が重なって見づらい
+- 確認：`overlapDetection: true` + `outlineRenderMode: 'inset'`
+
+**✓ ちらつき：カメラ移動時の安定性**
+- 症状：ズーム時に線幅が急変
+- 確認：`outlineWidthRange` で変動幅を制限
+
+**✓ 遠景表示：ズームアウト時の表示品質**
+- 症状：遠距離で線が見えなくなる
+- 確認：`outlineWidthRange: [1.5, 3.0]` で最小値を上げる
+
+### コード例 / Code Examples
+
+**例1: 高密度都市データ**
+```js
+const heatbox = new Heatbox(viewer, {
+  profile: 'dense-data',
+  adaptiveOutlines: true,
+  outlineWidthPreset: 'adaptive',
+  adaptiveParams: {
+    densityThreshold: 3,
+    neighborhoodRadius: 30,
+    outlineWidthRange: [1.0, 2.5],
+    zScaleCompensation: true,
+    overlapDetection: true
+  },
+  outlineRenderMode: 'inset',
+  outlineInset: 0.5
+});
+```
+
+**例2: 疎な広域データ**
+```js
+const heatbox = new Heatbox(viewer, {
+  profile: 'sparse-data',
+  adaptiveOutlines: true,
+  outlineWidthPreset: 'adaptive',
+  adaptiveParams: {
+    densityThreshold: 5,        // 高い閾値で厳密に判定
+    neighborhoodRadius: 50,      // 広い範囲で探索
+    outlineWidthRange: [1.5, 3.0],
+    zScaleCompensation: false
+  },
+  outlineRenderMode: 'standard'
+});
+```
+
+**例3: Z軸極小データ（高さ方向が薄い）**
+```js
+const heatbox = new Heatbox(viewer, {
+  profile: 'desktop-balanced',
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    zScaleCompensation: true,   // 必須
+    densityThreshold: 3,
+    outlineWidthRange: [1.2, 2.5]
+  },
+  heightMultiplier: 2.0  // 高さ方向を強調
+});
+```
+
+---
+
 ## English
 Practical steps to balance performance and readability.
 
@@ -60,3 +217,147 @@ Practical steps to balance performance and readability.
 4) Debug/Verify
 - Check `renderedVoxels` and `maxCount` via `getStatistics()`
 - If heavy, increase `voxelSize` or reduce `maxRenderVoxels`
+
+### Adaptive Control Tuning (v0.1.15)
+
+#### Understand Your Dataset
+
+**1. Inspect the density range**
+```js
+const stats = heatbox.getStatistics();
+console.log('Density range:', stats.minCount, '-', stats.maxCount);
+console.log('Average:', stats.averageCount);
+console.log('Rendered/Total:', stats.renderedVoxels, '/', stats.totalVoxels);
+```
+
+**2. Diagnose spatial bias**
+```js
+// Turn on the PerformanceOverlay to visualise dense areas
+const heatbox = new Heatbox(viewer, {
+  performanceOverlay: { enabled: true, position: 'top-right' }
+});
+// If the Dense Areas ratio is high, treat the data as high density
+```
+
+**3. Check the Z-axis resolution**
+```js
+// Enable zScaleCompensation when Z cells are extremely thin
+const aspectRatio = cellSizeZ / ((cellSizeX + cellSizeY) / 2);
+console.log('Z aspect ratio:', aspectRatio);
+// If aspectRatio < 0.1, set adaptiveParams.zScaleCompensation = true
+```
+
+#### Profile Selection Cheat Sheet
+
+| Data characteristic | Suggested profile | Why |
+|--------------------|-------------------|-----|
+| Mobile devices | `mobile-fast` | Lower render budget for slower GPUs |
+| Desktop, balanced workload | `desktop-balanced` | Balanced visuals vs. performance |
+| Very dense data (e.g. downtown) | `dense-data` | Optimised for crowded voxels |
+| Sparse data (wide areas) | `sparse-data` | Keeps sparse voxels visible |
+
+```js
+const heatbox = new Heatbox(viewer, {
+  profile: 'dense-data',  // Apply baseline tuning
+  maxRenderVoxels: 20000  // Override only what you need
+});
+```
+
+#### Recommended Adjustment Order for `adaptiveParams`
+
+**1. `densityThreshold` — when a block counts as “dense”**
+```js
+adaptiveParams: {
+  densityThreshold: 3  // Default: 3
+  // Lower (1–2): treat more voxels as dense
+  // Higher (5–10): only the most crowded blocks count as dense
+}
+```
+
+**2. `neighborhoodRadius` — search area for density checks**
+```js
+adaptiveParams: {
+  neighborhoodRadius: 30  // Default: 30m
+  // Smaller (10–20): local clusters, faster calculation
+  // Larger (50–100): wide-area smoothing, heavier cost
+}
+```
+
+**3. Range clamps (`outlineWidthRange` / `boxOpacityRange` / `outlineOpacityRange`)**
+```js
+adaptiveParams: {
+  outlineWidthRange: [1.0, 3.0],      // Limit line width to 1–3 px
+  boxOpacityRange: [0.5, 0.9],        // Keep box opacity between 0.5–0.9
+  outlineOpacityRange: [0.3, 1.0]     // Clamp outline opacity
+}
+```
+
+**4. `zScaleCompensation` — fix extremely flat Z data**
+```js
+adaptiveParams: {
+  zScaleCompensation: true  // Enable when the Z axis is much thinner than XY
+}
+```
+
+**5. `overlapDetection` — opt-in overlap diagnostics**
+```js
+adaptiveParams: {
+  overlapDetection: true  // Enables overlap risk hints in debug info
+}
+```
+
+#### Visibility Checklist
+
+- **Overlap:** If outlines thicken in dense zones, enable `overlapDetection: true` and try `outlineRenderMode: 'inset'`.
+- **Flicker:** When outline widths jump while zooming, limit the range via `outlineWidthRange`.
+- **Long-distance view:** If outlines disappear when zoomed out, raise the minimum value, e.g. `outlineWidthRange: [1.5, 3.0]`.
+
+#### Code Examples
+
+**Example 1: Dense downtown dataset**
+```js
+const heatbox = new Heatbox(viewer, {
+  profile: 'dense-data',
+  adaptiveOutlines: true,
+  outlineWidthPreset: 'adaptive',
+  adaptiveParams: {
+    densityThreshold: 3,
+    neighborhoodRadius: 30,
+    outlineWidthRange: [1.0, 2.5],
+    zScaleCompensation: true,
+    overlapDetection: true
+  },
+  outlineRenderMode: 'inset',
+  outlineInset: 0.5
+});
+```
+
+**Example 2: Sparse wide-area dataset**
+```js
+const heatbox = new Heatbox(viewer, {
+  profile: 'sparse-data',
+  adaptiveOutlines: true,
+  outlineWidthPreset: 'adaptive',
+  adaptiveParams: {
+    densityThreshold: 5,        // Treat only heavy clusters as dense
+    neighborhoodRadius: 50,     // Widen the sampling radius
+    outlineWidthRange: [1.5, 3.0],
+    zScaleCompensation: false
+  },
+  outlineRenderMode: 'standard'
+});
+```
+
+**Example 3: Extremely thin Z axis**
+```js
+const heatbox = new Heatbox(viewer, {
+  profile: 'desktop-balanced',
+  adaptiveOutlines: true,
+  adaptiveParams: {
+    zScaleCompensation: true,   // Essential for flat datasets
+    densityThreshold: 3,
+    outlineWidthRange: [1.2, 2.5]
+  },
+  heightMultiplier: 2.0  // Emphasise height visually
+});
+```

@@ -19,10 +19,11 @@ import { PERFORMANCE_LIMITS } from './constants.js';
  * Device tier constants
  * 端末ティア定数
  */
+// v0.1.12-alpha.6: be more conservative to avoid memory/array issues on Safari/mobile
 const DEVICE_TIER_RANGES = {
-  low: { min: 8000, max: 12000 },
-  mid: { min: 20000, max: 35000 },
-  high: { min: 40000, max: 50000 }
+  low: { min: 4000, max: 8000 },
+  mid: { min: 8000, max: 15000 },
+  high: { min: 15000, max: 25000 }
 };
 
 /**
@@ -74,10 +75,22 @@ export function detectDeviceTier() {
     
     // ティアに応じた上限値を計算
     const range = DEVICE_TIER_RANGES[tier];
-    const maxRenderVoxels = Math.min(
+    let maxRenderVoxels = Math.min(
       Math.floor((range.min + range.max) / 2),
       PERFORMANCE_LIMITS.maxVoxels
     );
+
+    // Additional cap for mobile/Safari-like environments
+    try {
+      const ua = (navigator && navigator.userAgent) ? navigator.userAgent : '';
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+      const isSafari = /Safari\//.test(ua) && !/Chrome\//.test(ua);
+      if (isMobile || isSafari) {
+        maxRenderVoxels = Math.min(maxRenderVoxels, 12000);
+      }
+    } catch (_) {
+      // Ignore UA parsing errors - fallback to computed values
+    }
     
     Logger.debug(`Device tier detected: ${tier} (${detectionMethod}), maxRenderVoxels: ${maxRenderVoxels}`);
     
@@ -215,10 +228,11 @@ import { PERFORMANCE_LIMITS } from './constants.js';
  * Device tier constants
  * 端末ティア定数
  */
+// v0.1.12-alpha.6: be more conservative to avoid memory/array issues on Safari/mobile
 const DEVICE_TIER_RANGES = {
-  low: { min: 8000, max: 12000 },
-  mid: { min: 20000, max: 35000 },
-  high: { min: 40000, max: 50000 }
+  low: { min: 4000, max: 8000 },
+  mid: { min: 8000, max: 15000 },
+  high: { min: 15000, max: 25000 }
 };
 
 /**
@@ -270,10 +284,22 @@ export function detectDeviceTier() {
     
     // ティアに応じた上限値を計算
     const range = DEVICE_TIER_RANGES[tier];
-    const maxRenderVoxels = Math.min(
+    let maxRenderVoxels = Math.min(
       Math.floor((range.min + range.max) / 2),
       PERFORMANCE_LIMITS.maxVoxels
     );
+
+    // Additional cap for mobile/Safari-like environments
+    try {
+      const ua = (navigator && navigator.userAgent) ? navigator.userAgent : '';
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+      const isSafari = /Safari\//.test(ua) && !/Chrome\//.test(ua);
+      if (isMobile || isSafari) {
+        maxRenderVoxels = Math.min(maxRenderVoxels, 12000);
+      }
+    } catch (_) {
+      // Ignore UA parsing errors - fallback to computed values
+    }
     
     Logger.debug(`Device tier detected: ${tier} (${detectionMethod}), maxRenderVoxels: ${maxRenderVoxels}`);
     

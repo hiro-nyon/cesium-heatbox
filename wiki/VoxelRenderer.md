@@ -17,7 +17,7 @@ ColorCalculator, VoxelSelector, AdaptiveController, and GeometryRenderer.
 
 #### clear()
 
-> English translation pending. See Japanese section below.
+Remove all rendered entities from the scene.
 
 #### getSelectionStats() → {Object|null}
 
@@ -74,7 +74,7 @@ Toggle visibility.
 
 #### clear()
 
-描画されたエンティティを全てクリア
+描画されたエンティティを全てクリアします。
 v0.1.11: GeometryRendererに委譲 (ADR-0009 Phase 4)
 
 #### getSelectionStats() → {Object|null}

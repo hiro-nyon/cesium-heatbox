@@ -147,6 +147,10 @@ Risks & Mitigations
 Priority: Medium | Target: 2026-02
 
 - コア機能（仕上げ・検証）
+  - [ ] **Phase 0（先行）**: 正規化/既定値の整備
+    - minOutlineWidth/maxOutlineWidth → outlineWidthRange への統一
+    - adaptiveParams.overlapDetection の既定値追加（既定: false）
+    - 優先順位（Resolver > Adaptive > Base）の仕様テスト（rangeクランプ含む）
   - [ ] 適応的制御のパラメータチューニングとデフォルト見直し（`adaptiveParams`/プリセットの係数微調整）
   - [ ] エッジケースの最適化：`emulation-only` と `inset`/`standard` の切り替え条件、隣接重なり時の線の視認性
   - [ ] 解像度差（`cellSizeZ` が極小など）の安定化（下限クランプ/積み上げ規則の見直し）
@@ -163,6 +167,20 @@ Priority: Medium | Target: 2026-02
   - [ ] 受け入れ基準：密集・疎・混在パターンで視認性が一律太さ/固定透明度より改善、TopN/選択が埋もれない
   - [ ] 受け入れ基準：アウトライン描画モード（`standard`/`inset`/`emulation-only`）の切替が安定
   - [ ] 受け入れ基準：カスタム透明度リゾルバ（box/outline）併用時の優先順位・クランプが一貫
+  - [ ] 新機能有効時の計算時間増加 ≤ +15%（既存比）
+  - [ ] メモリ使用量の増加 ≤ +10%（既存比）
+  - [ ] 1000–5000ボクセル規模でのフレーム時間安定性（±20%以内）
+
+#### v0.1.15の非目標（v1.0.0へ延期）
+- opacity/width の classification 連携
+- resolver の完全置き換え（削除は v1.x 以降の段階的対応）
+
+#### Phase間のマージ基準
+- Phase 0→1: validation/正規化の単体テストが100%パス
+- Phase 1→2: 新デフォルト値での視覚的回帰テスト（3データセット）が承認
+- Phase 2→3: エッジケーステスト（Z軸極小・高密度重なり）が緑
+- Phase 3→4: Advanced Examplesが白画面/エラーなく動作
+- Phase 4→main: 全受け入れ基準を満たし、リリースノート/移行ガイド完成
 
 > 注: 0.1系では「コアのデータモデル変更や新レイヤー」は行わず、安定化と利用性向上に限定します。
 
@@ -302,7 +320,7 @@ Resolver 置き換え計画（v1.0.0で「別の形ですべて再実装」）
 - emulation-only 時の透明度/太さの適用順序を明記（Adaptive → Emulation Hook の順）。
 
 スケジュール
-- 0.1.15: AdaptiveController に `box/outlineOpacityRange` 実装（幅の安全クランプ + テスト）。
+- 0.1.15: range の正規化＋クランプ基盤（AdaptiveController 側の最終値クランプ & テスト）。補間は v1.0.0 で実装。
 - 1.0.0: `outlineWidthRange` / classification 連携 / emulation hook を統合、Resolver を非推奨のまま維持。
 - 1.x: Resolver API の段階的削除（少なくとも2リリース以上のグレイス期間）。
 - 受け入れ基準:
@@ -319,8 +337,20 @@ Resolver 置き換え計画（v1.0.0で「別の形ですべて再実装」）
 Priority: Medium | Target: 2026-01
 - [ ] `viewer.clock.currentTime` に基づく時刻評価・スライス描画（ステップ更新）
 - [ ] キャッシュ/再計算ポリシーの基本設計（時間次元の増加コスト抑制）
+- 分類スコープ（時系列の揺れへの対応）
+  - [ ] `temporalClassificationScope: 'per-time'|'global'` を追加。
+    - `per-time`（時刻ごと再スケール）: 現在時刻（または `timeWindow`）内の density 分布（min/max や分位）で分類を算出。
+    - `global`（全時刻で統一）: すべての時刻を通した分布で分類（domain/しきい値）を固定。
+  - [ ] 既存の `classification`（linear/log/equal-interval/quantize/threshold/quantile/jenks）と組み合わせ可能。
+  - [ ] 凡例はスコープに追随（per-time は時刻に応じて更新、global は固定）。
+- API/実装メモ
+  - [ ] `src/utils/classification.js` に `computeDomain(data, { scope: 'per-time'|'global', clock })` を追加し、`AdaptiveController` から利用。
+  - [ ] グローバル domain は初回計算をメモ化、per-time は時刻キーごとにメモ化して再計算を抑制。
 - 互換性: 低（オプション追加）。
-- 受け入れ基準: サンプルで時刻操作に応じてボクセルが更新され、体感カクつきが許容範囲内。
+- 受け入れ基準
+  - [ ] 同一データで `temporalClassificationScope: 'per-time'` と `'global'` を切替えたとき、配色/凡例の挙動が仕様通りに変化する。
+  - [ ] いずれのスコープでも `classification` の各スキームが正しく適用される（最小限のスナップショットテスト）。
+  - [ ] サンプルで時刻操作に応じてボクセルが更新され、体感カクつきが許容範囲内。
 
 ### v1.2.0 - メモリ/パフォーマンス最適化
 Priority: Medium | Target: 2026-02
@@ -372,13 +402,26 @@ Priority: Low | Target: 2026 H2
 
 ---
 
-## 1.0.0（メジャー）
+## 4.x 系（標準化連携フェーズ）
 
-Priority: Future | Target: TBD
-- [ ] レガシー削除（`batchMode`削除 ほか）
-- [ ] しきい値面（等値面; Marching Cubes）
-- [ ] 高度な統計分析/監視
-- 互換性: 破壊的変更を伴う可能性
+### v4.0.0 - 空間ID（Spatial ID）対応（標準化が確定した場合）
+Priority: Conditional | Target: TBD
+
+- 条件
+  - 国内外で「空間ID（Spatial ID）」の仕様が正式に標準化・安定化し、利用条件（ライセンス/参照実装/仕様公開）が明確であること。
+- スコープ
+  - アダプタ追加: `src/core/spatial/SpatialIdIndex.js` を実装し、`encode(lon,lat,level)`, `bounds(id)`, `center(id)`, `parent(id)`, `children(id)`, `neighbors(id)` を提供（既存の OLC/JapanMesh/Quadkey と同一IF）。
+  - オプション: `spatialIndex: 'spatialid'` と `spatialLevel` をサポート。高さは `heightBin`（Zビン）と併用。
+  - 互換性: 低（新オプション追加のみ、既存デフォルトは維持）。
+- 受け入れ基準（Acceptance Criteria）
+  - 空間ID→境界（bbox）→ボックス生成の往復で1セル以内の誤差に収まる単体テストが緑。
+  - 代表ケースで `neighbors(id)` が仕様通りに近傍セルを返す（極域/子午線跨ぎを含む）。
+  - examples に解像度切替デモを追加し、Docs/Wiki/API を更新。
+- リスク & 対応
+  - 標準仕様の更新・後追い: アダプタ層で差分吸収（IFは固定、マッピング/パラメータを差し替え）。
+  - 実装/配布条件の変更: 参照実装のライセンス確認をゲートに設定、代替の暫定アダプタを用意。
+
+> 注: 標準化が延期/不成立の場合、本項目は次期版へ移動または見送りとします。
 
 ---
 

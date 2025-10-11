@@ -13,6 +13,9 @@ export const DEFAULT_OPTIONS = {
   emptyOpacity: 0.03,
   showOutline: true,
   showEmptyVoxels: false,
+  wireframeOnly: false,
+  heightBased: false,
+  outlineWidth: 2,
   minColor: [0, 32, 255],
   maxColor: [255, 64, 0],
   maxRenderVoxels: 50000,
@@ -54,11 +57,21 @@ export const DEFAULT_OPTIONS = {
   outlineOpacityResolver: null, // 関数: (ctx) => number(0-1) で枠線透明度制御
   
   // v0.1.7: 適応的制御パラメータ
+  // v0.1.15: Phase 0 - デフォルト値更新と新オプション追加（ADR-0011）
   adaptiveParams: {
-    neighborhoodRadius: 50, // 近傍密度計算の半径（メートル）
-    densityThreshold: 5, // 密度しきい値（エンティティ数/ボクセル）
-    cameraDistanceFactor: 1.0, // カメラ距離補正係数
-    overlapRiskFactor: 0.3 // 重なりリスク補正係数
+    neighborhoodRadius: 30, // 近傍密度計算の半径（メートル）- v0.1.15: 50→30
+    densityThreshold: 3, // 密度しきい値（エンティティ数/ボクセル）- v0.1.15: 5→3
+    cameraDistanceFactor: 0.8, // カメラ距離補正係数 - v0.1.15: 1.0→0.8
+    overlapRiskFactor: 0.4, // 重なりリスク補正係数 - v0.1.15: 0.3→0.4
+    // v0.1.15: 新規追加オプション
+    minOutlineWidth: 1.0, // 最小アウトライン幅の保証（ピクセル）
+    maxOutlineWidth: 5.0, // 最大アウトライン幅の制限（ピクセル）
+    outlineWidthRange: null, // [min, max] アウトライン幅範囲（nullで無効）
+    boxOpacityRange: null, // [min, max] ボックス透明度範囲（nullで無効）
+    outlineOpacityRange: null, // [min, max] アウトライン透明度範囲（nullで無効）
+    adaptiveOpacityEnabled: false, // 透明度適応制御有効化（v0.1.15はno-op、v1.0.0で実装）
+    zScaleCompensation: true, // Z軸スケール補正の有効化
+    overlapDetection: false // 重なり検出機能（オプトイン）
   },
   
   // v0.1.9: 適応的レンダリング制限とスマート視覚化支援（ADR-0006 Phase 1）

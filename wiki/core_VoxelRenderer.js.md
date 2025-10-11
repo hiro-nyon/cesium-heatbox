@@ -114,7 +114,9 @@ export class VoxelRenderer {
       enumerable: true,
       configurable: true
     });
-    
+
+    this._currentVoxelData = null;
+
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
 
@@ -129,9 +131,9 @@ export class VoxelRenderer {
    * @returns {Object} Adaptive params / 適応的パラメータ
    * @private
    */
-  _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics) {
+  _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, grid) {
     // v0.1.11: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
-    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options);
+    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options, grid);
   }
 
   /**
@@ -185,6 +187,8 @@ export class VoxelRenderer {
       grid,
       statistics
     });
+
+    this._currentVoxelData = voxelData;
 
     // バウンディングボックスのデバッグ表示制御（v0.1.5: debug.showBounds対応）
     const shouldShowBounds = this._shouldShowBounds();
@@ -273,7 +277,9 @@ export class VoxelRenderer {
     });
 
     Logger.info(`Successfully rendered ${renderedCount} voxels`);
-    
+
+    this._currentVoxelData = null;
+
     // 実際に描画されたボクセル数を返す
     return renderedCount;
   }
@@ -345,7 +351,7 @@ export class VoxelRenderer {
       (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
     
     // Adaptive parameters
-    const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, null, statistics);
+    const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, this._currentVoxelData, statistics, grid);
     
     // Color and opacity
     const { color, opacity } = this._calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx);
@@ -495,7 +501,7 @@ export class VoxelRenderer {
     // Emulation logic
     let emulateThickForThis = renderModeConfig.shouldUseEmulationOnly;
     if (!renderModeConfig.shouldUseEmulationOnly) {
-      // v0.1.12: Use new emulationScope instead of deprecated outlineEmulation  
+      // v0.1.12: Use new emulationScope instead of deprecated outlineEmulation
       const scope = this.options.emulationScope || 'off';
       if (scope === 'topn') {
         emulateThickForThis = isTopN && (finalOutlineWidth || 1) > 1;
@@ -504,7 +510,8 @@ export class VoxelRenderer {
       } else if (scope === 'all') {
         emulateThickForThis = (finalOutlineWidth || 1) > 1;
       } else if (this.options.adaptiveOutlines && adaptiveParams.shouldUseEmulation) {
-        emulateThickForThis = true;
+        // Safety: when scope is explicitly 'off', do not enable emulation from adaptive control
+        emulateThickForThis = scope !== 'off';
       }
     }
 
@@ -586,7 +593,10 @@ export class VoxelRenderer {
     }
     
     // Edge polylines for thick emulation
-    if (params.emulateThick) {
+    // 追加の安全ガード: emulation-only もしくは emulationScope!='off' の場合のみ許可
+    const allowEmulationEdges = (this.options.outlineRenderMode === 'emulation-only') ||
+      (this.options.emulationScope && this.options.emulationScope !== 'off');
+    if (allowEmulationEdges && params.emulateThick) {
       try {
         this.geometryRenderer.createEdgePolylines({
           centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
@@ -619,7 +629,8 @@ export class VoxelRenderer {
 
 
   /**
-   * 描画されたエンティティを全てクリア
+   * Remove all rendered entities from the scene.
+   * 描画されたエンティティを全てクリアします。
    * v0.1.11: GeometryRendererに委譲 (ADR-0009 Phase 4)
    */
   clear() {
@@ -815,7 +826,9 @@ export class VoxelRenderer {
       enumerable: true,
       configurable: true
     });
-    
+
+    this._currentVoxelData = null;
+
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
 
@@ -830,9 +843,9 @@ export class VoxelRenderer {
    * @returns {Object} Adaptive params / 適応的パラメータ
    * @private
    */
-  _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics) {
+  _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, grid) {
     // v0.1.11: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
-    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options);
+    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options, grid);
   }
 
   /**
@@ -886,6 +899,8 @@ export class VoxelRenderer {
       grid,
       statistics
     });
+
+    this._currentVoxelData = voxelData;
 
     // バウンディングボックスのデバッグ表示制御（v0.1.5: debug.showBounds対応）
     const shouldShowBounds = this._shouldShowBounds();
@@ -974,7 +989,9 @@ export class VoxelRenderer {
     });
 
     Logger.info(`Successfully rendered ${renderedCount} voxels`);
-    
+
+    this._currentVoxelData = null;
+
     // 実際に描画されたボクセル数を返す
     return renderedCount;
   }
@@ -1046,7 +1063,7 @@ export class VoxelRenderer {
       (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
     
     // Adaptive parameters
-    const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, null, statistics);
+    const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, this._currentVoxelData, statistics, grid);
     
     // Color and opacity
     const { color, opacity } = this._calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx);
@@ -1196,7 +1213,7 @@ export class VoxelRenderer {
     // Emulation logic
     let emulateThickForThis = renderModeConfig.shouldUseEmulationOnly;
     if (!renderModeConfig.shouldUseEmulationOnly) {
-      // v0.1.12: Use new emulationScope instead of deprecated outlineEmulation  
+      // v0.1.12: Use new emulationScope instead of deprecated outlineEmulation
       const scope = this.options.emulationScope || 'off';
       if (scope === 'topn') {
         emulateThickForThis = isTopN && (finalOutlineWidth || 1) > 1;
@@ -1205,7 +1222,8 @@ export class VoxelRenderer {
       } else if (scope === 'all') {
         emulateThickForThis = (finalOutlineWidth || 1) > 1;
       } else if (this.options.adaptiveOutlines && adaptiveParams.shouldUseEmulation) {
-        emulateThickForThis = true;
+        // Safety: when scope is explicitly 'off', do not enable emulation from adaptive control
+        emulateThickForThis = scope !== 'off';
       }
     }
 
@@ -1287,7 +1305,10 @@ export class VoxelRenderer {
     }
     
     // Edge polylines for thick emulation
-    if (params.emulateThick) {
+    // 追加の安全ガード: emulation-only もしくは emulationScope!='off' の場合のみ許可
+    const allowEmulationEdges = (this.options.outlineRenderMode === 'emulation-only') ||
+      (this.options.emulationScope && this.options.emulationScope !== 'off');
+    if (allowEmulationEdges && params.emulateThick) {
       try {
         this.geometryRenderer.createEdgePolylines({
           centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
@@ -1320,7 +1341,8 @@ export class VoxelRenderer {
 
 
   /**
-   * 描画されたエンティティを全てクリア
+   * Remove all rendered entities from the scene.
+   * 描画されたエンティティを全てクリアします。
    * v0.1.11: GeometryRendererに委譲 (ADR-0009 Phase 4)
    */
   clear() {

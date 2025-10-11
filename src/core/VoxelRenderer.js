@@ -105,7 +105,9 @@ export class VoxelRenderer {
       enumerable: true,
       configurable: true
     });
-    
+
+    this._currentVoxelData = null;
+
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
 
@@ -120,9 +122,9 @@ export class VoxelRenderer {
    * @returns {Object} Adaptive params / 適応的パラメータ
    * @private
    */
-  _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics) {
+  _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, grid) {
     // v0.1.11: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
-    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options);
+    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options, grid);
   }
 
   /**
@@ -176,6 +178,8 @@ export class VoxelRenderer {
       grid,
       statistics
     });
+
+    this._currentVoxelData = voxelData;
 
     // バウンディングボックスのデバッグ表示制御（v0.1.5: debug.showBounds対応）
     const shouldShowBounds = this._shouldShowBounds();
@@ -264,7 +268,9 @@ export class VoxelRenderer {
     });
 
     Logger.info(`Successfully rendered ${renderedCount} voxels`);
-    
+
+    this._currentVoxelData = null;
+
     // 実際に描画されたボクセル数を返す
     return renderedCount;
   }
@@ -336,7 +342,7 @@ export class VoxelRenderer {
       (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
     
     // Adaptive parameters
-    const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, null, statistics);
+    const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, this._currentVoxelData, statistics, grid);
     
     // Color and opacity
     const { color, opacity } = this._calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx);
@@ -614,7 +620,8 @@ export class VoxelRenderer {
 
 
   /**
-   * 描画されたエンティティを全てクリア
+   * Remove all rendered entities from the scene.
+   * 描画されたエンティティを全てクリアします。
    * v0.1.11: GeometryRendererに委譲 (ADR-0009 Phase 4)
    */
   clear() {

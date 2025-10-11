@@ -14,14 +14,14 @@ This documentation is auto-generated from JSDoc comments in the source code.
 - [DataProcessor](DataProcessor) — Class responsible for processing entity data.
 - [CoordinateTransformer](CoordinateTransformer) — Class providing coordinate transformation utilities.
 - [ColorCalculator](ColorCalculator) — Color calculator class for voxel rendering.
-- [VoxelSelector](VoxelSelector) — VoxelSelector - ボクセル選択戦略の実装
-- [AdaptiveController](AdaptiveController) — AdaptiveController - Adaptive control logic for VoxelRenderer
-- [GeometryRenderer](GeometryRenderer) — GeometryRenderer - 3D geometry rendering for VoxelRenderer
+- [VoxelSelector](VoxelSelector) — Voxel selection strategy executor.
+- [AdaptiveController](AdaptiveController) — AdaptiveController - Adaptive outline logic delegated from VoxelRenderer.
+- [GeometryRenderer](GeometryRenderer) — GeometryRenderer - Creates Cesium entities consumed by VoxelRenderer.
 
 ### Version Information
 
-- **Current Version**: 0.1.12-alpha.4
-- **Last Updated**: 2025-09-13
+- **Current Version**: 0.1.15-alpha.4
+- **Last Updated**: 2025-10-11
 - **Generated From**: JSDoc → Markdown conversion
 
 ### Quick Links
@@ -42,14 +42,14 @@ This documentation is auto-generated from JSDoc comments in the source code.
 - [DataProcessor](DataProcessor) — Class responsible for processing entity data.
 - [CoordinateTransformer](CoordinateTransformer) — Class providing coordinate transformation utilities.
 - [ColorCalculator](ColorCalculator) — Color calculator class for voxel rendering.
-- [VoxelSelector](VoxelSelector) — VoxelSelector - ボクセル選択戦略の実装
-- [AdaptiveController](AdaptiveController) — AdaptiveController - Adaptive control logic for VoxelRenderer
-- [GeometryRenderer](GeometryRenderer) — GeometryRenderer - 3D geometry rendering for VoxelRenderer
+- [VoxelSelector](VoxelSelector) — Voxel selection strategy executor.
+- [AdaptiveController](AdaptiveController) — AdaptiveController - Adaptive outline logic delegated from VoxelRenderer.
+- [GeometryRenderer](GeometryRenderer) — GeometryRenderer - Creates Cesium entities consumed by VoxelRenderer.
 
 ### バージョン情報
 
-- **現在のバージョン**: 0.1.12-alpha.4
-- **最終更新**: 2025-09-13
+- **現在のバージョン**: 0.1.15-alpha.4
+- **最終更新**: 2025-10-11
 - **生成元**: JSDoc → Markdown変換
 
 ### クイックリンク

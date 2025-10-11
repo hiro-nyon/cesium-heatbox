@@ -5,6 +5,7 @@
 目次（体系化：v0.1.14計画）
 - Observability（観測可能性）
   - performance-overlay-demo.html（v0.1.12 のオーバーレイ）
+  - **adaptive-phase3-demo.html（v0.1.15 Phase 3 適応制御デモ）** 🆕
   - benchmark-usage（CLIの使い方は後述リンク）
 - Rendering（描画モード・高さ/ワイヤーフレーム）
   - wireframe-height-demo.js / wireframe-height-demo-umd.html
@@ -114,6 +115,47 @@ const report = perfDemo.generatePerformanceReport();
 
 UMDビルドを参照するため、ファイルをそのままブラウザで開けます。
 Baseline（対策なし）と Mitigated（対策あり）をワンクリックで比較できます。
+
+### 5. `adaptive-phase3-demo.html` **v0.1.15 Phase 3 新機能** 🆕
+**適応制御機能の包括的デモ（ADR-0011 Phase 3）**
+
+ADR-0011 Phase 3で実装された適応制御機能を体験できる包括的なデモです。
+
+**主な機能:**
+- 📊 密度パターン生成（Clustered/Scattered/Gradient/Mixed）
+- ⚙️ 適応的パラメータのリアルタイム調整
+- 🎯 Z軸スケール補正の有効化/無効化
+- 🔍 重なり検出と自動モード推奨
+- 📈 拡張パフォーマンスオーバーレイ（適応制御メトリクス付き）
+- ⚡ ベンチマーク機能
+
+**表示される適応制御メトリクス:**
+- Dense Areas: 密集エリア検出数と割合
+- Emulation: エミュレーションモード使用数と割合
+- Avg Width: 平均アウトライン幅（適応制御による調整後）
+- Overlaps: 重なり検出数と割合
+- Z-Scale Adj: Z軸スケール補正適用数
+
+```html
+<!-- 使用例：ブラウザで直接開く -->
+file:///.../examples/advanced/adaptive-phase3-demo.html
+```
+
+**推奨設定（高密度データ）:**
+```javascript
+{
+  pattern: 'clustered',        // 高密度クラスター
+  entityCount: 2000,           // 適度なデータ量
+  adaptiveParams: {
+    zScaleCompensation: true,  // Z軸補正有効
+    overlapDetection: true,    // 重なり検出有効
+    densityThreshold: 3,       // 密集判定閾値
+    neighborhoodRadius: 30     // 近傍探索半径
+  },
+  outlineRenderMode: 'emulation-only',  // エミュレーションモード
+  outlineWidthPreset: 'adaptive'         // 適応的プリセット
+}
+```
 
 ## 使用方法
 

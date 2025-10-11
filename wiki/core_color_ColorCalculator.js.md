@@ -84,11 +84,9 @@ export class ColorCalculator {
    * @param {number} normalizedDensity - Normalized density (0-1) / 正規化された密度 (0-1)
    * @param {number} [rawValue] - Raw value for diverging scheme / 生値（二極性配色用）
    * @param {Object} options - Color calculation options / 色計算オプション
-   * @param {Array<number>} [options.minColor=[0, 0, 255]] - Min color RGB values / 最小値色のRGB値
-   * @param {Array<number>} [options.maxColor=[255, 0, 0]] - Max color RGB values / 最大値色のRGB値
-   * @param {string} [options.colorMap] - Color map name (viridis|inferno|custom) / カラーマップ名
-   * @param {boolean} [options.diverging=false] - Use diverging color scheme / 二極性配色を使用
-   * @param {number} [options.divergingPivot=0] - Pivot value for diverging scheme / 二極性配色のピボット値
+   * Properties: `minColor` (`Array.<number>`)・`maxColor` (`Array.<number>`)・`colorMap` (`viridis|inferno|custom`)
+   * ・`diverging` (`boolean`)・`divergingPivot` (`number`) / プロパティ: 最小色・最大色・カラーマップ名・
+   * 二極性配色フラグ・二極性ピボット値
    * 
    * @description Diverging Color Behavior / 二極性配色の動作:
    * - When diverging=true: Always uses diverging color scheme with rawValue, regardless of pivot value
@@ -207,7 +205,7 @@ export class ColorCalculator {
    * 
    * @param {number} rawValue - Raw value / 生値
    * @param {Object} options - Diverging color options / 二極性配色オプション
-   * @param {number} [options.divergingPivot=0] - Pivot value / ピボット値
+   * Properties: `divergingPivot` (`number`) / プロパティ: ピボット値
    * 
    * @description Pivot=0 Handling / Pivot=0時の処理:
    * When pivot=0: negative values → blue side (0-0.5), positive values → red side (0.5-1), zero → white (0.5)
@@ -365,11 +363,9 @@ export class ColorCalculator {
    * @param {number} normalizedDensity - Normalized density (0-1) / 正規化された密度 (0-1)
    * @param {number} [rawValue] - Raw value for diverging scheme / 生値（二極性配色用）
    * @param {Object} options - Color calculation options / 色計算オプション
-   * @param {Array<number>} [options.minColor=[0, 0, 255]] - Min color RGB values / 最小値色のRGB値
-   * @param {Array<number>} [options.maxColor=[255, 0, 0]] - Max color RGB values / 最大値色のRGB値
-   * @param {string} [options.colorMap] - Color map name (viridis|inferno|custom) / カラーマップ名
-   * @param {boolean} [options.diverging=false] - Use diverging color scheme / 二極性配色を使用
-   * @param {number} [options.divergingPivot=0] - Pivot value for diverging scheme / 二極性配色のピボット値
+   * Properties: `minColor` (`Array.<number>`)・`maxColor` (`Array.<number>`)・`colorMap` (`viridis|inferno|custom`)
+   * ・`diverging` (`boolean`)・`divergingPivot` (`number`) / プロパティ: 最小色・最大色・カラーマップ名・
+   * 二極性配色フラグ・二極性ピボット値
    * 
    * @description Diverging Color Behavior / 二極性配色の動作:
    * - When diverging=true: Always uses diverging color scheme with rawValue, regardless of pivot value
@@ -488,7 +484,7 @@ export class ColorCalculator {
    * 
    * @param {number} rawValue - Raw value / 生値
    * @param {Object} options - Diverging color options / 二極性配色オプション
-   * @param {number} [options.divergingPivot=0] - Pivot value / ピボット値
+   * Properties: `divergingPivot` (`number`) / プロパティ: ピボット値
    * 
    * @description Pivot=0 Handling / Pivot=0時の処理:
    * When pivot=0: negative values → blue side (0-0.5), positive values → red side (0.5-1), zero → white (0.5)

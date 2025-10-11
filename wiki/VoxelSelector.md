@@ -4,7 +4,7 @@
 
 ## English
 
-> English translation pending. See Japanese section below.
+Voxel selection strategy executor.
 
 ### Constructor
 
@@ -24,99 +24,12 @@ Select voxels for rendering based on configured strategy.
 |---|---|---|
 | allVoxels | Array | All voxels to select from / 選択元の全ボクセル |
 | maxCount | number | Maximum number of voxels to select / 選択する最大ボクセル数 |
-| context | Object | Selection context / 選択コンテキスト
-                Properties
-                
-
-
-    
-    
-        
-        Name
-        
-
-        Type
-
-        
-        Attributes
-        
-
-        
-
-        Description
-    
-    
-
-    
-    
-
-        
-            
-                grid
-            
-
-            
-            
-                
-Object
-
-
-            
-            
-
-            
-                
-                
-
-                
-
-                
-                
-            
-
-            
-
-            Grid information / グリッド情報
-        
-
-    
-
-        
-            
-                bounds
-            
-
-            
-            
-                
-Object
-
-
-            
-            
-
-            
-                
-                
-                    <optional>
-                
-
-                
-
-                
-                
-            
-
-            
-
-            Data bounds / データ境界 | grid | Object |  | Grid information / グリッド情報 | bounds | Object | <optional> | Data bounds / データ境界 |
-| grid | Object |  | Grid information / グリッド情報 |
-| bounds | Object | <optional> | Data bounds / データ境界 |
+| context | Object | Selection context / 選択コンテキスト Properties: `grid` (Object) – Grid information / グリッド情報, `bounds` (Object, optional) – Data bounds / データ境界 |
 
 
 ## 日本語
 
-VoxelSelector - ボクセル選択戦略の実装
+VoxelSelector - ボクセル選択戦略の実装。
 Single Responsibility: ボクセル選択ロジックのみを担当
 - 戦略パターンを使用して選択アルゴリズムを切り替え可能
 - 純粋関数として設計（Cesium依存なし）
@@ -140,91 +53,4 @@ Single Responsibility: ボクセル選択ロジックのみを担当
 |---|---|---|
 | allVoxels | Array | All voxels to select from / 選択元の全ボクセル |
 | maxCount | number | Maximum number of voxels to select / 選択する最大ボクセル数 |
-| context | Object | Selection context / 選択コンテキスト
-                Properties
-                
-
-
-    
-    
-        
-        Name
-        
-
-        Type
-
-        
-        Attributes
-        
-
-        
-
-        Description
-    
-    
-
-    
-    
-
-        
-            
-                grid
-            
-
-            
-            
-                
-Object
-
-
-            
-            
-
-            
-                
-                
-
-                
-
-                
-                
-            
-
-            
-
-            Grid information / グリッド情報
-        
-
-    
-
-        
-            
-                bounds
-            
-
-            
-            
-                
-Object
-
-
-            
-            
-
-            
-                
-                
-                    <optional>
-                
-
-                
-
-                
-                
-            
-
-            
-
-            Data bounds / データ境界 | grid | Object |  | Grid information / グリッド情報 | bounds | Object | <optional> | Data bounds / データ境界 |
-| grid | Object |  | Grid information / グリッド情報 |
-| bounds | Object | <optional> | Data bounds / データ境界 |
+| context | Object | Selection context / 選択コンテキスト Properties: `grid` (Object) – Grid information / グリッド情報, `bounds` (Object, optional) – Data bounds / データ境界 |

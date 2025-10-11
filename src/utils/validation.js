@@ -4,10 +4,55 @@
  */
 
 import * as Cesium from 'cesium';
-import { PERFORMANCE_LIMITS, ERROR_MESSAGES } from './constants.js';
+import { PERFORMANCE_LIMITS, ERROR_MESSAGES, DEFAULT_OPTIONS } from './constants.js';
 import { Logger } from './logger.js';
 import { warnOnce } from './deprecate.js';
 import { applyProfile, isValidProfile } from './profiles.js';
+
+/**
+ * Coerce various input types to boolean while respecting common string representations.
+ * 文字列で渡された真偽値表現にも対応した安全な真偽値変換を行う。
+ *
+ * @param {*} value - 値
+ * @param {boolean} [fallback=false] - 未定義/無効値時のフォールバック
+ * @returns {boolean} 変換後の真偽値
+ */
+function coerceBoolean(value, fallback = false) {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+
+    if (normalized === '') {
+      return fallback;
+    }
+
+    if (['true', '1', 'yes', 'on'].includes(normalized)) {
+      return true;
+    }
+
+    if (['false', '0', 'no', 'off'].includes(normalized)) {
+      return false;
+    }
+
+    return Boolean(normalized);
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return fallback;
+    }
+    return value !== 0;
+  }
+
+  return Boolean(value);
+}
 
 /**
  * Check whether a CesiumJS Viewer is valid.
@@ -212,6 +257,21 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.outlineOpacity = Math.max(0, Math.min(1, parseFloat(normalized.outlineOpacity) || 1));
   }
   
+  if (normalized.outlineWidth !== undefined) {
+    const width = parseFloat(normalized.outlineWidth);
+    normalized.outlineWidth = Number.isFinite(width)
+      ? Math.max(0.5, Math.min(20, width))
+      : DEFAULT_OPTIONS.outlineWidth;
+  }
+  
+  if (normalized.wireframeOnly !== undefined) {
+    normalized.wireframeOnly = coerceBoolean(normalized.wireframeOnly);
+  }
+  
+  if (normalized.heightBased !== undefined) {
+    normalized.heightBased = coerceBoolean(normalized.heightBased);
+  }
+  
   // v0.1.12: Deprecated Resolver systems - show warnings and remove
   if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
     warnOnce('outlineWidthResolver',
@@ -322,7 +382,7 @@ export function validateAndNormalizeOptions(options = {}) {
   
   // 厚い枠線表示
   if (normalized.enableThickFrames !== undefined) {
-    normalized.enableThickFrames = Boolean(normalized.enableThickFrames);
+    normalized.enableThickFrames = coerceBoolean(normalized.enableThickFrames);
   }
   
   // v0.1.9: 適応的レンダリング制限のバリデーション
@@ -398,6 +458,120 @@ export function validateAndNormalizeOptions(options = {}) {
       headingDegrees: Number.isFinite(heading) ? heading : 0,
       altitudeStrategy: altitudeStrategy === 'manual' ? 'manual' : 'auto'
     };
+  }
+  
+  // v0.1.15: Phase 0 - adaptiveParams の正規化と範囲統一（ADR-0011）
+  // ユーザー指定の adaptiveParams を保持
+  const userAdaptiveParams = normalized.adaptiveParams ? { ...normalized.adaptiveParams } : {};
+  
+  // デフォルト値とマージ（ユーザー指定を優先）
+  normalized.adaptiveParams = {
+    ...DEFAULT_OPTIONS.adaptiveParams,
+    ...userAdaptiveParams
+  };
+  
+  const ap = normalized.adaptiveParams;
+  
+  // min/max → range への統一（rangeが優先）
+  if (userAdaptiveParams.minOutlineWidth !== undefined && userAdaptiveParams.maxOutlineWidth !== undefined && userAdaptiveParams.outlineWidthRange === undefined) {
+    ap.outlineWidthRange = [
+      Math.max(1.0, parseFloat(userAdaptiveParams.minOutlineWidth) || 1.0),
+      Math.max(1.0, parseFloat(userAdaptiveParams.maxOutlineWidth) || 5.0)
+    ];
+    Logger.debug('adaptiveParams: minOutlineWidth/maxOutlineWidth normalized to outlineWidthRange');
+  }
+  
+  // range の検証とクランプ
+  if (ap.outlineWidthRange !== undefined && Array.isArray(ap.outlineWidthRange)) {
+    const [min, max] = ap.outlineWidthRange;
+    ap.outlineWidthRange = [
+      Math.max(1.0, parseFloat(min) || 1.0),
+      Math.max(1.0, parseFloat(max) || 5.0)
+    ];
+    // min > max の場合は入れ替え
+    if (ap.outlineWidthRange[0] > ap.outlineWidthRange[1]) {
+      ap.outlineWidthRange = [ap.outlineWidthRange[1], ap.outlineWidthRange[0]];
+      Logger.warn('adaptiveParams.outlineWidthRange: min > max detected, swapped values');
+    }
+  }
+  
+  if (ap.boxOpacityRange !== undefined && Array.isArray(ap.boxOpacityRange)) {
+    const [min, max] = ap.boxOpacityRange;
+    ap.boxOpacityRange = [
+      Math.max(0, Math.min(1, parseFloat(min) || 0)),
+      Math.max(0, Math.min(1, parseFloat(max) || 1))
+    ];
+    if (ap.boxOpacityRange[0] > ap.boxOpacityRange[1]) {
+      ap.boxOpacityRange = [ap.boxOpacityRange[1], ap.boxOpacityRange[0]];
+      Logger.warn('adaptiveParams.boxOpacityRange: min > max detected, swapped values');
+    }
+  }
+  
+  if (ap.outlineOpacityRange !== undefined && Array.isArray(ap.outlineOpacityRange)) {
+    const [min, max] = ap.outlineOpacityRange;
+    ap.outlineOpacityRange = [
+      Math.max(0, Math.min(1, parseFloat(min) || 0)),
+      Math.max(0, Math.min(1, parseFloat(max) || 1))
+    ];
+    if (ap.outlineOpacityRange[0] > ap.outlineOpacityRange[1]) {
+      ap.outlineOpacityRange = [ap.outlineOpacityRange[1], ap.outlineOpacityRange[0]];
+      Logger.warn('adaptiveParams.outlineOpacityRange: min > max detected, swapped values');
+    }
+  }
+  
+  // 既定値の検証
+  if (ap.overlapDetection !== undefined) {
+    ap.overlapDetection = coerceBoolean(ap.overlapDetection);
+  }
+  
+  if (ap.zScaleCompensation !== undefined) {
+    ap.zScaleCompensation = coerceBoolean(ap.zScaleCompensation);
+  }
+  
+  if (ap.adaptiveOpacityEnabled !== undefined) {
+    ap.adaptiveOpacityEnabled = coerceBoolean(ap.adaptiveOpacityEnabled);
+  }
+  
+  // 数値パラメータの検証
+  if (ap.neighborhoodRadius !== undefined) {
+    const v = parseFloat(ap.neighborhoodRadius);
+    ap.neighborhoodRadius = Number.isFinite(v) && v > 0 ? v : 30;
+  }
+  
+  if (ap.densityThreshold !== undefined) {
+    const v = parseFloat(ap.densityThreshold);
+    ap.densityThreshold = Number.isFinite(v) && v > 0 ? v : 3;
+  }
+  
+  if (ap.cameraDistanceFactor !== undefined) {
+    const v = parseFloat(ap.cameraDistanceFactor);
+    ap.cameraDistanceFactor = Number.isFinite(v) && v > 0 ? v : 0.8;
+  }
+  
+  if (ap.overlapRiskFactor !== undefined) {
+    const v = parseFloat(ap.overlapRiskFactor);
+    ap.overlapRiskFactor = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.4;
+  }
+  
+  normalized.adaptiveParams = ap;
+
+  if (normalized.performanceOverlay) {
+    const overlay = { ...normalized.performanceOverlay };
+    overlay.enabled = coerceBoolean(overlay.enabled, false);
+    overlay.autoShow = coerceBoolean(overlay.autoShow, false);
+    overlay.autoUpdate = coerceBoolean(overlay.autoUpdate, true);
+    overlay.position = ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(overlay.position)
+      ? overlay.position
+      : 'top-right';
+    if (overlay.updateIntervalMs !== undefined) {
+      const interval = parseFloat(overlay.updateIntervalMs);
+      overlay.updateIntervalMs = Number.isFinite(interval) ? Math.max(100, interval) : 500;
+    }
+    if (overlay.fpsAveragingWindowMs !== undefined) {
+      const windowMs = parseFloat(overlay.fpsAveragingWindowMs);
+      overlay.fpsAveragingWindowMs = Number.isFinite(windowMs) ? Math.max(200, windowMs) : 1000;
+    }
+    normalized.performanceOverlay = overlay;
   }
   
   return normalized;
@@ -547,9 +721,10 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
 }
 
 /**
- * 境界からデータ範囲を計算
- * @param {Object} bounds - 境界情報
- * @returns {Object} データ範囲 {x, y, z}（メートル）
+ * Calculate physical span (meters) from geographic bounds.
+ * 境界からデータ範囲（メートル）を計算します。
+ * @param {Object} bounds - Bounds information / 境界情報
+ * @returns {Object} Data range `{x, y, z}` in meters / データ範囲 {x, y, z}（メートル）
  */
 export function calculateDataRange(bounds) {
   try {

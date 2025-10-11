@@ -5,16 +5,23 @@
 
 **日本語** | [English](#english)
 
-CesiumJS Heatbox は、CesiumJS 上の既存 Entity を対象に、3D ボクセルで密度を可視化するヒートマップライブラリです。エンティティ分布から自動で範囲を推定し、設定した `voxelSize` と描画上限（`maxRenderVoxels`）で効率よく描画します。v0.1.4 からは `autoVoxelSize: true` でボクセルサイズの自動決定に対応しています。
+CesiumJS Heatbox は、CesiumJS 上の既存 Entity を対象に、3D ボクセルで密度を可視化するヒートマップライブラリです。エンティティ分布から自動で範囲を推定し、設定した `voxelSize` と描画上限（`maxRenderVoxels`）で効率よく描画します。`autoVoxelSize: true` やプロファイル機能により、端末に合わせた描画チューニングを自動化できます。
 
-### v0.1.11（重要）
-- ADR-0009 に基づく責務分離を完了し、`VoxelRenderer` はオーケストレーションに特化
-- 新コア: `ColorCalculator` / `VoxelSelector` / `AdaptiveController` / `GeometryRenderer`
-- Playground の i18n・アクセシビリティ改善、ドキュメント自動生成の更新
+### v0.1.15 ハイライト
+- ADR-0011 Phase 4: 適応制御の最終仕上げ（Z 軸補正・重なり検出・範囲クランプ）
+- `PerformanceOverlay` の強化とデバッグメトリクスの充実
+- `profile` / `adaptiveParams` の整理、型定義 (`types/index.d.ts`) の刷新
+- Wiki / ガイドを全面的に日英対応へアップデート
 
 ## English
 
-CesiumJS Heatbox is a heatmap library that visualizes density using 3D voxels for existing entities on CesiumJS. It automatically estimates ranges from entity distribution and renders efficiently using the configured `voxelSize` and draw limits (`maxRenderVoxels`). From v0.1.4, auto voxel-size determination is available via `autoVoxelSize: true` when `voxelSize` is omitted.
+CesiumJS Heatbox visualises density using 3D voxels for existing Cesium entities. It estimates bounds from the entity distribution and renders efficiently with the configured `voxelSize` and draw limits (`maxRenderVoxels`). With `autoVoxelSize: true` and rendering profiles you can tailor the workload to each device automatically.
+
+### v0.1.15 Highlights
+- ADR-0011 Phase 4: final adaptive-control tweaks (Z-scale compensation, overlap diagnostics, range clamps)
+- Enhanced `PerformanceOverlay` with richer debug metrics
+- Refined `profile` and `adaptiveParams` shape plus an updated public type definition (`types/index.d.ts`)
+- Wiki / guides refreshed with full Japanese & English coverage
 
 ## 主要機能 / Key Features
 

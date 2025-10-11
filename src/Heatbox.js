@@ -1,5 +1,6 @@
 /**
- * CesiumJS Heatbox - メインクラス
+ * CesiumJS Heatbox - Main orchestration class.
+ * CesiumJS Heatbox - メインオーケストレーションクラス
  */
 import * as Cesium from 'cesium';
 import { DEFAULT_OPTIONS, ERROR_MESSAGES, PERFORMANCE_LIMITS } from './utils/constants.js';
@@ -42,25 +43,197 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
 
 /**
  * @typedef {Object} PerformanceOverlayConfig
- * @property {boolean} [enabled=false] - Enable performance overlay
- * @property {('top-left'|'top-right'|'bottom-left'|'bottom-right')} [position='top-right'] - Overlay position
- * @property {boolean} [autoShow=false] - Show overlay automatically
- * @property {number} [updateIntervalMs=500] - Update interval in milliseconds
+ * @property {boolean} [enabled=false] - Enable performance overlay / パフォーマンスオーバーレイを有効化
+ * @property {('top-left'|'top-right'|'bottom-left'|'bottom-right')} [position='top-right'] - Overlay position / 配置位置
+ * @property {boolean} [autoShow=false] - Show overlay automatically / 自動表示
+ * @property {boolean} [autoUpdate=true] - Auto refresh overlay after render / 描画後に自動更新するか
+ * @property {number} [updateIntervalMs=500] - Update interval in milliseconds / 更新間隔（ミリ秒）
+ * @property {number} [fpsAveragingWindowMs=1000] - FPS 平滑化窓（ミリ秒）/ Averaging window for FPS
  * @since 0.1.12
+ */
+
+/**
+ * @typedef {Object} HeatboxHighlightStyle
+ * @property {number} [outlineWidth=4] - Outline width applied to highlighted voxels / ハイライト対象ボクセルに適用する枠線太さ
+ * @property {number} [boostOpacity=0.2] - Extra opacity applied to highlighted voxels / ハイライト時に加算する不透明度
+ * @property {number} [boostOutlineWidth] - Optional outline width override / 枠線太さの上書き指定
+ */
+
+/**
+ * @typedef {Object} HeatboxAdaptiveParams
+ * @property {number} [neighborhoodRadius=30] - Neighbor radius in meters used for density sampling / 密度サンプリングに用いる近傍半径（メートル）
+ * @property {number} [densityThreshold=3] - Density threshold (entities per voxel) / 密度しきい値（エンティティ/ボクセル）
+ * @property {number} [cameraDistanceFactor=0.8] - Camera distance compensation factor / カメラ距離補正係数
+ * @property {number} [overlapRiskFactor=0.4] - Overlap risk factor used for diagnostics / 重なりリスク係数
+ * @property {(Array.<number>|null)} [outlineWidthRange=null] - `[min,max]` outline width clamp / 枠線太さの許容範囲 `[最小, 最大]`
+ * @property {(Array.<number>|null)} [boxOpacityRange=null] - `[min,max]` box opacity clamp / ボックス不透明度の許容範囲
+ * @property {(Array.<number>|null)} [outlineOpacityRange=null] - `[min,max]` outline opacity clamp / 枠線不透明度の許容範囲
+ * @property {boolean} [adaptiveOpacityEnabled=false] - Reserved flag for adaptive opacity / 適応透明度（プレースホルダー）
+ * @property {boolean} [zScaleCompensation=true] - Enable Z scale compensation / Z軸スケール補正の有効化
+ * @property {boolean} [overlapDetection=false] - Enable overlap diagnostics / 重なり検出を有効化
+ */
+
+/**
+ * @typedef {Object} HeatboxFitViewOptions
+ * @property {number} [paddingPercent=0.1] - Padding ratio around bounds / 境界に対するパディング割合
+ * @property {number} [pitchDegrees=-30] - Camera pitch angle in degrees / カメラ俯角（度）
+ * @property {number} [headingDegrees=0] - Camera heading in degrees / カメラ方位（度）
+ * @property {('auto'|'manual')} [altitudeStrategy='auto'] - Altitude strategy for camera / カメラ高度の計算方法
+ */
+
+/**
+ * @typedef {Object} HeatboxBounds
+ * @property {number} minLon - Minimum longitude / 最小経度
+ * @property {number} maxLon - Maximum longitude / 最大経度
+ * @property {number} minLat - Minimum latitude / 最小緯度
+ * @property {number} maxLat - Maximum latitude / 最大緯度
+ * @property {number} minAlt - Minimum altitude / 最小高度
+ * @property {number} maxAlt - Maximum altitude / 最大高度
+ * @property {number} [centerLon] - Center longitude / 中心経度
+ * @property {number} [centerLat] - Center latitude / 中心緯度
+ * @property {number} [centerAlt] - Center altitude / 中心高度
+ */
+
+/**
+ * @typedef {Object} HeatboxGridInfo
+ * @property {number} numVoxelsX - Number of voxels along X axis / X軸方向のボクセル数
+ * @property {number} numVoxelsY - Number of voxels along Y axis / Y軸方向のボクセル数
+ * @property {number} numVoxelsZ - Number of voxels along Z axis / Z軸方向のボクセル数
+ * @property {number} voxelSizeMeters - Voxel size in meters / ボクセルサイズ（メートル）
+ * @property {number} totalVoxels - Total voxel count / 総ボクセル数
+ */
+
+/**
+ * @typedef {Object} HeatboxStatistics
+ * @property {number} totalVoxels - Total voxels generated / 生成された総ボクセル数
+ * @property {number} renderedVoxels - Voxels actually rendered / 実際に描画されたボクセル数
+ * @property {number} nonEmptyVoxels - Non-empty voxels / データを含むボクセル数
+ * @property {number} emptyVoxels - Empty voxels / 空ボクセル数
+ * @property {number} totalEntities - Entities processed / 処理したエンティティ数
+ * @property {number} minCount - Minimum entity count per voxel / 1ボクセルあたり最小エンティティ数
+ * @property {number} maxCount - Maximum entity count per voxel / 1ボクセルあたり最大エンティティ数
+ * @property {number} averageCount - Average entity count per voxel / 平均エンティティ数
+ * @property {boolean} [autoAdjusted] - Whether auto adjustments occurred / 自動調整が行われたか
+ * @property {number|null} [originalVoxelSize] - Original voxel size before adjustment / 調整前のボクセルサイズ
+ * @property {number|null} [finalVoxelSize] - Final voxel size after adjustment / 調整後のボクセルサイズ
+ * @property {string|null} [adjustmentReason] - Reason for auto adjustment / 自動調整の理由
+ * @property {number} [renderTimeMs] - Render time in milliseconds / 描画時間（ミリ秒）
+ * @property {string} [selectionStrategy] - Selection strategy used / 適用された選択戦略
+ * @property {number} [clippedNonEmpty] - Non-empty voxels clipped by limits / 制限により除外された非空ボクセル数
+ * @property {number} [coverageRatio] - Coverage ratio when hybrid strategy used / ハイブリッド戦略時のカバレッジ比率
+ * @property {string} [renderBudgetTier] - Auto render budget tier label / 自動レンダーバジェットの区分
+ * @property {number} [autoMaxRenderVoxels] - Auto-assigned maxRenderVoxels / 自動設定された maxRenderVoxels
+ * @property {number|null} [occupancyRatio] - Ratio of rendered voxels to limit / 描画ボクセルと上限の比率
+ */
+
+/**
+ * @typedef {Object} HeatboxAutoVoxelSizeInfo
+ * @property {boolean} enabled - Whether auto voxel sizing ran / 自動ボクセル調整が実行されたか
+ * @property {boolean} adjusted - Whether voxel size was adjusted / サイズが調整されたか
+ * @property {string|null} reason - Adjustment reason / 調整理由
+ * @property {number|null} originalSize - Initial estimate / 初期推定値
+ * @property {number|null} finalSize - Final size / 最終サイズ
+ * @property {Object|null} [dataRange] - Estimated data range / 推定データ範囲
+ * @property {number|null} [estimatedDensity] - Estimated density / 推定密度
+ */
+
+/**
+ * @typedef {Object} HeatboxDebugInfo
+ * @property {HeatboxOptions} options - Effective options / 有効なオプション
+ * @property {HeatboxBounds|null} bounds - Current bounds / 現在の境界
+ * @property {HeatboxGridInfo|null} grid - Grid information / グリッド情報
+ * @property {HeatboxStatistics|null} statistics - Statistics snapshot / 統計情報
+ * @property {HeatboxAutoVoxelSizeInfo|null} [autoVoxelSizeInfo] - Auto voxel sizing details / 自動ボクセル調整の詳細
+ */
+
+/**
+ * @typedef {Object} HeatboxResolverVoxelInfo
+ * @property {number} x - Voxel grid index (X) / ボクセルのXインデックス
+ * @property {number} y - Voxel grid index (Y) / ボクセルのYインデックス
+ * @property {number} z - Voxel grid index (Z) / ボクセルのZインデックス
+ * @property {number} count - Number of entities within the voxel / ボクセル内のエンティティ数
+ */
+
+/**
+ * @typedef {Object} HeatboxOutlineWidthResolverParams
+ * @property {HeatboxResolverVoxelInfo} voxel - Voxel information / ボクセル情報
+ * @property {boolean} isTopN - Whether voxel is part of highlighted TopN / TopN対象か
+ * @property {number} normalizedDensity - Density normalised to 0-1 / 正規化密度（0〜1）
+ * @property {HeatboxStatistics} statistics - Latest statistics snapshot / 最新統計情報
+ * @property {HeatboxAdaptiveParams|null} [adaptiveParams] - Adaptive parameters / 適応パラメータ
+ */
+
+/**
+ * @typedef {Object} HeatboxOpacityResolverContext
+ * @property {HeatboxResolverVoxelInfo} voxel - Voxel information / ボクセル情報
+ * @property {boolean} isTopN - Whether voxel is part of highlighted TopN / TopN対象か
+ * @property {number} normalizedDensity - Density normalised to 0-1 / 正規化密度（0〜1）
+ * @property {HeatboxStatistics} statistics - Latest statistics snapshot / 最新統計情報
+ * @property {HeatboxAdaptiveParams|null} [adaptiveParams] - Adaptive parameters / 適応パラメータ
+ */
+
+/**
+ * @typedef {Object} HeatboxOptions
+ * @property {ProfileName} [profile] - Named preset to start from / 推奨プリセット名
+ * @property {number} [voxelSize=20] - Voxel size in meters / ボクセルサイズ（メートル）
+ * @property {boolean} [autoVoxelSize=false] - Enable auto voxel size estimation / 自動ボクセルサイズ推定
+ * @property {('basic'|'occupancy')} [autoVoxelSizeMode='basic'] - Auto voxel mode / 自動ボクセルモード
+ * @property {number} [autoVoxelTargetFill=0.6] - Target occupancy ratio for auto mode / 自動モード時の目標充填率
+ * @property {number} [maxRenderVoxels=50000] - Max voxels to render / 描画ボクセル上限
+ * @property {('density'|'coverage'|'hybrid')} [renderLimitStrategy='density'] - Voxel selection strategy / ボクセル選択戦略
+ * @property {number} [minCoverageRatio=0.2] - Minimum coverage ratio for hybrid strategy / ハイブリッド戦略時の最小カバレッジ比率
+ * @property {('auto'|number)} [coverageBinsXY='auto'] - Grid bins for coverage strategy / カバレッジ戦略用グリッド分割
+ * @property {boolean} [showOutline=true] - Draw voxel outlines / 枠線を描画
+ * @property {boolean} [showEmptyVoxels=false] - Show empty voxels / 空ボクセルを描画
+ * @property {boolean} [wireframeOnly=false] - Render outlines only / 枠線のみ描画
+ * @property {boolean} [heightBased=false] - Scale height by density / 密度に応じて高さを調整
+ * @property {number} [outlineWidth=2] - Base outline width / 基本枠線太さ
+ * @property {number} [voxelGap=0] - Gap between voxels in meters / ボクセル間ギャップ（メートル）
+ * @property {number} [opacity=0.8] - Box opacity / ボックス不透明度
+ * @property {number} [emptyOpacity=0.03] - Empty voxel opacity / 空ボクセル不透明度
+ * @property {number[]} [minColor=[0,32,255]] - RGB colour for minimum density / 最低密度時のRGB
+ * @property {number[]} [maxColor=[255,64,0]] - RGB colour for maximum density / 最高密度時のRGB
+ * @property {('custom'|'viridis'|'inferno')} [colorMap='custom'] - Colour map preset / カラーマップ
+ * @property {boolean} [diverging=false] - Use diverging colour mode / 発散配色モード
+ * @property {number} [divergingPivot=0] - Diverging pivot value / 発散配色のピボット
+ * @property {number|null} [highlightTopN=null] - Highlight top N voxels / 上位Nボクセルの強調
+ * @property {HeatboxHighlightStyle} [highlightStyle] - Highlight styling / ハイライトスタイル
+ * @property {OutlineRenderMode} [outlineRenderMode='standard'] - Outline rendering mode / 枠線描画モード
+ * @property {EmulationScope} [emulationScope='off'] - Emulation scope / エミュレーション範囲
+ * @property {boolean} [adaptiveOutlines=false] - Enable adaptive outline mode / 適応枠線制御を有効化
+ * @property {OutlineWidthPreset} [outlineWidthPreset='medium'] - Outline width preset / 枠線プリセット
+ * @property {?function(HeatboxOutlineWidthResolverParams):number} [outlineWidthResolver=null] - Custom outline width resolver / 枠線太さの独自制御
+ * @property {?function(HeatboxOpacityResolverContext):number} [outlineOpacityResolver=null] - Custom outline opacity resolver / 枠線透明度の独自制御
+ * @property {?function(HeatboxOpacityResolverContext):number} [boxOpacityResolver=null] - Custom box opacity resolver / ボックス透明度の独自制御
+ * @property {number} [outlineInset=0] - Inset outline offset in meters / インセット枠線のオフセット
+ * @property {('all'|'topn'|'none')} [outlineInsetMode='all'] - Inset outline target / インセット枠線の適用対象
+ * @property {boolean} [enableThickFrames=false] - Enable thick frame fill / 厚枠フレーム補完
+ * @property {HeatboxAdaptiveParams} [adaptiveParams] - Adaptive control parameters / 適応制御パラメータ
+ * @property {boolean} [autoView=false] - Automatically fit camera after render / 描画後に視点を自動調整
+ * @property {HeatboxFitViewOptions} [fitViewOptions] - Camera fit options / ビューフィットの設定
+ * @property {PerformanceOverlayConfig|null} [performanceOverlay=null] - Performance overlay config / パフォーマンスオーバーレイ設定
+ * @property {('manual'|'auto')} [renderBudgetMode='manual'] - Render budget mode / レンダーバジェット制御モード
+ * @property {(boolean|Object)} [debug=false] - Debug options (`true` enables verbose logging, object can contain `showBounds`) / デバッグ設定（trueで詳細ログ、オブジェクトの場合は`showBounds`などを指定）
  */
 
 /**
  * Main class of CesiumJS Heatbox.
  * Provides 3D voxel-based heatmap visualization in CesiumJS environments.
+ * Refer to {@link HeatboxOptions} for the full option catalogue with defaults.
  *
  * CesiumJS Heatbox メインクラス。
  * CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提供します。
+ * 利用可能なオプションと既定値は {@link HeatboxOptions} を参照してください。
  */
 export class Heatbox {
   /**
-   * Constructor
+   * Constructor.
+   * Prepares the renderer, normalises options, and wires core event listeners.
+   *
+   * 初期化処理ではオプションの正規化とレンダラー生成、必要なイベント購読を行います。
+   *
    * @param {Cesium.Viewer} viewer - CesiumJS Viewer instance / CesiumJS Viewer インスタンス
-   * @param {Object} options - Configuration options / 設定オプション
+   * @param {HeatboxOptions} [options={}] - Configuration options / 設定オプション
    */
   constructor(viewer, options = {}) {
     if (!isValidViewer(viewer)) {
@@ -106,7 +279,7 @@ export class Heatbox {
   /**
    * Get effective normalized options snapshot.
    * 正規化済みオプションのスナップショットを取得します。
-   * @returns {Object} options snapshot
+   * @returns {HeatboxOptions} options snapshot / オプションのスナップショット
    */
   getEffectiveOptions() {
     try {
@@ -121,7 +294,7 @@ export class Heatbox {
    * Get list of available configuration profiles
    * 利用可能な設定プロファイルの一覧を取得
    * 
-   * @returns {string[]} Array of profile names / プロファイル名の配列
+   * @returns {ProfileName[]} Array of profile names / プロファイル名の配列
    * @static
    * @since 0.1.12
    */
@@ -134,6 +307,8 @@ export class Heatbox {
    * 設定プロファイルの詳細を取得
    * 
    * @param {string} profileName - Profile name / プロファイル名
+   * Returned object shares the same keys as {@link HeatboxOptions} plus an optional `description`.
+   * 戻り値は {@link HeatboxOptions} と同じキーに加えて `description` フィールドを含みます。
    * @returns {Object|null} Profile configuration with description / 説明付きプロファイル設定
    * @static
    * @since 0.1.12
@@ -218,8 +393,8 @@ export class Heatbox {
    * Enable or disable performance overlay at runtime.
    * 実行時にパフォーマンスオーバーレイを有効/無効化します。
    * @param {boolean} enabled - true to enable, false to disable
-   * @param {Object} [options] - Optional overlay options to apply
-   * @returns {boolean} Current enabled state
+   * @param {PerformanceOverlayConfig} [options] - Optional overlay options to apply / 追加設定
+   * @returns {boolean} Current enabled state / 現在の有効状態
    * @since 0.1.12
    */
   setPerformanceOverlayEnabled(enabled, options = {}) {
@@ -260,7 +435,18 @@ export class Heatbox {
       // Rough estimation based on rendered entities and data
       const entityCount = (this.renderer?.geometryRenderer?.entities?.length) 
         || (this.renderer?.voxelEntities?.length) || 0;
-      const voxelDataSize = this._voxelData ? Object.keys(this._voxelData).length : 0;
+      let voxelDataSize = 0;
+      if (this._voxelData) {
+        if (this._voxelData instanceof Map) {
+          voxelDataSize = this._voxelData.size;
+        } else if (typeof this._voxelData.size === 'number') {
+          voxelDataSize = this._voxelData.size;
+        } else if (Array.isArray(this._voxelData)) {
+          voxelDataSize = this._voxelData.length;
+        } else if (typeof this._voxelData === 'object') {
+          voxelDataSize = Object.keys(this._voxelData).length;
+        }
+      }
       
       // Estimate: ~1KB per entity + ~100B per voxel data entry
       const estimated = (entityCount * 1024 + voxelDataSize * 100) / (1024 * 1024);
@@ -272,8 +458,12 @@ export class Heatbox {
 
   /**
    * Set heatmap data and render.
-   * ヒートマップデータを設定し、描画を実行します。
+   * Calculates bounds, prepares the voxel grid, runs classification, and finally renders.
+   *
+   * ヒートマップデータを設定し、境界計算→ボクセル分類→描画の順で処理します。
+   *
    * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
+   * @returns {Promise<void>} Resolves when rendering is completed / 描画完了時に解決
    */
   async setData(entities) {
     if (!isValidEntities(entities)) {
@@ -416,8 +606,10 @@ export class Heatbox {
   /**
    * Create heatmap from entities (async).
    * エンティティからヒートマップを作成（非同期 API）。
+   * Resolves with the statistics snapshot calculated by {@link getStatistics}.
+   * 描画完了後に {@link getStatistics} と同じ統計スナップショットを返します。
    * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
-   * @returns {Promise<Object>} Statistics info / 統計情報
+   * @returns {Promise<HeatboxStatistics>} Statistics info / 統計情報
    */
   async createFromEntities(entities) {
     if (!isValidEntities(entities)) {
@@ -480,7 +672,7 @@ export class Heatbox {
   /**
    * Get current options.
    * 現在のオプションを取得します。
-   * @returns {Object} Options / オプション
+   * @returns {HeatboxOptions} Options / オプション
    */
   getOptions() {
     return { ...this.options };
@@ -489,11 +681,18 @@ export class Heatbox {
   /**
    * Update options and re-render if applicable.
    * オプションを更新し、必要に応じて再描画します。
-   * @param {Object} newOptions - New options / 新しいオプション
+   * @param {HeatboxOptions} newOptions - New options (partial allowed) / 新しいオプション（部分指定可）
    */
   updateOptions(newOptions) {
     this.options = validateAndNormalizeOptions({ ...this.options, ...newOptions });
     this.renderer.options = this.options;
+
+    if (this.renderer.adaptiveController && typeof this.renderer.adaptiveController.updateOptions === 'function') {
+      this.renderer.adaptiveController.updateOptions(this.options);
+    }
+    if (this.renderer.geometryRenderer && typeof this.renderer.geometryRenderer.updateOptions === 'function') {
+      this.renderer.geometryRenderer.updateOptions(this.options);
+    }
     
     // 既存のヒートマップがある場合は再描画
     if (this._voxelData) {
@@ -539,7 +738,7 @@ export class Heatbox {
   /**
    * Get statistics information.
    * 統計情報を取得します（未作成の場合は null）。
-   * @returns {Object|null} Statistics or null / 統計情報 または null
+   * @returns {HeatboxStatistics|null} Statistics or null / 統計情報 または null
    */
   getStatistics() {
     if (!this._statistics) {
@@ -576,7 +775,7 @@ export class Heatbox {
   /**
    * Get bounds info if available.
    * 境界情報を取得します（未作成の場合は null）。
-   * @returns {Object|null} Bounds or null / 境界情報 または null
+   * @returns {HeatboxBounds|null} Bounds or null / 境界情報 または null
    */
   getBounds() {
     return this._bounds;
@@ -585,7 +784,7 @@ export class Heatbox {
   /**
    * Get debug information.
    * デバッグ情報を取得します。
-   * @returns {Object} Debug info / デバッグ情報
+   * @returns {HeatboxDebugInfo} Debug info / デバッグ情報
    */
   getDebugInfo() {
     const baseInfo = {
@@ -668,11 +867,8 @@ export class Heatbox {
    * - 俯角は安全範囲にクランプ（既定: -35°, 範囲: [-85°, -10°]）。
    * - 失敗時は `viewer.zoomTo(viewer.entities)` へフォールバックします。
    *
-   * @param {Object} [bounds] - Target bounds（省略時は現在のデータ境界）
-   * @param {Object} [options] - Fit view options
-   * @param {number} [options.headingDegrees=0] - カメラの方位（度）
-   * @param {number} [options.pitchDegrees=-35] - カメラの俯角（度、-85〜-10にクランプ）
-   * @param {number} [options.paddingPercent=0.1] - 表示パディング（0〜0.5）
+   * @param {HeatboxBounds|null} [bounds=null] - Target bounds（省略時は現在のデータ境界）
+   * @param {HeatboxFitViewOptions} [options={}] - Fit view options / フィットビュー設定
    * @returns {Promise<void>} カメラ移動完了時に解決する Promise
    * @example
    * // データを適用後、安定的にビューフィット

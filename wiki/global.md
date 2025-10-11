@@ -26,6 +26,10 @@ Default option values.
 
 Default statistics values.
 
+#### (constant) DENSITY_PATTERNS
+
+Density pattern generators map (ADR-0011 Phase 1)
+
 #### (constant) DEVICE_TIER_RANGES
 
 Device tier constants
@@ -77,19 +81,28 @@ Apply profile to options with user options taking priority
 
 #### calculateDataRange(bounds) → {Object}
 
-> English translation pending. See Japanese section below.
+Calculate physical span (meters) from geographic bounds.
 
 | Name | Type | Description |
 |---|---|---|
-| bounds | Object | 境界情報 |
+| bounds | Object | Bounds information / 境界情報 |
 
 #### clearWarnings()
 
 Clear all warning states (for testing)
 
+#### coerceBoolean(value, fallbackopt) → {boolean}
+
+Coerce various input types to boolean while respecting common string representations.
+
+| Name | Type | Attributes | Default | Description |
+|---|---|---|---|---|
+| value | * |  |  | 値 |
+| fallback | boolean | <optional> | false | 未定義/無効値時のフォールバック |
+
 #### createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMeters) → {Object}
 
-> English translation pending. See Japanese section below.
+Create an axis-aligned bounding box from a centre point and edge length.
 
 | Name | Type | Description |
 |---|---|---|
@@ -131,6 +144,44 @@ Occupancy-based voxel size estimation with iterative approximation.
 | entityCount | number | Number of entities / エンティティ数 |
 | options | Object | Calculation options / 計算オプション |
 
+#### generateClusteredPattern(bounds, count, clusterCount) → {Array.<Cesium.Entity>}
+
+Generate a clustered density pattern.
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| bounds | Object |  | Bounding box |
+| count | number |  | Total entity count |
+| clusterCount | number | 3 | Number of clusters (default: 3) |
+
+#### generateGradientPattern(bounds, count) → {Array.<Cesium.Entity>}
+
+Generate a gradient-based density pattern.
+
+| Name | Type | Description |
+|---|---|---|
+| bounds | Object | Bounding box |
+| count | number | Total entity count |
+
+#### generateMixedPattern(bounds, count) → {Array.<Cesium.Entity>}
+
+Generate a mixed density pattern.
+
+| Name | Type | Description |
+|---|---|---|
+| bounds | Object | Bounding box |
+| count | number | Total entity count |
+
+#### generatePatternData(pattern, bounds, count) → {Array.<Cesium.Entity>}
+
+Generate test dataset with specified pattern
+
+| Name | Type | Description |
+|---|---|---|
+| pattern | string | Pattern name ('clustered', 'scattered', 'gradient', 'mixed') |
+| bounds | Object | Bounding box |
+| count | number | Total entity count |
+
 #### generateSampleData(total, config) → {Array.<Cesium.Entity>}
 
 Generate clustered sample entities without adding to a viewer.
@@ -140,9 +191,18 @@ Generate clustered sample entities without adding to a viewer.
 | total | number | 総エンティティ数 |
 | config | Object | { clusters: Array<{ center:[lon,lat,alt], radius:number, density:number, count:number }> } |
 
+#### generateScatteredPattern(bounds, count) → {Array.<Cesium.Entity>}
+
+Generate a scattered density pattern.
+
+| Name | Type | Description |
+|---|---|---|
+| bounds | Object | Bounding box |
+| count | number | Total entity count |
+
 #### generateTestEntities(viewer, bounds, count) → {Array}
 
-> English translation pending. See Japanese section below.
+Generate pseudo-random test entities within the specified bounds.
 
 | Name | Type | Description |
 |---|---|---|
@@ -152,7 +212,7 @@ Generate clustered sample entities without adding to a viewer.
 
 #### getAllEntities(viewer) → {Array}
 
-> English translation pending. See Japanese section below.
+Retrieve every entity registered on the given viewer.
 
 | Name | Type | Description |
 |---|---|---|
@@ -184,7 +244,7 @@ Get list of available profile names
 
 #### getTokyoStationBounds() → {Object}
 
-> English translation pending. See Japanese section below.
+Return a convenience bounding box covering the Tokyo Station area.
 
 #### getWebGLInfo() → {Object}
 
@@ -258,6 +318,30 @@ Warn once about deprecated feature
 
 #### EmulationScope
 
+#### HeatboxAdaptiveParams
+
+#### HeatboxAutoVoxelSizeInfo
+
+#### HeatboxBounds
+
+#### HeatboxDebugInfo
+
+#### HeatboxFitViewOptions
+
+#### HeatboxGridInfo
+
+#### HeatboxHighlightStyle
+
+#### HeatboxOpacityResolverContext
+
+#### HeatboxOptions
+
+#### HeatboxOutlineWidthResolverParams
+
+#### HeatboxResolverVoxelInfo
+
+#### HeatboxStatistics
+
 #### OutlineRenderMode
 
 #### OutlineWidthPreset
@@ -290,6 +374,10 @@ Warn once about deprecated feature
 #### (constant) DEFAULT_STATISTICS
 
 統計情報のデフォルト値。
+
+#### (constant) DENSITY_PATTERNS
+
+パラメータ最適化用密度パターンマップ
 
 #### (constant) DEVICE_TIER_RANGES
 
@@ -342,19 +430,28 @@ Auto Render Budgetをオプションに適用
 
 #### calculateDataRange(bounds) → {Object}
 
-境界からデータ範囲を計算
+境界からデータ範囲（メートル）を計算します。
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| bounds | Object | 境界情報 |
+| bounds | Object | Bounds information / 境界情報 |
 
 #### clearWarnings()
 
 すべての警告状態をクリア（テスト用）
 
+#### coerceBoolean(value, fallbackopt) → {boolean}
+
+文字列で渡された真偽値表現にも対応した安全な真偽値変換を行う。
+
+| 名前 | 型 | 属性 | 既定値 | 説明 |
+|---|---|---|---|---|
+| value | * |  |  | 値 |
+| fallback | boolean | <optional> | false | 未定義/無効値時のフォールバック |
+
 #### createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMeters) → {Object}
 
-指定された中心点とサイズから境界を生成
+指定された中心点とサイズから境界を生成します。
 
 | 名前 | 型 | 説明 |
 |---|---|---|
@@ -396,6 +493,44 @@ Auto Render Budgetをオプションに適用
 | entityCount | number | Number of entities / エンティティ数 |
 | options | Object | Calculation options / 計算オプション |
 
+#### generateClusteredPattern(bounds, count, clusterCount) → {Array.<Cesium.Entity>}
+
+高密度クラスターの分布を生成します。
+
+| 名前 | 型 | 既定値 | 説明 |
+|---|---|---|---|
+| bounds | Object |  | Bounding box |
+| count | number |  | Total entity count |
+| clusterCount | number | 3 | Number of clusters (default: 3) |
+
+#### generateGradientPattern(bounds, count) → {Array.<Cesium.Entity>}
+
+グラデーション分布のデータセットを生成します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| bounds | Object | Bounding box |
+| count | number | Total entity count |
+
+#### generateMixedPattern(bounds, count) → {Array.<Cesium.Entity>}
+
+混在分布のデータセットを生成します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| bounds | Object | Bounding box |
+| count | number | Total entity count |
+
+#### generatePatternData(pattern, bounds, count) → {Array.<Cesium.Entity>}
+
+指定したパターンでテストデータセットを生成
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| pattern | string | Pattern name ('clustered', 'scattered', 'gradient', 'mixed') |
+| bounds | Object | Bounding box |
+| count | number | Total entity count |
+
 #### generateSampleData(total, config) → {Array.<Cesium.Entity>}
 
 ビューアに追加せず、クラスター状のサンプルエンティティ配列を生成します。
@@ -405,9 +540,18 @@ Auto Render Budgetをオプションに適用
 | total | number | 総エンティティ数 |
 | config | Object | { clusters: Array<{ center:[lon,lat,alt], radius:number, density:number, count:number }> } |
 
+#### generateScatteredPattern(bounds, count) → {Array.<Cesium.Entity>}
+
+疎分布のデータセットを生成します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| bounds | Object | Bounding box |
+| count | number | Total entity count |
+
 #### generateTestEntities(viewer, bounds, count) → {Array}
 
-指定された範囲内にランダムなテストエンティティを生成
+指定範囲内にランダムなテストエンティティを生成します。
 
 | 名前 | 型 | 説明 |
 |---|---|---|
@@ -417,7 +561,7 @@ Auto Render Budgetをオプションに適用
 
 #### getAllEntities(viewer) → {Array}
 
-指定されたviewerの全エンティティを取得
+指定された Viewer の全エンティティを取得します。
 
 | 名前 | 型 | 説明 |
 |---|---|---|
@@ -450,7 +594,7 @@ NODE_ENV=production では ERROR と WARN のみ、DEBUG=true または NODE_ENV
 
 #### getTokyoStationBounds() → {Object}
 
-東京駅周辺の境界を取得
+東京駅周辺の境界情報を返します。
 
 #### getWebGLInfo() → {Object}
 
@@ -524,6 +668,30 @@ v0.1.5: batchMode 非推奨化と新機能バリデーションを追加。
 | message | string | Warning message / 警告メッセージ |
 
 #### EmulationScope
+
+#### HeatboxAdaptiveParams
+
+#### HeatboxAutoVoxelSizeInfo
+
+#### HeatboxBounds
+
+#### HeatboxDebugInfo
+
+#### HeatboxFitViewOptions
+
+#### HeatboxGridInfo
+
+#### HeatboxHighlightStyle
+
+#### HeatboxOpacityResolverContext
+
+#### HeatboxOptions
+
+#### HeatboxOutlineWidthResolverParams
+
+#### HeatboxResolverVoxelInfo
+
+#### HeatboxStatistics
 
 #### OutlineRenderMode
 
