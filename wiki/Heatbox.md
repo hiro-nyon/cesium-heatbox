@@ -41,10 +41,7 @@ Fit view to data bounds with smart camera positioning.
 
 | Name | Type | Attributes | Default | Description |
 |---|---|---|---|---|
-| bounds | HeatboxBounds
-\|
-
-null | <optional> | null | Target bounds（省略時は現在のデータ境界） |
+| bounds | HeatboxBounds \| null | <optional> | null | Target bounds（省略時は現在のデータ境界） |
 | options | HeatboxFitViewOptions | <optional> | {} | Fit view options / フィットビュー設定 |
 
 #### getBounds() → {HeatboxBounds|null}
@@ -128,9 +125,7 @@ Get configuration profile details
 
 | Name | Type | Description |
 |---|---|---|
-| profileName | string | Profile name / プロファイル名
-Returned object shares the same keys as HeatboxOptions plus an optional `description`.
-戻り値は HeatboxOptions と同じキーに加えて `description` フィールドを含みます。 |
+| profileName | string | Profile name / プロファイル名 Returned object shares the same keys as HeatboxOptions plus an optional `description`. 戻り値は HeatboxOptions と同じキーに加えて `description` フィールドを含みます。 |
 
 #### (static) listProfiles() → {Array.<ProfileName>}
 
@@ -212,10 +207,7 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 
 | 名前 | 型 | 属性 | 既定値 | 説明 |
 |---|---|---|---|---|
-| bounds | HeatboxBounds
-\|
-
-null | <optional> | null | Target bounds（省略時は現在のデータ境界） |
+| bounds | HeatboxBounds \| null | <optional> | null | Target bounds（省略時は現在のデータ境界） |
 | options | HeatboxFitViewOptions | <optional> | {} | Fit view options / フィットビュー設定 |
 
 #### getBounds() → {HeatboxBounds|null}
@@ -298,9 +290,7 @@ null | <optional> | null | Target bounds（省略時は現在のデータ境界�
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| profileName | string | Profile name / プロファイル名
-Returned object shares the same keys as HeatboxOptions plus an optional `description`.
-戻り値は HeatboxOptions と同じキーに加えて `description` フィールドを含みます。 |
+| profileName | string | Profile name / プロファイル名 Returned object shares the same keys as HeatboxOptions plus an optional `description`. 戻り値は HeatboxOptions と同じキーに加えて `description` フィールドを含みます。 |
 
 #### (static) listProfiles() → {Array.<ProfileName>}
 

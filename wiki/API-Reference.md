@@ -20,8 +20,8 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 ### Version Information
 
-- **Current Version**: 0.1.15-alpha.3
-- **Last Updated**: 2025-10-10
+- **Current Version**: 0.1.15-alpha.4
+- **Last Updated**: 2025-10-11
 - **Generated From**: JSDoc → Markdown conversion
 
 ### Quick Links
@@ -48,8 +48,8 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 ### バージョン情報
 
-- **現在のバージョン**: 0.1.15-alpha.3
-- **最終更新**: 2025-10-10
+- **現在のバージョン**: 0.1.15-alpha.4
+- **最終更新**: 2025-10-11
 - **生成元**: JSDoc → Markdown変換
 
 ### クイックリンク

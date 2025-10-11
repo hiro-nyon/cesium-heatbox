@@ -45,20 +45,17 @@ export class GeometryRenderer {
    * ボクセルボックスエンティティを作成
    * 
    * @param {Object} config - Voxel configuration / ボクセル設定
-   * @param {number} config.centerLon - Center longitude / 中心経度
-   * @param {number} config.centerLat - Center latitude / 中心緯度  
-   * @param {number} config.centerAlt - Center altitude / 中心高度
-   * @param {number} config.cellSizeX - X dimension / X寸法
-   * @param {number} config.cellSizeY - Y dimension / Y寸法
-   * @param {number} config.boxHeight - Box height / ボックス高さ
-   * @param {Cesium.Color} config.color - Box color / ボックス色
-   * @param {number} config.opacity - Box opacity / ボックス透明度
-   * @param {boolean} config.shouldShowOutline - Show outline / 枠線表示
-   * @param {Cesium.Color} config.outlineColor - Outline color / 枠線色  
-   * @param {number} config.outlineWidth - Outline width / 枠線太さ
-   * @param {Object} config.voxelInfo - Voxel data / ボクセルデータ
-   * @param {string} config.voxelKey - Voxel key / ボクセルキー
-   * @param {boolean} [config.emulateThick] - Use thick outline emulation / 太線エミュレーション使用
+   * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
+   * `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、
+   * `boxHeight` (number) / ボックス高さ、
+   * `color` (Cesium.Color) / ボックス色、
+   * `opacity` (number) / ボックス透明度、
+   * `shouldShowOutline` (boolean) / 枠線表示、
+   * `outlineColor` (Cesium.Color) / 枠線色、
+   * `outlineWidth` (number) / 枠線太さ、
+   * `voxelInfo` (Object) / ボクセルデータ、
+   * `voxelKey` (string) / ボクセルキー、
+   * `emulateThick` (boolean, optional) / 太線エミュレーション使用
    * @returns {Cesium.Entity} Created voxel entity / 作成されたボクセルエンティティ
    */
   createVoxelBox(config) {
@@ -136,16 +133,12 @@ export class GeometryRenderer {
    * ボクセルのインセット枠線を作成
    * 
    * @param {Object} config - Inset outline configuration / インセット枠線設定
-   * @param {number} config.centerLon - Center longitude / 中心経度
-   * @param {number} config.centerLat - Center latitude / 中心緯度
-   * @param {number} config.centerAlt - Center altitude / 中心高度
-   * @param {number} config.baseSizeX - Base X size / ベースX寸法
-   * @param {number} config.baseSizeY - Base Y size / ベースY寸法
-   * @param {number} config.baseSizeZ - Base Z size / ベースZ寸法
-   * @param {Cesium.Color} config.outlineColor - Outline color / 枠線色
-   * @param {number} config.outlineWidth - Outline width / 枠線太さ
-   * @param {string} config.voxelKey - Voxel key / ボクセルキー
-   * @param {number} [config.insetAmount] - Custom inset amount / カスタムインセット量
+   * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
+   * `baseSizeX`, `baseSizeY`, `baseSizeZ` (number) / ベース寸法、
+   * `outlineColor` (Cesium.Color) / 枠線色、
+   * `outlineWidth` (number) / 枠線太さ、
+   * `voxelKey` (string) / ボクセルキー、
+   * `insetAmount` (number, optional) / カスタムインセット量
    * @returns {Cesium.Entity} Created inset outline entity / 作成されたインセット枠線エンティティ
    */
   createInsetOutline(config) {
@@ -225,17 +218,11 @@ export class GeometryRenderer {
    * 枠線の厚み部分を視覚化するフレーム構造を作成
    * 
    * @param {Object} config - Frame configuration / フレーム設定
-   * @param {number} config.centerLon - Center longitude / 中心経度
-   * @param {number} config.centerLat - Center latitude / 中心緯度
-   * @param {number} config.centerAlt - Center altitude / 中心高度
-   * @param {number} config.outerX - Outer X size / 外側Xサイズ
-   * @param {number} config.outerY - Outer Y size / 外側Yサイズ
-   * @param {number} config.outerZ - Outer Z size / 外側Zサイズ
-   * @param {number} config.innerX - Inner X size / 内側Xサイズ
-   * @param {number} config.innerY - Inner Y size / 内側Yサイズ
-   * @param {number} config.innerZ - Inner Z size / 内側Zサイズ
-   * @param {Cesium.Color} config.frameColor - Frame color / フレーム色
-   * @param {string} config.voxelKey - Voxel key / ボクセルキー
+   * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
+   * `outerX`, `outerY`, `outerZ` (number) / 外枠寸法、
+   * `innerX`, `innerY`, `innerZ` (number) / 内枠寸法、
+   * `frameColor` (Cesium.Color) / フレーム色、
+   * `voxelKey` (string) / ボクセルキー
    * @returns {Array<Cesium.Entity>} Created frame entities / 作成されたフレームエンティティ配列
    */
   createThickOutlineFrames(config) {
@@ -384,15 +371,12 @@ export class GeometryRenderer {
    * 太線エミュレーション用のエッジポリライン作成
    * 
    * @param {Object} config - Edge polyline configuration / エッジポリライン設定
-   * @param {number} config.centerLon - Center longitude / 中心経度
-   * @param {number} config.centerLat - Center latitude / 中心緯度
-   * @param {number} config.centerAlt - Center altitude / 中心高度
-   * @param {number} config.cellSizeX - X dimension / X寸法
-   * @param {number} config.cellSizeY - Y dimension / Y寸法
-   * @param {number} config.boxHeight - Box height / ボックス高さ
-   * @param {Cesium.Color} config.outlineColor - Outline color / 枠線色
-   * @param {number} config.outlineWidth - Outline width / 枠線太さ
-   * @param {string} config.voxelKey - Voxel key / ボクセルキー
+   * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
+   * `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、
+   * `boxHeight` (number) / ボックス高さ、
+   * `outlineColor` (Cesium.Color) / 枠線色、
+   * `outlineWidth` (number) / 枠線太さ、
+   * `voxelKey` (string) / ボクセルキー
    * @returns {Array<Cesium.Entity>} Created polyline entities / 作成されたポリラインエンティティ配列
    */
   createEdgePolylines(config) {

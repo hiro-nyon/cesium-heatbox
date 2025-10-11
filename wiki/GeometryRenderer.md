@@ -24,7 +24,7 @@ Create edge polylines for thick outline emulation
 
 | Name | Type | Description |
 |---|---|---|
-| config | Object | Edge polyline configuration / エッジポリライン設定<br>Properties: `centerLon`・`centerLat`・`centerAlt` (number) – Center position / 中心座標; `cellSizeX`・`cellSizeY` (number) – Footprint dimensions / フットプリント寸法; `boxHeight` (number) – Box height / ボックス高さ; `outlineColor` (Cesium.Color) – Outline color / 枠線色; `outlineWidth` (number) – Outline width / 枠線太さ; `voxelKey` (string) – Voxel key / ボクセルキー |
+| config | Object | Edge polyline configuration / エッジポリライン設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、 `boxHeight` (number) / ボックス高さ、 `outlineColor` (Cesium.Color) / 枠線色、 `outlineWidth` (number) / 枠線太さ、 `voxelKey` (string) / ボクセルキー |
 
 #### createInsetOutline(config) → {Cesium.Entity}
 
@@ -32,7 +32,7 @@ Create inset outline for a voxel
 
 | Name | Type | Description |
 |---|---|---|
-| config | Object | Inset outline configuration / インセット枠線設定<br>Properties: `centerLon`・`centerLat`・`centerAlt` (number) – Center position / 中心座標; `baseSizeX`・`baseSizeY`・`baseSizeZ` (number) – Base dimensions / ベース寸法; `outlineColor` (Cesium.Color) – Outline color / 枠線色; `outlineWidth` (number) – Outline width / 枠線太さ; `voxelKey` (string) – Voxel key / ボクセルキー; `insetAmount` (number, optional) – Custom inset amount / カスタムインセット量 |
+| config | Object | Inset outline configuration / インセット枠線設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `baseSizeX`, `baseSizeY`, `baseSizeZ` (number) / ベース寸法、 `outlineColor` (Cesium.Color) / 枠線色、 `outlineWidth` (number) / 枠線太さ、 `voxelKey` (string) / ボクセルキー、 `insetAmount` (number, optional) / カスタムインセット量 |
 
 #### createThickOutlineFrames(config) → {Array.<Cesium.Entity>}
 
@@ -40,7 +40,7 @@ Create thick outline frame structures
 
 | Name | Type | Description |
 |---|---|---|
-| config | Object | Frame configuration / フレーム設定<br>Properties: `centerLon`・`centerLat`・`centerAlt` (number) – Center position / 中心座標; `outerX`・`outerY`・`outerZ` (number) – Outer frame size / 外枠サイズ; `innerX`・`innerY`・`innerZ` (number) – Inner frame size / 内枠サイズ; `frameColor` (Cesium.Color) – Frame color / フレーム色; `voxelKey` (string) – Voxel key / ボクセルキー |
+| config | Object | Frame configuration / フレーム設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `outerX`, `outerY`, `outerZ` (number) / 外枠寸法、 `innerX`, `innerY`, `innerZ` (number) / 内枠寸法、 `frameColor` (Cesium.Color) / フレーム色、 `voxelKey` (string) / ボクセルキー |
 
 #### createVoxelBox(config) → {Cesium.Entity}
 
@@ -48,7 +48,7 @@ Create a voxel box entity
 
 | Name | Type | Description |
 |---|---|---|
-| config | Object | Voxel configuration / ボクセル設定<br>Properties: `centerLon`・`centerLat`・`centerAlt` (number) – Center position / 中心座標; `cellSizeX`・`cellSizeY` (number) – Footprint dimensions / フットプリント寸法; `boxHeight` (number) – Box height / ボックス高さ; `color` (Cesium.Color) – Box color / ボックス色; `opacity` (number) – Box opacity / ボックス透明度; `shouldShowOutline` (boolean) – Show outline / 枠線表示; `outlineColor` (Cesium.Color) – Outline color / 枠線色; `outlineWidth` (number) – Outline width / 枠線太さ; `voxelInfo` (Object) – Voxel data / ボクセルデータ; `voxelKey` (string) – Voxel key / ボクセルキー; `emulateThick` (boolean, optional) – Use thick outline emulation / 太線エミュレーション使用 |
+| config | Object | Voxel configuration / ボクセル設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、 `boxHeight` (number) / ボックス高さ、 `color` (Cesium.Color) / ボックス色、 `opacity` (number) / ボックス透明度、 `shouldShowOutline` (boolean) / 枠線表示、 `outlineColor` (Cesium.Color) / 枠線色、 `outlineWidth` (number) / 枠線太さ、 `voxelInfo` (Object) / ボクセルデータ、 `voxelKey` (string) / ボクセルキー、 `emulateThick` (boolean, optional) / 太線エミュレーション使用 |
 
 #### createVoxelDescription(voxelInfo, voxelKey) → {string}
 
@@ -116,31 +116,31 @@ Update rendering options
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| config | Object | エッジポリライン設定 / Edge polyline configuration<br>プロパティ: centerLon・centerLat・centerAlt（number） - 中心座標 / Center position; cellSizeX・cellSizeY（number） - フットプリント寸法 / Footprint dimensions; boxHeight（number） - ボックス高さ / Box height; outlineColor（Cesium.Color） - 枠線色 / Outline color; outlineWidth（number） - 枠線太さ / Outline width; voxelKey（string） - ボクセルキー / Voxel key |
+| config | Object | Edge polyline configuration / エッジポリライン設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、 `boxHeight` (number) / ボックス高さ、 `outlineColor` (Cesium.Color) / 枠線色、 `outlineWidth` (number) / 枠線太さ、 `voxelKey` (string) / ボクセルキー |
 
 #### createInsetOutline(config) → {Cesium.Entity}
 
-ボクセル用のインセット枠線を作成
+ボクセルのインセット枠線を作成
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| config | Object | インセット枠線設定 / Inset outline configuration<br>プロパティ: centerLon・centerLat・centerAlt（number） - 中心座標 / Center position; baseSizeX・baseSizeY・baseSizeZ（number） - ベース寸法 / Base dimensions; outlineColor（Cesium.Color） - 枠線色 / Outline color; outlineWidth（number） - 枠線太さ / Outline width; voxelKey（string） - ボクセルキー / Voxel key; insetAmount（number, optional） - カスタムインセット量 / Custom inset amount |
+| config | Object | Inset outline configuration / インセット枠線設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `baseSizeX`, `baseSizeY`, `baseSizeZ` (number) / ベース寸法、 `outlineColor` (Cesium.Color) / 枠線色、 `outlineWidth` (number) / 枠線太さ、 `voxelKey` (string) / ボクセルキー、 `insetAmount` (number, optional) / カスタムインセット量 |
 
 #### createThickOutlineFrames(config) → {Array.<Cesium.Entity>}
 
-太枠フレーム構造を生成
+枠線の厚み部分を視覚化するフレーム構造を作成
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| config | Object | フレーム設定 / Frame configuration<br>プロパティ: centerLon・centerLat・centerAlt（number） - 中心座標 / Center position; outerX・outerY・outerZ（number） - 外枠サイズ / Outer frame size; innerX・innerY・innerZ（number） - 内枠サイズ / Inner frame size; frameColor（Cesium.Color） - フレーム色 / Frame color; voxelKey（string） - ボクセルキー / Voxel key |
+| config | Object | Frame configuration / フレーム設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `outerX`, `outerY`, `outerZ` (number) / 外枠寸法、 `innerX`, `innerY`, `innerZ` (number) / 内枠寸法、 `frameColor` (Cesium.Color) / フレーム色、 `voxelKey` (string) / ボクセルキー |
 
 #### createVoxelBox(config) → {Cesium.Entity}
 
-ボクセルボックスを生成
+ボクセルボックスエンティティを作成
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| config | Object | ボクセル設定 / Voxel configuration<br>プロパティ: centerLon・centerLat・centerAlt（number） - 中心座標 / Center position; cellSizeX・cellSizeY（number） - フットプリント寸法 / Footprint dimensions; boxHeight（number） - ボックス高さ / Box height; color（Cesium.Color） - ボックス色 / Box color; opacity（number） - ボックス透明度 / Box opacity; shouldShowOutline（boolean） - 枠線表示 / Show outline; outlineColor（Cesium.Color） - 枠線色 / Outline color; outlineWidth（number） - 枠線太さ / Outline width; voxelInfo（Object） - ボクセルデータ / Voxel data; voxelKey（string） - ボクセルキー / Voxel key; emulateThick（boolean, optional） - 太線エミュレーション使用 / Use thick outline emulation |
+| config | Object | Voxel configuration / ボクセル設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、 `boxHeight` (number) / ボックス高さ、 `color` (Cesium.Color) / ボックス色、 `opacity` (number) / ボックス透明度、 `shouldShowOutline` (boolean) / 枠線表示、 `outlineColor` (Cesium.Color) / 枠線色、 `outlineWidth` (number) / 枠線太さ、 `voxelInfo` (Object) / ボクセルデータ、 `voxelKey` (string) / ボクセルキー、 `emulateThick` (boolean, optional) / 太線エミュレーション使用 |
 
 #### createVoxelDescription(voxelInfo, voxelKey) → {string}
 

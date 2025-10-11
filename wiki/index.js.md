@@ -28,7 +28,7 @@ export { Heatbox as CesiumHeatbox };
  * Library metadata.
  * ライブラリのメタ情報。
  */
-export const VERSION = '0.1.15-alpha.3';
+export const VERSION = '0.1.15-alpha.4';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 
@@ -101,7 +101,7 @@ export { Heatbox as CesiumHeatbox };
  * Library metadata.
  * ライブラリのメタ情報。
  */
-export const VERSION = '0.1.15-alpha.3';
+export const VERSION = '0.1.15-alpha.4';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 

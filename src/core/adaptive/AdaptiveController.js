@@ -21,10 +21,11 @@ export class AdaptiveController {
    * AdaptiveController constructor
    * @param {Object} options - Adaptive control options / 適応制御オプション
    * @param {Object} options.adaptiveParams - Adaptive parameters / 適応パラメータ
-   * @param {number} options.adaptiveParams.neighborhoodRadius - Neighborhood search radius / 近傍探索半径
-   * @param {number} options.adaptiveParams.densityThreshold - Dense area threshold / 密集エリア判定閾値
-   * @param {number} options.adaptiveParams.cameraDistanceFactor - Camera distance factor / カメラ距離係数
-   * @param {number} options.adaptiveParams.overlapRiskFactor - Overlap risk factor / 重なりリスク係数
+   * Properties: `neighborhoodRadius`, `densityThreshold`, `cameraDistanceFactor`,
+   * `overlapRiskFactor`, `outlineWidthRange`, `boxOpacityRange`,
+   * `outlineOpacityRange`, `zScaleCompensation`, `overlapDetection`
+   * / プロパティ: 近傍探索半径・密集判定閾値・カメラ距離係数・重なりリスク係数・
+   * 枠線太さ範囲・ボックス不透明度範囲・枠線不透明度範囲・Z軸補正フラグ・重なり検出フラグ
    */
   constructor(options = {}) {
     const mergedAdaptiveParams = {
@@ -44,10 +45,7 @@ export class AdaptiveController {
    * Calculate neighborhood density around a voxel
    * ボクセル周辺の近傍密度を計算
    * 
-   * @param {Object} voxelInfo - Target voxel information / 対象ボクセル情報
-   * @param {number} voxelInfo.x - X coordinate / X座標
-   * @param {number} voxelInfo.y - Y coordinate / Y座標  
-   * @param {number} voxelInfo.z - Z coordinate / Z座標
+   * @param {Object} voxelInfo - Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値）
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @param {number} [radius] - Search radius override / 探索半径オーバーライド
    * @param {Object} [renderOptions] - Live render options snapshot / 現在の描画オプション
@@ -139,10 +137,7 @@ export class AdaptiveController {
    * Count adjacent voxels (6 directions: ±X, ±Y, ±Z)
    * 隣接ボクセルをカウント（6方向：±X, ±Y, ±Z）（v0.1.15 Phase 2 - ADR-0011）
    * 
-   * @param {Object} voxelInfo - Target voxel information / 対象ボクセル情報
-   * @param {number} voxelInfo.x - X coordinate / X座標
-   * @param {number} voxelInfo.y - Y coordinate / Y座標
-   * @param {number} voxelInfo.z - Z coordinate / Z座標
+   * @param {Object} voxelInfo - Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値）
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @returns {number} Number of adjacent voxels / 隣接ボクセル数
    */
@@ -176,7 +171,7 @@ export class AdaptiveController {
    * Detect overlap and recommend rendering mode
    * 隣接重なりを検出してレンダリングモードを推奨（v0.1.15 Phase 2 - ADR-0011）
    * 
-   * @param {Object} voxelInfo - Target voxel information / 対象ボクセル情報
+   * @param {Object} voxelInfo - Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値）
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @returns {Object} Recommended rendering settings / 推奨レンダリング設定
    * @returns {string} returns.recommendedMode - Recommended outline render mode / 推奨アウトライン描画モード

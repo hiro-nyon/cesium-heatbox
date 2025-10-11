@@ -29,7 +29,7 @@ Count adjacent voxels (6 directions: ±X, ±Y, ±Z)
 
 | Name | Type | Description |
 |---|---|---|
-| voxelInfo | Object | Target voxel information / 対象ボクセル情報<br>Properties: `x`, `y`, `z` (`number`) |
+| voxelInfo | Object | Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値） |
 | voxelData | Map | All voxel data / 全ボクセルデータ |
 
 #### _detectOverlapAndRecommendMode(voxelInfo, voxelData) → {Object|string|number|string}
@@ -38,7 +38,7 @@ Detect overlap and recommend rendering mode
 
 | Name | Type | Description |
 |---|---|---|
-| voxelInfo | Object | Target voxel information / 対象ボクセル情報 |
+| voxelInfo | Object | Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値） |
 | voxelData | Map | All voxel data / 全ボクセルデータ |
 
 #### applyPresetLogic(preset, isTopN, normalizedDensity, isDenseArea, baseOptions) → {Object}
@@ -70,12 +70,12 @@ Calculate adaptive parameters for a voxel
 
 Calculate neighborhood density around a voxel
 
-| Name | Type | Attributes | Description |
-|---|---|---|---|
-| voxelInfo | Object |  | Target voxel information / 対象ボクセル情報<br>Properties: `x`, `y`, `z` (`number`) |
-| voxelData | Map |  | All voxel data / 全ボクセルデータ |
-| radius | number | <optional> | Search radius override / 探索半径オーバーライド |
-| renderOptions | Object | <optional> | Live render options snapshot / 現在の描画オプション |
+| Name | Type | Attributes | Default | Description |
+|---|---|---|---|---|
+| voxelInfo | Object |  |  | Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値） |
+| voxelData | Map |  |  | All voxel data / 全ボクセルデータ |
+| radius | number | <optional> | null | Search radius override / 探索半径オーバーライド |
+| renderOptions | Object | <optional> | null | Live render options snapshot / 現在の描画オプション |
 
 #### getConfiguration() → {Object}
 
@@ -119,8 +119,8 @@ Z軸スケール補正係数を計算（v0.1.15 Phase 1 - ADR-0011）
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| voxelInfo | Object | 対象ボクセル情報 / Target voxel information<br>プロパティ: `x`・`y`・`z`（number） |
-| voxelData | Map | 全ボクセルデータ / All voxel data |
+| voxelInfo | Object | Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値） |
+| voxelData | Map | All voxel data / 全ボクセルデータ |
 
 #### _detectOverlapAndRecommendMode(voxelInfo, voxelData) → {Object|string|number|string}
 
@@ -128,7 +128,7 @@ Z軸スケール補正係数を計算（v0.1.15 Phase 1 - ADR-0011）
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| voxelInfo | Object | Target voxel information / 対象ボクセル情報 |
+| voxelInfo | Object | Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値） |
 | voxelData | Map | All voxel data / 全ボクセルデータ |
 
 #### applyPresetLogic(preset, isTopN, normalizedDensity, isDenseArea, baseOptions) → {Object}
@@ -160,12 +160,12 @@ Z軸スケール補正係数を計算（v0.1.15 Phase 1 - ADR-0011）
 
 ボクセル周辺の近傍密度を計算
 
-| 名前 | 型 | 属性 | 説明 |
-|---|---|---|---|
-| voxelInfo | Object |  | 対象ボクセル情報 / Target voxel information<br>プロパティ: `x`・`y`・`z`（number） |
-| voxelData | Map |  | 全ボクセルデータ / All voxel data |
-| radius | number | <optional> | 探索半径オーバーライド / Search radius override |
-| renderOptions | Object | <optional> | 現在の描画オプション / Live render options snapshot |
+| 名前 | 型 | 属性 | 既定値 | 説明 |
+|---|---|---|---|---|
+| voxelInfo | Object |  |  | Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値） |
+| voxelData | Map |  |  | All voxel data / 全ボクセルデータ |
+| radius | number | <optional> | null | Search radius override / 探索半径オーバーライド |
+| renderOptions | Object | <optional> | null | Live render options snapshot / 現在の描画オプション |
 
 #### getConfiguration() → {Object}
 

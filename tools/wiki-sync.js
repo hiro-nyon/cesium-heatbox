@@ -189,6 +189,33 @@ function convertTableToMarkdown(table, lang = 'bi') {
   
   if (rows.length === 0) return '';
 
+  const formatCell = (cell) => {
+    const clone = cell.cloneNode(true);
+    // Preserve inline code indicators
+    const isDescriptionCell = clone.classList && clone.classList.contains('description');
+    clone.querySelectorAll('code').forEach((codeEl) => {
+      const text = codeEl.textContent.trim();
+      const replacementText = isDescriptionCell && text ? `\`${text}\`` : text;
+      const replacement = clone.ownerDocument.createTextNode(replacementText);
+      codeEl.replaceWith(replacement);
+    });
+    // Treat <br> as a separator
+    clone.querySelectorAll('br').forEach((brEl) => {
+      brEl.replaceWith(clone.ownerDocument.createTextNode(' '));
+    });
+    const nestedTables = clone.querySelectorAll('table.params');
+    const summaries = [];
+    nestedTables.forEach((nested) => {
+      summaries.push(formatNestedParamsTable(nested, lang));
+      nested.remove();
+    });
+    const baseText = clone.textContent.trim().replace(/\s+/g, ' ').replace(/\|/g, '\\|');
+    const summaryText = summaries.filter(Boolean).join(' ');
+    if (baseText && summaryText) return `${baseText} ${summaryText}`;
+    if (summaryText) return summaryText;
+    return baseText;
+  };
+
   // ヘッダー
   const headerCells = rows[0].querySelectorAll('th, td');
   if (headerCells.length > 0) {
@@ -216,7 +243,7 @@ function convertTableToMarkdown(table, lang = 'bi') {
     for (let i = 1; i < rows.length; i++) {
       const cells = rows[i].querySelectorAll('td');
       if (cells.length > 0) {
-        const data = Array.from(cells).map(cell => cell.textContent.trim().replace(/\|/g, '\\|'));
+        const data = Array.from(cells).map(cell => formatCell(cell));
         markdown += `| ${data.join(' | ')} |\n`;
       }
     }
@@ -224,6 +251,32 @@ function convertTableToMarkdown(table, lang = 'bi') {
   }
 
   return markdown;
+}
+
+function formatNestedParamsTable(table, lang = 'bi') {
+  const rows = table.querySelectorAll('tr');
+  if (rows.length <= 1) return '';
+
+  const label = lang === 'ja' ? 'プロパティ' : lang === 'en' ? 'Properties' : 'Properties';
+  const entries = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const cells = rows[i].querySelectorAll('td');
+    if (cells.length === 0) continue;
+    const name = cells[0]?.textContent.trim();
+    const type = cells[1]?.textContent.trim();
+    const desc = cells[cells.length - 1]?.textContent.trim();
+    if (!name && !desc) continue;
+
+    let entry = '';
+    if (name) entry += `\`${name}\``;
+    if (type) entry += entry ? ` (\`${type}\`)` : `(\`${type}\`)`;
+    if (desc) entry += entry ? ` - ${desc}` : desc;
+    if (entry) entries.push(entry.replace(/\|/g, '\\|').replace(/\s+/g, ' '));
+  }
+
+  if (!entries.length) return '';
+  return `${label}: ${entries.join('; ')}`;
 }
 
 /**

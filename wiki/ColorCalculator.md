@@ -26,8 +26,7 @@ All methods can be used without creating an instance (static methods).
 |---|---|---|---|---|
 | normalizedDensity | number |  |  | Normalized density (0-1) / 正規化された密度 (0-1) |
 | rawValue | number | <optional> | null | Raw value for diverging scheme / 生値（二極性配色用） |
-| options | Object |  |  | Color calculation options / 色計算オプション<br>Properties: `minColor` (Array.<number>, optional) – Min color RGB values / 最小値色RGB値; `maxColor` (Array.<number>, optional) – Max color RGB values / 最大値色RGB値; `colorMap` (string, optional) – Color map name (`viridis`\|`inferno`\|`custom`) / カラーマップ名; `diverging` (boolean, optional) – Use diverging color scheme / 二極性配色の利用; `divergingPivot` (number, optional) – Pivot value for diverging scheme / 二極性配色のピボット値 |
-
+| options | Object |  |  | Color calculation options / 色計算オプション Properties: `minColor` (`Array.`)・`maxColor` (`Array.`)・`colorMap` (`viridis\|inferno\|custom`) ・`diverging` (`boolean`)・`divergingPivot` (`number`) / プロパティ: 最小色・最大色・カラーマップ名・ 二極性配色フラグ・二極性ピボット値 |
 
 #### (static) calculateDivergingColor(rawValue, options) → {Cesium.Color}
 
@@ -37,8 +36,7 @@ When pivot>0: standard deviation-based normalization around the pivot
 | Name | Type | Description |
 |---|---|---|
 | rawValue | number | Raw value / 生値 |
-| options | Object | Diverging color options / 二極性配色オプション<br>Properties: `divergingPivot` (number, optional) – Pivot value / ピボット値 |
-
+| options | Object | Diverging color options / 二極性配色オプション Properties: `divergingPivot` (`number`) / プロパティ: ピボット値 |
 
 #### (static) getAvailableColorMaps() → {Array.<string>}
 
@@ -97,13 +95,7 @@ Diverging Color Behavior / 二極性配色の動作:
 |---|---|---|---|---|
 | normalizedDensity | number |  |  | Normalized density (0-1) / 正規化された密度 (0-1) |
 | rawValue | number | <optional> | null | Raw value for diverging scheme / 生値（二極性配色用） |
-| options | Object |  |  | Color calculation options / 色計算オプション<br>Properties: `minColor` (Array.<number>, optional) – Min color RGB values / 最小値色RGB値; `maxColor` (Array.<number>, optional) – Max color RGB values / 最大値色RGB値; `colorMap` (string, optional) – Color map name (`viridis`\|`inferno`\|`custom`) / カラーマップ名; `diverging` (boolean, optional) – Use diverging color scheme / 二極性配色の利用; `divergingPivot` (number, optional) – Pivot value for diverging scheme / 二極性配色のピボット値 |
-
-| minColor | Array.<number> | <optional> | [0, 0, 255] | Min color RGB values / 最小値色のRGB値 |
-| maxColor | Array.<number> | <optional> | [255, 0, 0] | Max color RGB values / 最大値色のRGB値 |
-| colorMap | string | <optional> |  | Color map name (viridis\|inferno\|custom) / カラーマップ名 |
-| diverging | boolean | <optional> | false | Use diverging color scheme / 二極性配色を使用 |
-| divergingPivot | number | <optional> | 0 | Pivot value for diverging scheme / 二極性配色のピボット値 |
+| options | Object |  |  | Color calculation options / 色計算オプション Properties: `minColor` (`Array.`)・`maxColor` (`Array.`)・`colorMap` (`viridis\|inferno\|custom`) ・`diverging` (`boolean`)・`divergingPivot` (`number`) / プロパティ: 最小色・最大色・カラーマップ名・ 二極性配色フラグ・二極性ピボット値 |
 
 #### (static) calculateDivergingColor(rawValue, options) → {Cesium.Color}
 
@@ -114,9 +106,7 @@ Pivot>0時: ピボット中心の標準的な偏差ベース正規化
 | 名前 | 型 | 説明 |
 |---|---|---|
 | rawValue | number | Raw value / 生値 |
-| options | Object | Diverging color options / 二極性配色オプション<br>Properties: `divergingPivot` (number, optional) – Pivot value / ピボット値 |
-
-| divergingPivot | number | <optional> | 0 | Pivot value / ピボット値 |
+| options | Object | Diverging color options / 二極性配色オプション Properties: `divergingPivot` (`number`) / プロパティ: ピボット値 |
 
 #### (static) getAvailableColorMaps() → {Array.<string>}
 

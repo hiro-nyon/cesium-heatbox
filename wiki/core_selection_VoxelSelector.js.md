@@ -63,8 +63,8 @@ export class VoxelSelector {
    * @param {Array} allVoxels - All voxels to select from / 選択元の全ボクセル
    * @param {number} maxCount - Maximum number of voxels to select / 選択する最大ボクセル数
    * @param {Object} context - Selection context / 選択コンテキスト
-   * @param {Object} context.grid - Grid information / グリッド情報
-   * @param {Object} [context.bounds] - Data bounds / データ境界
+   * Properties: `grid` (Object) – Grid information / グリッド情報,
+   * `bounds` (Object, optional) – Data bounds / データ境界
    * @returns {Object} Selection result / 選択結果
    */
   selectVoxels(allVoxels, maxCount, context = {}) {
@@ -475,8 +475,8 @@ export class VoxelSelector {
    * @param {Array} allVoxels - All voxels to select from / 選択元の全ボクセル
    * @param {number} maxCount - Maximum number of voxels to select / 選択する最大ボクセル数
    * @param {Object} context - Selection context / 選択コンテキスト
-   * @param {Object} context.grid - Grid information / グリッド情報
-   * @param {Object} [context.bounds] - Data bounds / データ境界
+   * Properties: `grid` (Object) – Grid information / グリッド情報,
+   * `bounds` (Object, optional) – Data bounds / データ境界
    * @returns {Object} Selection result / 選択結果
    */
   selectVoxels(allVoxels, maxCount, context = {}) {
