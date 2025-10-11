@@ -96,12 +96,11 @@ Priority: High | Target: 2025-11
 ### v0.1.12（APIクリーンアップ＋観測可能性）- API Cleanup & Observability
 Priority: Medium | Target: 2026-01
 - Scope
-  - [API Cleanup（Breaking含む）]
-    - オプション名の統一: `fitViewOptions.pitch`/`heading` → `pitchDegrees`/`headingDegrees`（旧名削除）
-    - `outlineEmulation` → `outlineRenderMode: 'emulation-only'` に集約
-    - Resolver系の削除: `outlineWidthResolver`/`outlineOpacityResolver`/`boxOpacityResolver`
-    - 代替: `outlineWidthPreset` + `adaptiveOutlines` + `adaptiveParams`
-    - `types/` と README/Wiki の更新、`MIGRATION.md` に移行手順を掲載
+  - [API Cleanup（非破壊）]
+    - オプション名の統一: `fitViewOptions.pitch`/`heading` → `pitchDegrees`/`headingDegrees`。**旧名は互換のため残し、deprecation 警告のみ**（削除は v1.1.0 安定後、少なくとも2リリースのグレイス期間を設けてから）。
+    - `outlineEmulation` → `outlineRenderMode: 'emulation-only'` に集約。**旧名は 1.2.0 まで互換を維持**（deprecation 警告のみ）。
+    - Resolver 系は**削除しない**：`outlineWidthResolver` / `outlineOpacityResolver` / `boxOpacityResolver` は **非推奨のまま存続**。**削除は v1.1.0 の Adaptive 実装が安定化し、MIGRATION.md / RELEASE_NOTES.md が揃った後**（少なくとも2リリースのグレイス期間を置く）。
+    - 代替: `outlineWidthPreset` + `adaptiveOutlines` + `adaptiveParams`（新 API へ段階的移行）。
   - [Observability/Profiles]
   - [ ] Advanced に簡易パフォーマンスオーバーレイ（描画数/TopN比率/平均密度/フレーム時間）
   - [ ] ベンチ計測の整備（`npm run benchmark` の出力整形としきい値表示）
@@ -110,7 +109,8 @@ Priority: Medium | Target: 2026-01
   - [ ] Auto Quality（任意拡張）: `qualityMode: 'manual'|'auto'`, `targetFPS` 等で“選抜側のつまみ（K/比率/戦略）”のみを実測FPSに応じて微調整（グリッド再構築は既定で行わない）
 - Deliverables
   - [ ] `MIGRATION.md` 更新（0.1.9 → 0.1.11 → 0.1.12）とWiki「Migration」への同期
-  - [ ] `types/` 更新（削除・名称統一を反映）
+  - [ ] `types/` と README/Wiki の更新、`MIGRATION.md` に移行手順を掲載
+  - [ ] `types/` 更新（**旧名も型として受理**し deprecate、IDE で警告が出るように JSDoc を付与）
   - [ ] `examples/advanced/` にオーバーレイUI（ON/OFF）
   - [ ] `tools/benchmark.js` の改善（集計とCSV/markdownサマリ）
   - [ ] ドキュメント: パフォーマンスの見方/ボトルネック傾向
@@ -255,7 +255,7 @@ Priority: High | Target: 2026-01
   → 旧Resolver実装と**視覚パリティ**を達成（比較スクリーンショット同梱）
   - [ ] 代表データで各分類が視覚的に区別でき、凡例/ガイドが同期表示される。
   - [ ] 透明度分類を有効化した場合、fill/outline（標準/インセット/エミュ）に0–1で正しく反映される。
-  - [ ] 適応的透明度（resolver）と併用時の優先順位（分類→resolver もしくは resolver→分類）を明示し、挙動が一貫。
+  - [ ] 併用時の優先順位は **Resolver > Classification/Adaptive > Base** とし、Docs/テストに明記（0.1.15 の方針と一致）。
 - Docs / 移行
   - [ ] `MIGRATION.md`：Resolver→`adaptiveParams.*Range`/`classificationTargets` の**対応表**を掲載（視覚比較あり）
   - [ ] README/Wiki：凡例UIとベストプラクティス
