@@ -171,7 +171,7 @@ Priority: Medium | Target: 2026-02
   - [ ] メモリ使用量の増加 ≤ +10%（既存比）
   - [ ] 1000–5000ボクセル規模でのフレーム時間安定性（±20%以内）
 
-#### v0.1.15の非目標（v1.0.0へ延期）
+#### v0.1.15の非目標（v1.1.0へ延期）
 - opacity/width の classification 連携
 - resolver の完全置き換え（削除は v1.x 以降の段階的対応）
 
@@ -185,47 +185,88 @@ Priority: Medium | Target: 2026-02
 > 注: 0.1系では「コアのデータモデル変更や新レイヤー」は行わず、安定化と利用性向上に限定します。
 
 
-### v1.0.0 - 分類スキームと凡例（連続/離散）
+### v1.0.0 — 最小の分類エンジン（colorのみ）
 Priority: High | Target: 2025-12
+
 - 分類スキーム（最小セット）
-  - [ ] linear（既定）、log（log10/2）、equal-interval、quantize、threshold（custom thresholds）
-  - [ ] quantile、jenks（ckmeans）
-  - [ ] 適用対象: 色（color）に加えて、透明度（opacity）にも適用（fill と outline の双方）
-  - [ ] API例: 
-    - `classification: 'linear'|'log'|'equal-interval'|'quantize'|'threshold'|'quantile'|'jenks'`
-    - `classes?: number`, `thresholds?: number[]`, `discrete?: boolean`
-    - `classificationTargets?: { color?: boolean; opacity?: boolean }`（既定: color=true, opacity=false）
-    - `opacityStops?`/`opacityRange?` など連続/離散の指定（0–1にクランプ）
-- 凡例/ガイド
-  - [ ] 連続/離散に応じたラベル・境界値表示（必要に応じて透明度の示唆も表現）
-  - [ ] TopN・diverging との整合（分類と強調の優先順位）
-  - [ ] ドキュメントに「色のみ/色+透明度」両パターンの例とベストプラクティスを追記
+  - [ ] `linear`（既定）, `log`, `equal-interval`, `quantize`, `threshold`
+  - ※ `quantile` と `jenks` は v1.1.0 に移行（本版では未対応）
+- 適用対象
+  - [ ] **color のみ**に分類を適用（`classificationTargets` は将来互換のため受付けるが、1.0.0では `color:true` のみ有効）
+  - [ ] `opacity` / `width` への適用は行わない（v1.1.0で対応）
+- API例
+  - `classification: 'linear'|'log'|'equal-interval'|'quantize'|'threshold'`
+  - `classes?: number`, `thresholds?: number[]`
+  - `classificationTargets?: { color?: boolean }`（1.0.0時点では `color` 以外は無視）
 - 実装方針
-  - 既存ライブラリの活用（d3-array/d3-scale/simple-statistics 等）を優先。バンドルサイズ配慮のためユーティリティ部品のみ導入。
-- 互換性: 低（新オプション追加のみ、既存デフォルト維持）。
+  - `src/utils/classification.js` に最小スキームを実装
+  - `AdaptiveController` は **色スケールにのみ**分類を適用。`opacity/width` には一切触れない
+  - 既存 Resolver（`boxOpacityResolver`/`outlineOpacityResolver`/`outlineWidthResolver`）は**存続**（警告のみ）
+- 互換性
+  - 低（新オプション追加のみ）。既存デフォルトの色挙動は実質維持
+- 受け入れ基準
+  - [ ] 既存の例とテストが設定変更なしで動作（色のデフォルト見た目に退行がない）
+  - [ ] 5スキームで**色分布が仕様通り**（単体＆スナップショットテスト）
+  - [ ] パフォーマンス退行が ±10% 以内
+- Docs
+  - [ ] `MIGRATION.md`：旧Resolver→**color分類**の最小マッピング例を掲載（opacity/widthは次版で案内）
+  - [ ] README/Wiki：`classification` の基本と制限（colorのみ有効）を明記
 
-Implementation Notes（必ずここに実装する）
-- `src/core/adaptive/AdaptiveController.js`
-  - `calculateAdaptiveParams(...)` にて、`statistics` から算出される `normalizedDensity` を用い、
-    - `adaptiveParams.boxOpacityRange: [min, max]` に従って `boxOpacity` を補間して設定。
-    - `adaptiveParams.outlineOpacityRange: [min, max]` に従って `outlineOpacity` を補間して設定。
-    - `adaptiveParams.outlineWidthRange: [min, max]`（新設）に従って `outlineWidth` を補間して設定（TopN時の加算ブーストも許容）。
-    - 補間のロジックは v1.0.0 の分類（classification）と同期させる：
-      - 既定は linear だが、`classification` の設定が有効な場合は同じスキーム（log/equal-interval/quantize/threshold/quantile/jenks 等）で opacity/width にも適用。
-      - 実装は共通ユーティリティ（`src/utils/classification.js`）を用い、色・透明度・太さの補間ソースを統一する。
-      - 任意で `gamma` や `easing` を導入し、連続補間の特性を統一的に調整できるようにする。
-  - 必要に応じて `applyPresetLogic(...)` の戻り値とレンジ適用の優先順位を整理（レンジ優先→プリセット補正、もしくは逆）。
-- `src/core/VoxelRenderer.js`
-  - 既存の `adaptiveParams.boxOpacity || options.opacity` をそのまま利用（AdaptiveController が最終値を入れる）。
-  - outline 側も `adaptiveParams.outlineOpacity` を優先的に使用。
+### v1.1.0 — 視覚パリティ拡張（opacity/width＋凡例）
+Priority: High | Target: 2026-01
 
-Policy（重要・強い方針）
-- 上記の AdaptiveController での opacity range 実装が完了し、安定版に含まれるまでは、`boxOpacityResolver` / `outlineOpacityResolver` を絶対に削除しない（正規化で消さない）。
-- 削除の判断は、実装・検証・ドキュメント（MIGRATION.md/RELEASE_NOTES.md）のすべてが揃った後に行う。
+- 適用対象の拡張
+  - [ ] `classificationTargets` を `opacity` / `width` に拡張
+  - [ ] `adaptiveParams.boxOpacityRange` / `outlineOpacityRange` / `outlineWidthRange` を **分類と同期して補間**
+  - [ ] `TopN` ブーストとの合成仕様を明文化（優先順位・クランプを定義）
+- 分類スキームの補完
+  - [ ] `quantile`, `jenks` を追加（v1.0.0で未対応だった高度スキーム）
+- エミュレーション連携
+  - [ ] `outlineRenderMode: 'emulation-only'` 時の**エミュレーション・フック**を実装（最終α/太さをポリラインへ反映）
+- 凡例/ガイド
+  - [ ] 連続/離散に応じた凡例 UI（境界値・バー表示）、色＋透明度の表現ガイド
+- 実装方針
+  - `AdaptiveController` が color/opacity/width を**同一のclassificationユーティリティ**で補間
+  - `src/utils/classification.js` を color/opacity/width で共用（将来の `gamma`/`easing` 拡張を想定）
+  - Implementation Notes
+    - `src/core/adaptive/AdaptiveController.js`
+      - `calculateAdaptiveParams(...)` にて、`statistics` から算出される `normalizedDensity` を用い、
+        - `adaptiveParams.boxOpacityRange: [min, max]` に従って `boxOpacity` を補間して設定。
+        - `adaptiveParams.outlineOpacityRange: [min, max]` に従って `outlineOpacity` を補間して設定。
+        - `adaptiveParams.outlineWidthRange: [min, max]`（新設）に従って `outlineWidth` を補間して設定（TopN時の加算ブーストも許容）。
+        - 補間のロジックは v1.0.0 の分類（classification）と同期させる：
+          - 既定は linear だが、`classification` の設定が有効な場合は同じスキーム（log/equal-interval/quantize/threshold/quantile/jenks 等）で opacity/width にも適用。
+          - 実装は共通ユーティリティ（`src/utils/classification.js`）を用い、色・透明度・太さの補間ソースを統一する。
+          - 任意で `gamma` や `easing` を導入し、連続補間の特性を統一的に調整できるようにする。
+      - 必要に応じて `applyPresetLogic(...)` の戻り値とレンジ適用の優先順位を整理（レンジ優先→プリセット補正、もしくは逆）。
+    - `src/core/VoxelRenderer.js`
+      - 既存の `adaptiveParams.boxOpacity || options.opacity` をそのまま利用（AdaptiveController が最終値を入れる）。
+      - outline 側も `adaptiveParams.outlineOpacity` を優先的に使用。
+- 互換性
+  - 低（オプション追加）。既存デフォルトは維持、Resolver は**存続**（警告のみ）
+- Policy（重要・強い方針）
+  - 上記の AdaptiveController での opacity range 実装が完了し、安定版に含まれるまでは、`boxOpacityResolver` / `outlineOpacityResolver` を絶対に削除しない（正規化で消さない）。
+  - 削除の判断は、実装・検証・ドキュメント（MIGRATION.md/RELEASE_NOTES.md）のすべてが揃った後に行う。
+- 受け入れ基準（視覚パリティ）
+  1) 密度→ボックス不透明度（低密度：薄／高密度：濃）  
+  2) 密度→枠線透明度（`emulation-only` 含む）  
+  3) 密度→枠線太さ（`TopN` は加算ブースト）  
+  4) `TopN` による不透明度切替  
+  → 旧Resolver実装と**視覚パリティ**を達成（比較スクリーンショット同梱）
+  - [ ] 代表データで各分類が視覚的に区別でき、凡例/ガイドが同期表示される。
+  - [ ] 透明度分類を有効化した場合、fill/outline（標準/インセット/エミュ）に0–1で正しく反映される。
+  - [ ] 適応的透明度（resolver）と併用時の優先順位（分類→resolver もしくは resolver→分類）を明示し、挙動が一貫。
+- Docs / 移行
+  - [ ] `MIGRATION.md`：Resolver→`adaptiveParams.*Range`/`classificationTargets` の**対応表**を掲載（視覚比較あり）
+  - [ ] README/Wiki：凡例UIとベストプラクティス
+- 設定プリセット管理（新規）
+  - [ ] 設定プリセットのインポート/エクスポート（JSON）
+  - [ ] シナリオ別推奨セット（密集データ/広域表示/TopN重視 など）
+  - [ ] UI設定の永続化（localStorage）
 
 ---
 
-Resolver 置き換え計画（v1.0.0で「別の形ですべて再実装」）
+Resolver 置き換え計画（v1.1.0で「別の形ですべて再実装」）
 
 目的
 - 既存の Resolver API（`outlineWidthResolver` / `outlineOpacityResolver` / `boxOpacityResolver`）で可能だった表現力を、宣言的で最適化しやすい新APIに置き換える。
@@ -266,21 +307,15 @@ Resolver 置き換え計画（v1.0.0で「別の形ですべて再実装」）
 - emulation-only 時の透明度/太さの適用順序を明記（Adaptive → Emulation Hook の順）。
 
 スケジュール
-- 0.1.15: range の正規化＋クランプ基盤（AdaptiveController 側の最終値クランプ & テスト）。補間は v1.0.0 で実装。
-- 1.0.0: `outlineWidthRange` / classification 連携 / emulation hook を統合、Resolver を非推奨のまま維持。
-- 1.x: Resolver API の段階的削除（少なくとも2リリース以上のグレイス期間）。
-- 受け入れ基準:
-  - [ ] 代表データで各分類が視覚的に区別でき、凡例/ガイドが同期表示される。
-  - [ ] 透明度分類を有効化した場合、fill/outline（標準/インセット/エミュ）に0–1で正しく反映される。
-  - [ ] 適応的透明度（resolver）と併用時の優先順位（分類→resolver もしくは resolver→分類）を明示し、挙動が一貫。
+- 0.1.15: range の正規化＋クランプ基盤（AdaptiveController 側の最終値クランプ & テスト）。補間は v1.1.0 で実装。
+- 1.0.0: color分類のみ実装。Resolver は**存続**（警告のみ）。
+- 1.1.0: `outlineWidthRange` / classification 連携（opacity/width） / emulation hook を統合、Resolver を非推奨のまま維持。
+- 1.x（v1.1.0安定以降）: Resolver API の段階的削除（少なくとも2リリース以上のグレイス期間）。
 
-- 設定プリセット管理（新規）
-  - [ ] 設定プリセットのインポート/エクスポート（JSON）
-  - [ ] シナリオ別推奨セット（密集データ/広域表示/TopN重視 など）
-  - [ ] UI設定の永続化（localStorage）
+---
 
-### v1.1.0 - 時間依存データ（PoC）
-Priority: Medium | Target: 2026-01
+### v1.2.0 - 時間依存データ（PoC）
+Priority: Medium | Target: 2026-02
 - [ ] `viewer.clock.currentTime` に基づく時刻評価・スライス描画（ステップ更新）
 - [ ] キャッシュ/再計算ポリシーの基本設計（時間次元の増加コスト抑制）
 - 分類スコープ（時系列の揺れへの対応）
@@ -298,8 +333,8 @@ Priority: Medium | Target: 2026-01
   - [ ] いずれのスコープでも `classification` の各スキームが正しく適用される（最小限のスナップショットテスト）。
   - [ ] サンプルで時刻操作に応じてボクセルが更新され、体感カクつきが許容範囲内。
 
-### v1.2.0 - メモリ/パフォーマンス最適化
-Priority: Medium | Target: 2026-02
+### v1.3.0 - メモリ/パフォーマンス最適化
+Priority: Medium | Target: 2026-03
 - [ ] 必要フィールドのみ保持（エンティティ配列の縮約）
 - [ ] 描画リストの再利用・差分更新
 - [ ] 描画優先度制御（重要ボクセル優先）
@@ -310,7 +345,7 @@ Priority: Medium | Target: 2026-02
 - [ ] VoxelRenderer 行数の追加削減（≤ 300 行目標、パラメータ計算のヘルパー化）
 - 互換性: 変更なし（内部最適化）。
 
-### v1.3.0（Examples 体系化・整理）
+### v1.4.0（Examples 体系化・整理）
 Priority: Medium | Target: 2026-06
 
 Scope（examples/advanced を体系化し、学習・検証導線を改善）
