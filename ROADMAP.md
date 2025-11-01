@@ -195,6 +195,7 @@ Scope（examples/advanced を体系化し、学習・検証導線を改善）
 ガイドライン（examples 統一ルール）
 
 [] Cesium 1.120 を参照し、UMD/ESMのどちらでも動く最小構成を提示
+[] Cesium 初期化の標準化（黒画面回避）：Ion 無効化＋OSM/Carto 画像＋EllipsoidTerrain を既定。必要時のみ Ion トークンを明示有効化
 [] 各カテゴリ配下に README.md（目的、前提、主要オプション、落とし穴）
 [] 例名・ファイル名はケバブケース、UIテキストは英語、READMEは日英併記
 [] Heatbox の profile と getEffectiveOptions() の使用例を各カテゴリに1つ以上配置
@@ -204,7 +205,7 @@ Scope（examples/advanced を体系化し、学習・検証導線を改善）
 
 [] examples/advanced のトップ README にカテゴリ一覧と対応ファイルの表を掲載
 [] observability/rendering/outlines/selection-limits/data の5カテゴリが存在
-[] すべてのHTML例で「白画面/コンソールエラー」が無い（ローカル確認）
+[] すべてのHTML例で「白/黒画面やコンソールエラー」が無い（ローカル確認）。`createWorldTerrain()` を使う例は Ion トークン無設定時でもフォールバックが効く
 [] 既存の UMD 例（wireframe/outline-overlap）は動作維持（リンクも更新）
 [] v0.1.12 の新API（outlineRenderMode/emulationScope、pitchDegrees/headingDegrees、profile）が少なくとも1つの例で確認可能
 
