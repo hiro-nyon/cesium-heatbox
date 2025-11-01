@@ -76,7 +76,9 @@
     const centerLon = (bounds.minLon + bounds.maxLon) / 2;
     const centerLat = (bounds.minLat + bounds.maxLat) / 2;
     const altitude = computeAltitude(bounds, merged);
-    const destination = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, altitude);
+    // カメラ位置のオフセット（視界調整用）
+    const cameraLatOffset = merged.cameraLatOffset ?? 0;
+    const destination = Cesium.Cartesian3.fromDegrees(centerLon, centerLat + cameraLatOffset, altitude);
     const orientation = {
       heading: toRadians(merged.headingDegrees),
       pitch: toRadians(clampPitch(merged.pitchDegrees)),

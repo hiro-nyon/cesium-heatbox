@@ -8,10 +8,11 @@ const Heatbox = window.CesiumHeatbox || window.Heatbox;
 const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
 const CameraHelper = window.HeatboxDemoCamera || null;
 const CAMERA_DEFAULTS = {
-  headingDegrees: 20,
-  pitchDegrees: -55,
-  altitude: 12000,
-  altitudeScale: 1.8
+  headingDegrees: 0,
+  pitchDegrees: -45,
+  altitude: 2000,
+  altitudeScale: 0.5,
+  cameraLatOffset: -0.025  // カメラを南に移動して視界の中心にデータを収める
 };
 const GENERATION_BOUNDS = {
   minLon: SHINJUKU_CENTER.lon - 0.008,
@@ -98,7 +99,7 @@ function focusCameraView(config = {}) {
     const diagonal = Cesium.Cartesian3.distance(diagStart, diagEnd);
     const altitude = Math.max(
       options.altitude,
-      diagonal * (options.altitudeScale || CAMERA_DEFAULTS.altitudeScale) + maxAlt + 2000
+      diagonal * (options.altitudeScale || CAMERA_DEFAULTS.altitudeScale) + maxAlt + 500
     );
     viewer.camera.setView({
       destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, altitude),
