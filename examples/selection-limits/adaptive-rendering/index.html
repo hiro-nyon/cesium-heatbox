@@ -68,10 +68,11 @@
         const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
         const CameraHelper = window.HeatboxDemoCamera || null;
         const CAMERA_DEFAULTS = {
-            headingDegrees: 10,
-            pitchDegrees: -55,
-            altitude: 12000,
-            altitudeScale: 1.8
+            headingDegrees: 0,
+            pitchDegrees: -45,
+            altitude: 2000,
+            altitudeScale: 0.5,
+            cameraLatOffset: -0.025  // カメラを南に移動して視界の中心にデータを収める
         };
 
         function createImageryProvider() {

@@ -59,10 +59,11 @@
     const CameraHelper = window.HeatboxDemoCamera || null;
     const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
     const CAMERA_DEFAULTS = {
-      headingDegrees: 20,
-      pitchDegrees: -55,
-      altitude: 13000,
-      altitudeScale: 1.8
+      headingDegrees: 0,
+      pitchDegrees: -45,
+      altitude: 2000,
+      altitudeScale: 0.5,
+      cameraLatOffset: -0.025  // カメラを南に移動して視界の中心にデータを収める
     };
     let viewer;
     let heatbox;

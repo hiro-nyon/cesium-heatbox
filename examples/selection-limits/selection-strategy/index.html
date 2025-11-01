@@ -66,10 +66,11 @@
     const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 };
     const CameraHelper = window.HeatboxDemoCamera || null;
     const CAMERA_DEFAULTS = {
-      headingDegrees: 30,
-      pitchDegrees: -55,
-      altitude: 14000,
-      altitudeScale: 1.8
+      headingDegrees: 0,
+      pitchDegrees: -45,
+      altitude: 2000,
+      altitudeScale: 0.5,
+      cameraLatOffset: -0.025  // カメラを南に移動して視界の中心にデータを収める
     };
     const INITIAL_BOUNDS = {
       minLon: SHINJUKU_CENTER.lon - 0.015,
