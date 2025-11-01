@@ -24,6 +24,25 @@ let isVisible = true;
     'sparse-data': '疎データ向け'
   };
 
+function createImageryProvider() {
+  return new Cesium.UrlTemplateImageryProvider({
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+    subdomains: 'abcd',
+    credit: '© OpenStreetMap contributors © CARTO'
+  });
+}
+
+function createTerrainProvider() {
+  try {
+    if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+      return Cesium.createWorldTerrain();
+    }
+  } catch (error) {
+    console.warn('World Terrain unavailable, using EllipsoidTerrainProvider.', error);
+  }
+  return new Cesium.EllipsoidTerrainProvider();
+}
+
 /**
  * テスト用エンティティを生成する関数
  */
@@ -55,6 +74,8 @@ async function initializeApp() {
   try {
     // CesiumJS Viewerの初期化
     viewer = new Cesium.Viewer('cesiumContainer', {
+      imageryProvider: createImageryProvider(),
+      terrainProvider: createTerrainProvider(),
       // プロトタイプの設定を参考
       homeButton: false,
       sceneModePicker: false,

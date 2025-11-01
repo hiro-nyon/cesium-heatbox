@@ -328,7 +328,7 @@ _selectVoxelsForRendering(allVoxels, maxCount, bounds, grid) {
 - [ ] **性能テスト**: 処理時間が既存比±5%以内
 - [ ] **Lint**: ESLintエラー0件
 - [ ] **API互換性**: 既存のサンプルコードが無修正で動作
-- [ ] **視覚検証**: examples/basic, examples/advancedで出力が同一
+- [ ] **視覚検証**: examples/basic, examples（カテゴリディレクトリ）で出力が同一
 
 ### リスク管理と対応策
 #### 高リスク項目
@@ -379,7 +379,7 @@ main (stable v0.1.9)
 - [ ] VoxelRenderer.js ≤ 300行
 - [ ] 既存テスト100%パス
 - [ ] パフォーマンス要件クリア
-- [ ] examples/basic, examples/advancedが正常動作
+- [ ] examples/basic とカテゴリ別 examples/* が正常動作
 - [ ] JSDoc完備、Lintエラー0
 
 ## References

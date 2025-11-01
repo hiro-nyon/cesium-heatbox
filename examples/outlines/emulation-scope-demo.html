@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cesium Heatbox - Emulation Scope Demo</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
+  <style>
+    html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #0d1117; }
+    .panel { position: absolute; top: 12px; left: 12px; background: rgba(25, 25, 25, 0.92); color: #f1f5f9; font-family: 'Segoe UI', sans-serif; padding: 18px; border-radius: 10px; width: 320px; box-shadow: 0 12px 24px rgba(0,0,0,0.35); }
+    .panel h2 { margin: 0 0 12px; font-size: 18px; color: #38bdf8; }
+    .panel p { margin: 0 0 12px; font-size: 13px; color: #94a3b8; }
+    .group { margin-bottom: 14px; }
+    .group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #e2e8f0; }
+    .group select, .group input[type="number"] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #111827; color: #e2e8f0; }
+    .group input[type="checkbox"] { margin-right: 8px; }
+    .buttons { display: flex; gap: 10px; margin-top: 12px; }
+    .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s ease; }
+    .btn-primary { background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; }
+    .btn-secondary { background: #475569; color: white; }
+    .btn:hover { opacity: 0.85; }
+    #status { margin-top: 14px; font-size: 12px; padding: 10px; border-radius: 6px; background: rgba(15, 118, 110, 0.15); color: #5eead4; }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="panel">
+    <h2>Outline Emulation Scope Demo</h2>
+    <p>Compare how <strong>outlineRenderMode</strong> and <strong>emulationScope</strong> interact with TopN highlighting.</p>
+    <div class="group">
+      <label for="renderMode">Outline Render Mode</label>
+      <select id="renderMode">
+        <option value="standard">standard</option>
+        <option value="inset">inset</option>
+        <option value="emulation-only">emulation-only</option>
+      </select>
+    </div>
+    <div class="group">
+      <label for="emulationScope">Emulation Scope</label>
+      <select id="emulationScope">
+        <option value="off">off</option>
+        <option value="topn">topn</option>
+        <option value="non-topn">non-topn</option>
+        <option value="all">all</option>
+      </select>
+    </div>
+    <div class="group">
+      <label for="highlightTopN">Highlight Top N</label>
+      <input type="number" id="highlightTopN" min="0" max="200" value="30">
+    </div>
+    <div class="group">
+      <label><input type="checkbox" id="adaptiveOutlines" checked> Adaptive Outlines</label>
+      <label><input type="checkbox" id="thickFrames"> Enable Thick Frames</label>
+    </div>
+    <div class="buttons">
+      <button class="btn btn-primary" id="renderBtn">Render</button>
+      <button class="btn btn-secondary" id="clearBtn">Clear</button>
+    </div>
+    <div id="status">Ready - choose settings and click Render.</div>
+  </div>
+
+  <script>
+    const Heatbox = window.CesiumHeatbox || window.Heatbox;
+    let viewer;
+    let heatbox;
+    let entities = [];
+
+    function createImageryProvider() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        subdomains: 'abcd',
+        credit: '© OpenStreetMap contributors © CARTO'
+      });
+    }
+
+    function createTerrainProvider() {
+      try {
+        if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+          return Cesium.createWorldTerrain();
+        }
+      } catch (error) {
+        console.warn('World Terrain unavailable, using EllipsoidTerrainProvider.', error);
+      }
+      return new Cesium.EllipsoidTerrainProvider();
+    }
+
+    function initViewer() {
+      viewer = new Cesium.Viewer('cesiumContainer', {
+        imageryProvider: createImageryProvider(),
+        terrainProvider: createTerrainProvider(),
+        homeButton: false,
+        sceneModePicker: false,
+        baseLayerPicker: false,
+        navigationHelpButton: false,
+        animation: false,
+        timeline: false,
+        fullscreenButton: false,
+        geocoder: false,
+        infoBox: true,
+        selectionIndicator: true,
+        creditContainer: document.createElement('div')
+      });
+
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(139.767, 35.681, 1000),
+        orientation: {
+          heading: Cesium.Math.toRadians(20),
+          pitch: Cesium.Math.toRadians(-40),
+          roll: 0
+        }
+      });
+    }
+
+    function generateEntities() {
+      const list = [];
+      const clusters = [
+        { lon: 139.7665, lat: 35.6810, n: 400 },
+        { lon: 139.7680, lat: 35.6800, n: 300 },
+        { lon: 139.7650, lat: 35.6820, n: 250 }
+      ];
+
+      clusters.forEach(cluster => {
+        for (let i = 0; i < cluster.n; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.sqrt(Math.random()) * 0.0012;
+          const lon = cluster.lon + Math.cos(angle) * radius;
+          const lat = cluster.lat + Math.sin(angle) * radius;
+          const alt = Math.random() * 150;
+          list.push(viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+            point: {
+              pixelSize: 4,
+              color: Cesium.Color.YELLOW.withAlpha(0.7),
+              outlineColor: Cesium.Color.BLACK,
+              outlineWidth: 1
+            }
+          }));
+        }
+      });
+      return list;
+    }
+
+    function clearScene() {
+      if (heatbox) {
+        heatbox.clear();
+        heatbox = null;
+      }
+      viewer.entities.removeAll();
+      entities = [];
+    }
+
+    function updateStatus(message, type = 'info') {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.style.color = type === 'error' ? '#f87171' : '#5eead4';
+    }
+
+    async function render() {
+      try {
+        updateStatus('Rendering...');
+        if (!viewer) {
+          initViewer();
+        }
+
+        clearScene();
+        entities = generateEntities();
+
+        const renderMode = document.getElementById('renderMode').value;
+        const emulationScope = document.getElementById('emulationScope').value;
+        const highlightTopN = parseInt(document.getElementById('highlightTopN').value, 10) || 0;
+        const adaptiveOutlines = document.getElementById('adaptiveOutlines').checked;
+        const thickFrames = document.getElementById('thickFrames').checked;
+
+        heatbox = new Heatbox(viewer, {
+          outlineRenderMode: renderMode,
+          emulationScope,
+          highlightTopN,
+          adaptiveOutlines,
+          enableThickFrames: thickFrames,
+          outlineInset: renderMode === 'inset' ? 2.0 : 0,
+          outlineInsetMode: 'all',
+          showOutline: true,
+          opacity: 0.85,
+          debug: true
+        });
+
+        const stats = await heatbox.createFromEntities(entities);
+        updateStatus(`Rendered: voxels=${stats.renderedVoxels}, emulation=${emulationScope}`);
+      } catch (error) {
+        console.error(error);
+        updateStatus(`Error: ${error.message}`, 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initViewer();
+      document.getElementById('renderBtn').addEventListener('click', render);
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        clearScene();
+        updateStatus('Cleared scene.');
+      });
+      updateStatus('Ready - choose settings and click Render.');
+    });
+  </script>
+</body>
+</html>

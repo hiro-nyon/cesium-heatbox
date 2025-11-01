@@ -18,8 +18,8 @@ const DOCS_TO_CHECK = {
   MIGRATION: path.join(PROJECT_ROOT, 'MIGRATION.md'),
   API: path.join(PROJECT_ROOT, 'docs/API.md'),
   BASIC_EXAMPLE: path.join(PROJECT_ROOT, 'examples/basic/app.js'),
-  ADVANCED_DEMO: path.join(PROJECT_ROOT, 'examples/advanced/v0.1.12-features-demo.html'),
-  PERFORMANCE_DEMO: path.join(PROJECT_ROOT, 'examples/advanced/performance-overlay-demo.html')
+  ADVANCED_DEMO: path.join(PROJECT_ROOT, 'examples/rendering/v0.1.12-features-demo.html'),
+  PERFORMANCE_DEMO: path.join(PROJECT_ROOT, 'examples/observability/performance-overlay-demo.html')
 };
 
 // v0.1.12 API terms that should be consistently documented

@@ -4,8 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>CesiumJS Heatbox v0.1.9 - Adaptive Rendering Demo</title>
-    <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
-    <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <script>
+        window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+        if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+            Cesium.Ion.defaultAccessToken = null;
+        }
+    </script>
     <style>
         html, body, #cesiumContainer {
             width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
@@ -135,9 +141,30 @@
             document.getElementById('statusText').textContent = message;
             console.log('📱 Status:', message);
         }
-        
+
+        function createImageryProvider() {
+            return new Cesium.UrlTemplateImageryProvider({
+                url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                subdomains: 'abcd',
+                credit: '© OpenStreetMap contributors © CARTO'
+            });
+        }
+
+        function createTerrainProvider() {
+            try {
+                if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+                    return Cesium.createWorldTerrain();
+                }
+            } catch (error) {
+                console.warn('World Terrain unavailable, using EllipsoidTerrainProvider.', error);
+            }
+            return new Cesium.EllipsoidTerrainProvider();
+        }
+
         // シーン設定
         const viewer = new Cesium.Viewer('cesiumContainer', {
+            imageryProvider: createImageryProvider(),
+            terrainProvider: createTerrainProvider(),
             shouldAnimate: false,
             homeButton: false,
             sceneModePicker: false,

@@ -5,6 +5,13 @@
     <title>CesiumJS Heatbox v0.1.12 - New Features Demo</title>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <script>
+        window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+        if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+            Cesium.Ion.defaultAccessToken = null;
+        }
+    </script>
+    <script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
     <style>
         html, body, #cesiumContainer {
             width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
@@ -248,21 +255,41 @@
             alert('Heatbox library not found. Please ensure the build is available.');
         }
 
-        // Initialize Cesium viewer
-        const viewer = new Cesium.Viewer('cesiumContainer', {
-            terrainProvider: Cesium.createWorldTerrain(),
-            timeline: false,
-            animation: false,
-            baseLayerPicker: false,
-            fullscreenButton: false,
-            vrButton: false,
-            geocoder: false,
-            homeButton: false,
-            infoBox: false,
-            sceneModePicker: false,
-            selectionIndicator: false,
-            navigationHelpButton: false
-        });
+	function createImageryProvider() {
+	    return new Cesium.UrlTemplateImageryProvider({
+	        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+	        subdomains: 'abcd',
+	        credit: '© OpenStreetMap contributors © CARTO'
+	    });
+	}
+
+	function createTerrainProvider() {
+	    try {
+	        if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+	            return Cesium.createWorldTerrain();
+	        }
+	    } catch (error) {
+	        console.warn('World Terrain unavailable, using EllipsoidTerrainProvider.', error);
+	    }
+	    return new Cesium.EllipsoidTerrainProvider();
+	}
+
+	// Initialize Cesium viewer
+	const viewer = new Cesium.Viewer('cesiumContainer', {
+	    imageryProvider: createImageryProvider(),
+	    terrainProvider: createTerrainProvider(),
+	    timeline: false,
+	    animation: false,
+	    baseLayerPicker: false,
+	    fullscreenButton: false,
+	    vrButton: false,
+	    geocoder: false,
+	    homeButton: false,
+	    infoBox: false,
+	    sceneModePicker: false,
+	    selectionIndicator: false,
+	    navigationHelpButton: false
+	});
 
         // Global state
         let heatbox = null;

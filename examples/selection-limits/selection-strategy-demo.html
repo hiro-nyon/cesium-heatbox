@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cesium Heatbox - Selection Strategy Comparison</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
+  <style>
+    html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #0f172a; }
+    .panel { position: absolute; top: 16px; right: 16px; width: 340px; background: rgba(15, 23, 42, 0.92); color: #e2e8f0; font-family: 'Segoe UI', sans-serif; padding: 20px; border-radius: 12px; box-shadow: 0 18px 30px rgba(15, 23, 42, 0.45); }
+    .panel h2 { margin: 0 0 14px; font-size: 18px; color: #f97316; }
+    .panel p { margin: 0 0 14px; font-size: 13px; color: #94a3b8; }
+    .group { margin-bottom: 14px; }
+    .group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #f8fafc; }
+    .group select, .group input[type="range"], .group input[type="checkbox"] { width: 100%; }
+    .group input[type="range"] { accent-color: #f97316; }
+    .range-value { display: inline-block; width: 60px; text-align: right; font-size: 12px; color: #fbbf24; }
+    .buttons { display: flex; gap: 10px; margin-top: 12px; }
+    .btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.15s ease, opacity 0.2s ease; }
+    .btn-primary { background: linear-gradient(135deg, #f97316, #ea580c); color: white; }
+    .btn-secondary { background: #475569; color: white; }
+    .btn:hover { transform: translateY(-1px); opacity: 0.9; }
+    #statsBox { margin-top: 14px; padding: 12px; border-radius: 8px; background: rgba(8, 145, 178, 0.18); font-size: 12px; color: #38bdf8; line-height: 1.5; }
+    #status { margin-top: 10px; font-size: 12px; color: #bbf7d0; }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="panel">
+    <h2>Selection Strategy Demo</h2>
+    <p>Play with <strong>density / coverage / hybrid</strong> strategies and observe voxel clipping & coverage ratios.</p>
+    <div class="group">
+      <label for="strategySelect">Render Limit Strategy</label>
+      <select id="strategySelect">
+        <option value="density" selected>density</option>
+        <option value="coverage">coverage</option>
+        <option value="hybrid">hybrid</option>
+      </select>
+    </div>
+    <div class="group">
+      <label for="maxVoxels">Max Render Voxels <span class="range-value" id="maxVoxelsValue">4000</span></label>
+      <input type="range" id="maxVoxels" min="1000" max="12000" value="4000" step="500">
+    </div>
+    <div class="group">
+      <label><input type="checkbox" id="autoBudget"> Auto Render Budget (tier detection)</label>
+      <label><input type="checkbox" id="fitView" checked> Fit view after render</label>
+    </div>
+    <div class="buttons">
+      <button class="btn btn-primary" id="renderBtn">Render</button>
+      <button class="btn btn-secondary" id="clearBtn">Clear</button>
+    </div>
+    <div id="statsBox">No statistics yet. Render to see selection metrics.</div>
+    <div id="status">Ready.</div>
+  </div>
+
+  <script>
+    const Heatbox = window.CesiumHeatbox || window.Heatbox;
+    let viewer;
+    let heatbox;
+    let entities = [];
+
+    function createImageryProvider() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        subdomains: 'abcd',
+        credit: '© OpenStreetMap contributors © CARTO'
+      });
+    }
+
+    function createTerrainProvider() {
+      try {
+        if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+          return Cesium.createWorldTerrain();
+        }
+      } catch (error) {
+        console.warn('World Terrain unavailable, using EllipsoidTerrainProvider.', error);
+      }
+      return new Cesium.EllipsoidTerrainProvider();
+    }
+
+    function initViewer() {
+      viewer = new Cesium.Viewer('cesiumContainer', {
+        imageryProvider: createImageryProvider(),
+        terrainProvider: createTerrainProvider(),
+        homeButton: false,
+        sceneModePicker: false,
+        baseLayerPicker: false,
+        navigationHelpButton: false,
+        animation: false,
+        timeline: false,
+        fullscreenButton: false,
+        geocoder: false,
+        infoBox: false,
+        selectionIndicator: false,
+        creditContainer: document.createElement('div')
+      });
+
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(139.7675, 35.6815, 2200),
+        orientation: {
+          heading: Cesium.Math.toRadians(30),
+          pitch: Cesium.Math.toRadians(-50),
+          roll: 0
+        }
+      });
+    }
+
+    function updateStatus(message, type = 'info') {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.style.color = type === 'error' ? '#fda4af' : '#bbf7d0';
+    }
+
+    function updateStatsBox(stats) {
+      const box = document.getElementById('statsBox');
+      if (!stats) {
+        box.textContent = 'No statistics available.';
+        return;
+      }
+      const lines = [
+        `strategy: ${stats.selectionStrategy || 'n/a'}`,
+        `rendered voxels: ${stats.renderedVoxels ?? 'n/a'}`,
+        `clipped non-empty: ${stats.clippedNonEmpty ?? 0}`,
+        `coverage ratio: ${(stats.coverageRatio ?? 0).toFixed(2)}`,
+        `occupancy ratio: ${stats.occupancyRatio !== null && stats.occupancyRatio !== undefined ? stats.occupancyRatio.toFixed(2) : 'n/a'}`
+      ];
+      if (stats.renderBudgetTier) {
+        lines.push(`auto budget tier: ${stats.renderBudgetTier} (max=${stats.autoMaxRenderVoxels})`);
+      }
+      box.textContent = lines.join('\n');
+    }
+
+    function generateEntities() {
+      const list = [];
+      const bounds = { minLon: 139.755, maxLon: 139.780, minLat: 35.675, maxLat: 35.690, minAlt: 0, maxAlt: 250 };
+
+      const clusters = [
+        { lon: 139.765, lat: 35.682, n: 4000, spread: 0.004 },
+        { lon: 139.772, lat: 35.679, n: 2500, spread: 0.0025 },
+        { lon: 139.759, lat: 35.685, n: 1800, spread: 0.0035 }
+      ];
+
+      clusters.forEach(cluster => {
+        for (let i = 0; i < cluster.n; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.sqrt(Math.random()) * cluster.spread;
+          const lon = Cesium.Math.clamp(cluster.lon + Math.cos(angle) * radius, bounds.minLon, bounds.maxLon);
+          const lat = Cesium.Math.clamp(cluster.lat + Math.sin(angle) * radius, bounds.minLat, bounds.maxLat);
+          const alt = Math.random() * bounds.maxAlt;
+          list.push(viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+            point: {
+              pixelSize: 3,
+              color: Cesium.Color.fromRandom({ minimumRed: 0.3, maximumBlue: 1.0, alpha: 0.7 }),
+              outlineColor: Cesium.Color.BLACK,
+              outlineWidth: 1
+            }
+          }));
+        }
+      });
+
+      return list;
+    }
+
+    function ensureEntities() {
+      if (entities.length === 0) {
+        entities = generateEntities();
+      }
+    }
+
+    function clearScene() {
+      if (heatbox) {
+        heatbox.clear();
+        heatbox = null;
+      }
+      viewer.entities.removeAll();
+      entities = [];
+      updateStatsBox(null);
+    }
+
+    async function render() {
+      try {
+        updateStatus('Rendering...');
+        ensureEntities();
+
+        if (heatbox) {
+          heatbox.clear();
+        }
+
+        const strategy = document.getElementById('strategySelect').value;
+        const maxRenderVoxels = parseInt(document.getElementById('maxVoxels').value, 10);
+        const autoBudget = document.getElementById('autoBudget').checked;
+
+        heatbox = new Heatbox(viewer, {
+          renderLimitStrategy: strategy,
+          maxRenderVoxels: autoBudget ? 'auto' : maxRenderVoxels,
+          renderBudgetMode: autoBudget ? 'auto' : 'manual',
+          minCoverageRatio: 0.3,
+          coverageBinsXY: 'auto',
+          performanceOverlay: { enabled: false },
+          adaptiveOutlines: true,
+          debug: true
+        });
+
+        const stats = await heatbox.createFromEntities(entities);
+        const snapshot = heatbox.getStatistics();
+        updateStatsBox({ ...snapshot, renderedVoxels: stats.renderedVoxels });
+
+        if (document.getElementById('fitView').checked) {
+          const bounds = heatbox.getBounds();
+          if (bounds) {
+            const rectangle = Cesium.Rectangle.fromDegrees(bounds.minLon, bounds.minLat, bounds.maxLon, bounds.maxLat);
+            const sphere = Cesium.BoundingSphere.fromRectangle3D(rectangle, Cesium.Ellipsoid.WGS84, 0);
+            viewer.camera.flyToBoundingSphere(sphere, { duration: 1.2 });
+          }
+        }
+
+        updateStatus('Render complete.');
+      } catch (error) {
+        console.error(error);
+        updateStatus(`Error: ${error.message}`, 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initViewer();
+      document.getElementById('maxVoxels').addEventListener('input', (event) => {
+        document.getElementById('maxVoxelsValue').textContent = event.target.value;
+      });
+      document.getElementById('renderBtn').addEventListener('click', render);
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        clearScene();
+        updateStatus('Scene cleared. Ready.');
+      });
+      updateStatus('Ready. Choose a strategy and render.');
+    });
+  </script>
+</body>
+</html>
