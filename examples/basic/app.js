@@ -175,7 +175,9 @@ async function initializeApp() {
     viewer.imageryLayers.removeAll();
     viewer.imageryLayers.addImageryProvider(imageryProvider);
     viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
-    focusCameraView({ bounds: GENERATION_BOUNDS });
+    
+    // 最初から新宿駅周辺にカメラを合わせる / Focus camera on Shinjuku area initially
+    focusCameraView({ bounds: GENERATION_BOUNDS, pitchDegrees: CAMERA_DEFAULTS.pitchDegrees });
     
     // UI要素を取得
     const uiElementIds = [
@@ -239,8 +241,6 @@ function setupEventListeners() {
       
       // v0.1.2: createFromEntitiesを使用（非同期）
       const stats = await heatbox.createFromEntities(testEntities);
-      const bounds = heatbox.getBounds?.();
-      focusCameraView({ bounds, pitchDegrees: CAMERA_DEFAULTS.pitchDegrees });
       
       if (stats) {
         displayStatistics(stats);
