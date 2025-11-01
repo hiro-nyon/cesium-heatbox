@@ -185,7 +185,7 @@ async function initializeApp() {
       'generateBtn', 'createHeatmapBtn', 'clearBtn', 'toggleBtn',
       'entityCount', 'voxelSize', 'opacity', 'opacityValue', 'showEmpty', 'showOutline',
       'wireframeOnly', 'heightBased', 'debugLogs', // v0.1.2 新機能 + debug制御
-      'autoVoxelSize', 'manualVoxelSizeGroup', // v0.1.4 新機能
+      'autoVoxelSize', 'autoVoxelSizeMode', 'autoVoxelSizeModeGroup', 'manualVoxelSizeGroup', // v0.1.4 新機能
       'showBounds', 'colorMap', 'diverging', 'highlightTopN', // v0.1.5 新機能
       'voxelGap', 'voxelGapValue', 'outlineOpacity', 'outlineOpacityValue', 'adaptiveOutline', // v0.1.6 新機能
       'outlineInset', 'outlineInsetValue', 'outlineInsetMode', // v0.1.6.1 新機能
@@ -291,6 +291,7 @@ function setupEventListeners() {
   elements.autoVoxelSize.addEventListener('change', () => {
     const isAutoMode = elements.autoVoxelSize.checked;
     elements.manualVoxelSizeGroup.style.display = isAutoMode ? 'none' : 'block';
+    elements.autoVoxelSizeModeGroup.style.display = isAutoMode ? 'block' : 'none';
     
     if (heatbox && heatbox.getStatistics()) {
       elements.createHeatmapBtn.click(); // 再生成
@@ -414,6 +415,7 @@ function getOptionsFromUI() {
     outlineWidth: 2,
     // v0.1.4 新機能
     autoVoxelSize: elements.autoVoxelSize?.checked || false,
+    autoVoxelSizeMode: elements.autoVoxelSizeMode?.value || 'basic',
     // v0.1.5 新機能
     debug: debugOption,
     colorMap: elements.colorMap?.value || 'custom',

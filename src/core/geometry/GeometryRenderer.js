@@ -112,8 +112,9 @@ export class GeometryRenderer {
       description: this.createVoxelDescription(voxelInfo, voxelKey)
     };
 
-    // Material configuration based on wireframe mode
-    if (this.options.wireframeOnly) {
+    // Material configuration based on wireframe mode and render mode
+    const hideBox = this.options.wireframeOnly || this.options.outlineRenderMode === 'emulation-only';
+    if (hideBox) {
       entityConfig.box.material = Cesium.Color.TRANSPARENT;
       entityConfig.box.fill = false;
     } else {
