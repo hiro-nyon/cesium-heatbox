@@ -48,7 +48,7 @@ viewer.imageryLayers.removeAll();
 viewer.imageryLayers.addImageryProvider(imageryProvider);
 viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
 viewer.camera.setView({
-  destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 2500),
+  destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 12000),
   orientation: {
     heading: 0.0,
     pitch: -0.5,

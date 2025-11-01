@@ -11,6 +11,7 @@
       Cesium.Ion.defaultAccessToken = null;
     }
   </script>
+  <script src="../../common/camera.js"></script>
   <script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
   <style>
     html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #0f172a; }
@@ -62,9 +63,40 @@
 
   <script>
     const Heatbox = window.CesiumHeatbox || window.Heatbox;
+    const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 };
+    const CameraHelper = window.HeatboxDemoCamera || null;
+    const CAMERA_DEFAULTS = {
+      headingDegrees: 30,
+      pitchDegrees: -55,
+      altitude: 14000,
+      altitudeScale: 1.8
+    };
+    const INITIAL_BOUNDS = {
+      minLon: SHINJUKU_CENTER.lon - 0.015,
+      maxLon: SHINJUKU_CENTER.lon + 0.015,
+      minLat: SHINJUKU_CENTER.lat - 0.015,
+      maxLat: SHINJUKU_CENTER.lat + 0.015,
+      minAlt: 0,
+      maxAlt: 260
+    };
     let viewer;
     let heatbox;
     let entities = [];
+
+    function applyBoundsView(bounds, overrides = {}) {
+      if (!viewer || !viewer.camera) return;
+      const options = { ...CAMERA_DEFAULTS, ...overrides };
+      if (CameraHelper?.setViewToBounds) {
+        CameraHelper.setViewToBounds(viewer, bounds, options);
+        return;
+      }
+      const fallbackView = CameraHelper?.getViewFromBounds
+        ? CameraHelper.getViewFromBounds(bounds, options)
+        : null;
+      if (fallbackView) {
+        viewer.camera.setView(fallbackView);
+      }
+    }
 
     function createImageryProvider() {
       return new Cesium.UrlTemplateImageryProvider({
@@ -107,14 +139,7 @@
       viewer.imageryLayers.addImageryProvider(imageryProvider);
       viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
 
-      viewer.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 2200),
-        orientation: {
-          heading: Cesium.Math.toRadians(30),
-          pitch: Cesium.Math.toRadians(-50),
-          roll: 0
-        }
-      });
+      applyBoundsView(INITIAL_BOUNDS, { pitchDegrees: -50 });
     }
 
     function updateStatus(message, type = 'info') {
@@ -144,14 +169,7 @@
 
     function generateEntities() {
       const list = [];
-      const bounds = {
-        minLon: SHINJUKU_CENTER.lon - 0.015,
-        maxLon: SHINJUKU_CENTER.lon + 0.015,
-        minLat: SHINJUKU_CENTER.lat - 0.015,
-        maxLat: SHINJUKU_CENTER.lat + 0.015,
-        minAlt: 0,
-        maxAlt: 260
-      };
+      const bounds = { ...INITIAL_BOUNDS };
 
       const clusters = [
         { lon: SHINJUKU_CENTER.lon, lat: SHINJUKU_CENTER.lat, n: 4200, spread: 0.0045 },
@@ -226,12 +244,8 @@
         updateStatsBox({ ...snapshot, renderedVoxels: stats.renderedVoxels });
 
         if (document.getElementById('fitView').checked) {
-          const bounds = heatbox.getBounds();
-          if (bounds) {
-            const rectangle = Cesium.Rectangle.fromDegrees(bounds.minLon, bounds.minLat, bounds.maxLon, bounds.maxLat);
-            const sphere = Cesium.BoundingSphere.fromRectangle3D(rectangle, Cesium.Ellipsoid.WGS84, 0);
-            viewer.camera.flyToBoundingSphere(sphere, { duration: 1.2 });
-          }
+          const bounds = heatbox.getBounds?.() || INITIAL_BOUNDS;
+          applyBoundsView(bounds, { pitchDegrees: -52 });
         }
 
         updateStatus('Render complete.');

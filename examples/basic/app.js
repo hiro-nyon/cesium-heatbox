@@ -6,6 +6,21 @@
 // UMDビルドからCesiumHeatboxを取得
 const Heatbox = window.CesiumHeatbox || window.Heatbox;
 const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+const CameraHelper = window.HeatboxDemoCamera || null;
+const CAMERA_DEFAULTS = {
+  headingDegrees: 20,
+  pitchDegrees: -55,
+  altitude: 12000,
+  altitudeScale: 1.8
+};
+const GENERATION_BOUNDS = {
+  minLon: SHINJUKU_CENTER.lon - 0.008,
+  maxLon: SHINJUKU_CENTER.lon + 0.008,
+  minLat: SHINJUKU_CENTER.lat - 0.008,
+  maxLat: SHINJUKU_CENTER.lat + 0.008,
+  minAlt: 0,
+  maxAlt: 180
+};
 
 // アプリケーションの状態
 let viewer;
@@ -43,6 +58,71 @@ function createTerrainProvider() {
     console.warn('World Terrain unavailable, using EllipsoidTerrainProvider.', error);
   }
   return new Cesium.EllipsoidTerrainProvider();
+}
+
+function focusCameraView(config = {}) {
+  if (!viewer || !viewer.camera) return;
+  const { bounds, ...overrides } = config;
+  const options = { ...CAMERA_DEFAULTS, ...overrides };
+
+  if (CameraHelper?.focus) {
+    CameraHelper.focus(viewer, bounds ? { bounds, ...options } : options);
+    return;
+  }
+
+  if (bounds && CameraHelper?.getViewFromBounds) {
+    const view = CameraHelper.getViewFromBounds(bounds, options) || CameraHelper.getDefaultView?.(options);
+    if (view) {
+      viewer.camera.setView(view);
+    }
+    return;
+  }
+
+  if (CameraHelper?.getDefaultView) {
+    const fallbackView = CameraHelper.getDefaultView(options);
+    if (fallbackView) {
+      viewer.camera.setView(fallbackView);
+      return;
+    }
+  }
+
+  const clampPitch = value => Math.max(-85, Math.min(-20, value));
+  if (bounds && typeof bounds.minLon === 'number' && typeof bounds.maxLon === 'number' &&
+      typeof bounds.minLat === 'number' && typeof bounds.maxLat === 'number') {
+    const minAlt = typeof bounds.minAlt === 'number' ? bounds.minAlt : 0;
+    const maxAlt = typeof bounds.maxAlt === 'number' ? bounds.maxAlt : 0;
+    const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+    const diagStart = Cesium.Cartesian3.fromDegrees(bounds.minLon, bounds.minLat, minAlt);
+    const diagEnd = Cesium.Cartesian3.fromDegrees(bounds.maxLon, bounds.maxLat, maxAlt);
+    const diagonal = Cesium.Cartesian3.distance(diagStart, diagEnd);
+    const altitude = Math.max(
+      options.altitude,
+      diagonal * (options.altitudeScale || CAMERA_DEFAULTS.altitudeScale) + maxAlt + 2000
+    );
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, altitude),
+      orientation: {
+        heading: Cesium.Math.toRadians(options.headingDegrees),
+        pitch: Cesium.Math.toRadians(clampPitch(options.pitchDegrees)),
+        roll: 0
+      }
+    });
+    return;
+  }
+
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(
+      SHINJUKU_CENTER.lon,
+      SHINJUKU_CENTER.lat,
+      options.altitude
+    ),
+    orientation: {
+      heading: Cesium.Math.toRadians(options.headingDegrees),
+      pitch: Cesium.Math.toRadians(clampPitch(options.pitchDegrees)),
+      roll: 0
+    }
+  });
 }
 
 /**
@@ -95,15 +175,7 @@ async function initializeApp() {
     viewer.imageryLayers.removeAll();
     viewer.imageryLayers.addImageryProvider(imageryProvider);
     viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
-    
-    viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 1200),
-      orientation: {
-        heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-30),
-        roll: 0
-      }
-    });
+    focusCameraView({ bounds: GENERATION_BOUNDS });
     
     // UI要素を取得
     const uiElementIds = [
@@ -143,14 +215,7 @@ function setupEventListeners() {
     updateStatus(`${count}個のテストエンティティを生成中...`);
     
     // 新宿駅周辺の境界を定義 / Define bounds around Shinjuku station
-    const bounds = {
-      minLon: SHINJUKU_CENTER.lon - 0.008,
-      maxLon: SHINJUKU_CENTER.lon + 0.008,
-      minLat: SHINJUKU_CENTER.lat - 0.008,
-      maxLat: SHINJUKU_CENTER.lat + 0.008,
-      minAlt: 0,
-      maxAlt: 180
-    };
+    const bounds = GENERATION_BOUNDS;
     
     // 非同期でエンティティを生成
     setTimeout(() => {
@@ -174,6 +239,8 @@ function setupEventListeners() {
       
       // v0.1.2: createFromEntitiesを使用（非同期）
       const stats = await heatbox.createFromEntities(testEntities);
+      const bounds = heatbox.getBounds?.();
+      focusCameraView({ bounds, pitchDegrees: CAMERA_DEFAULTS.pitchDegrees });
       
       if (stats) {
         displayStatistics(stats);

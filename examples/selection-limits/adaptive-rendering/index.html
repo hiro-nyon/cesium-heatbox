@@ -6,99 +6,22 @@
     <title>CesiumJS Heatbox v0.1.9 - Adaptive Rendering Demo</title>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <link href="../../common/demo.css" rel="stylesheet">
     <script>
         window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
         if (typeof Cesium !== 'undefined' && Cesium.Ion) {
             Cesium.Ion.defaultAccessToken = null;
         }
     </script>
-    <style>
-        html, body, #cesiumContainer {
-            width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
-        }
-        
-        #info {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px;
-            border-radius: 5px;
-            font-family: Arial, sans-serif;
-            max-width: 350px;
-            z-index: 1000;
-        }
-        
-        #adaptiveControls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: Arial, sans-serif;
-            min-width: 280px;
-            z-index: 1000;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        
-        #adaptiveControls h3 {
-            margin-top: 0;
-            color: #4CAF50;
-        }
-        
-        #adaptiveControls select, #adaptiveControls button {
-            width: 100%;
-            padding: 5px;
-            margin: 5px 0;
-            border: 1px solid #555;
-            background: #333;
-            color: white;
-            border-radius: 3px;
-        }
-        
-        #adaptiveControls button {
-            background: #4CAF50;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
-        #adaptiveControls button:hover {
-            background: #45a049;
-        }
-        
-        .control-group {
-            margin: 10px 0;
-        }
-        
-        .control-group label {
-            display: block;
-            margin-bottom: 3px;
-            font-size: 12px;
-            color: #ccc;
-        }
-        
-        #status {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 11px;
-            max-width: 400px;
-            z-index: 1000;
-        }
+    <script src="../../common/camera.js"></script>
+        <style>
+        .hb-panel.right { left: auto; right: 20px; }
     </style>
 </head>
 <body>
     <div id="cesiumContainer"></div>
     
-    <div id="info">
+    <aside id="info" class="hb-panel right">
         <h3>🚀 CesiumJS Heatbox v0.1.9</h3>
         <h4>Adaptive Rendering Demo</h4>
         <p><strong>新機能:</strong></p>
@@ -122,9 +45,9 @@
         </ol>
         
         <p><em>ブラウザのコンソール (F12) で詳細ログを確認できます。</em></p>
-    </div>
+    </aside>
     
-    <div id="status">
+    <div id="status" class="hb-status">
         <div id="statusText">初期化中...</div>
     </div>
 
@@ -143,6 +66,13 @@
         }
 
         const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+        const CameraHelper = window.HeatboxDemoCamera || null;
+        const CAMERA_DEFAULTS = {
+            headingDegrees: 10,
+            pitchDegrees: -55,
+            altitude: 12000,
+            altitudeScale: 1.8
+        };
 
         function createImageryProvider() {
             return new Cesium.UrlTemplateImageryProvider({
@@ -164,6 +94,32 @@
             return new Cesium.EllipsoidTerrainProvider();
         }
 
+        function focusCameraView(viewerInstance, config = {}) {
+            if (!viewerInstance || !viewerInstance.camera) return;
+            const { bounds, ...overrides } = config;
+            const options = { ...CAMERA_DEFAULTS, ...overrides };
+
+            if (CameraHelper?.focus) {
+                CameraHelper.focus(viewerInstance, bounds ? { bounds, ...options } : options);
+                return;
+            }
+
+            if (bounds && CameraHelper?.getViewFromBounds) {
+                const view = CameraHelper.getViewFromBounds(bounds, options) || CameraHelper.getDefaultView?.(options);
+                if (view) {
+                    viewerInstance.camera.setView(view);
+                }
+                return;
+            }
+
+            if (CameraHelper?.getDefaultView) {
+                const fallbackView = CameraHelper.getDefaultView(options);
+                if (fallbackView) {
+                    viewerInstance.camera.setView(fallbackView);
+                }
+            }
+        }
+
         // シーン設定
         const imageryProvider = createImageryProvider();
         const viewer = new Cesium.Viewer('cesiumContainer', {
@@ -183,14 +139,7 @@
         viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
         
         // 新宿駅周辺にカメラを設定 / Focus camera on Shinjuku
-        viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 2500),
-            orientation: {
-                heading: 0.0,
-                pitch: -0.5,
-                roll: 0.0
-            }
-        });
+        focusCameraView(viewer);
         
         // コントロール作成
         function createControls() {
@@ -198,7 +147,7 @@
                 <div id="adaptiveControls">
                     <h3>🚀 v0.1.9 Adaptive Controls</h3>
                     
-                    <div class="control-group">
+                    <div class="hb-group">
                         <label>🎯 Render Strategy:</label>
                         <select id="strategySelect">
                             <option value="density">🔥 Density-based (密度重視)</option>
@@ -207,7 +156,7 @@
                         </select>
                     </div>
                     
-                    <div class="control-group">
+                    <div class="hb-group">
                         <label>💻 Max Render Voxels:</label>
                         <select id="budgetSelect">
                             <option value="auto" selected>🤖 Auto Budget</option>
@@ -217,7 +166,7 @@
                         </select>
                     </div>
                     
-                    <div class="control-group">
+                    <div class="hb-group">
                         <label>📏 Auto Voxel Size Mode:</label>
                         <select id="voxelModeSelect">
                             <option value="simple">📐 Simple (v0.1.8)</option>
@@ -225,7 +174,7 @@
                         </select>
                     </div>
                     
-                    <div class="control-group">
+                    <div class="hb-group">
                         <label>📊 Dataset Size:</label>
                         <select id="dataSizeSelect">
                             <option value="small">小規模 (5,000 entities)</option>
@@ -234,10 +183,10 @@
                         </select>
                     </div>
                     
-                    <button id="applySettings">✅ Apply Settings</button>
-                    <button id="fitViewBtn">🎯 Fit View</button>
-                    <button id="showStats">📊 Show Stats</button>
-                    <button id="clearBtn">🗑️ Clear</button>
+                    <button id="applySettings" class="hb-btn hb-btn-primary">✅ Apply Settings</button>
+                    <button id="fitViewBtn" class="hb-btn hb-btn-secondary">🎯 Fit View</button>
+                    <button id="showStats" class="hb-btn hb-btn-secondary">📊 Show Stats</button>
+                    <button id="clearBtn" class="hb-btn hb-btn-danger">🗑️ Clear</button>
                 </div>
             `;
             
@@ -290,7 +239,9 @@
                     const loadTime = performance.now() - startTime;
                     
                     // 統計情報取得
-                    const stats = window.currentHeatbox.getStatistics();
+                   const stats = window.currentHeatbox.getStatistics();
+                   const bounds = window.currentHeatbox.getBounds?.();
+                    focusCameraView(viewer, { bounds });
                     
                     updateStatus(`✅ 完了 (${loadTime.toFixed(0)}ms) | ${stats.selectionStrategy} | ${stats.renderedVoxels}/${stats.totalVoxels} voxels`);
                     

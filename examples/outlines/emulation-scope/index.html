@@ -5,36 +5,24 @@
   <title>Cesium Heatbox - Emulation Scope Demo</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link href="../../common/demo.css" rel="stylesheet">
   <script>
     window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
     if (typeof Cesium !== 'undefined' && Cesium.Ion) {
       Cesium.Ion.defaultAccessToken = null;
     }
   </script>
+  <script src="../../common/camera.js"></script>
   <script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
-  <style>
-    html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #0d1117; }
-    .panel { position: absolute; top: 12px; left: 12px; background: rgba(25, 25, 25, 0.92); color: #f1f5f9; font-family: 'Segoe UI', sans-serif; padding: 18px; border-radius: 10px; width: 320px; box-shadow: 0 12px 24px rgba(0,0,0,0.35); }
-    .panel h2 { margin: 0 0 12px; font-size: 18px; color: #38bdf8; }
-    .panel p { margin: 0 0 12px; font-size: 13px; color: #94a3b8; }
-    .group { margin-bottom: 14px; }
-    .group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #e2e8f0; }
-    .group select, .group input[type="number"] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #111827; color: #e2e8f0; }
-    .group input[type="checkbox"] { margin-right: 8px; }
-    .buttons { display: flex; gap: 10px; margin-top: 12px; }
-    .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s ease; }
-    .btn-primary { background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; }
-    .btn-secondary { background: #475569; color: white; }
-    .btn:hover { opacity: 0.85; }
-    #status { margin-top: 14px; font-size: 12px; padding: 10px; border-radius: 6px; background: rgba(15, 118, 110, 0.15); color: #5eead4; }
-  </style>
 </head>
 <body>
   <div id="cesiumContainer"></div>
-  <div class="panel">
-    <h2>Outline Emulation Scope Demo</h2>
+  <div class="panel hb-panel">
+    <span class="hb-badge">Outlines</span>
+    <h2>Outline Emulation Scope</h2>
+    <p>Switch outline render modes and emulation scopes around Shinjuku to see TopN effects.</p>
     <p>Compare how <strong>outlineRenderMode</strong> and <strong>emulationScope</strong> interact with TopN highlighting.</p>
-    <div class="group">
+    <div class="hb-group">
       <label for="renderMode">Outline Render Mode</label>
       <select id="renderMode">
         <option value="standard">standard</option>
@@ -42,7 +30,7 @@
         <option value="emulation-only">emulation-only</option>
       </select>
     </div>
-    <div class="group">
+    <div class="hb-group">
       <label for="emulationScope">Emulation Scope</label>
       <select id="emulationScope">
         <option value="off">off</option>
@@ -51,27 +39,60 @@
         <option value="all">all</option>
       </select>
     </div>
-    <div class="group">
+    <div class="hb-group">
       <label for="highlightTopN">Highlight Top N</label>
       <input type="number" id="highlightTopN" min="0" max="200" value="30">
     </div>
-    <div class="group">
+    <div class="hb-group">
       <label><input type="checkbox" id="adaptiveOutlines" checked> Adaptive Outlines</label>
       <label><input type="checkbox" id="thickFrames"> Enable Thick Frames</label>
     </div>
-    <div class="buttons">
-      <button class="btn btn-primary" id="renderBtn">Render</button>
-      <button class="btn btn-secondary" id="clearBtn">Clear</button>
+    <div class="hb-buttons">
+      <button class="hb-btn hb-btn-primary" id="renderBtn">Render</button>
+      <button class="hb-btn hb-btn-secondary" id="clearBtn">Clear</button>
     </div>
-    <div id="status">Ready - choose settings and click Render.</div>
+    <div id="status" class="hb-status">Ready - choose settings and click Render.</div>
   </div>
 
   <script>
     const Heatbox = window.CesiumHeatbox || window.Heatbox;
+    const CameraHelper = window.HeatboxDemoCamera || null;
     const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+    const CAMERA_DEFAULTS = {
+      headingDegrees: 20,
+      pitchDegrees: -55,
+      altitude: 13000,
+      altitudeScale: 1.8
+    };
     let viewer;
     let heatbox;
     let entities = [];
+
+    function focusCameraView(config = {}) {
+      if (!viewer || !viewer.camera) return;
+      const { bounds, ...overrides } = config;
+      const options = { ...CAMERA_DEFAULTS, ...overrides };
+
+      if (CameraHelper?.focus) {
+        CameraHelper.focus(viewer, bounds ? { bounds, ...options } : options);
+        return;
+      }
+
+      if (bounds && CameraHelper?.getViewFromBounds) {
+        const view = CameraHelper.getViewFromBounds(bounds, options) || CameraHelper.getDefaultView?.(options);
+        if (view) {
+          viewer.camera.setView(view);
+        }
+        return;
+      }
+
+      if (CameraHelper?.getDefaultView) {
+        const fallbackView = CameraHelper.getDefaultView(options);
+        if (fallbackView) {
+          viewer.camera.setView(fallbackView);
+        }
+      }
+    }
 
     function createImageryProvider() {
       return new Cesium.UrlTemplateImageryProvider({
@@ -93,7 +114,10 @@
       return new Cesium.EllipsoidTerrainProvider();
     }
 
-    function initViewer() {
+    async function initViewer() {
+      if (viewer) {
+        return viewer;
+      }
       const imageryProvider = createImageryProvider();
       viewer = new Cesium.Viewer('cesiumContainer', {
         imageryProvider,
@@ -114,14 +138,8 @@
       viewer.imageryLayers.removeAll();
       viewer.imageryLayers.addImageryProvider(imageryProvider);
       viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
-      viewer.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 1200),
-        orientation: {
-          heading: Cesium.Math.toRadians(10),
-          pitch: Cesium.Math.toRadians(-40),
-          roll: 0
-        }
-      });
+      focusCameraView();
+      return viewer;
     }
 
     function generateEntities() {
@@ -172,7 +190,7 @@
       try {
         updateStatus('Rendering...');
         if (!viewer) {
-          initViewer();
+          await initViewer();
         }
 
         clearScene();
@@ -198,6 +216,8 @@
         });
 
         const stats = await heatbox.createFromEntities(entities);
+        const bounds = heatbox.getBounds?.();
+        focusCameraView({ bounds });
         updateStatus(`Rendered: voxels=${stats.renderedVoxels}, emulation=${emulationScope}`);
       } catch (error) {
         console.error(error);
@@ -205,8 +225,8 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      initViewer();
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initViewer();
       document.getElementById('renderBtn').addEventListener('click', render);
       document.getElementById('clearBtn').addEventListener('click', () => {
         clearScene();
