@@ -4,6 +4,13 @@
  */
 import * as Cesium from 'cesium';
 
+const SHINJUKU_BOUNDS = {
+  west: 139.68,
+  east: 139.705,
+  south: 35.68,
+  north: 35.70
+}; // 新宿駅周辺境界 / Shinjuku area bounds
+
 // エンティティタイプ別フィルタリング
 export const EntityFilters = {
   /**
@@ -114,7 +121,7 @@ const specificDataSource = Heatbox.filterEntities(
 // v0.1.2 新機能を活用した高度な使用例
 const tokyoAreaEntities = Heatbox.filterEntities(
   viewer.entities.values,
-  EntityFilters.byGeographicBounds(139.7, 139.8, 35.65, 35.72)
+  EntityFilters.byGeographicBounds(SHINJUKU_BOUNDS.west, SHINJUKU_BOUNDS.east, SHINJUKU_BOUNDS.south, SHINJUKU_BOUNDS.north)
 );
 
 // 高密度エリア用の設定（wireframeOnly）
@@ -140,7 +147,12 @@ await highDensityHeatbox.createFromEntities(tokyoAreaEntities);
 const complexFilter = (entity) => {
   return EntityFilters.pointsOnly(entity) && 
          EntityFilters.byAltitudeRange(50, 200)(entity) &&
-         EntityFilters.byGeographicBounds(139.75, 139.77, 35.67, 35.69)(entity);
+         EntityFilters.byGeographicBounds(
+           SHINJUKU_BOUNDS.west + 0.002,
+           SHINJUKU_BOUNDS.east - 0.002,
+           SHINJUKU_BOUNDS.south + 0.002,
+           SHINJUKU_BOUNDS.north - 0.002
+         )(entity);
 };
 
 const filteredEntities = Heatbox.filterEntities(viewer.entities.values, complexFilter);

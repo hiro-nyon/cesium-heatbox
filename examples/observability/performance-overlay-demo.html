@@ -133,10 +133,13 @@
         // Import Heatbox (assuming UMD build)
         const Heatbox = window.CesiumHeatbox || window.Heatbox;
 
+        const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+
         function createImageryProvider() {
             return new Cesium.UrlTemplateImageryProvider({
                 url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
                 subdomains: 'abcd',
+                maximumLevel: 19,
                 credit: '© OpenStreetMap contributors © CARTO'
             });
         }
@@ -153,14 +156,27 @@
         }
 
         // Initialize Cesium viewer
+        const imageryProvider = createImageryProvider();
         const viewer = new Cesium.Viewer('cesiumContainer', {
-            imageryProvider: createImageryProvider(),
+            imageryProvider,
             terrainProvider: createTerrainProvider(),
             baseLayerPicker: false,
             timeline: false,
             animation: false,
             geocoder: false,
             navigationHelpButton: false
+        });
+
+        viewer.imageryLayers.removeAll();
+        viewer.imageryLayers.addImageryProvider(imageryProvider);
+        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 1800),
+            orientation: {
+                heading: 0,
+                pitch: -Cesium.Math.PI_OVER_FOUR,
+                roll: 0
+            }
         });
 
         // Global state
@@ -213,14 +229,15 @@
         function generateTestData(count) {
             const entities = [];
             const bounds = {
-                minLon: 139.5,
-                maxLon: 139.8,
-                minLat: 35.5,
-                maxLat: 35.8,
+                minLon: SHINJUKU_CENTER.lon - 0.01,
+                maxLon: SHINJUKU_CENTER.lon + 0.01,
+                minLat: SHINJUKU_CENTER.lat - 0.01,
+                maxLat: SHINJUKU_CENTER.lat + 0.01,
                 minAlt: 0,
-                maxAlt: 200
+                maxAlt: 240
             };
 
+            // 新宿駅周辺で乱数データを生成 / Generate random data around Shinjuku station
             for (let i = 0; i < count; i++) {
                 const lon = bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon);
                 const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
@@ -234,8 +251,8 @@
                     
                     // Add points around cluster
                     for (let j = 0; j < 5 && entities.length < count; j++) {
-                        const clusterLon = centerLon + (Math.random() - 0.5) * 0.01;
-                        const clusterLat = centerLat + (Math.random() - 0.5) * 0.01;
+                        const clusterLon = Cesium.Math.clamp(centerLon + (Math.random() - 0.5) * 0.006, bounds.minLon, bounds.maxLon);
+                        const clusterLat = Cesium.Math.clamp(centerLat + (Math.random() - 0.5) * 0.006, bounds.minLat, bounds.maxLat);
                         
                         entities.push(viewer.entities.add({
                             position: Cesium.Cartesian3.fromDegrees(clusterLon, clusterLat, alt),

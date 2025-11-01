@@ -5,6 +5,7 @@
 
 // UMDビルドからCesiumHeatboxを取得
 const Heatbox = window.CesiumHeatbox || window.Heatbox;
+const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
 
 // アプリケーションの状態
 let viewer;
@@ -28,6 +29,7 @@ function createImageryProvider() {
   return new Cesium.UrlTemplateImageryProvider({
     url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
     subdomains: 'abcd',
+    maximumLevel: 19,
     credit: '© OpenStreetMap contributors © CARTO'
   });
 }
@@ -73,8 +75,9 @@ function generateLocalTestEntities(viewer, bounds, count) {
 async function initializeApp() {
   try {
     // CesiumJS Viewerの初期化
+    const imageryProvider = createImageryProvider();
     viewer = new Cesium.Viewer('cesiumContainer', {
-      imageryProvider: createImageryProvider(),
+      imageryProvider,
       terrainProvider: createTerrainProvider(),
       // プロトタイプの設定を参考
       homeButton: false,
@@ -89,9 +92,12 @@ async function initializeApp() {
       selectionIndicator: true,
       creditContainer: document.createElement('div')
     });
+    viewer.imageryLayers.removeAll();
+    viewer.imageryLayers.addImageryProvider(imageryProvider);
+    viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
     
     viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(139.7665, 35.6807, 800),
+      destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 1200),
       orientation: {
         heading: Cesium.Math.toRadians(0),
         pitch: Cesium.Math.toRadians(-30),
@@ -136,11 +142,14 @@ function setupEventListeners() {
     const count = parseInt(elements.entityCount.value, 10);
     updateStatus(`${count}個のテストエンティティを生成中...`);
     
-    // 東京駅周辺の境界を定義
+    // 新宿駅周辺の境界を定義 / Define bounds around Shinjuku station
     const bounds = {
-      minLon: 139.7640, maxLon: 139.7690,
-      minLat: 35.6790, maxLat: 35.6830,
-      minAlt: 0, maxAlt: 150
+      minLon: SHINJUKU_CENTER.lon - 0.008,
+      maxLon: SHINJUKU_CENTER.lon + 0.008,
+      minLat: SHINJUKU_CENTER.lat - 0.008,
+      maxLat: SHINJUKU_CENTER.lat + 0.008,
+      minAlt: 0,
+      maxAlt: 180
     };
     
     // 非同期でエンティティを生成

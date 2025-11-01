@@ -255,10 +255,13 @@
             alert('Heatbox library not found. Please ensure the build is available.');
         }
 
+	const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+
 	function createImageryProvider() {
 	    return new Cesium.UrlTemplateImageryProvider({
 	        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
 	        subdomains: 'abcd',
+	        maximumLevel: 19,
 	        credit: '© OpenStreetMap contributors © CARTO'
 	    });
 	}
@@ -275,8 +278,9 @@
 	}
 
 	// Initialize Cesium viewer
+	const imageryProvider = createImageryProvider();
 	const viewer = new Cesium.Viewer('cesiumContainer', {
-	    imageryProvider: createImageryProvider(),
+	    imageryProvider,
 	    terrainProvider: createTerrainProvider(),
 	    timeline: false,
 	    animation: false,
@@ -289,6 +293,17 @@
 	    sceneModePicker: false,
 	    selectionIndicator: false,
 	    navigationHelpButton: false
+	});
+	viewer.imageryLayers.removeAll();
+	viewer.imageryLayers.addImageryProvider(imageryProvider);
+	viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
+	viewer.camera.setView({
+	    destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 2200),
+	    orientation: {
+	        heading: 0,
+	        pitch: -Cesium.Math.PI_OVER_FOUR,
+	        roll: 0
+	    }
 	});
 
         // Global state
@@ -386,12 +401,12 @@
         function generateTestData(count) {
             const entities = [];
             const bounds = {
-                minLon: 139.6,
-                maxLon: 139.8,
-                minLat: 35.6,
-                maxLat: 35.7,
+                minLon: SHINJUKU_CENTER.lon - 0.012,
+                maxLon: SHINJUKU_CENTER.lon + 0.012,
+                minLat: SHINJUKU_CENTER.lat - 0.012,
+                maxLat: SHINJUKU_CENTER.lat + 0.012,
                 minAlt: 0,
-                maxAlt: 300
+                maxAlt: 240
             };
 
             // Create clustered data for more interesting visualization
@@ -413,9 +428,9 @@
                 if (Math.random() < 0.7 && clusterCenters.length > 0) {
                     // Cluster point
                     const cluster = clusterCenters[Math.floor(Math.random() * clusterCenters.length)];
-                    lon = cluster.lon + (Math.random() - 0.5) * 0.02;
-                    lat = cluster.lat + (Math.random() - 0.5) * 0.02;
-                    alt = cluster.alt + (Math.random() - 0.5) * 50;
+                    lon = Cesium.Math.clamp(cluster.lon + (Math.random() - 0.5) * 0.008, bounds.minLon, bounds.maxLon);
+                    lat = Cesium.Math.clamp(cluster.lat + (Math.random() - 0.5) * 0.008, bounds.minLat, bounds.maxLat);
+                    alt = Math.max(bounds.minAlt, Math.min(bounds.maxAlt, cluster.alt + (Math.random() - 0.5) * 40));
                     value = cluster.intensity + (Math.random() - 0.5) * 20;
                 } else {
                     // Random point

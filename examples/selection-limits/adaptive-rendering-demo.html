@@ -142,10 +142,13 @@
             console.log('📱 Status:', message);
         }
 
+        const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+
         function createImageryProvider() {
             return new Cesium.UrlTemplateImageryProvider({
                 url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
                 subdomains: 'abcd',
+                maximumLevel: 19,
                 credit: '© OpenStreetMap contributors © CARTO'
             });
         }
@@ -162,8 +165,9 @@
         }
 
         // シーン設定
+        const imageryProvider = createImageryProvider();
         const viewer = new Cesium.Viewer('cesiumContainer', {
-            imageryProvider: createImageryProvider(),
+            imageryProvider,
             terrainProvider: createTerrainProvider(),
             shouldAnimate: false,
             homeButton: false,
@@ -174,10 +178,13 @@
             timeline: false,
             fullscreenButton: false
         });
+        viewer.imageryLayers.removeAll();
+        viewer.imageryLayers.addImageryProvider(imageryProvider);
+        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
         
-        // 東京周辺にカメラを設定
+        // 新宿駅周辺にカメラを設定 / Focus camera on Shinjuku
         viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(139.7, 35.7, 5000),
+            destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 2500),
             orientation: {
                 heading: 0.0,
                 pitch: -0.5,
@@ -261,10 +268,10 @@
                     
                     window.currentData = generateSampleData(totalEntities, {
                         clusters: [
-                            { center: [139.7, 35.7, 50], radius: 0.02, density: 0.7, count: Math.floor(totalEntities * 0.4) },
-                            { center: [139.75, 35.72, 100], radius: 0.015, density: 0.5, count: Math.floor(totalEntities * 0.3) },
-                            { center: [139.8, 35.75, 30], radius: 0.03, density: 0.3, count: Math.floor(totalEntities * 0.2) },
-                            { center: [139.73, 35.65, 80], radius: 0.01, density: 0.8, count: Math.floor(totalEntities * 0.1) }
+                            { center: [SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 60], radius: 0.006, density: 0.8, count: Math.floor(totalEntities * 0.4) },
+                            { center: [SHINJUKU_CENTER.lon + 0.0025, SHINJUKU_CENTER.lat - 0.0015, 90], radius: 0.004, density: 0.6, count: Math.floor(totalEntities * 0.3) },
+                            { center: [SHINJUKU_CENTER.lon - 0.002, SHINJUKU_CENTER.lat + 0.002, 40], radius: 0.005, density: 0.4, count: Math.floor(totalEntities * 0.2) },
+                            { center: [SHINJUKU_CENTER.lon + 0.004, SHINJUKU_CENTER.lat + 0.001, 120], radius: 0.003, density: 0.7, count: Math.floor(totalEntities * 0.1) }
                         ]
                     });
                     
