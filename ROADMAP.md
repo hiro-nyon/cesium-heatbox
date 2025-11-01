@@ -258,6 +258,26 @@ Priority: High | Target: 2025-11-02
     - `voxelInfo.bounds` を用いて中心/寸法を計算し `Entity.box` で描画（Primitive 化は 3.x で検討）。
   - 観測性
     - `Heatbox.getStatistics()` に `spatialIdEnabled`, `spatialIdProvider`, `spatialIdZoom`, `zoomControl` を追加（任意）。
+  - 依存管理（ouranos-gex）
+    - インストールは **npm または GitHub** のいずれかから（利用者環境に合わせて選択）。
+    - 依存は **オプショナル** とし、**バージョンは現時点で未指定**（将来的にコミットハッシュ/タグpinへ移行可）。
+    - 例（GitHub 直指定）: `package.json`
+      ```json
+      {
+        "optionalDependencies": {
+          "ouranos-gex-lib-for-JavaScript": "github:ouranos-gex/ouranos-gex-lib-for-JavaScript"
+        }
+      }
+      ```
+    - 例（npm 公開時想定）: `package.json`
+      ```json
+      {
+        "optionalDependencies": {
+          "ouranos-gex-lib-for-JavaScript": "*"
+        }
+      }
+      ```
+    - ランタイムは dynamic import の try/catch で存在を検出。未導入時は **内蔵ZFXYアダプタ**にフォールバック（WARN を出すが処理は継続）。
 
 - Deliverables
   - [ ] `SpatialIdAdapter`（tile-grid 専用）実装＋単体テスト
@@ -269,12 +289,49 @@ Priority: High | Target: 2025-11-02
   - [ ] `spatialId.enabled=true` かつ `mode:'tile-grid'` で生成される各ボクセルの **8頂点が `Space.vertices3d()`（または内蔵式）と一致**（浮動小数許容内）。
   - [ ] `properties.spatialId` は **`{ z:number, x:number, y:number, f:number, id:string /* zfxyStr */ }`** を持ち、`id` は zfxyStr 正規形式。
   - [ ] `zoomControl:'auto'` の選択結果が **XY相対誤差 ≤ 10%** を満たす。
-  - [ ] ±180°ラップ／±85.0511°帯のケースで近傍/境界の異常がない（代表データで単体テストを含む）。
   - [ ] ouranos-gex 未導入でも描画が継続し、`getStatistics()` に `spatialIdEnabled:true` かつ `spatialIdProvider:null` が反映される。
 
 - 非目標
   - 時系列（4D）の実装（**v1.2.0 に延期**）。
   - Primitive ベース描画（3.x 以降）。
+  - グローバルQA（±180°ラップ／±85.0511°帯の端ケース）は **v0.1.19** に委譲。
+### v0.1.19（グローバルQA対応）— 空間ID tile-grid の国際対応テストと修正
+Priority: High | Target: 2025-11-15
+
+- 目的（学会後の仕上げ）
+  - 空間ID 準拠モード（v0.1.17）の **グローバル端ケース** を網羅テストし、必要な修正を反映。
+  - 対象: **±180°（日付変更線）ラップ**、**高緯度帯（±85.0511°近傍）**、半球跨ぎ、経度正規化の境界挙動。
+
+- Scope
+  - テストシナリオ
+    - 反対経度の隣接セル（+179.9°E ↔ -179.9°W）での `neighbors/children/parent` の連続性確認。
+    - 高緯度（例: 84.9°N / 84.9°S）での ZFXY セル境界算出（8頂点）と `voxelInfo.bounds` の一致。
+    - 赤道跨ぎ・子午線跨ぎの `zoom:'auto'` 選択精度（XY相対誤差 ≤ 10%）。
+    - ouranos-gex **有無**の双方での挙動一致（フォールバックの誤差/WARN ログ確認）。
+  - 実装面の調整（必要に応じて）
+    - `SpatialIdAdapter` の**経度ラップ処理**をユーティリティ化し、`neighbors`/`bounds` 両方で共通利用。
+    - `getStatistics()` へ `globalQATested:true` のフラグ（任意）。
+  - ドキュメント/Examples
+    - Examples に **antimeridian-demo** を追加（可視化でラップ挙動を確認）。
+    - README/Wiki にグローバル注意点（±180°/±85.0511°）と `zoomControl:'manual'` の推奨設定例を追記。
+
+- Deliverables
+  - [ ] `tests/spatialid-global/*.spec.js` に antimeridian / high-latitude / hemisphere-cross のケースを追加
+  - [ ] `SpatialIdAdapter` のラップ処理の共通化（必要なら）
+  - [ ] `examples/advanced/antimeridian-demo.*` の追加
+  - [ ] Docs/Wiki のグローバル注意点セクションの新設
+
+- Acceptance Criteria
+  - [ ] **±180°ラップ**で左右の `neighbors` が相互に参照整合（Aの右= B かつ Bの左= A）。
+  - [ ] **高緯度帯（±85.0511°近傍）**で `Space.vertices3d()`（または内蔵式）と `voxelInfo.bounds` の 8頂点が一致（浮動小数許容内）。
+  - [ ] `zoomControl:'auto'` の選択結果が **XY相対誤差 ≤ 10%** を満たす（赤道/子午線/高緯度の代表点）。
+  - [ ] ouranos-gex 未導入でも処理継続し、ログ/統計にフォールバック情報が出力される。
+  - [ ] パフォーマンス退行が ±10% 以内（同一ズーム・同程度セル数）。
+
+- 非目標
+  - 4D（時間次元）の実装（v1.2.0 で対応）
+  - Primitive ベース描画（3.x で検討）
+
 
 - リスク/緩和
   - 高緯度での XY 縮尺差 → 仕様どおり受容、ズーム手動選択で回避可能（ドキュメントで注意喚起）。
