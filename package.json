@@ -98,5 +98,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "optionalDependencies": {
+    "ouranos-gex-lib-for-javascript": "github:ouranos-gex/ouranos-gex-lib-for-JavaScript"
   }
 }
