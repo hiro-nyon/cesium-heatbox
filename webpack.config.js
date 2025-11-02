@@ -10,7 +10,7 @@ module.exports = (env = {}, argv = {}) => {
     
     output: {
       path: path.resolve(__dirname, 'dist'),
-      clean: false, // Don't clean to preserve ESM and UMD builds together
+      clean: false, // Preserve ESM & UMD outputs (dist/ should be cleaned manually when needed)
       globalObject: 'this'
     },
     // externals is assigned per target below

@@ -2,6 +2,7 @@
 (function () {
   'use strict';
 
+  // 新宿駅中心 (Shinjuku Station)
   const DEFAULT_CENTER = { lon: 139.6917, lat: 35.6895 };
   const DEFAULT_BOUNDS = {
     minLon: DEFAULT_CENTER.lon - 0.012,

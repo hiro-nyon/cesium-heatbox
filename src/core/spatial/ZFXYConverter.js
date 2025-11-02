@@ -1,3 +1,5 @@
+import { COORDINATE_CONSTANTS } from '../../utils/constants.js';
+
 /**
  * ZFXYConverter - Built-in ZFXY (3D tile coordinates) converter
  * 内蔵ZFXY（3次元タイル座標）コンバーター
@@ -105,7 +107,7 @@ export class ZFXYConverter {
    * @private
    */
   static _clampLatitude(lat) {
-    const MAX_LAT = 85.0511287798;  // Web Mercator limit
+    const MAX_LAT = 85.0511287798;  // Web Mercator limit (≈ arctan(sinh(π)))
     return Math.max(-MAX_LAT, Math.min(MAX_LAT, lat));
   }
 
@@ -118,7 +120,7 @@ export class ZFXYConverter {
    * @private
    */
   static _getAltitudePerBin(zoom, lat) {
-    const EARTH_CIRCUMFERENCE = 40075016.68557849; // meters
+    const EARTH_CIRCUMFERENCE = COORDINATE_CONSTANTS.EARTH_CIRCUMFERENCE_EQUATOR; // meters
     const MIN_BIN_SIZE = 0.5;  // meters
     const MAX_BIN_SIZE = 5000; // meters
     const ALTITUDE_SCALE = 1.0; // Ratio between XY tile size and altitude slice

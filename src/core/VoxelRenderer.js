@@ -348,6 +348,7 @@ export class VoxelRenderer {
       // 頂点から寸法を計算（角間の距離）
       // Assume vertices[0-3] are bottom face, vertices[4-7] are top face
       // vertices[0], [1], [2], [3] form bottom rectangle
+      // SpatialIdAdapter/ZFXYConverter guarantee this ordering.
       const v0 = Cesium.Cartesian3.fromDegrees(vertices[0].lng, vertices[0].lat, vertices[0].alt);
       const v1 = Cesium.Cartesian3.fromDegrees(vertices[1].lng, vertices[1].lat, vertices[1].alt);
       const v3 = Cesium.Cartesian3.fromDegrees(vertices[3].lng, vertices[3].lat, vertices[3].alt);

@@ -23,7 +23,7 @@ function run(command, options = {}) {
 function ensureModuleInstalled() {
   if (!fs.existsSync(moduleDir)) {
     console.error('[ouranos] node_modules/ouranos-gex-lib-for-javascript not found.');
-    console.error('[ouranos] Run `npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save` first.');
+    console.error('[ouranos] Run `npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-javascript --no-save` first.');
     process.exit(1);
   }
 }

@@ -1,4 +1,5 @@
 import { Logger } from '../../utils/logger.js';
+import { COORDINATE_CONSTANTS } from '../../utils/constants.js';
 import { ZFXYConverter } from './ZFXYConverter.js';
 
 /**
@@ -293,7 +294,7 @@ export class SpatialIdAdapter {
   _calculateCellSizeAtZoom(zoom, lat) {
     // Web Mercator tile calculation
     // Earth circumference at equator: ~40075017 meters
-    const earthCircumference = 40075017;
+    const earthCircumference = COORDINATE_CONSTANTS.EARTH_CIRCUMFERENCE_EQUATOR;
     const latRadians = lat * Math.PI / 180;
     
     // XY cell size = (earth circumference * cos(lat)) / (2^zoom * 256)

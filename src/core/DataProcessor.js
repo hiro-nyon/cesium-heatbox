@@ -90,23 +90,7 @@ export class DataProcessor {
           return;
         }
         
-        // ボクセルインデックスを計算（範囲0の安全対策）
-        const lonDen = (bounds.maxLon - bounds.minLon);
-        const latDen = (bounds.maxLat - bounds.minLat);
-        const altDen = (bounds.maxAlt - bounds.minAlt);
-
-        const voxelX = lonDen === 0 ? 0 : Math.min(
-          grid.numVoxelsX - 1,
-          Math.floor((lon - bounds.minLon) / lonDen * grid.numVoxelsX)
-        );
-        const voxelY = latDen === 0 ? 0 : Math.min(
-          grid.numVoxelsY - 1,
-          Math.floor((lat - bounds.minLat) / latDen * grid.numVoxelsY)
-        );
-        const voxelZ = altDen === 0 ? 0 : Math.min(
-          grid.numVoxelsZ - 1,
-          Math.floor((alt - bounds.minAlt) / altDen * grid.numVoxelsZ)
-        );
+        const { x: voxelX, y: voxelY, z: voxelZ } = DataProcessor._normalizeGridIndices(lon, lat, alt, bounds, grid);
         
         // インデックスが有効範囲内かチェック
         if (voxelX >= 0 && voxelX < grid.numVoxelsX &&
@@ -196,6 +180,45 @@ export class DataProcessor {
     return stats;
   }
   
+  /**
+   * Normalize geographic coordinates into grid indices with zero-span guards.
+   * ゼロスパン対策付きで地理座標をグリッドインデックスに正規化
+   *
+   * @param {number} lon - Longitude / 経度
+   * @param {number} lat - Latitude / 緯度
+   * @param {number} alt - Altitude / 高度
+   * @param {Object} bounds - Bounds info / 境界情報
+   * @param {Object} grid - Grid info / グリッド情報
+   * @returns {{x: number, y: number, z: number}}
+   * @private
+   */
+  static _normalizeGridIndices(lon, lat, alt, bounds, grid) {
+    const safeVoxelCount = (value) => {
+      const parsed = Number.isFinite(value) ? Math.floor(value) : 0;
+      return parsed > 0 ? parsed : 1;
+    };
+
+    const normalizeAxis = (coordinate, minBound, maxBound, voxelCount) => {
+      const span = Number.isFinite(maxBound - minBound) ? (maxBound - minBound) : 0;
+      const clampedCoordinate = Number.isFinite(coordinate) ? coordinate : minBound;
+      const count = safeVoxelCount(voxelCount);
+      if (span === 0) {
+        return 0;
+      }
+      const ratio = (clampedCoordinate - minBound) / span;
+      const rawIndex = Math.floor(ratio * count);
+      const maxIndex = count - 1;
+      const finiteIndex = Number.isFinite(rawIndex) ? rawIndex : 0;
+      return Math.max(0, Math.min(maxIndex, finiteIndex));
+    };
+
+    const x = normalizeAxis(lon, bounds.minLon, bounds.maxLon, grid.numVoxelsX);
+    const y = normalizeAxis(lat, bounds.minLat, bounds.maxLat, grid.numVoxelsY);
+    const z = normalizeAxis(alt, bounds.minAlt, bounds.maxAlt, grid.numVoxelsZ);
+
+    return { x, y, z };
+  }
+
   /**
    * Get top-N densest voxels.
    * 上位 N 個のボクセルを取得します。
@@ -327,26 +350,9 @@ export class DataProcessor {
           const centerLng = vertices.reduce((sum, v) => sum + v.lng, 0) / 8;
           const centerLat = vertices.reduce((sum, v) => sum + v.lat, 0) / 8;
           const centerAlt = vertices.reduce((sum, v) => sum + v.alt, 0) / 8;
-          
-          // Calculate spans with zero-span guards (same as uniform grid mode)
-          // ゼロスパンガード付きでスパンを計算（一様グリッドモードと同じ）
-          const lngSpan = bounds.maxLon - bounds.minLon;
-          const latSpan = bounds.maxLat - bounds.minLat;
-          const altSpan = bounds.maxAlt - bounds.minAlt;
-          
-          // Normalize to grid indices (0...numVoxels range for VoxelSelector)
-          // グリッドインデックスに正規化（VoxelSelector用の0...numVoxels範囲）
-          // When span is zero, default to 0 (flat dimension)
-          // スパンがゼロの場合は0にデフォルト設定（平坦な次元）
-          const normalizedX = lngSpan === 0 ? 0 : Math.floor((centerLng - bounds.minLon) / lngSpan * grid.numVoxelsX);
-          const normalizedY = latSpan === 0 ? 0 : Math.floor((centerLat - bounds.minLat) / latSpan * grid.numVoxelsY);
-          const normalizedZ = altSpan === 0 ? 0 : Math.floor((centerAlt - bounds.minAlt) / altSpan * grid.numVoxelsZ);
-          
-          // Clamp to valid grid range / 有効なグリッド範囲にクランプ
-          const safeX = Math.max(0, Math.min(grid.numVoxelsX - 1, normalizedX));
-          const safeY = Math.max(0, Math.min(grid.numVoxelsY - 1, normalizedY));
-          const safeZ = Math.max(0, Math.min(grid.numVoxelsZ - 1, normalizedZ));
-          
+
+          const { x: safeX, y: safeY, z: safeZ } = DataProcessor._normalizeGridIndices(centerLng, centerLat, centerAlt, bounds, grid);
+
           voxelMap.set(zfxyStr, {
             key: zfxyStr,
             // Normalized indices for compatibility with VoxelSelector and other systems
