@@ -217,7 +217,7 @@
       const aggregationEnabled = elements.enableAggregation.checked;
       
       // Create heatbox with aggregation
-      heatbox = new Heatbox.Heatbox(viewer, {
+      heatbox = new Heatbox(viewer, {
         voxelSize: parseInt(elements.voxelSize.value),
         opacity: 0.6,
         showOutline: true,
