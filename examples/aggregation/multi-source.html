@@ -123,6 +123,16 @@
       poi_park: { label: 'POI: Park', color: '#228B22', weight: 3 }
     };
 
+    const CATEGORY_DEFINITIONS = {
+      pedestrian: { label: 'Pedestrian Flow', color: '#FF6B6B' },
+      poi: { label: 'Points of Interest', color: '#32CD32' }
+    };
+
+    const CATEGORY_GROUPS = {
+      pedestrian: ['pedestrian_morning', 'pedestrian_daytime', 'pedestrian_evening', 'pedestrian_night'],
+      poi: ['poi_restaurant', 'poi_retail', 'poi_station', 'poi_park']
+    };
+
     let viewer, heatbox, generatedEntities;
 
     // Setup Viewer with CartoDB imagery
@@ -368,9 +378,21 @@
         aggregation: {
           enabled: aggregationEnabled,
           // Heatbox resolves Cesium Property/PropertyBag automatically (v0.1.18)
-          keyResolver: (entity) => entity.properties?.dataSource ?? 'unknown',
+          keyResolver: (entity) => {
+            const sourceKey = entity.properties?.dataSource;
+            const source = typeof sourceKey === 'string' ? sourceKey : sourceKey?.getValue?.(Cesium.JulianDate.now());
+            if (typeof source === 'string') {
+              if (source.startsWith('pedestrian')) {
+                return 'pedestrian';
+              }
+              if (source.startsWith('poi')) {
+                return 'poi';
+              }
+            }
+            return 'unknown';
+          },
           showInDescription: elements.showInDescription.checked,
-          topN: 10 // Show top 10 data sources (v0.1.18)
+          topN: 10 // Show top categories (pedestrian / poi)
         }
       };
       
@@ -437,30 +459,66 @@
       
       // Layer stats
       if (stats.layers && stats.layers.length > 0) {
-        const maxTotal = Math.max(...stats.layers.map(l => l.total));
-        
+        const categoryTotals = new Map(stats.layers.map(layer => [layer.key, layer.total]));
+        const maxTotal = Math.max(...Array.from(categoryTotals.values()));
+
+        // Build subcategory counts for each aggregated category
+        const subCounts = {};
+        if (Array.isArray(generatedEntities)) {
+          generatedEntities.forEach((entity) => {
+            const sourceKey = entity.properties?.dataSource;
+            if (!sourceKey || typeof sourceKey !== 'string') {
+              return;
+            }
+
+            let categoryKey = 'unknown';
+            if (sourceKey.startsWith('pedestrian')) {
+              categoryKey = 'pedestrian';
+            } else if (sourceKey.startsWith('poi')) {
+              categoryKey = 'poi';
+            }
+
+            if (!subCounts[categoryKey]) {
+              subCounts[categoryKey] = {};
+            }
+
+            const label = DATA_SOURCES[sourceKey]?.label || sourceKey;
+            subCounts[categoryKey][label] = (subCounts[categoryKey][label] || 0) + 1;
+          });
+        }
+
         let layerHtml = '<div style="font-size: 0.9em;">';
         stats.layers.forEach(layer => {
-          const source = DATA_SOURCES[layer.key];
-          const color = source ? source.color : '#999';
-          const label = source ? source.label : layer.key;
-          const percentage = (layer.total / stats.totalEntities * 100).toFixed(1);
-          const barWidth = (layer.total / maxTotal * 100).toFixed(1);
-          
+          const categoryDef = CATEGORY_DEFINITIONS[layer.key] || { label: layer.key, color: '#999' };
+          const total = layer.total;
+          const percentage = stats.totalEntities > 0 ? ((total / stats.totalEntities) * 100).toFixed(1) : '0.0';
+          const barWidth = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(1) : '0';
+
           layerHtml += `
-            <div style="margin-bottom: 8px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                <span style="font-size: 0.85em;"><span style="display: inline-block; width: 12px; height: 12px; background: ${color}; margin-right: 5px;"></span>${label}</span>
-                <span>${layer.total} (${percentage}%)</span>
+            <div style="margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <span style="font-size: 0.85em;"><span style="display: inline-block; width: 12px; height: 12px; background: ${categoryDef.color}; margin-right: 5px;"></span>${categoryDef.label}</span>
+                <span>${total} (${percentage}%)</span>
               </div>
               <div style="background: #eee; height: 8px; border-radius: 4px;">
-                <div style="background: ${color}; height: 100%; width: ${barWidth}%; border-radius: 4px;"></div>
+                <div style="background: ${categoryDef.color}; height: 100%; width: ${barWidth}%; border-radius: 4px;"></div>
               </div>
-            </div>
           `;
+
+          const subEntries = Object.entries(subCounts[layer.key] || {});
+          if (subEntries.length > 0) {
+            layerHtml += '<div style="margin-top: 6px; padding-left: 14px; font-size: 0.8em; color: #4b5563;">';
+            subEntries.sort((a, b) => b[1] - a[1]).forEach(([label, count]) => {
+              const subPercentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
+              layerHtml += `<div style="display: flex; justify-content: space-between; margin-bottom: 2px;"><span>${label}</span><span>${count} (${subPercentage}%)</span></div>`;
+            });
+            layerHtml += '</div>';
+          }
+
+          layerHtml += '</div>';
         });
         layerHtml += '</div>';
-        
+
         elements.layerStats.innerHTML = layerHtml;
       } else {
         elements.layerStats.innerHTML = '<p style="color: #999; font-size: 0.9em;">Aggregation disabled</p>';
