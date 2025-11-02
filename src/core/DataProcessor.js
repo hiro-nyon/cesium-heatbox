@@ -172,11 +172,15 @@ export class DataProcessor {
     const counts = Array.from(voxelData.values()).map(voxel => voxel.count);
     const totalEntities = counts.reduce((sum, count) => sum + count, 0);
     
+    // v0.1.17: Spatial ID mode can exceed grid.totalVoxels, clamp emptyVoxels to non-negative
+    // 空間IDモードではgrid.totalVoxelsを超える可能性があるため、emptyVoxelsを非負にクランプ
+    const emptyVoxels = Math.max(0, grid.totalVoxels - voxelData.size);
+    
     const stats = {
       totalVoxels: grid.totalVoxels,
       renderedVoxels: 0, // 実際の描画後にVoxelRendererから設定される
       nonEmptyVoxels: voxelData.size,
-      emptyVoxels: grid.totalVoxels - voxelData.size,
+      emptyVoxels: emptyVoxels,
       totalEntities: totalEntities,
       minCount: Math.min(...counts),
       maxCount: Math.max(...counts),
@@ -242,7 +246,17 @@ export class DataProcessor {
       zoom = adapter.calculateOptimalZoom(targetSize, centerLat, tolerance);
       Logger.info(`Auto-selected zoom level ${zoom} for target size ${targetSize}m (lat: ${centerLat.toFixed(4)}°)`);
     } else {
-      zoom = options.spatialId.zoom || 25;
+      // Manual mode: validate zoom is a valid number
+      // 手動モード: ズームが有効な数値であることを検証
+      const manualZoom = options.spatialId.zoom;
+      if (typeof manualZoom === 'number' && Number.isFinite(manualZoom) && manualZoom >= 0 && manualZoom <= 35) {
+        zoom = Math.floor(manualZoom);
+      } else {
+        // Invalid or 'auto' passed to manual mode, use default
+        // 無効な値または'auto'が手動モードに渡された場合、デフォルトを使用
+        zoom = 25;
+        Logger.warn(`Invalid zoom value in manual mode (${manualZoom}), using default zoom level ${zoom}`);
+      }
       Logger.info(`Using manual zoom level ${zoom}`);
     }
     
