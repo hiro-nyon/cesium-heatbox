@@ -253,6 +253,7 @@ export class DataProcessor {
     const voxelMap = new Map();
     let processedCount = 0;
     let skippedCount = 0;
+    let voxelIndex = 0; // Sequential index for backward compatibility / 後方互換性のための連番インデックス
     
     const currentTime = Cesium.JulianDate.now();
     
@@ -306,13 +307,21 @@ export class DataProcessor {
         
         // Aggregate by zfxyStr (public key format) / zfxyStr（公開キー形式）で集約
         if (!voxelMap.has(zfxyStr)) {
+          // Assign sequential index for backward compatibility with VoxelRenderer (Phase 3 migration)
+          // VoxelRendererとの後方互換性のために連番インデックスを付与（Phase 3移行まで）
           voxelMap.set(zfxyStr, {
             key: zfxyStr,
+            // Legacy fields for VoxelRenderer compatibility (removed in Phase 3)
+            // VoxelRenderer互換のためのレガシーフィールド（Phase 3で削除）
+            x: voxelIndex,
+            y: 0,
+            z: 0,
             bounds: vertices,  // 8 vertices from ouranos-gex or fallback / ouranos-gexまたはフォールバックからの8頂点
             spatialId: { ...zfxy, id: zfxyStr },
             entities: [],
             count: 0
           });
+          voxelIndex++;
         }
         
         const voxelInfo = voxelMap.get(zfxyStr);
