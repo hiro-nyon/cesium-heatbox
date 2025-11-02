@@ -27,9 +27,21 @@ export function createMockViewer() {
       }
     },
     entities: {
-      add: jest.fn().mockReturnValue({ id: 'mock-entity' }),
-      remove: jest.fn(),
-      removeAll: jest.fn()
+      values: [],
+      add: jest.fn(function(config) {
+        const entity = { id: config.id || 'mock-entity', ...config };
+        this.values.push(entity);
+        return entity;
+      }),
+      remove: jest.fn(function(entity) {
+        const index = this.values.indexOf(entity);
+        if (index > -1) {
+          this.values.splice(index, 1);
+        }
+      }),
+      removeAll: jest.fn(function() {
+        this.values = [];
+      })
     },
     camera: {
       flyTo: jest.fn(),
