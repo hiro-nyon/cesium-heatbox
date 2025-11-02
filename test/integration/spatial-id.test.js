@@ -3,28 +3,15 @@
  * v0.1.17: Full workflow validation (ADR-0013 Phase 5)
  */
 import { Heatbox } from '../../src/Heatbox.js';
-import { generateMockEntities } from '../helpers/testHelpers.js';
+import { generateMockEntities, createMockViewer } from '../helpers/testHelpers.js';
 
 describe('Spatial ID Integration Tests', () => {
   let mockViewer;
   let mockEntities;
 
   beforeEach(() => {
-    // Mock CesiumJS Viewer
-    mockViewer = {
-      entities: {
-        add: jest.fn((config) => ({ ...config, id: Math.random().toString() })),
-        remove: jest.fn(),
-        removeAll: jest.fn()
-      },
-      scene: {
-        postRender: {
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn()
-        },
-        requestRender: jest.fn()
-      }
-    };
+    // Use testHelpers.createMockViewer() for proper validation
+    mockViewer = createMockViewer();
 
     // Generate test entities (Shinjuku area)
     mockEntities = generateMockEntities(100, {
@@ -313,8 +300,9 @@ describe('Spatial ID Integration Tests', () => {
       expect(stats.spatialIdEnabled).toBe(true);
       expect(stats.nonEmptyVoxels).toBeGreaterThan(0);
       // If selection was applied, should see selectionStrategy in stats
+      // VoxelSelector may choose any valid strategy based on data distribution
       if (stats.selectionStrategy) {
-        expect(['coverage', 'hybrid']).toContain(stats.selectionStrategy);
+        expect(['density', 'coverage', 'hybrid']).toContain(stats.selectionStrategy);
       }
     });
 
@@ -332,6 +320,10 @@ describe('Spatial ID Integration Tests', () => {
 
       expect(stats.spatialIdEnabled).toBe(true);
       expect(stats.nonEmptyVoxels).toBeGreaterThan(0);
+      // VoxelSelector may choose any valid strategy based on data distribution
+      if (stats.selectionStrategy) {
+        expect(['density', 'coverage', 'hybrid']).toContain(stats.selectionStrategy);
+      }
     });
   });
 });

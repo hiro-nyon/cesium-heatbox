@@ -7,8 +7,14 @@ const Cartesian3 = class {
     this.y = y;
     this.z = z;
   }
-  static fromDegrees(lon, lat, alt) {
+  static fromDegrees(lon, lat, alt = 0) {
     return new Cartesian3(lon, lat, alt);
+  }
+  static distance(p1, p2) {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const dz = p2.z - p1.z;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
   }
 };
 
