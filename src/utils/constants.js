@@ -110,7 +110,8 @@ export const DEFAULT_OPTIONS = {
     enabled: false, // レイヤ別集約を有効化（デフォルト: 無効）
     byProperty: null, // エンティティプロパティキーをレイヤキーとして使用（例: 'buildingType'）
     keyResolver: null, // カスタム関数 (entity) => layerKey（byPropertyより優先）
-    showInDescription: true // ボクセル説明文にレイヤ内訳を表示
+    showInDescription: true, // ボクセル説明文にレイヤ内訳を表示
+    topN: 10 // 統計情報で返す上位レイヤ数（デフォルト: 10）
   }
 };
 

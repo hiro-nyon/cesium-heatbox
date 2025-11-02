@@ -895,6 +895,17 @@ export function validateAggregationOptions(aggregation) {
     normalized.showInDescription = coerceBoolean(aggregation.showInDescription, true);
   }
   
+  // topN
+  if (aggregation.topN !== undefined) {
+    const topNValue = Number(aggregation.topN);
+    if (Number.isInteger(topNValue) && topNValue > 0 && topNValue <= 100) {
+      normalized.topN = topNValue;
+    } else {
+      Logger.warn('[aggregation] topN must be a positive integer <= 100, using default (10)');
+      normalized.topN = DEFAULT_OPTIONS.aggregation.topN;
+    }
+  }
+  
   // Validation: if enabled but neither byProperty nor keyResolver is set, warn
   if (normalized.enabled && !normalized.byProperty && !normalized.keyResolver) {
     Logger.warn('[aggregation] enabled=true but neither byProperty nor keyResolver is set. Will use default key "default".');
