@@ -389,7 +389,8 @@
             // それ以外は生の値を使用
             return prop;
           },
-          showInDescription: elements.showInDescription.checked
+          showInDescription: elements.showInDescription.checked,
+          topN: 10 // Show top 10 data sources (v0.1.18)
         }
       };
       
@@ -416,6 +417,28 @@
       
       console.log('Heatmap created with multi-source aggregation');
       console.log('Statistics:', stats);
+      
+      // Verify layer aggregation is working correctly
+      if (aggregationEnabled && stats.layers) {
+        console.log('=== Layer Aggregation Verification ===');
+        console.log(`Total unique layers: ${stats.layers.length}`);
+        stats.layers.forEach((layer, index) => {
+          const source = DATA_SOURCES[layer.key];
+          const label = source ? source.label : layer.key;
+          const percentage = (layer.total / stats.totalEntities * 100).toFixed(1);
+          console.log(`${index + 1}. ${label} (${layer.key}): ${layer.total} entities (${percentage}%)`);
+        });
+        
+        // Verify totals match
+        const layerTotal = stats.layers.reduce((sum, l) => sum + l.total, 0);
+        console.log(`Sum of layer totals: ${layerTotal}`);
+        console.log(`Total entities: ${stats.totalEntities}`);
+        if (layerTotal === stats.totalEntities) {
+          console.log('✓ Layer aggregation totals match!');
+        } else {
+          console.warn('⚠ Warning: Layer totals do not match total entities');
+        }
+      }
     });
 
     // Display statistics
