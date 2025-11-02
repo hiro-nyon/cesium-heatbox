@@ -805,8 +805,8 @@ export class Heatbox {
         }
       }
       
-      // Top N layers (default: 10) / 上位N個のレイヤ（デフォルト：10）
-      const topN = 10;
+      // Top N layers (configurable via options.aggregation.topN) / 上位N個のレイヤ（options.aggregation.topNで設定可能）
+      const topN = this.options.aggregation?.topN ?? 10;
       const sorted = Array.from(globalLayerCounts.entries())
         .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
         .slice(0, topN);
