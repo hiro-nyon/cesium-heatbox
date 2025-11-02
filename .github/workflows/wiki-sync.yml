@@ -79,9 +79,10 @@ jobs:
     
     - name: Clone Wiki repository
       env:
-        WIKI_TOKEN: ${{ secrets.WIKI_TOKEN != '' && secrets.WIKI_TOKEN || secrets.GITHUB_TOKEN }}
+        WIKI_TOKEN: ${{ secrets.WIKI_TOKEN }}
       run: |
-        git clone https://x-access-token:${WIKI_TOKEN}@github.com/hiro-nyon/cesium-heatbox.wiki.git .wiki-tmp
+        TOKEN=${WIKI_TOKEN:-${GITHUB_TOKEN}}
+        git clone https://x-access-token:${TOKEN}@github.com/hiro-nyon/cesium-heatbox.wiki.git .wiki-tmp
         
     - name: Update Wiki content
       run: |
