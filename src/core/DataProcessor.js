@@ -314,11 +314,19 @@ export class DataProcessor {
           const centerLat = vertices.reduce((sum, v) => sum + v.lat, 0) / 8;
           const centerAlt = vertices.reduce((sum, v) => sum + v.alt, 0) / 8;
           
+          // Calculate spans with zero-span guards (same as uniform grid mode)
+          // ゼロスパンガード付きでスパンを計算（一様グリッドモードと同じ）
+          const lngSpan = bounds.maxLon - bounds.minLon;
+          const latSpan = bounds.maxLat - bounds.minLat;
+          const altSpan = bounds.maxAlt - bounds.minAlt;
+          
           // Normalize to grid indices (0...numVoxels range for VoxelSelector)
           // グリッドインデックスに正規化（VoxelSelector用の0...numVoxels範囲）
-          const normalizedX = Math.floor((centerLng - bounds.minLon) / (bounds.maxLon - bounds.minLon) * grid.numVoxelsX);
-          const normalizedY = Math.floor((centerLat - bounds.minLat) / (bounds.maxLat - bounds.minLat) * grid.numVoxelsY);
-          const normalizedZ = Math.floor((centerAlt - bounds.minAlt) / (bounds.maxAlt - bounds.minAlt) * grid.numVoxelsZ);
+          // When span is zero, default to 0 (flat dimension)
+          // スパンがゼロの場合は0にデフォルト設定（平坦な次元）
+          const normalizedX = lngSpan === 0 ? 0 : Math.floor((centerLng - bounds.minLon) / lngSpan * grid.numVoxelsX);
+          const normalizedY = latSpan === 0 ? 0 : Math.floor((centerLat - bounds.minLat) / latSpan * grid.numVoxelsY);
+          const normalizedZ = altSpan === 0 ? 0 : Math.floor((centerAlt - bounds.minAlt) / altSpan * grid.numVoxelsZ);
           
           // Clamp to valid grid range / 有効なグリッド範囲にクランプ
           const safeX = Math.max(0, Math.min(grid.numVoxelsX - 1, normalizedX));
