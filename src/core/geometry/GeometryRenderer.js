@@ -548,6 +548,24 @@ export class GeometryRenderer {
   }
 
   /**
+   * Escape HTML special characters to prevent XSS
+   * HTML特殊文字をエスケープしてXSSを防止
+   * 
+   * @param {string} str - String to escape / エスケープする文字列
+   * @returns {string} Escaped string / エスケープされた文字列
+   * @private
+   */
+  _escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  /**
    * Create voxel description HTML
    * ボクセルの説明HTMLを生成
    * 
@@ -571,14 +589,15 @@ export class GeometryRenderer {
                           voxelInfo.layerStats.size > 0;
     
     if (showLayerInfo) {
+      // Escape layer keys to prevent XSS / XSS防止のためレイヤキーをエスケープ
       const layerRows = Array.from(voxelInfo.layerStats.entries())
         .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
         .map(([key, count]) => `
-          <tr><td style="padding-left: 10px;">${key}</td><td>${count}</td></tr>
+          <tr><td style="padding-left: 10px;">${this._escapeHtml(key)}</td><td>${count}</td></tr>
         `).join('');
       
       const topLayerInfo = voxelInfo.layerTop ? `
-          <tr><td><b>支配的レイヤ:</b></td><td>${voxelInfo.layerTop}</td></tr>
+          <tr><td><b>支配的レイヤ:</b></td><td>${this._escapeHtml(voxelInfo.layerTop)}</td></tr>
       ` : '';
       
       layerInfo = `
