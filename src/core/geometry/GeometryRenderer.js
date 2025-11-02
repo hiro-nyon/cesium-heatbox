@@ -111,6 +111,11 @@ export class GeometryRenderer {
       },
       description: this.createVoxelDescription(voxelInfo, voxelKey)
     };
+    
+    // v0.1.17: Add spatial ID to properties if available / 空間IDがあればプロパティに追加
+    if (voxelInfo.spatialId) {
+      entityConfig.properties.spatialId = voxelInfo.spatialId;
+    }
 
     // Material configuration based on wireframe mode and render mode
     const hideBox = this.options.wireframeOnly || this.options.outlineRenderMode === 'emulation-only';
@@ -537,16 +542,23 @@ export class GeometryRenderer {
    * @returns {string} HTML description / HTML形式の説明文
    */
   createVoxelDescription(voxelInfo, voxelKey) {
+    // v0.1.17: Include spatial ID in description if available / 空間IDがあればdescriptionに含める
+    const spatialIdInfo = voxelInfo.spatialId ? `
+          <tr><td><b>空間ID:</b></td><td>${voxelInfo.spatialId.id}</td></tr>
+          <tr><td><b>ズームレベル:</b></td><td>Z=${voxelInfo.spatialId.z}, F=${voxelInfo.spatialId.f}</td></tr>
+          <tr><td><b>タイル座標:</b></td><td>X=${voxelInfo.spatialId.x}, Y=${voxelInfo.spatialId.y}</td></tr>
+    ` : '';
+    
     return `
       <div style="padding: 10px; font-family: Arial, sans-serif;">
         <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
         <table style="width: 100%;">
           <tr><td><b>エンティティ数:</b></td><td>${voxelInfo.count}</td></tr>
           <tr><td><b>ボクセルキー:</b></td><td>${voxelKey}</td></tr>
-          <tr><td><b>座標:</b></td><td>X=${voxelInfo.x}, Y=${voxelInfo.y}, Z=${voxelInfo.z}</td></tr>
+          <tr><td><b>座標:</b></td><td>X=${voxelInfo.x}, Y=${voxelInfo.y}, Z=${voxelInfo.z}</td></tr>${spatialIdInfo}
         </table>
         <p style="margin-bottom: 0;">
-          <small>v0.1.11 GeometryRenderer</small>
+          <small>v0.1.17 GeometryRenderer (Spatial ID support)</small>
         </p>
       </div>
     `;
