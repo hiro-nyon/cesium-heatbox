@@ -13,6 +13,33 @@ const { JSDOM } = require('jsdom');
 const API_DOCS_DIR = path.join(__dirname, '../docs/api');
 const WIKI_DIR = path.join(__dirname, '../wiki');
 
+const JAPANESE_REGEX = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
+
+/**
+ * 日本語判定
+ * @param {string} text
+ * @returns {boolean}
+ */
+function isJapanese(text) {
+  return JAPANESE_REGEX.test(text || '');
+}
+
+/**
+ * テキストを日英に分離
+ * @param {string} text
+ * @returns {{ en: string, ja: string }}
+ */
+function splitByLanguage(text) {
+  if (!text) return { en: '', ja: '' };
+  const lines = text.split(/\r?\n/).map(line => line.trim());
+  const enLines = lines.filter(line => line && !isJapanese(line));
+  const jaLines = lines.filter(line => line && isJapanese(line));
+  return {
+    en: enLines.join('\n'),
+    ja: jaLines.join('\n')
+  };
+}
+
 /**
  * HTML文書（JSDoc）をMarkdown（クラス中心）に変換
  * - タイトル、クラス説明、コンストラクタ、メソッド（重複除去）を整形
@@ -37,9 +64,6 @@ function convertHtmlToMarkdown(htmlContent, filename) {
     }
     return title;
   };
-
-  // 言語判定の簡易関数
-  const isJapanese = (text) => /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(text || '');
 
   // Sourceページ（core_*.js.html など）の場合はソースをコードブロックとして出力
   if (/^Source:\s*/i.test(pageTitle)) {
@@ -69,14 +93,6 @@ function convertHtmlToMarkdown(htmlContent, filename) {
   const classDesc = main.querySelector('.class-description');
   const classDescText = classDesc ? classDesc.textContent.trim() : '';
 
-  // 簡易言語分離: 日本語を含む行と含まない行を分離
-  const splitByLanguage = (text) => {
-    if (!text) return { en: '', ja: '' };
-    const lines = text.split(/\r?\n/).map(l => l.trim());
-    const enLines = lines.filter(l => l && !isJapanese(l));
-    const jaLines = lines.filter(l => l && isJapanese(l));
-    return { en: enLines.join('\n'), ja: jaLines.join('\n') || text };
-  };
   const classDescParts = splitByLanguage(classDescText);
 
   const ctorHeader = main.querySelector('h2 + h4.name') || main.querySelector('h4.name');
@@ -384,6 +400,8 @@ function getVersion() {
 
 function generateApiIndex(htmlFiles) {
   const version = getVersion();
+  const classEntries = collectClassEntries(htmlFiles);
+
   let indexContent = `# API Reference（APIリファレンス）
 
 **日本語** | [English](#english)
@@ -396,39 +414,11 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 `;
 
-  const classes = [
-    'Heatbox',
-    'VoxelRenderer',
-    'VoxelGrid',
-    'DataProcessor',
-    'CoordinateTransformer',
-    // New orchestrated components (ADR-0009)
-    'ColorCalculator',
-    'VoxelSelector',
-    'AdaptiveController',
-    'GeometryRenderer'
-  ];
-  // 簡易サマリ抽出
-  function extractSummary(fileName) {
-    try {
-      const html = fs.readFileSync(path.join(API_DOCS_DIR, fileName), 'utf8');
-      const dom = new JSDOM(html);
-      const main = dom.window.document.querySelector('#main') || dom.window.document.body;
-      const desc = main.querySelector('.class-description');
-      const text = (desc && desc.textContent.trim()) || '';
-      if (!text) return '';
-      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-      const enLine = lines.find(l => !(/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(l)));
-      const picked = enLine || lines[0] || '';
-      return picked.replace(/\s+/g, ' ');
-    } catch (_) { return ''; }
-  }
-  classes.forEach(className => {
-    const file = htmlFiles.find(f => f === `${className}.html`);
-    if (file) {
-      const summary = extractSummary(file);
-      indexContent += summary ? `- [${className}](${className}) — ${summary}\n` : `- [${className}](${className})\n`;
-    }
+  classEntries.forEach(entry => {
+    const summary = entry.summaryEn || entry.summaryJa;
+    indexContent += summary
+      ? `- [${entry.className}](${entry.linkName}) — ${summary}\n`
+      : `- [${entry.className}](${entry.linkName})\n`;
   });
 
   indexContent += `
@@ -452,12 +442,11 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 `;
 
-  classes.forEach(className => {
-    const file = htmlFiles.find(f => f === `${className}.html`);
-    if (file) {
-      const summary = extractSummary(file);
-      indexContent += summary ? `- [${className}](${className}) — ${summary}\n` : `- [${className}](${className})\n`;
-    }
+  classEntries.forEach(entry => {
+    const summary = entry.summaryJa || entry.summaryEn;
+    indexContent += summary
+      ? `- [${entry.className}](${entry.linkName}) — ${summary}\n`
+      : `- [${entry.className}](${entry.linkName})\n`;
   });
 
   indexContent += `
@@ -476,6 +465,48 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
   fs.writeFileSync(path.join(WIKI_DIR, 'API-Reference.md'), indexContent);
   console.log('📚 Generated API-Reference.md index');
+}
+
+function collectClassEntries(htmlFiles) {
+  const entries = [];
+
+  htmlFiles.forEach(file => {
+    try {
+      const html = fs.readFileSync(path.join(API_DOCS_DIR, file), 'utf8');
+      const dom = new JSDOM(html);
+      const main = dom.window.document.querySelector('#main') || dom.window.document.body;
+      const title = main.querySelector('.page-title')?.textContent?.trim() || '';
+      const match = title.match(/Class:\s*(.+)$/i);
+      if (!match) {
+        return;
+      }
+
+      const className = match[1].trim();
+      if (!className) return;
+
+      const desc = main.querySelector('.class-description');
+      const text = (desc && desc.textContent.trim()) || '';
+      const { en, ja } = splitByLanguage(text);
+
+      const pickSummary = (value) => {
+        if (!value) return '';
+        const lines = value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+        return (lines[0] || '').replace(/\s+/g, ' ');
+      };
+
+      entries.push({
+        className,
+        linkName: path.basename(file, '.html'),
+        summaryEn: pickSummary(en),
+        summaryJa: pickSummary(ja)
+      });
+    } catch (error) {
+      console.warn(`⚠️  Failed to parse ${file}: ${error.message}`);
+    }
+  });
+
+  entries.sort((a, b) => a.className.localeCompare(b.className, 'en'));
+  return entries;
 }
 
 // スクリプト実行
