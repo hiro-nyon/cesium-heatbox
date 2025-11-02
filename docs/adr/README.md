@@ -43,6 +43,7 @@ Accepted / Deprecated / Superseded by ADR-YYYY
 | [ADR-0011](ADR-0011-v0.1.15-adaptive-visualization-finalization.md) | v0.1.15 適応的表示の核・視認性最適化の仕上げ | In Progress | 2025-09-20 |
 | [ADR-0012](ADR-0012-v0.1.16-examples-organization.md) | v0.1.16 Examples 体系化・整理 | Proposed | 2025-11-01 |
 | [ADR-0013](ADR-0013-v0.1.17-spatial-id-support.md) | v0.1.17 空間ID対応（tile-gridモード統合） | Proposed | 2025-11-02 |
+| [ADR-0014](ADR-0014-v0.1.18-voxel-layer-aggregation.md) | v0.1.18 ボクセル内情報のレイヤ別集約 | Proposed | 2025-11-02 |
 
 ## 参考資料
 
