@@ -291,7 +291,7 @@ describe('Spatial ID Integration Tests', () => {
           enabled: true,
           zoom: 25
         },
-        voxelSelectionStrategy: 'coverage',
+        renderLimitStrategy: 'coverage',
         maxRenderVoxels: 50
       });
 
@@ -299,10 +299,9 @@ describe('Spatial ID Integration Tests', () => {
 
       expect(stats.spatialIdEnabled).toBe(true);
       expect(stats.nonEmptyVoxels).toBeGreaterThan(0);
-      // If selection was applied, should see selectionStrategy in stats
-      // VoxelSelector may choose any valid strategy based on data distribution
+      // Verify the intended strategy was actually used
       if (stats.selectionStrategy) {
-        expect(['density', 'coverage', 'hybrid']).toContain(stats.selectionStrategy);
+        expect(['coverage', 'hybrid']).toContain(stats.selectionStrategy);
       }
     });
 
@@ -312,7 +311,7 @@ describe('Spatial ID Integration Tests', () => {
           enabled: true,
           zoom: 25
         },
-        voxelSelectionStrategy: 'hybrid',
+        renderLimitStrategy: 'hybrid',
         maxRenderVoxels: 50
       });
 
@@ -320,9 +319,9 @@ describe('Spatial ID Integration Tests', () => {
 
       expect(stats.spatialIdEnabled).toBe(true);
       expect(stats.nonEmptyVoxels).toBeGreaterThan(0);
-      // VoxelSelector may choose any valid strategy based on data distribution
+      // Verify the intended strategy was actually used
       if (stats.selectionStrategy) {
-        expect(['density', 'coverage', 'hybrid']).toContain(stats.selectionStrategy);
+        expect(['coverage', 'hybrid']).toContain(stats.selectionStrategy);
       }
     });
   });
