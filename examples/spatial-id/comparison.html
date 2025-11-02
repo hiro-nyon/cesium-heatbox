@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Spatial ID Comparison - Uniform vs Tile-Grid</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link href="../common/demo.css" rel="stylesheet">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../common/camera.js"></script>
+  <script type="module" src="../../dist/cesium-heatbox.esm.js"></script>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="control-panel hb-panel">
+    <h3>Spatial ID Comparison</h3>
+    <p style="font-size: 12px; margin-bottom: 15px;">
+      Compare uniform grid vs spatial ID tile-grid<br>
+      一様グリッド vs 空間IDタイルグリッドの比較
+    </p>
+
+    <div class="control-group">
+      <label for="entityCount">Entity Count: <span id="entityCountValue">100</span></label>
+      <input type="range" id="entityCount" min="50" max="500" value="100" step="50">
+    </div>
+
+    <div class="control-group">
+      <button id="generateBtn" class="hb-btn hb-btn-primary">Generate Data</button>
+    </div>
+
+    <hr>
+
+    <div class="control-group">
+      <label>Display Mode:</label>
+      <select id="displayMode">
+        <option value="both">Both (両方)</option>
+        <option value="uniform">Uniform Grid Only</option>
+        <option value="spatial">Spatial ID Only</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="zoom">Spatial ID Zoom:</label>
+      <select id="zoom">
+        <option value="20">Zoom 20 (~38m)</option>
+        <option value="25" selected>Zoom 25 (~1.2m)</option>
+        <option value="30">Zoom 30 (~3.7cm)</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="voxelSize">Uniform Voxel Size (m):</label>
+      <input type="number" id="voxelSize" value="30" min="5" max="100">
+    </div>
+
+    <hr>
+
+    <div id="statsPanel" style="font-size: 11px; background: #f5f5f5; padding: 10px; border-radius: 4px; display: none;">
+      <h4 style="margin-top: 0;">Statistics (統計)</h4>
+      <div id="uniformStats" style="margin-bottom: 10px;">
+        <strong>Uniform Grid:</strong>
+        <div id="uniformStatsContent"></div>
+      </div>
+      <div id="spatialStats">
+        <strong>Spatial ID Grid:</strong>
+        <div id="spatialStatsContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Heatbox } from '../../dist/cesium-heatbox.esm.js';
+    import { focusCameraView } from '../common/camera.js';
+
+    // データ生成範囲（新宿駅周辺）
+    const GENERATION_BOUNDS = {
+      minLon: 139.69,
+      maxLon: 139.71,
+      minLat: 35.68,
+      maxLat: 35.70,
+      minAlt: 0,
+      maxAlt: 200
+    };
+
+    const CAMERA_DEFAULTS = {
+      headingDegrees: 0,
+      pitchDegrees: -45,
+      altitude: 2000,
+      altitudeScale: 0.5,
+      cameraLatOffset: -0.025
+    };
+
+    // Setup Viewer
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      animation: false,
+      timeline: false,
+      fullscreenButton: false,
+      vrButton: false,
+      imageryProvider: new Cesium.UrlTemplateImageryProvider({
+        url: 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
+        credit: new Cesium.Credit('© OpenStreetMap contributors, © CartoDB')
+      })
+    });
+
+    let entities = [];
+    let uniformHeatbox = null;
+    let spatialHeatbox = null;
+
+    // UI Elements
+    const elements = {
+      entityCount: document.getElementById('entityCount'),
+      entityCountValue: document.getElementById('entityCountValue'),
+      generateBtn: document.getElementById('generateBtn'),
+      displayMode: document.getElementById('displayMode'),
+      zoom: document.getElementById('zoom'),
+      voxelSize: document.getElementById('voxelSize'),
+      statsPanel: document.getElementById('statsPanel'),
+      uniformStatsContent: document.getElementById('uniformStatsContent'),
+      spatialStatsContent: document.getElementById('spatialStatsContent')
+    };
+
+    // Update entity count display
+    elements.entityCount.addEventListener('input', () => {
+      elements.entityCountValue.textContent = elements.entityCount.value;
+    });
+
+    // Generate random entities
+    function generateEntities(count) {
+      viewer.entities.removeAll();
+      entities = [];
+
+      for (let i = 0; i < count; i++) {
+        const lon = GENERATION_BOUNDS.minLon + Math.random() * (GENERATION_BOUNDS.maxLon - GENERATION_BOUNDS.minLon);
+        const lat = GENERATION_BOUNDS.minLat + Math.random() * (GENERATION_BOUNDS.maxLat - GENERATION_BOUNDS.minLat);
+        const alt = GENERATION_BOUNDS.minAlt + Math.random() * (GENERATION_BOUNDS.maxAlt - GENERATION_BOUNDS.minAlt);
+
+        const entity = viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+          point: {
+            pixelSize: 3,
+            color: Cesium.Color.YELLOW.withAlpha(0.8)
+          },
+          properties: {
+            value: Math.random() * 100
+          }
+        });
+        entities.push(entity);
+      }
+
+      // Focus camera on data bounds
+      focusCameraView({
+        bounds: GENERATION_BOUNDS,
+        pitchDegrees: CAMERA_DEFAULTS.pitchDegrees,
+        cameraLatOffset: CAMERA_DEFAULTS.cameraLatOffset
+      });
+
+      console.log(`Generated ${count} entities`);
+    }
+
+    // Generate button handler
+    elements.generateBtn.addEventListener('click', async () => {
+      try {
+        elements.generateBtn.disabled = true;
+        elements.generateBtn.textContent = 'Generating...';
+
+        // Clear existing heatboxes
+        if (uniformHeatbox) {
+          uniformHeatbox.clear();
+          uniformHeatbox = null;
+        }
+        if (spatialHeatbox) {
+          spatialHeatbox.clear();
+          spatialHeatbox = null;
+        }
+
+        // Generate entities
+        const count = parseInt(elements.entityCount.value);
+        generateEntities(count);
+
+        // Create uniform grid heatbox
+        console.log('Creating uniform grid heatbox...');
+        uniformHeatbox = new Heatbox(viewer, {
+          voxelSize: parseInt(elements.voxelSize.value),
+          opacity: 0.6,
+          colorMap: 'viridis',
+          showEmpty: false
+        });
+
+        const uniformStats = await uniformHeatbox.createFromEntities(entities);
+        console.log('Uniform grid stats:', uniformStats);
+
+        // Create spatial ID heatbox
+        console.log('Creating spatial ID heatbox...');
+        spatialHeatbox = new Heatbox(viewer, {
+          spatialId: {
+            enabled: true,
+            mode: 'tile-grid',
+            zoom: parseInt(elements.zoom.value),
+            zoomControl: 'manual'
+          },
+          opacity: 0.6,
+          colorMap: 'plasma',
+          showEmpty: false
+        });
+
+        const spatialStats = await spatialHeatbox.createFromEntities(entities);
+        console.log('Spatial ID stats:', spatialStats);
+
+        // Display statistics
+        elements.uniformStatsContent.innerHTML = `
+          <div>Voxels: ${uniformStats.nonEmptyVoxels} / ${uniformStats.totalVoxels}</div>
+          <div>Empty: ${uniformStats.emptyVoxels}</div>
+          <div>Entities: ${uniformStats.totalEntities}</div>
+          <div>Grid: ${uniformStats.grid.numVoxelsX} × ${uniformStats.grid.numVoxelsY} × ${uniformStats.grid.numVoxelsZ}</div>
+        `;
+
+        elements.spatialStatsContent.innerHTML = `
+          <div>Voxels: ${spatialStats.nonEmptyVoxels} / ${spatialStats.totalVoxels}</div>
+          <div>Empty: ${spatialStats.emptyVoxels}</div>
+          <div>Entities: ${spatialStats.totalEntities}</div>
+          <div>Zoom: ${spatialStats.spatialIdZoom}</div>
+          <div>Provider: ${spatialStats.spatialIdProvider || 'fallback'}</div>
+          <div>Grid: ${spatialStats.grid.numVoxelsX} × ${spatialStats.grid.numVoxelsY} × ${spatialStats.grid.numVoxelsZ}</div>
+        `;
+
+        elements.statsPanel.style.display = 'block';
+
+        // Apply display mode
+        updateDisplayMode();
+
+      } catch (error) {
+        console.error('Error generating heatmaps:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        elements.generateBtn.disabled = false;
+        elements.generateBtn.textContent = 'Generate Data';
+      }
+    });
+
+    // Display mode handler
+    elements.displayMode.addEventListener('change', updateDisplayMode);
+
+    function updateDisplayMode() {
+      const mode = elements.displayMode.value;
+
+      if (uniformHeatbox) {
+        uniformHeatbox.setVisible(mode === 'both' || mode === 'uniform');
+      }
+      if (spatialHeatbox) {
+        spatialHeatbox.setVisible(mode === 'both' || mode === 'spatial');
+      }
+    }
+
+    // Initialize
+    console.log('Spatial ID Comparison Example initialized');
+    console.log('Click "Generate Data" to create heatmaps');
+  </script>
+</body>
+</html>
+
