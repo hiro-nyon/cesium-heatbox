@@ -4,6 +4,7 @@
 import * as Cesium from 'cesium';
 import { VoxelGrid } from './VoxelGrid.js';
 import { Logger } from '../utils/logger.js';
+import { SpatialIdAdapter } from './spatial/SpatialIdAdapter.js';
 
 /**
  * Class responsible for processing entity data.
@@ -16,9 +17,16 @@ export class DataProcessor {
    * @param {Array} entities - Entity array / エンティティ配列
    * @param {Object} bounds - Bounds info / 境界情報
    * @param {Object} grid - Grid info / グリッド情報
-   * @returns {Map} Voxel data Map (key: voxel key, value: info) / ボクセルデータ（キー: ボクセルキー, 値: ボクセル情報）
+   * @param {Object} [options={}] - Processing options (v0.1.17: spatialId support) / 処理オプション
+   * @returns {Promise<Map>} Voxel data Map (key: voxel key, value: info) / ボクセルデータ（キー: ボクセルキー, 値: ボクセル情報）
    */
-  static classifyEntitiesIntoVoxels(entities, bounds, grid) {
+  static async classifyEntitiesIntoVoxels(entities, bounds, grid, options = {}) {
+    // v0.1.17: Spatial ID mode (tile-grid) / 空間IDモード（tile-grid）
+    if (options.spatialId?.enabled) {
+      return await DataProcessor._classifyBySpatialId(entities, bounds, options);
+    }
+    
+    // Uniform grid mode (default) / 一様グリッドモード（デフォルト）
     const voxelData = new Map();
     let processedCount = 0;
     let skippedCount = 0;
@@ -202,5 +210,123 @@ export class DataProcessor {
     
     // 上位N個を返す
     return sortedVoxels.slice(0, Math.min(topN, sortedVoxels.length));
+  }
+  
+  /**
+   * Classify entities using Spatial ID (tile-grid mode).
+   * 空間IDを使用してエンティティを分類（tile-gridモード）。
+   * @param {Array} entities - Entity array / エンティティ配列
+   * @param {Object} bounds - Bounds info / 境界情報
+   * @param {Object} options - Processing options with spatialId config / spatialId設定を含む処理オプション
+   * @returns {Promise<Map>} Voxel data Map (key: zfxyStr, value: info) / ボクセルデータ（キー: zfxyStr, 値: ボクセル情報）
+   * @private
+   */
+  static async _classifyBySpatialId(entities, bounds, options) {
+    Logger.debug(`Spatial ID mode enabled: ${options.spatialId.mode}`);
+    
+    // Initialize SpatialIdAdapter / SpatialIdAdapterを初期化
+    const adapter = new SpatialIdAdapter({
+      provider: options.spatialId.provider || 'ouranos-gex'
+    });
+    
+    await adapter.loadProvider();
+    
+    // Determine zoom level (auto or manual) / ズームレベルを決定（auto/manual）
+    let zoom;
+    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+    
+    if (options.spatialId.zoomControl === 'auto') {
+      const targetSize = options.voxelSize || 30;
+      const tolerance = options.spatialId.zoomTolerancePct || 10;
+      zoom = adapter.calculateOptimalZoom(targetSize, centerLat, tolerance);
+      Logger.info(`Auto-selected zoom level ${zoom} for target size ${targetSize}m (lat: ${centerLat.toFixed(4)}°)`);
+    } else {
+      zoom = options.spatialId.zoom || 25;
+      Logger.info(`Using manual zoom level ${zoom}`);
+    }
+    
+    // Store zoom level and provider info for statistics / 統計情報用にズームレベルとプロバイダー情報を保存
+    options._resolvedZoom = zoom;
+    options._spatialIdProvider = adapter.fallbackMode ? null : options.spatialId.provider;
+    
+    // Process entities and aggregate by spatial ID / エンティティを処理して空間IDで集約
+    const voxelMap = new Map();
+    let processedCount = 0;
+    let skippedCount = 0;
+    
+    const currentTime = Cesium.JulianDate.now();
+    
+    for (const entity of entities) {
+      try {
+        // Get entity position / エンティティの位置を取得
+        let position;
+        if (entity.position) {
+          if (typeof entity.position.getValue === 'function') {
+            position = entity.position.getValue(currentTime);
+          } else {
+            position = entity.position;
+          }
+        }
+        
+        if (!position) {
+          skippedCount++;
+          continue;
+        }
+        
+        // Convert to lng/lat/alt / lng/lat/altに変換
+        let lng, lat, alt;
+        const looksLikeDegrees = typeof position?.x === 'number' && typeof position?.y === 'number' &&
+          Math.abs(position.x) <= 360 && Math.abs(position.y) <= 90;
+        
+        if (looksLikeDegrees) {
+          lng = position.x;
+          lat = position.y;
+          alt = typeof position.z === 'number' ? position.z : 0;
+        } else if (Cesium.Cartographic && typeof Cesium.Cartographic.fromCartesian === 'function') {
+          const cartographic = Cesium.Cartographic.fromCartesian(position);
+          if (!cartographic) {
+            skippedCount++;
+            continue;
+          }
+          lng = Cesium.Math.toDegrees(cartographic.longitude);
+          lat = Cesium.Math.toDegrees(cartographic.latitude);
+          alt = cartographic.height;
+        } else {
+          if (typeof position.x !== 'number' || typeof position.y !== 'number') {
+            skippedCount++;
+            continue;
+          }
+          lng = position.x;
+          lat = position.y;
+          alt = typeof position.z === 'number' ? position.z : 0;
+        }
+        
+        // Get voxel bounds from spatial ID / 空間IDからボクセル境界を取得
+        const { zfxy, zfxyStr, vertices } = adapter.getVoxelBounds(lng, lat, alt, zoom);
+        
+        // Aggregate by zfxyStr (public key format) / zfxyStr（公開キー形式）で集約
+        if (!voxelMap.has(zfxyStr)) {
+          voxelMap.set(zfxyStr, {
+            key: zfxyStr,
+            bounds: vertices,  // 8 vertices from ouranos-gex or fallback / ouranos-gexまたはフォールバックからの8頂点
+            spatialId: { ...zfxy, id: zfxyStr },
+            entities: [],
+            count: 0
+          });
+        }
+        
+        const voxelInfo = voxelMap.get(zfxyStr);
+        voxelInfo.entities.push(entity);
+        voxelInfo.count++;
+        processedCount++;
+        
+      } catch (error) {
+        Logger.warn(`Failed to process entity for spatial ID:`, error);
+        skippedCount++;
+      }
+    }
+    
+    Logger.info(`Spatial ID: ${processedCount} entities classified into ${voxelMap.size} voxels (${skippedCount} skipped)`);
+    return voxelMap;
   }
 }
