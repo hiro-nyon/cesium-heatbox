@@ -303,6 +303,8 @@ Priority: Medium | Target: 2025-11-02
 - 目的
   - ボクセル内のエンティティを「レイヤ（任意キー）」で集約し、可視化・ピック時の説明/統計で参照可能にする。
 - 仕様
+  - 対象: position を持つ Cesium Entity（点）のみ（v0.1.18）
+    - 非対象: ポリゴン/ポリライン/3D Tiles 等（将来版で検討）
   - 新規オプション: `aggregation: { enabled: boolean, byProperty?: string, keyResolver?: (entity)=>string }`
     - 既定は `enabled=false`。`byProperty` が指定されればそのプロパティ値で集約。
     - `keyResolver` があれば優先（自由なレイヤ定義に対応）。
@@ -321,6 +323,7 @@ Priority: Medium | Target: 2025-11-02
   - [ ] メモリ増加 ≤ +10%、処理時間増加 ≤ +10%（1k–5k ボクセル）
 - 非目標
   - レイヤ別の色/透明度/太さの自動切替（v1.x で検討）
+  - 点以外（ポリゴン/ポリライン/3D Tiles 等）の集約処理
   - 実装の初期段階で Heatbox 以外の可視化系ライブラリへ汎用提供すること
     - ただし将来、PLATEAU などポリゴン/3D Tiles 系や他形式ベクターデータを含む大規模集約が必要になった際には、共通集約レイヤを別パッケージへ切り出すことを再検討する。
 
