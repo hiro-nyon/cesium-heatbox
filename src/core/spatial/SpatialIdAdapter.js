@@ -233,7 +233,7 @@ export class SpatialIdAdapter {
    * プロバイダーが返す頂点データを {lng, lat, alt} 形式に正規化
    *
    * @param {Array} rawVertices - Provider vertices / プロバイダー頂点
-    * @returns {Array<{lng:number, lat:number, alt:number}>}
+   * @returns {Array<{lng: number, lat: number, alt: number}>}
    * @private
    */
   static _normalizeVertices(rawVertices) {
