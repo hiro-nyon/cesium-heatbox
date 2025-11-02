@@ -13,6 +13,15 @@ import { Heatbox } from '../../src/index.js';
 import { generateSampleData } from '../../src/utils/sampleData.js';
 
 const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+const CameraHelper = typeof window !== 'undefined' ? (window.HeatboxDemoCamera || null) : null;
+const INITIAL_BOUNDS = {
+  minLon: SHINJUKU_CENTER.lon - 0.012,
+  maxLon: SHINJUKU_CENTER.lon + 0.012,
+  minLat: SHINJUKU_CENTER.lat - 0.012,
+  maxLat: SHINJUKU_CENTER.lat + 0.012,
+  minAlt: 0,
+  maxAlt: 240
+};
 
 function createImageryProvider() {
   return new Cesium.UrlTemplateImageryProvider({
@@ -47,14 +56,18 @@ const viewer = new Cesium.Viewer('cesiumContainer', {
 viewer.imageryLayers.removeAll();
 viewer.imageryLayers.addImageryProvider(imageryProvider);
 viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
-viewer.camera.setView({
-  destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 12000),
-  orientation: {
-    heading: 0.0,
-    pitch: -0.5,
-    roll: 0.0
-  }
-});
+if (CameraHelper?.focus) {
+  CameraHelper.focus(viewer, { bounds: INITIAL_BOUNDS, useDefaultBounds: false });
+} else {
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 12000),
+    orientation: {
+      heading: 0.0,
+      pitch: -0.5,
+      roll: 0.0
+    }
+  });
+}
 
 // v0.1.9 新機能のデモンストレーション
 async function demonstrateAdaptiveRendering() {

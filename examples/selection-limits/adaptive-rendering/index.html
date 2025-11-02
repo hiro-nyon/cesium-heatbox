@@ -67,12 +67,13 @@
 
         const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
         const CameraHelper = window.HeatboxDemoCamera || null;
-        const CAMERA_DEFAULTS = {
-            headingDegrees: 0,
-            pitchDegrees: -45,
-            altitude: 2000,
-            altitudeScale: 0.5,
-            cameraLatOffset: -0.025  // カメラを南に移動して視界の中心にデータを収める
+        const INITIAL_BOUNDS = {
+            minLon: SHINJUKU_CENTER.lon - 0.012,
+            maxLon: SHINJUKU_CENTER.lon + 0.012,
+            minLat: SHINJUKU_CENTER.lat - 0.012,
+            maxLat: SHINJUKU_CENTER.lat + 0.012,
+            minAlt: 0,
+            maxAlt: 240
         };
 
         function createImageryProvider() {
@@ -97,28 +98,56 @@
 
         function focusCameraView(viewerInstance, config = {}) {
             if (!viewerInstance || !viewerInstance.camera) return;
-            const { bounds, ...overrides } = config;
-            const options = { ...CAMERA_DEFAULTS, ...overrides };
+            const { bounds = null, useDefaultBounds = !config.bounds, ...overrides } = config;
+            const helperDefaults = CameraHelper?.DEFAULT_OPTIONS ?? {};
+            const focusOptions = { ...helperDefaults, ...overrides };
 
             if (CameraHelper?.focus) {
-                CameraHelper.focus(viewerInstance, bounds ? { bounds, ...options } : options);
+                CameraHelper.focus(viewerInstance, {
+                    ...focusOptions,
+                    bounds,
+                    useDefaultBounds
+                });
                 return;
             }
 
-            if (bounds && CameraHelper?.getViewFromBounds) {
-                const view = CameraHelper.getViewFromBounds(bounds, options) || CameraHelper.getDefaultView?.(options);
-                if (view) {
-                    viewerInstance.camera.setView(view);
-                }
+            if (bounds && CameraHelper?.setViewToBounds) {
+                CameraHelper.setViewToBounds(viewerInstance, bounds, focusOptions);
                 return;
             }
 
-            if (CameraHelper?.getDefaultView) {
-                const fallbackView = CameraHelper.getDefaultView(options);
-                if (fallbackView) {
-                    viewerInstance.camera.setView(fallbackView);
-                }
+            if (CameraHelper?.setViewToShinjuku) {
+                CameraHelper.setViewToShinjuku(viewerInstance, { ...focusOptions, useDefaultBounds });
+                return;
             }
+
+            const targetBounds = bounds || (CameraHelper?.DEFAULT_BOUNDS ?? null);
+            if (targetBounds) {
+                const centerLon = (targetBounds.minLon + targetBounds.maxLon) / 2;
+                const centerLat = (targetBounds.minLat + targetBounds.maxLat) / 2;
+                viewerInstance.camera.setView({
+                    destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, focusOptions.altitude),
+                    orientation: {
+                        heading: Cesium.Math.toRadians(focusOptions.headingDegrees),
+                        pitch: Cesium.Math.toRadians(focusOptions.pitchDegrees),
+                        roll: 0
+                    }
+                });
+                return;
+            }
+
+            viewerInstance.camera.setView({
+                destination: Cesium.Cartesian3.fromDegrees(
+                    SHINJUKU_CENTER.lon,
+                    SHINJUKU_CENTER.lat,
+                    focusOptions.altitude
+                ),
+                orientation: {
+                    heading: Cesium.Math.toRadians(focusOptions.headingDegrees),
+                    pitch: Cesium.Math.toRadians(focusOptions.pitchDegrees),
+                    roll: 0
+                }
+            });
         }
 
         // シーン設定
@@ -140,7 +169,7 @@
         viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
         
         // 新宿駅周辺にカメラを設定 / Focus camera on Shinjuku
-        focusCameraView(viewer);
+        focusCameraView(viewer, { bounds: INITIAL_BOUNDS, useDefaultBounds: false });
         
         // コントロール作成
         function createControls() {
@@ -242,7 +271,7 @@
                     // 統計情報取得
                    const stats = window.currentHeatbox.getStatistics();
                    const bounds = window.currentHeatbox.getBounds?.();
-                    focusCameraView(viewer, { bounds });
+                    focusCameraView(viewer, { bounds, useDefaultBounds: false });
                     
                     updateStatus(`✅ 完了 (${loadTime.toFixed(0)}ms) | ${stats.selectionStrategy} | ${stats.renderedVoxels}/${stats.totalVoxels} voxels`);
                     

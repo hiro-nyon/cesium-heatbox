@@ -3,12 +3,21 @@
   'use strict';
 
   const DEFAULT_CENTER = { lon: 139.6917, lat: 35.6895 };
+  const DEFAULT_BOUNDS = {
+    minLon: DEFAULT_CENTER.lon - 0.012,
+    maxLon: DEFAULT_CENTER.lon + 0.012,
+    minLat: DEFAULT_CENTER.lat - 0.012,
+    maxLat: DEFAULT_CENTER.lat + 0.012,
+    minAlt: 0,
+    maxAlt: 220
+  };
 
   const DEFAULT_OPTIONS = {
-    altitude: 12000,
-    headingDegrees: 25,
-    pitchDegrees: -55,
-    altitudeScale: 1.8
+    altitude: 3200,
+    headingDegrees: 0,
+    pitchDegrees: -48,
+    altitudeScale: 0.55,
+    cameraLatOffset: -0.022
   };
 
   function toRadians(degrees) {
@@ -54,11 +63,23 @@
     return view;
   }
 
+  function cloneBounds(bounds) {
+    if (!bounds) return null;
+    return {
+      minLon: bounds.minLon,
+      maxLon: bounds.maxLon,
+      minLat: bounds.minLat,
+      maxLat: bounds.maxLat,
+      minAlt: bounds.minAlt,
+      maxAlt: bounds.maxAlt
+    };
+  }
+
   function getDefaultView(options = {}) {
     const merged = { ...DEFAULT_OPTIONS, ...options };
     const destination = Cesium.Cartesian3.fromDegrees(
       DEFAULT_CENTER.lon,
-      DEFAULT_CENTER.lat,
+      DEFAULT_CENTER.lat + (merged.cameraLatOffset ?? 0),
       merged.altitude
     );
     const orientation = {
@@ -89,7 +110,14 @@
   }
 
   function setViewToShinjuku(viewer, options = {}) {
-    const view = getDefaultView(options);
+    const { useDefaultBounds = true, ...rest } = options;
+    if (useDefaultBounds) {
+      const viewFromBounds = getViewFromBounds(DEFAULT_BOUNDS, rest);
+      if (viewFromBounds) {
+        return applyCameraView(viewer, viewFromBounds);
+      }
+    }
+    const view = getDefaultView(rest);
     return applyCameraView(viewer, view);
   }
 
@@ -100,16 +128,25 @@
 
   function focus(viewer, config = {}) {
     if (!viewer || !viewer.camera) return null;
-    const { bounds, ...options } = config;
+    const {
+      bounds,
+      useDefaultBounds = true,
+      ...options
+    } = config;
     if (bounds) {
       return setViewToBounds(viewer, bounds, options);
+    }
+    if (useDefaultBounds) {
+      return setViewToBounds(viewer, DEFAULT_BOUNDS, options);
     }
     return setViewToShinjuku(viewer, options);
   }
 
   window.HeatboxDemoCamera = {
     DEFAULT_CENTER,
+    DEFAULT_BOUNDS,
     DEFAULT_OPTIONS,
+    cloneBounds,
     setViewToBounds,
     setViewToShinjuku,
     getDefaultView,

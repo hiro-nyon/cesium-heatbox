@@ -12,6 +12,7 @@
             Cesium.Ion.defaultAccessToken = null; // Disable Ion by default to avoid black screens
         }
     </script>
+    <script src="../../common/camera.js"></script>
     <script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
     <style>
         .hb-range-value {
@@ -70,8 +71,16 @@
     <script type="module">
         // Import Heatbox (assuming UMD build)
         const Heatbox = window.CesiumHeatbox || window.Heatbox;
-
+        const CameraHelper = window.HeatboxDemoCamera || null;
         const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+        const INITIAL_BOUNDS = {
+            minLon: SHINJUKU_CENTER.lon - 0.01,
+            maxLon: SHINJUKU_CENTER.lon + 0.01,
+            minLat: SHINJUKU_CENTER.lat - 0.01,
+            maxLat: SHINJUKU_CENTER.lat + 0.01,
+            minAlt: 0,
+            maxAlt: 240
+        };
 
         function createImageryProvider() {
             return new Cesium.UrlTemplateImageryProvider({
@@ -108,14 +117,18 @@
         viewer.imageryLayers.removeAll();
         viewer.imageryLayers.addImageryProvider(imageryProvider);
         viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
-        viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 12000),
-            orientation: {
-                heading: 0,
-                pitch: -Cesium.Math.PI_OVER_FOUR,
-                roll: 0
-            }
-        });
+if (CameraHelper?.focus) {
+    CameraHelper.focus(viewer, { bounds: INITIAL_BOUNDS, useDefaultBounds: false });
+} else {
+    viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 12000),
+        orientation: {
+            heading: 0,
+            pitch: -Cesium.Math.PI_OVER_FOUR,
+            roll: 0
+        }
+    });
+}
 
         // Global state
         let heatbox = null;
@@ -166,14 +179,7 @@
         // Generate test data
         function generateTestData(count) {
             const entities = [];
-            const bounds = {
-                minLon: SHINJUKU_CENTER.lon - 0.01,
-                maxLon: SHINJUKU_CENTER.lon + 0.01,
-                minLat: SHINJUKU_CENTER.lat - 0.01,
-                maxLat: SHINJUKU_CENTER.lat + 0.01,
-                minAlt: 0,
-                maxAlt: 240
-            };
+            const bounds = { ...INITIAL_BOUNDS };
 
             // 新宿駅周辺で乱数データを生成 / Generate random data around Shinjuku station
             for (let i = 0; i < count; i++) {

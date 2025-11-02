@@ -8,11 +8,12 @@ const Heatbox = window.CesiumHeatbox || window.Heatbox;
 const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
 const CameraHelper = window.HeatboxDemoCamera || null;
 const CAMERA_DEFAULTS = {
+  ...(CameraHelper?.DEFAULT_OPTIONS ?? {}),
   headingDegrees: 0,
-  pitchDegrees: -45,
-  altitude: 2000,
-  altitudeScale: 0.5,
-  cameraLatOffset: -0.025  // カメラを南に移動して視界の中心にデータを収める
+  pitchDegrees: -48,
+  altitude: 3200,
+  altitudeScale: 0.55,
+  cameraLatOffset: -0.022
 };
 const GENERATION_BOUNDS = {
   minLon: SHINJUKU_CENTER.lon - 0.008,
@@ -63,20 +64,32 @@ function createTerrainProvider() {
 
 function focusCameraView(config = {}) {
   if (!viewer || !viewer.camera) return;
-  const { bounds, ...overrides } = config;
-  const options = { ...CAMERA_DEFAULTS, ...overrides };
+  const {
+    bounds = null,
+    useDefaultBounds = !config.bounds,
+    ...overrides
+  } = config;
+  const helperDefaults = CameraHelper?.DEFAULT_OPTIONS ?? {};
+  const options = { ...helperDefaults, ...CAMERA_DEFAULTS, ...overrides };
 
   if (CameraHelper?.focus) {
-    CameraHelper.focus(viewer, bounds ? { bounds, ...options } : options);
+    CameraHelper.focus(viewer, {
+      ...options,
+      bounds: bounds ?? null,
+      useDefaultBounds
+    });
     return;
   }
 
-  if (bounds && CameraHelper?.getViewFromBounds) {
-    const view = CameraHelper.getViewFromBounds(bounds, options) || CameraHelper.getDefaultView?.(options);
+  const targetBounds = bounds || (useDefaultBounds ? (CameraHelper?.DEFAULT_BOUNDS ?? null) : null);
+  const clampPitch = value => Math.max(-85, Math.min(-20, value));
+
+  if (targetBounds && CameraHelper?.getViewFromBounds) {
+    const view = CameraHelper.getViewFromBounds(targetBounds, options);
     if (view) {
       viewer.camera.setView(view);
+      return;
     }
-    return;
   }
 
   if (CameraHelper?.getDefaultView) {
@@ -87,37 +100,13 @@ function focusCameraView(config = {}) {
     }
   }
 
-  const clampPitch = value => Math.max(-85, Math.min(-20, value));
-  if (bounds && typeof bounds.minLon === 'number' && typeof bounds.maxLon === 'number' &&
-      typeof bounds.minLat === 'number' && typeof bounds.maxLat === 'number') {
-    const minAlt = typeof bounds.minAlt === 'number' ? bounds.minAlt : 0;
-    const maxAlt = typeof bounds.maxAlt === 'number' ? bounds.maxAlt : 0;
-    const centerLon = (bounds.minLon + bounds.maxLon) / 2;
-    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-    const diagStart = Cesium.Cartesian3.fromDegrees(bounds.minLon, bounds.minLat, minAlt);
-    const diagEnd = Cesium.Cartesian3.fromDegrees(bounds.maxLon, bounds.maxLat, maxAlt);
-    const diagonal = Cesium.Cartesian3.distance(diagStart, diagEnd);
-    const altitude = Math.max(
-      options.altitude,
-      diagonal * (options.altitudeScale || CAMERA_DEFAULTS.altitudeScale) + maxAlt + 500
-    );
-    viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, altitude),
-      orientation: {
-        heading: Cesium.Math.toRadians(options.headingDegrees),
-        pitch: Cesium.Math.toRadians(clampPitch(options.pitchDegrees)),
-        roll: 0
-      }
-    });
-    return;
-  }
-
+  const fallbackDestination = Cesium.Cartesian3.fromDegrees(
+    SHINJUKU_CENTER.lon,
+    SHINJUKU_CENTER.lat + (options.cameraLatOffset ?? 0),
+    options.altitude
+  );
   viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(
-      SHINJUKU_CENTER.lon,
-      SHINJUKU_CENTER.lat,
-      options.altitude
-    ),
+    destination: fallbackDestination,
     orientation: {
       heading: Cesium.Math.toRadians(options.headingDegrees),
       pitch: Cesium.Math.toRadians(clampPitch(options.pitchDegrees)),
@@ -178,7 +167,7 @@ async function initializeApp() {
     viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
     
     // 最初から新宿駅周辺にカメラを合わせる / Focus camera on Shinjuku area initially
-    focusCameraView({ bounds: GENERATION_BOUNDS, pitchDegrees: CAMERA_DEFAULTS.pitchDegrees });
+    focusCameraView({ bounds: GENERATION_BOUNDS, useDefaultBounds: false });
     
     // UI要素を取得
     const uiElementIds = [

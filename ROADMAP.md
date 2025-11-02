@@ -194,20 +194,20 @@ Scope（examples/advanced を体系化し、学習・検証導線を改善）
 
 ガイドライン（examples 統一ルール）
 
-[] Cesium 1.120 を参照し、UMD/ESMのどちらでも動く最小構成を提示
-[] Cesium 初期化の標準化（黒画面回避）：Ion 無効化＋OSM/Carto 画像＋EllipsoidTerrain を既定。必要時のみ Ion トークンを明示有効化
-[] 各カテゴリ配下に README.md（目的、前提、主要オプション、落とし穴）
-[] 例名・ファイル名はケバブケース、UIテキストは英語、READMEは日英併記
-[] Heatbox の profile と getEffectiveOptions() の使用例を各カテゴリに1つ以上配置
-[] fitView(..., { pitchDegrees, headingDegrees }) の統一APIで記述
+[ ] Cesium 1.120 を参照し、UMD/ESMのどちらでも動く最小構成を提示
+[ ] Cesium 初期化の標準化（黒画面回避）：Ion 無効化＋OSM/Carto 画像＋EllipsoidTerrain を既定。必要時のみ Ion トークンを明示有効化
+[ ] 各カテゴリ配下に README.md（目的、前提、主要オプション、落とし穴）
+[ ] 例名・ファイル名はケバブケース、UIテキストは英語、READMEは日英併記
+[ ] Heatbox の profile と getEffectiveOptions() の使用例を各カテゴリに1つ以上配置
+[ ] fitView(..., { pitchDegrees, headingDegrees }) の統一APIで記述
 
 受け入れ基準（Acceptance Criteria）
 
-[] examples/advanced のトップ README にカテゴリ一覧と対応ファイルの表を掲載
-[] observability/rendering/outlines/selection-limits/data の5カテゴリが存在
-[] すべてのHTML例で「白/黒画面やコンソールエラー」が無い（ローカル確認）。`createWorldTerrain()` を使う例は Ion トークン無設定時でもフォールバックが効く
-[] 既存の UMD 例（wireframe/outline-overlap）は動作維持（リンクも更新）
-[] v0.1.12 の新API（outlineRenderMode/emulationScope、pitchDegrees/headingDegrees、profile）が少なくとも1つの例で確認可能
+[ ] examples/advanced のトップ README にカテゴリ一覧と対応ファイルの表を掲載
+[ ] observability/rendering/outlines/selection-limits/data の5カテゴリが存在
+[ ] すべてのHTML例で「白/黒画面やコンソールエラー」が無い（ローカル確認）。`createWorldTerrain()` を使う例は Ion トークン無設定時でもフォールバックが効く
+[ ] 既存の UMD 例（wireframe/outline-overlap）は動作維持（リンクも更新）
+[ ] v0.1.12 の新API（outlineRenderMode/emulationScope、pitchDegrees/headingDegrees、profile）が少なくとも1つの例で確認可能
 
 移行計画（非破壊）
 
@@ -296,6 +296,32 @@ Priority: High | Target: 2025-11-02
   - 時系列（4D）の実装（**v1.2.0 に延期**）。
   - Primitive ベース描画（3.x 以降）。
   - グローバルQA（±180°ラップ／±85.0511°帯の端ケース）は **v0.1.19** に委譲。
+
+### v0.1.18（集約機能）— ボクセル内情報のレイヤ別集約
+Priority: Medium | Target: 2025-11-02
+
+- 目的
+  - ボクセル内のエンティティを「レイヤ（任意キー）」で集約し、可視化・ピック時の説明/統計で参照可能にする。
+- 仕様
+  - 新規オプション: `aggregation: { enabled: boolean, byProperty?: string, keyResolver?: (entity)=>string }`
+    - 既定は `enabled=false`。`byProperty` が指定されればそのプロパティ値で集約。
+    - `keyResolver` があれば優先（自由なレイヤ定義に対応）。
+  - DataProcessor
+    - 分類時に `voxelInfo.layerStats = Map<layerKey, count>` を構築（必要最小のみ保持）。
+  - 取得API/ピック
+    - `Heatbox.getStatistics()` に `layers?: Array<{ key, total }>`（上位Nのみ）を追加（ログ肥大を防止）。
+    - ピック時 `properties.layerTop`（最多レイヤ）を説明に反映（任意）。
+- Deliverables
+  - [ ] `aggregation` オプションの validation と最小ドキュメント
+  - [ ] DataProcessor の軽量集約ロジック＋単体テスト
+  - [ ] ピック/説明の反映（任意、過剰出力は抑制）
+- Acceptance Criteria
+  - [ ] 指定したレイヤキーで `layerStats` が正しく集約される（単体テストで検証）
+  - [ ] 既定（無効）では現行と同一挙動
+  - [ ] メモリ増加 ≤ +10%、処理時間増加 ≤ +10%（1k–5k ボクセル）
+- 非目標
+  - レイヤ別の色/透明度/太さの自動切替（v1.x で検討）
+
 ### v0.1.19（グローバルQA対応）— 空間ID tile-grid の国際対応テストと修正
 Priority: High | Target: 2025-11-15
 
@@ -333,35 +359,24 @@ Priority: High | Target: 2025-11-15
   - 4D（時間次元）の実装（v1.2.0 で対応）
   - Primitive ベース描画（3.x で検討）
 
+### v0.1.20（Examples再整備）— デモ体系のアップデート
+Priority: Medium | Target: 2025-12
+
+- Scope
+  - [ ] `examples/` 配下のカメラ初期化・UI スタイルを統一し、v0.1.12 以降の API 変更へ追従
+  - [ ] outline / selection / observability デモの既知バグを修正し、補助テキスト・スクリーンショットを刷新
+  - [ ] `gh-pages` ブランチとの乖離を解消し、参照ガイドラインを更新
+  - [ ] Wiki（Examples セクション）に最新版デモ構成と利用方法を反映
+
+- Deliverables
+  - [ ] 共通カメラヘルパーの仕様をドキュメント化し、各 example からの利用手順を整理
+  - [ ] デモ更新に合わせた README / docs/api の差分記載
+  - [ ] 回帰テスト手順（非自動）を wiki に明文化
+
 
 - リスク/緩和
   - 高緯度での XY 縮尺差 → 仕様どおり受容、ズーム手動選択で回避可能（ドキュメントで注意喚起）。
   - ライブラリ依存 → ouranos-gex は **optional**（peer/optionalDependencies）。未導入時はフォールバックで継続。
-
-### v0.1.18（集約機能）— ボクセル内情報のレイヤ別集約
-Priority: Medium | Target: 2025-11-02
-
-- 目的
-  - ボクセル内のエンティティを「レイヤ（任意キー）」で集約し、可視化・ピック時の説明/統計で参照可能にする。
-- 仕様
-  - 新規オプション: `aggregation: { enabled: boolean, byProperty?: string, keyResolver?: (entity)=>string }`
-    - 既定は `enabled=false`。`byProperty` が指定されればそのプロパティ値で集約。
-    - `keyResolver` があれば優先（自由なレイヤ定義に対応）。
-  - DataProcessor
-    - 分類時に `voxelInfo.layerStats = Map<layerKey, count>` を構築（必要最小のみ保持）。
-  - 取得API/ピック
-    - `Heatbox.getStatistics()` に `layers?: Array<{ key, total }>`（上位Nのみ）を追加（ログ肥大を防止）。
-    - ピック時 `properties.layerTop`（最多レイヤ）を説明に反映（任意）。
-- Deliverables
-  - [ ] `aggregation` オプションの validation と最小ドキュメント
-  - [ ] DataProcessor の軽量集約ロジック＋単体テスト
-  - [ ] ピック/説明の反映（任意、過剰出力は抑制）
-- Acceptance Criteria
-  - [ ] 指定したレイヤキーで `layerStats` が正しく集約される（単体テストで検証）
-  - [ ] 既定（無効）では現行と同一挙動
-  - [ ] メモリ増加 ≤ +10%、処理時間増加 ≤ +10%（1k–5k ボクセル）
-- 非目標
-  - レイヤ別の色/透明度/太さの自動切替（v1.x で検討）
 
 
 ### v1.0.0 — 最小の分類エンジン（colorのみ）

@@ -12,6 +12,7 @@
             Cesium.Ion.defaultAccessToken = null;
         }
     </script>
+    <script src="../../common/camera.js"></script>
     <script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
     <style>
         .info { background: rgba(59, 130, 246, 0.16); border-left: 3px solid rgba(59, 130, 246, 0.45); padding: 10px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
@@ -114,12 +115,21 @@
     <script type="module">
         // This demo requires the UMD build or ESM build of Heatbox
         const Heatbox = window.CesiumHeatbox || window.Heatbox;
+        const CameraHelper = window.HeatboxDemoCamera || null;
         
         if (!Heatbox) {
             alert('Heatbox library not found. Please ensure the library is loaded.');
         }
 
         const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+        const INITIAL_BOUNDS = {
+            minLon: SHINJUKU_CENTER.lon - 0.012,
+            maxLon: SHINJUKU_CENTER.lon + 0.012,
+            minLat: SHINJUKU_CENTER.lat - 0.012,
+            maxLat: SHINJUKU_CENTER.lat + 0.012,
+            minAlt: 0,
+            maxAlt: 240
+        };
 
         function createImageryProvider() {
             return new Cesium.UrlTemplateImageryProvider({
@@ -156,14 +166,18 @@
         viewer.imageryLayers.removeAll();
         viewer.imageryLayers.addImageryProvider(imageryProvider);
         viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
-        viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 12000),
-            orientation: {
-                heading: 0,
-                pitch: -Cesium.Math.PI_OVER_FOUR,
-                roll: 0
-            }
-        });
+if (CameraHelper?.focus) {
+    CameraHelper.focus(viewer, { bounds: INITIAL_BOUNDS, useDefaultBounds: false });
+} else {
+    viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 12000),
+        orientation: {
+            heading: 0,
+            pitch: -Cesium.Math.PI_OVER_FOUR,
+            roll: 0
+        }
+    });
+}
 
         // Global state
         let heatbox = null;
@@ -203,11 +217,7 @@
         // Generate sample data using density patterns
         function generateData(pattern, count) {
             const bounds = {
-                minLon: SHINJUKU_CENTER.lon - 0.012,
-                maxLon: SHINJUKU_CENTER.lon + 0.012,
-                minLat: SHINJUKU_CENTER.lat - 0.012,
-                maxLat: SHINJUKU_CENTER.lat + 0.012,
-                minAlt: 0,
+                ...INITIAL_BOUNDS,
                 maxAlt: 180
             };
 
