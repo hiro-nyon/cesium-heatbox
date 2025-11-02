@@ -47,7 +47,24 @@
       <label for="showInDescription">Show in Description</label>
     </div>
     
+    <hr>
+    
     <div class="control-group">
+      <input type="checkbox" id="useSpatialId">
+      <label for="useSpatialId">Use Spatial ID (Ouranos)</label>
+    </div>
+    
+    <div class="control-group" id="zoomLevelGroup" style="display: none; padding-left: 20px;">
+      <label for="zoomLevel">Zoom Level:</label>
+      <select id="zoomLevel">
+        <option value="20">20 (~150m cells)</option>
+        <option value="22">22 (~38m cells)</option>
+        <option value="25" selected>25 (~5m cells)</option>
+        <option value="27">27 (~1m cells)</option>
+      </select>
+    </div>
+    
+    <div class="control-group" id="manualVoxelSizeGroup">
       <label for="voxelSize">Voxel Size (meters):</label>
       <input type="number" id="voxelSize" value="40" min="20" max="150">
     </div>
@@ -157,7 +174,11 @@
       generateBtn: document.getElementById('generateBtn'),
       enableAggregation: document.getElementById('enableAggregation'),
       showInDescription: document.getElementById('showInDescription'),
+      useSpatialId: document.getElementById('useSpatialId'),
+      zoomLevel: document.getElementById('zoomLevel'),
+      zoomLevelGroup: document.getElementById('zoomLevelGroup'),
       voxelSize: document.getElementById('voxelSize'),
+      manualVoxelSizeGroup: document.getElementById('manualVoxelSizeGroup'),
       createHeatmapBtn: document.getElementById('createHeatmapBtn'),
       statsPanel: document.getElementById('statsPanel'),
       statsContent: document.getElementById('statsContent'),
@@ -172,6 +193,13 @@
     
     elements.poiCount.addEventListener('input', (e) => {
       elements.poiCountValue.textContent = e.target.value;
+    });
+
+    // Toggle spatial ID options
+    elements.useSpatialId.addEventListener('change', () => {
+      const useSpatialId = elements.useSpatialId.checked;
+      elements.zoomLevelGroup.style.display = useSpatialId ? 'block' : 'none';
+      elements.manualVoxelSizeGroup.style.display = useSpatialId ? 'none' : 'block';
     });
 
     // Weighted random selection
@@ -307,10 +335,10 @@
       }
       
       const aggregationEnabled = elements.enableAggregation.checked;
+      const useSpatialId = elements.useSpatialId.checked;
       
-      // Create heatbox with aggregation using keyResolver
-      heatbox = new Heatbox(viewer, {
-        voxelSize: parseInt(elements.voxelSize.value),
+      // Build heatbox options
+      const heatboxOptions = {
         opacity: 0.6,
         showOutline: true,
         outlineWidth: 1,
@@ -340,7 +368,21 @@
           },
           showInDescription: elements.showInDescription.checked
         }
-      });
+      };
+      
+      // Add spatial ID or voxel size configuration
+      if (useSpatialId) {
+        heatboxOptions.spatialId = {
+          enabled: true,
+          mode: 'tile-grid',
+          zoom: parseInt(elements.zoomLevel.value)
+        };
+      } else {
+        heatboxOptions.voxelSize = parseInt(elements.voxelSize.value);
+      }
+      
+      // Create heatbox with aggregation using keyResolver
+      heatbox = new Heatbox(viewer, heatboxOptions);
       
       await heatbox.createFromEntities(generatedEntities);
       
