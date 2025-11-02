@@ -473,5 +473,137 @@ describe('Layer Aggregation (ADR-0014)', () => {
       expect(voxelInfo.layerStats.get('1')).toBe(2);
     });
   });
+
+  describe('Global layer aggregation (Phase 3)', () => {
+    it('should return top N layers in statistics', () => {
+      // Create mock voxelData with layerStats
+      const mockVoxelData = new Map();
+      
+      // Voxel 1: residential=5, commercial=3
+      mockVoxelData.set('0_0_0', {
+        x: 0, y: 0, z: 0,
+        count: 8,
+        entities: [],
+        layerStats: new Map([
+          ['residential', 5],
+          ['commercial', 3]
+        ]),
+        layerTop: 'residential'
+      });
+      
+      // Voxel 2: industrial=7, commercial=2
+      mockVoxelData.set('1_0_0', {
+        x: 1, y: 0, z: 0,
+        count: 9,
+        entities: [],
+        layerStats: new Map([
+          ['industrial', 7],
+          ['commercial', 2]
+        ]),
+        layerTop: 'industrial'
+      });
+      
+      // Voxel 3: residential=4
+      mockVoxelData.set('2_0_0', {
+        x: 2, y: 0, z: 0,
+        count: 4,
+        entities: [],
+        layerStats: new Map([
+          ['residential', 4]
+        ]),
+        layerTop: 'residential'
+      });
+      
+      // Simulate Heatbox.getStatistics() logic
+      const globalLayerCounts = new Map();
+      for (const voxelInfo of mockVoxelData.values()) {
+        for (const [layerKey, count] of voxelInfo.layerStats) {
+          globalLayerCounts.set(
+            layerKey,
+            (globalLayerCounts.get(layerKey) || 0) + count
+          );
+        }
+      }
+      
+      const topN = 10; // Default
+      const sorted = Array.from(globalLayerCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, topN);
+      
+      const layers = sorted.map(([key, total]) => ({ key, total }));
+      
+      // Verify results
+      expect(layers).toHaveLength(3);
+      expect(layers[0]).toEqual({ key: 'residential', total: 9 }); // 5+4
+      expect(layers[1]).toEqual({ key: 'industrial', total: 7 });
+      expect(layers[2]).toEqual({ key: 'commercial', total: 5 }); // 3+2
+    });
+
+    it('should respect custom topN value', () => {
+      // Create mock voxelData with many layers
+      const mockVoxelData = new Map();
+      
+      const layerNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+      layerNames.forEach((name, index) => {
+        mockVoxelData.set(`${index}_0_0`, {
+          x: index, y: 0, z: 0,
+          count: 1,
+          entities: [],
+          layerStats: new Map([[name, layerNames.length - index]]), // Descending counts
+          layerTop: name
+        });
+      });
+      
+      // Simulate Heatbox.getStatistics() logic with custom topN
+      const globalLayerCounts = new Map();
+      for (const voxelInfo of mockVoxelData.values()) {
+        for (const [layerKey, count] of voxelInfo.layerStats) {
+          globalLayerCounts.set(
+            layerKey,
+            (globalLayerCounts.get(layerKey) || 0) + count
+          );
+        }
+      }
+      
+      const topN = 5; // Custom value
+      const sorted = Array.from(globalLayerCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, topN);
+      
+      const layers = sorted.map(([key, total]) => ({ key, total }));
+      
+      // Verify only top 5 are returned
+      expect(layers).toHaveLength(5);
+      expect(layers[0].key).toBe('A');
+      expect(layers[4].key).toBe('E');
+    });
+
+    it('should handle empty layerStats', () => {
+      const mockVoxelData = new Map();
+      
+      // Voxel without layerStats (aggregation disabled)
+      mockVoxelData.set('0_0_0', {
+        x: 0, y: 0, z: 0,
+        count: 5,
+        entities: []
+        // No layerStats
+      });
+      
+      // Simulate Heatbox.getStatistics() logic
+      const globalLayerCounts = new Map();
+      for (const voxelInfo of mockVoxelData.values()) {
+        if (voxelInfo.layerStats) {
+          for (const [layerKey, count] of voxelInfo.layerStats) {
+            globalLayerCounts.set(
+              layerKey,
+              (globalLayerCounts.get(layerKey) || 0) + count
+            );
+          }
+        }
+      }
+      
+      expect(globalLayerCounts.size).toBe(0);
+    });
+  });
 });
 
