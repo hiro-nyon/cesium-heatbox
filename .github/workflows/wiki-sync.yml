@@ -73,27 +73,19 @@ jobs:
         # ここでは早期終了しない。実際の変更有無はWikiリポジトリ側で判定する。
     
     - name: Configure Git
-      if: ${{ env.WIKI_SKIP != 'true' }}
+      if: ${{ success() }}
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-    
+
     - name: Clone Wiki repository
       env:
-        WIKI_TOKEN: ${{ secrets.WIKI_TOKEN }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WIKI_TOKEN: ${{ secrets.WIKI_TOKEN != '' && secrets.WIKI_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
-        TOKEN=${WIKI_TOKEN:-${GITHUB_TOKEN}}
-        if [ -z "$TOKEN" ]; then
-          echo "✨ No wiki token provided, skipping wiki sync."
-          echo "WIKI_SKIP=true" >> $GITHUB_ENV
-          exit 0
-        fi
-        git clone https://x-access-token:${TOKEN}@github.com/hiro-nyon/cesium-heatbox.wiki.git .wiki-tmp
-        echo "WIKI_SKIP=false" >> $GITHUB_ENV
-        
+        git clone https://x-access-token:${WIKI_TOKEN}@github.com/hiro-nyon/cesium-heatbox.wiki.git .wiki-tmp
+
     - name: Update Wiki content
-      if: ${{ env.WIKI_SKIP != 'true' }}
+      if: ${{ success() }}
       run: |
         # 安全確認：重要ページのバックアップ
         if [ -f ".wiki-tmp/Home.md" ]; then
@@ -127,18 +119,18 @@ jobs:
         git push origin master
     
     - name: Cleanup
-      if: ${{ always() && env.WIKI_SKIP != 'true' }}
+      if: ${{ always() }}
       run: |
         rm -rf .wiki-tmp
         
     - name: Notify success
-      if: ${{ success() && env.WIKI_SKIP != 'true' }}
+      if: ${{ success() }}
       run: |
         echo "✅ Wiki sync completed successfully"
         echo "Check: https://github.com/hiro-nyon/cesium-heatbox/wiki"
         
     - name: Notify failure
-      if: ${{ failure() && env.WIKI_SKIP != 'true' }}
+      if: ${{ failure() }}
       run: |
         echo "❌ Wiki sync failed"
         echo "Manual intervention may be required"
