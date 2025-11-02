@@ -105,20 +105,22 @@ export class SpatialIdAdapter {
     let bestZoom = 25;  // Default fallback
     let minError = Infinity;
     let bestZoomWithinTolerance = null;
+    let bestErrorWithinTolerance = Infinity;
 
     for (let z = minZoom; z <= maxZoom; z++) {
       const cellSizeXY = this._calculateCellSizeAtZoom(z, centerLat);
       const relativeError = Math.abs(cellSizeXY - targetSize) / targetSize;
 
-      // Always track the zoom with minimum error
+      // Always track the zoom with minimum error (regardless of tolerance)
       if (relativeError < minError) {
         bestZoom = z;
         minError = relativeError;
       }
 
-      // Also track the first zoom within tolerance
-      if (bestZoomWithinTolerance === null && relativeError <= tolerance / 100) {
+      // Track the best zoom within tolerance (smallest error within tolerance)
+      if (relativeError <= tolerance / 100 && relativeError < bestErrorWithinTolerance) {
         bestZoomWithinTolerance = z;
+        bestErrorWithinTolerance = relativeError;
       }
     }
 
