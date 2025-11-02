@@ -13,6 +13,49 @@ describe('Layer Aggregation Performance (ADR-0014 Phase 5)', () => {
   });
 
   /**
+   * 測定ヘルパー: 同一オプションを複数回実行し中央値を取得。
+   * CI環境のジッター影響を受けにくくする。
+   * @param {Cesium.Entity[]} entities
+   * @param {Object} baseOptions
+   * @param {number} [iterations=5]
+   * @returns {Promise<{median:number, average:number, min:number, max:number}>}
+   */
+  async function measureMedianProcessingTime(entities, baseOptions, iterations = 5) {
+    const durations = [];
+
+    for (let i = 0; i < iterations; i++) {
+      const options = baseOptions.aggregation
+        ? { ...baseOptions, aggregation: { ...baseOptions.aggregation } }
+        : { ...baseOptions };
+
+      const heatbox = new Heatbox(viewer, options);
+      const start = performance.now();
+      await heatbox.createFromEntities(entities);
+      durations.push(performance.now() - start);
+
+      try {
+        if (typeof heatbox.destroy === 'function') {
+          heatbox.destroy();
+        } else {
+          heatbox.clear();
+        }
+      } catch (_error) {
+        heatbox.clear();
+      }
+    }
+
+    durations.sort((a, b) => a - b);
+    const median = durations[Math.floor(durations.length / 2)];
+    const average = durations.reduce((sum, value) => sum + value, 0) / durations.length;
+    return {
+      median,
+      average,
+      min: durations[0],
+      max: durations[durations.length - 1]
+    };
+  }
+
+  /**
    * Generate test entities with layer properties
    * @param {number} count - Number of entities to generate
    * @param {Array<string>} layerTypes - Layer types to distribute
@@ -173,38 +216,23 @@ describe('Layer Aggregation Performance (ADR-0014 Phase 5)', () => {
   describe('Zero overhead when disabled', () => {
     it('should have no performance impact when aggregation is disabled', async () => {
       const entities = generateEntities(1000, ['residential', 'commercial', 'industrial']);
-      
-      // Run 1: aggregation explicitly disabled
-      const heatbox1 = new Heatbox(viewer, {
+
+      const baseOptions = {
         voxelSize: 30,
         aggregation: { enabled: false }
-      });
-      
-      const start1 = performance.now();
-      await heatbox1.createFromEntities(entities);
-      const time1 = performance.now() - start1;
-      
-      heatbox1.clear();
-      
-      // Run 2: aggregation not specified (default disabled)
-      const heatbox2 = new Heatbox(viewer, {
-        voxelSize: 30
-        // No aggregation option
-      });
-      
-      const start2 = performance.now();
-      await heatbox2.createFromEntities(entities);
-      const time2 = performance.now() - start2;
-      
-      heatbox2.clear();
-      
+      };
+
+      const baseline = await measureMedianProcessingTime(entities, baseOptions);
+      const implicitDisabled = await measureMedianProcessingTime(entities, { voxelSize: 30 });
+
       // Times should be very similar (within 5%)
-      const diff = Math.abs(time1 - time2) / Math.min(time1, time2);
-      
-      console.log(`Explicitly disabled: ${time1.toFixed(2)}ms`);
-      console.log(`Default (disabled): ${time2.toFixed(2)}ms`);
-      console.log(`Difference: ${(diff * 100).toFixed(2)}%`);
-      
+      const minReference = Math.max(Math.min(baseline.median, implicitDisabled.median), 1e-6);
+      const diff = Math.abs(baseline.median - implicitDisabled.median) / minReference;
+
+      console.log(`Explicitly disabled (median): ${baseline.median.toFixed(2)}ms`);
+      console.log(`Default (disabled) median: ${implicitDisabled.median.toFixed(2)}ms`);
+      console.log(`Difference (median): ${(diff * 100).toFixed(2)}%`);
+
       // Allow for measurement noise in Jest environment
       expect(diff).toBeLessThan(0.60); // jsdom timing variance can exceed 30%
     }, 30000); // 30s timeout
