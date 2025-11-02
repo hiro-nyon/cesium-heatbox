@@ -31,6 +31,22 @@ export class DataProcessor {
     let processedCount = 0;
     let skippedCount = 0;
     
+    // v0.1.18: Layer aggregation setup (ADR-0014)
+    const aggregationEnabled = options.aggregation?.enabled || false;
+    let getLayerKey = null;
+    
+    if (aggregationEnabled) {
+      if (options.aggregation.keyResolver) {
+        getLayerKey = options.aggregation.keyResolver;
+      } else if (options.aggregation.byProperty) {
+        const propKey = options.aggregation.byProperty;
+        getLayerKey = (entity) => entity.properties?.[propKey] || 'unknown';
+      } else {
+        Logger.warn('[aggregation] enabled but no byProperty or keyResolver specified, using "default" key');
+        getLayerKey = () => 'default';
+      }
+    }
+    
     Logger.debug(`Processing ${entities.length} entities for classification`);
     
     const currentTime = Cesium.JulianDate.now();
@@ -100,18 +116,41 @@ export class DataProcessor {
           const voxelKey = VoxelGrid.getVoxelKey(voxelX, voxelY, voxelZ);
           
           if (!voxelData.has(voxelKey)) {
-            voxelData.set(voxelKey, {
+            const newVoxelInfo = {
               x: voxelX,
               y: voxelY,
               z: voxelZ,
               entities: [],
               count: 0
-            });
+            };
+            
+            // v0.1.18: Initialize layerStats if aggregation enabled (ADR-0014)
+            if (aggregationEnabled) {
+              newVoxelInfo.layerStats = new Map();
+            }
+            
+            voxelData.set(voxelKey, newVoxelInfo);
           }
           
           const voxelInfo = voxelData.get(voxelKey);
           voxelInfo.entities.push(entity);
           voxelInfo.count++;
+          
+          // v0.1.18: Aggregate by layer (ADR-0014)
+          if (aggregationEnabled && getLayerKey) {
+            try {
+              let layerKey = getLayerKey(entity);
+              // Coerce to string
+              layerKey = String(layerKey);
+              
+              const currentCount = voxelInfo.layerStats.get(layerKey) || 0;
+              voxelInfo.layerStats.set(layerKey, currentCount + 1);
+            } catch (error) {
+              Logger.warn(`[aggregation] keyResolver threw error for entity ${index}, using "unknown"`, error);
+              const currentCount = voxelInfo.layerStats.get('unknown') || 0;
+              voxelInfo.layerStats.set('unknown', currentCount + 1);
+            }
+          }
           
           processedCount++;
         } else {
@@ -122,6 +161,27 @@ export class DataProcessor {
         skippedCount++;
       }
     });
+    
+    // v0.1.18: Calculate layerTop (most common layer per voxel) (ADR-0014)
+    if (aggregationEnabled) {
+      for (const voxelInfo of voxelData.values()) {
+        if (voxelInfo.layerStats && voxelInfo.layerStats.size > 0) {
+          let maxCount = 0;
+          let topLayer = null;
+          
+          for (const [layerKey, count] of voxelInfo.layerStats) {
+            if (count > maxCount) {
+              maxCount = count;
+              topLayer = layerKey;
+            }
+          }
+          
+          voxelInfo.layerTop = topLayer;
+        }
+      }
+      
+      Logger.debug(`[aggregation] Calculated layerTop for ${voxelData.size} voxels`);
+    }
     
     Logger.info(`${processedCount}個のエンティティを${voxelData.size}個のボクセルに分類（${skippedCount}個はスキップ）`);
     return voxelData;
@@ -287,6 +347,22 @@ export class DataProcessor {
     options._resolvedZoom = zoom;
     options._spatialIdProvider = adapter.fallbackMode ? null : options.spatialId.provider;
     
+    // v0.1.18: Layer aggregation setup (ADR-0014)
+    const aggregationEnabled = options.aggregation?.enabled || false;
+    let getLayerKey = null;
+    
+    if (aggregationEnabled) {
+      if (options.aggregation.keyResolver) {
+        getLayerKey = options.aggregation.keyResolver;
+      } else if (options.aggregation.byProperty) {
+        const propKey = options.aggregation.byProperty;
+        getLayerKey = (entity) => entity.properties?.[propKey] || 'unknown';
+      } else {
+        Logger.warn('[aggregation] enabled but no byProperty or keyResolver specified, using "default" key');
+        getLayerKey = () => 'default';
+      }
+    }
+    
     // Process entities and aggregate by spatial ID / エンティティを処理して空間IDで集約
     const voxelMap = new Map();
     let processedCount = 0;
@@ -353,7 +429,7 @@ export class DataProcessor {
 
           const { x: safeX, y: safeY, z: safeZ } = DataProcessor._normalizeGridIndices(centerLng, centerLat, centerAlt, bounds, grid);
 
-          voxelMap.set(zfxyStr, {
+          const newVoxelInfo = {
             key: zfxyStr,
             // Normalized indices for compatibility with VoxelSelector and other systems
             // VoxelSelectorなど他システムとの互換性のための正規化インデックス
@@ -364,18 +440,63 @@ export class DataProcessor {
             spatialId: { ...zfxy, id: zfxyStr },
             entities: [],
             count: 0
-          });
+          };
+          
+          // v0.1.18: Initialize layerStats if aggregation enabled (ADR-0014)
+          if (aggregationEnabled) {
+            newVoxelInfo.layerStats = new Map();
+          }
+          
+          voxelMap.set(zfxyStr, newVoxelInfo);
         }
         
         const voxelInfo = voxelMap.get(zfxyStr);
         voxelInfo.entities.push(entity);
         voxelInfo.count++;
+        
+        // v0.1.18: Aggregate by layer (ADR-0014)
+        if (aggregationEnabled && getLayerKey) {
+          try {
+            let layerKey = getLayerKey(entity);
+            // Coerce to string
+            layerKey = String(layerKey);
+            
+            const currentCount = voxelInfo.layerStats.get(layerKey) || 0;
+            voxelInfo.layerStats.set(layerKey, currentCount + 1);
+          } catch (error) {
+            Logger.warn(`[aggregation] keyResolver threw error, using "unknown"`, error);
+            const currentCount = voxelInfo.layerStats.get('unknown') || 0;
+            voxelInfo.layerStats.set('unknown', currentCount + 1);
+          }
+        }
+        
         processedCount++;
         
       } catch (error) {
         Logger.warn(`Failed to process entity for spatial ID:`, error);
         skippedCount++;
       }
+    }
+    
+    // v0.1.18: Calculate layerTop (most common layer per voxel) (ADR-0014)
+    if (aggregationEnabled) {
+      for (const voxelInfo of voxelMap.values()) {
+        if (voxelInfo.layerStats && voxelInfo.layerStats.size > 0) {
+          let maxCount = 0;
+          let topLayer = null;
+          
+          for (const [layerKey, count] of voxelInfo.layerStats) {
+            if (count > maxCount) {
+              maxCount = count;
+              topLayer = layerKey;
+            }
+          }
+          
+          voxelInfo.layerTop = topLayer;
+        }
+      }
+      
+      Logger.debug(`[aggregation] Calculated layerTop for ${voxelMap.size} voxels (Spatial ID mode)`);
     }
     
     Logger.info(`Spatial ID: ${processedCount} entities classified into ${voxelMap.size} voxels (${skippedCount} skipped)`);
