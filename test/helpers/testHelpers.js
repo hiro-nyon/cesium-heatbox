@@ -114,6 +114,41 @@ export function generateTestData(count, options = {}) {
 }
 
 /**
+ * Generate mock entities with geographic coordinates (lng/lat/alt)
+ * @param {number} count - Number of entities
+ * @param {Object} bounds - Geographic bounds
+ * @returns {Array} Array of mock entities with geographic positions
+ */
+export function generateMockEntities(count, bounds = {}) {
+  const {
+    minLon = 139.69,
+    maxLon = 139.71,
+    minLat = 35.68,
+    maxLat = 35.70,
+    minAlt = 0,
+    maxAlt = 200
+  } = bounds;
+
+  const entities = [];
+  
+  for (let i = 0; i < count; i++) {
+    entities.push({
+      id: `mock-entity-${i}`,
+      position: {
+        x: minLon + Math.random() * (maxLon - minLon),
+        y: minLat + Math.random() * (maxLat - minLat),
+        z: minAlt + Math.random() * (maxAlt - minAlt)
+      },
+      properties: {
+        value: Math.random() * 100
+      }
+    });
+  }
+  
+  return entities;
+}
+
+/**
  * Performance measurement helper
  * @param {Function} fn - Function to measure
  * @returns {Promise<{result: any, timeMs: number}>}
