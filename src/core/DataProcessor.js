@@ -23,7 +23,7 @@ export class DataProcessor {
   static async classifyEntitiesIntoVoxels(entities, bounds, grid, options = {}) {
     // v0.1.17: Spatial ID mode (tile-grid) / 空間IDモード（tile-grid）
     if (options.spatialId?.enabled) {
-      return await DataProcessor._classifyBySpatialId(entities, bounds, options);
+      return await DataProcessor._classifyBySpatialId(entities, bounds, grid, options);
     }
     
     // Uniform grid mode (default) / 一様グリッドモード（デフォルト）
@@ -217,11 +217,12 @@ export class DataProcessor {
    * 空間IDを使用してエンティティを分類（tile-gridモード）。
    * @param {Array} entities - Entity array / エンティティ配列
    * @param {Object} bounds - Bounds info / 境界情報
+   * @param {Object} grid - Grid info (for normalized indices) / グリッド情報（正規化インデックス用）
    * @param {Object} options - Processing options with spatialId config / spatialId設定を含む処理オプション
    * @returns {Promise<Map>} Voxel data Map (key: zfxyStr, value: info) / ボクセルデータ（キー: zfxyStr, 値: ボクセル情報）
    * @private
    */
-  static async _classifyBySpatialId(entities, bounds, options) {
+  static async _classifyBySpatialId(entities, bounds, grid, options) {
     Logger.debug(`Spatial ID mode enabled: ${options.spatialId.mode}`);
     
     // Initialize SpatialIdAdapter / SpatialIdAdapterを初期化
@@ -306,17 +307,31 @@ export class DataProcessor {
         
         // Aggregate by zfxyStr (public key format) / zfxyStr（公開キー形式）で集約
         if (!voxelMap.has(zfxyStr)) {
-          // Use real tile indices from spatial ID for correct positioning
-          // 正しい位置決めのために空間IDから実際のタイルインデックスを使用
+          // Calculate normalized indices for VoxelSelector compatibility
+          // VoxelSelector互換のために正規化されたインデックスを計算
+          // Center coordinates from vertices average / 頂点の平均から中心座標を計算
+          const centerLng = vertices.reduce((sum, v) => sum + v.lng, 0) / 8;
+          const centerLat = vertices.reduce((sum, v) => sum + v.lat, 0) / 8;
+          const centerAlt = vertices.reduce((sum, v) => sum + v.alt, 0) / 8;
+          
+          // Normalize to grid indices (0...numVoxels range for VoxelSelector)
+          // グリッドインデックスに正規化（VoxelSelector用の0...numVoxels範囲）
+          const normalizedX = Math.floor((centerLng - bounds.minLon) / (bounds.maxLon - bounds.minLon) * grid.numVoxelsX);
+          const normalizedY = Math.floor((centerLat - bounds.minLat) / (bounds.maxLat - bounds.minLat) * grid.numVoxelsY);
+          const normalizedZ = Math.floor((centerAlt - bounds.minAlt) / (bounds.maxAlt - bounds.minAlt) * grid.numVoxelsZ);
+          
+          // Clamp to valid grid range / 有効なグリッド範囲にクランプ
+          const safeX = Math.max(0, Math.min(grid.numVoxelsX - 1, normalizedX));
+          const safeY = Math.max(0, Math.min(grid.numVoxelsY - 1, normalizedY));
+          const safeZ = Math.max(0, Math.min(grid.numVoxelsZ - 1, normalizedZ));
+          
           voxelMap.set(zfxyStr, {
             key: zfxyStr,
-            // Legacy fields for VoxelRenderer compatibility (removed in Phase 3)
-            // Use real spatial ID tile indices so renderer computes correct lon/lat/alt
-            // VoxelRenderer互換のためのレガシーフィールド（Phase 3で削除）
-            // レンダラーが正しいlon/lat/altを計算できるように実際の空間IDタイルインデックスを使用
-            x: zfxy.x,
-            y: zfxy.y,
-            z: zfxy.f,
+            // Normalized indices for compatibility with VoxelSelector and other systems
+            // VoxelSelectorなど他システムとの互換性のための正規化インデックス
+            x: safeX,
+            y: safeY,
+            z: safeZ,
             bounds: vertices,  // 8 vertices from ouranos-gex or fallback / ouranos-gexまたはフォールバックからの8頂点
             spatialId: { ...zfxy, id: zfxyStr },
             entities: [],
