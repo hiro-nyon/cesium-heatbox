@@ -5,6 +5,7 @@ import * as Cesium from 'cesium';
 import { VoxelGrid } from './VoxelGrid.js';
 import { Logger } from '../utils/logger.js';
 import { SpatialIdAdapter } from './spatial/SpatialIdAdapter.js';
+import { resolvePropertyValue } from '../utils/cesiumProperty.js';
 
 /**
  * Class responsible for processing entity data.
@@ -30,45 +31,62 @@ export class DataProcessor {
     const voxelData = new Map();
     let processedCount = 0;
     let skippedCount = 0;
-    
+
     // v0.1.18: Layer aggregation setup (ADR-0014)
-    const aggregationEnabled = options.aggregation?.enabled || false;
-    let getLayerKey = null;
+    const aggregationOptions = options.aggregation || {};
+    const aggregationEnabled = Boolean(aggregationOptions.enabled);
     const currentTime = Cesium.JulianDate.now();
-    
+    const byProperty = typeof aggregationOptions.byProperty === 'string' && aggregationOptions.byProperty.trim() !== ''
+      ? aggregationOptions.byProperty.trim()
+      : null;
+    const userResolver = typeof aggregationOptions.keyResolver === 'function' ? aggregationOptions.keyResolver : null;
+    let resolveLayerKey = null;
+
     if (aggregationEnabled) {
-      if (options.aggregation.keyResolver) {
-        getLayerKey = options.aggregation.keyResolver;
-      } else if (options.aggregation.byProperty) {
-        const propKey = options.aggregation.byProperty;
-        // Resolve Cesium PropertyBag values before using as layer key
-        // Cesium PropertyBagの値を解決してからレイヤキーとして使用
-        getLayerKey = (entity) => {
-          const prop = entity.properties?.[propKey];
-          if (!prop) return 'unknown';
-          
-          // If it's a Cesium Property, call getValue()
-          // Cesium Propertyの場合はgetValue()を呼び出す
-          if (typeof prop.getValue === 'function') {
+      if (userResolver || byProperty) {
+        resolveLayerKey = (entity, entityIndex) => {
+          let value;
+
+          if (userResolver) {
             try {
-              const value = prop.getValue(currentTime);
-              return value !== undefined && value !== null ? value : 'unknown';
+              value = userResolver(entity);
             } catch (error) {
-              Logger.warn(`[aggregation] Failed to resolve property ${propKey}, using "unknown"`, error);
+              Logger.warn(`[aggregation] keyResolver threw error for entity ${entityIndex}, using "unknown"`, error);
               return 'unknown';
             }
+            value = resolvePropertyValue(value, currentTime);
+          } else if (byProperty) {
+            let resolved;
+            try {
+              const bag = entity.properties?.getValue?.(currentTime);
+              if (bag && typeof bag === 'object' && byProperty in bag) {
+                resolved = bag[byProperty];
+              }
+            } catch (error) {
+              Logger.warn(`[aggregation] Failed to resolve PropertyBag for ${byProperty}, fallback to direct property`, error);
+            }
+
+            if (resolved === undefined) {
+              const prop = entity.properties?.[byProperty];
+              resolved = resolvePropertyValue(prop, currentTime);
+            }
+
+            value = resolved;
           }
-          
-          // Otherwise use the raw value
-          // それ以外は生の値を使用
-          return prop;
+
+          if (value === undefined || value === null || (typeof value === 'number' && Number.isNaN(value))) {
+            return 'unknown';
+          }
+
+          const stringValue = String(value);
+          return stringValue.trim() === '' ? 'unknown' : stringValue;
         };
       } else {
         Logger.warn('[aggregation] enabled but no byProperty or keyResolver specified, using "default" key');
-        getLayerKey = () => 'default';
+        resolveLayerKey = () => 'default';
       }
     }
-    
+
     Logger.debug(`Processing ${entities.length} entities for classification`);
     
     entities.forEach((entity, index) => {
@@ -157,19 +175,10 @@ export class DataProcessor {
           voxelInfo.count++;
           
           // v0.1.18: Aggregate by layer (ADR-0014)
-          if (aggregationEnabled && getLayerKey) {
-            try {
-              let layerKey = getLayerKey(entity);
-              // Coerce to string
-              layerKey = String(layerKey);
-              
-              const currentCount = voxelInfo.layerStats.get(layerKey) || 0;
-              voxelInfo.layerStats.set(layerKey, currentCount + 1);
-            } catch (error) {
-              Logger.warn(`[aggregation] keyResolver threw error for entity ${index}, using "unknown"`, error);
-              const currentCount = voxelInfo.layerStats.get('unknown') || 0;
-              voxelInfo.layerStats.set('unknown', currentCount + 1);
-            }
+          if (aggregationEnabled && resolveLayerKey) {
+            const layerKey = resolveLayerKey(entity, index) || 'unknown';
+            const currentCount = voxelInfo.layerStats.get(layerKey) || 0;
+            voxelInfo.layerStats.set(layerKey, currentCount + 1);
           }
           
           processedCount++;
@@ -368,40 +377,57 @@ export class DataProcessor {
     options._spatialIdProvider = adapter.fallbackMode ? null : options.spatialId.provider;
     
     // v0.1.18: Layer aggregation setup (ADR-0014)
-    const aggregationEnabled = options.aggregation?.enabled || false;
-    let getLayerKey = null;
+    const aggregationOptions = options.aggregation || {};
+    const aggregationEnabled = Boolean(aggregationOptions.enabled);
     const currentTime = Cesium.JulianDate.now();
-    
+    const byProperty = typeof aggregationOptions.byProperty === 'string' && aggregationOptions.byProperty.trim() !== ''
+      ? aggregationOptions.byProperty.trim()
+      : null;
+    const userResolver = typeof aggregationOptions.keyResolver === 'function' ? aggregationOptions.keyResolver : null;
+    let resolveLayerKey = null;
+
     if (aggregationEnabled) {
-      if (options.aggregation.keyResolver) {
-        getLayerKey = options.aggregation.keyResolver;
-      } else if (options.aggregation.byProperty) {
-        const propKey = options.aggregation.byProperty;
-        // Resolve Cesium PropertyBag values before using as layer key
-        // Cesium PropertyBagの値を解決してからレイヤキーとして使用
-        getLayerKey = (entity) => {
-          const prop = entity.properties?.[propKey];
-          if (!prop) return 'unknown';
-          
-          // If it's a Cesium Property, call getValue()
-          // Cesium Propertyの場合はgetValue()を呼び出す
-          if (typeof prop.getValue === 'function') {
+      if (userResolver || byProperty) {
+        resolveLayerKey = (entity, entityIndex) => {
+          let value;
+
+          if (userResolver) {
             try {
-              const value = prop.getValue(currentTime);
-              return value !== undefined && value !== null ? value : 'unknown';
+              value = userResolver(entity);
             } catch (error) {
-              Logger.warn(`[aggregation] Failed to resolve property ${propKey}, using "unknown"`, error);
+              Logger.warn(`[aggregation] keyResolver threw error for entity ${entityIndex}, using "unknown"`, error);
               return 'unknown';
             }
+            value = resolvePropertyValue(value, currentTime);
+          } else if (byProperty) {
+            let resolved;
+            try {
+              const bag = entity.properties?.getValue?.(currentTime);
+              if (bag && typeof bag === 'object' && byProperty in bag) {
+                resolved = bag[byProperty];
+              }
+            } catch (error) {
+              Logger.warn(`[aggregation] Failed to resolve PropertyBag for ${byProperty}, fallback to direct property`, error);
+            }
+
+            if (resolved === undefined) {
+              const prop = entity.properties?.[byProperty];
+              resolved = resolvePropertyValue(prop, currentTime);
+            }
+
+            value = resolved;
           }
-          
-          // Otherwise use the raw value
-          // それ以外は生の値を使用
-          return prop;
+
+          if (value === undefined || value === null || (typeof value === 'number' && Number.isNaN(value))) {
+            return 'unknown';
+          }
+
+          const stringValue = String(value);
+          return stringValue.trim() === '' ? 'unknown' : stringValue;
         };
       } else {
         Logger.warn('[aggregation] enabled but no byProperty or keyResolver specified, using "default" key');
-        getLayerKey = () => 'default';
+        resolveLayerKey = () => 'default';
       }
     }
     
@@ -410,6 +436,7 @@ export class DataProcessor {
     let processedCount = 0;
     let skippedCount = 0;
     
+    let entityIndex = 0;
     for (const entity of entities) {
       try {
         // Get entity position / エンティティの位置を取得
@@ -495,27 +522,20 @@ export class DataProcessor {
         voxelInfo.count++;
         
         // v0.1.18: Aggregate by layer (ADR-0014)
-        if (aggregationEnabled && getLayerKey) {
-          try {
-            let layerKey = getLayerKey(entity);
-            // Coerce to string
-            layerKey = String(layerKey);
-            
-            const currentCount = voxelInfo.layerStats.get(layerKey) || 0;
-            voxelInfo.layerStats.set(layerKey, currentCount + 1);
-          } catch (error) {
-            Logger.warn(`[aggregation] keyResolver threw error, using "unknown"`, error);
-            const currentCount = voxelInfo.layerStats.get('unknown') || 0;
-            voxelInfo.layerStats.set('unknown', currentCount + 1);
-          }
+        if (aggregationEnabled && resolveLayerKey) {
+          const layerKey = resolveLayerKey(entity, entityIndex) || 'unknown';
+          const currentCount = voxelInfo.layerStats.get(layerKey) || 0;
+          voxelInfo.layerStats.set(layerKey, currentCount + 1);
         }
-        
+
         processedCount++;
-        
+
       } catch (error) {
         Logger.warn(`Failed to process entity for spatial ID:`, error);
         skippedCount++;
       }
+
+      entityIndex++;
     }
     
     // v0.1.18: Calculate layerTop (most common layer per voxel) (ADR-0014)

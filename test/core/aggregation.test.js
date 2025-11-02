@@ -5,6 +5,7 @@
 import { DataProcessor } from '../../src/core/DataProcessor.js';
 import { VoxelGrid } from '../../src/core/VoxelGrid.js';
 import { Heatbox } from '../../src/Heatbox.js';
+import { GeometryRenderer } from '../../src/core/geometry/GeometryRenderer.js';
 import { createMockViewer } from '../helpers/testHelpers.js';
 
 describe('Layer Aggregation (ADR-0014)', () => {
@@ -276,7 +277,7 @@ describe('Layer Aggregation (ADR-0014)', () => {
           
           // layerTop should be the key with the highest count
           const topCount = voxelInfo.layerStats.get(voxelInfo.layerTop);
-          for (const [key, count] of voxelInfo.layerStats) {
+          for (const count of voxelInfo.layerStats.values()) {
             expect(count).toBeLessThanOrEqual(topCount);
           }
         }
@@ -358,8 +359,6 @@ describe('Layer Aggregation (ADR-0014)', () => {
 
   describe('Cesium PropertyBag resolution', () => {
     it('should resolve Cesium Property values', async () => {
-      const mockTime = { dayNumber: 0, secondsOfDay: 0 };
-      
       const entitiesWithProperties = [
         {
           id: 'entity-1',
@@ -401,6 +400,43 @@ describe('Layer Aggregation (ADR-0014)', () => {
       expect(voxelInfo.layerStats.has('[object Object]')).toBe(false);
     });
 
+    it('should resolve values from PropertyBag getValue()', async () => {
+      const entitiesWithPropertyBag = [
+        {
+          id: 'entity-1',
+          position: { x: 139.70, y: 35.69, z: 50 },
+          properties: {
+            getValue: () => ({ buildingType: 'residential' })
+          }
+        },
+        {
+          id: 'entity-2',
+          position: { x: 139.70, y: 35.69, z: 50 },
+          properties: {
+            getValue: () => ({ buildingType: 'commercial' })
+          }
+        }
+      ];
+
+      const options = {
+        aggregation: {
+          enabled: true,
+          byProperty: 'buildingType'
+        }
+      };
+
+      const voxelData = await DataProcessor.classifyEntitiesIntoVoxels(
+        entitiesWithPropertyBag,
+        bounds,
+        grid,
+        options
+      );
+
+      const voxelInfo = Array.from(voxelData.values())[0];
+      expect(voxelInfo.layerStats.has('residential')).toBe(true);
+      expect(voxelInfo.layerStats.has('commercial')).toBe(true);
+    });
+
     it('should handle getValue errors gracefully', async () => {
       const entitiesWithFailingProperty = [
         {
@@ -435,7 +471,7 @@ describe('Layer Aggregation (ADR-0014)', () => {
     });
   });
 
-  describe('String coercion', () => {
+describe('String coercion', () => {
     it('should coerce non-string layer keys to strings', async () => {
       const entitiesWithNumbers = [
         {
@@ -617,6 +653,78 @@ describe('Layer Aggregation (ADR-0014)', () => {
       expect(stats.layers).toBeUndefined();
     });
   });
+
+  describe('Voxel description safety', () => {
+    let viewer;
+    let renderer;
+
+    beforeEach(() => {
+      viewer = createMockViewer();
+      renderer = new GeometryRenderer(viewer, {
+        aggregation: {
+          enabled: true,
+          showInDescription: true
+        }
+      });
+    });
+
+    afterEach(() => {
+      renderer.clear();
+      viewer.entities.removeAll();
+    });
+
+    it('should escape layer keys in descriptions', () => {
+      const maliciousKey = '<script>alert(1)</script>';
+      const voxelInfo = {
+        x: 0,
+        y: 0,
+        z: 0,
+        count: 5,
+        layerTop: maliciousKey,
+        layerStats: new Map([
+          [maliciousKey, 3],
+          ['safe', 2]
+        ])
+      };
+
+      const description = renderer.createVoxelDescription(voxelInfo, 'voxel-1');
+      expect(description).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+      expect(description).not.toContain('<script>alert(1)</script>');
+    });
+
+    it('should add layerTop to properties when creating voxel entities', () => {
+      const voxelInfo = {
+        x: 1,
+        y: 2,
+        z: 3,
+        count: 4,
+        layerTop: 'residential',
+        layerStats: new Map([
+          ['residential', 3],
+          ['commercial', 1]
+        ])
+      };
+
+      const colorStub = { withAlpha: jest.fn(() => ({})) };
+      const entity = renderer.createVoxelBox({
+        centerLon: 139.7,
+        centerLat: 35.69,
+        centerAlt: 50,
+        cellSizeX: 20,
+        cellSizeY: 20,
+        boxHeight: 20,
+        color: colorStub,
+        opacity: 0.8,
+        shouldShowOutline: true,
+        outlineColor: {},
+        outlineWidth: 1,
+        voxelInfo,
+        voxelKey: '1-2-3'
+      });
+
+      expect(entity.properties.layerTop).toBe('residential');
+      expect(entity.description).toContain('レイヤ内訳');
+      expect(colorStub.withAlpha).toHaveBeenCalledWith(0.8);
+    });
+  });
 });
-
-

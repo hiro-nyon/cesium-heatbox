@@ -1,5 +1,6 @@
 import * as Cesium from 'cesium';
 import { Logger } from '../../utils/logger.js';
+import { escapeHtml } from '../../utils/escapeHtml.js';
 
 /**
  * GeometryRenderer - Creates Cesium entities consumed by VoxelRenderer.
@@ -548,24 +549,6 @@ export class GeometryRenderer {
   }
 
   /**
-   * Escape HTML special characters to prevent XSS
-   * HTML特殊文字をエスケープしてXSSを防止
-   * 
-   * @param {string} str - String to escape / エスケープする文字列
-   * @returns {string} Escaped string / エスケープされた文字列
-   * @private
-   */
-  _escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
-  /**
    * Create voxel description HTML
    * ボクセルの説明HTMLを生成
    * 
@@ -576,9 +559,9 @@ export class GeometryRenderer {
   createVoxelDescription(voxelInfo, voxelKey) {
     // v0.1.17: Include spatial ID in description if available / 空間IDがあればdescriptionに含める
     const spatialIdInfo = voxelInfo.spatialId ? `
-          <tr><td><b>空間ID:</b></td><td>${voxelInfo.spatialId.id}</td></tr>
-          <tr><td><b>ズームレベル:</b></td><td>Z=${voxelInfo.spatialId.z}, F=${voxelInfo.spatialId.f}</td></tr>
-          <tr><td><b>タイル座標:</b></td><td>X=${voxelInfo.spatialId.x}, Y=${voxelInfo.spatialId.y}</td></tr>
+          <tr><td><b>空間ID:</b></td><td>${escapeHtml(voxelInfo.spatialId.id)}</td></tr>
+          <tr><td><b>ズームレベル:</b></td><td>Z=${escapeHtml(String(voxelInfo.spatialId.z))}, F=${escapeHtml(String(voxelInfo.spatialId.f))}</td></tr>
+          <tr><td><b>タイル座標:</b></td><td>X=${escapeHtml(String(voxelInfo.spatialId.x))}, Y=${escapeHtml(String(voxelInfo.spatialId.y))}</td></tr>
     ` : '';
     
     // v0.1.18: Include layer breakdown if aggregation enabled and showInDescription is true (ADR-0014)
@@ -592,12 +575,15 @@ export class GeometryRenderer {
       // Escape layer keys to prevent XSS / XSS防止のためレイヤキーをエスケープ
       const layerRows = Array.from(voxelInfo.layerStats.entries())
         .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
-        .map(([key, count]) => `
-          <tr><td style="padding-left: 10px;">${this._escapeHtml(key)}</td><td>${count}</td></tr>
-        `).join('');
+        .map(([key, count]) => {
+          const pct = voxelInfo.count > 0 ? ((count / voxelInfo.count) * 100).toFixed(1) : '0.0';
+          return `
+          <tr><td style="padding-left: 10px;">${escapeHtml(key)}</td><td>${count} (${pct}%)</td></tr>
+        `;
+        }).join('');
       
       const topLayerInfo = voxelInfo.layerTop ? `
-          <tr><td><b>支配的レイヤ:</b></td><td>${this._escapeHtml(voxelInfo.layerTop)}</td></tr>
+          <tr><td><b>支配的レイヤ:</b></td><td>${escapeHtml(voxelInfo.layerTop)}</td></tr>
       ` : '';
       
       layerInfo = `
@@ -612,7 +598,7 @@ export class GeometryRenderer {
         <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
         <table style="width: 100%;">
           <tr><td><b>エンティティ数:</b></td><td>${voxelInfo.count}</td></tr>
-          <tr><td><b>ボクセルキー:</b></td><td>${voxelKey}</td></tr>
+          <tr><td><b>ボクセルキー:</b></td><td>${escapeHtml(voxelKey)}</td></tr>
           <tr><td><b>座標:</b></td><td>X=${voxelInfo.x}, Y=${voxelInfo.y}, Z=${voxelInfo.z}</td></tr>${spatialIdInfo}${layerInfo}
         </table>
         <p style="margin-bottom: 0;">
