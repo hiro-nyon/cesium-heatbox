@@ -260,7 +260,7 @@ heatbox.togglePerformanceOverlay();
 - **タイルグリッドモード**: 経度・緯度・高度を考慮した空間IDベースのボクセル配置
 - **Ouransos-GEXライブラリ統合**: METI準拠の空間ID変換（オプショナル依存）
 - **フォールバックメカニズム**: Ouranos未インストール時は内蔵Web Mercatorベース変換を使用
-- **自動ズーム選択**: データ範囲から最適なズームレベルを自動決定
+- **自動ズーム選択**: 目標ボクセルサイズ（voxelSize）と緯度から最適なズームレベルを自動決定
 
 #### 基本的な使用方法
 
@@ -327,7 +327,7 @@ In addition to uniform grids, voxel generation using geospatial tile systems (Sp
 - **Tile-Grid Mode**: Spatial ID-based voxel placement considering longitude, latitude, and altitude
 - **Ouranos-GEX Library Integration**: METI-compliant spatial ID conversion (optional dependency)
 - **Fallback Mechanism**: Built-in Web Mercator-based conversion when Ouranos is not installed
-- **Auto Zoom Selection**: Automatically determines optimal zoom level from data extent
+- **Auto Zoom Selection**: Automatically determines optimal zoom level from target voxel size (voxelSize) and latitude
 
 #### Basic Usage
 
