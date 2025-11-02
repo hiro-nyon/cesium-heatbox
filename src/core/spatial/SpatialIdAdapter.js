@@ -139,10 +139,13 @@ export class SpatialIdAdapter {
     if (this.Space && !this.fallbackMode) {
       try {
         const space = new this.Space({ lng, lat, alt }, zoom);
+        const rawVertices = typeof space.vertices3d === 'function' ? space.vertices3d() : [];
+        const vertices = SpatialIdAdapter._normalizeVertices(rawVertices);
+
         return {
           zfxy: space.zfxy,         // {z, f, x, y}
           zfxyStr: space.zfxyStr,   // PUBLIC API format: /z/f/x/y
-          vertices: space.vertices3d()  // 8 corner points
+          vertices
         };
       } catch (error) {
         Logger.warn('SpatialIdAdapter: ouranos-gex error, falling back to built-in converter', error.message);
@@ -150,7 +153,9 @@ export class SpatialIdAdapter {
       }
     } else {
       // Use built-in fallback
-      return ZFXYConverter.convert(lng, lat, alt, zoom);
+      const result = ZFXYConverter.convert(lng, lat, alt, zoom);
+      result.vertices = SpatialIdAdapter._normalizeVertices(result.vertices);
+      return result;
     }
   }
 
@@ -221,6 +226,59 @@ export class SpatialIdAdapter {
 
     Logger.debug(`SpatialIdAdapter: Optimal zoom ${selectedZoom} for target size ${targetSize}m (cell size: ${selectedCellSize.toFixed(1)}m, error: ${selectedErrorPct.toFixed(1)}%)${bestZoomWithinTolerance === null ? ' [closest, exceeds tolerance]' : ''}`);
     return selectedZoom;
+  }
+
+  /**
+   * Normalize vertex data returned by providers into {lng, lat, alt} objects.
+   * プロバイダーが返す頂点データを {lng, lat, alt} 形式に正規化
+   *
+   * @param {Array} rawVertices - Provider vertices / プロバイダー頂点
+    * @returns {Array<{lng:number, lat:number, alt:number}>}
+   * @private
+   */
+  static _normalizeVertices(rawVertices) {
+    if (!Array.isArray(rawVertices)) {
+      return [];
+    }
+
+    return rawVertices.map((vertex, index) => {
+      if (Array.isArray(vertex)) {
+        const [lng, lat, alt] = vertex;
+        return {
+          lng: SpatialIdAdapter._toNumber(lng),
+          lat: SpatialIdAdapter._toNumber(lat),
+          alt: SpatialIdAdapter._toNumber(alt)
+        };
+      }
+
+      if (vertex && typeof vertex === 'object') {
+        const lngCandidate = vertex.lng ?? vertex.lon ?? vertex.longitude;
+        const latCandidate = vertex.lat ?? vertex.latitude;
+        const altCandidate = vertex.alt ?? vertex.altitude ?? vertex.height;
+
+        return {
+          lng: SpatialIdAdapter._toNumber(lngCandidate),
+          lat: SpatialIdAdapter._toNumber(latCandidate),
+          alt: SpatialIdAdapter._toNumber(altCandidate)
+        };
+      }
+
+      Logger.warn('SpatialIdAdapter: Unexpected vertex format from provider', { index, vertex });
+      return { lng: 0, lat: 0, alt: 0 };
+    });
+  }
+
+  /**
+   * Safely convert value to finite number, defaulting to 0.
+   * 値を有限な数値に変換（失敗時は0）
+   *
+   * @param {*} value - Value to convert / 変換する値
+   * @returns {number}
+   * @private
+   */
+  static _toNumber(value) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
   }
 
   /**

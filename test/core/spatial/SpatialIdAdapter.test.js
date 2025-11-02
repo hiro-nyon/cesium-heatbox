@@ -34,16 +34,17 @@ describe('SpatialIdAdapter', () => {
       expect(adapter.provider).toBe('custom-provider');
     });
 
-    it('should use fallback mode when ouranos-gex is not available', async () => {
+    it('should load ouranos-gex when available, otherwise fall back gracefully', async () => {
       const adapter = new SpatialIdAdapter({ provider: 'ouranos-gex' });
-      
-      // Since ouranos-gex is likely not installed in test environment
       await adapter.loadProvider();
-      
-      // Should fall back to built-in converter
-      expect(adapter.fallbackMode).toBe(true);
+
       expect(adapter.loaded).toBe(true);
-      expect(Logger.warn).toHaveBeenCalled();
+
+      if (adapter.fallbackMode) {
+        expect(Logger.warn).toHaveBeenCalled();
+      } else {
+        expect(Logger.info).toHaveBeenCalledWith('SpatialIdAdapter: ouranos-gex loaded successfully');
+      }
     });
 
     it('should not reload provider if already loaded', async () => {
@@ -120,6 +121,45 @@ describe('SpatialIdAdapter', () => {
         expect(typeof vertex.lng).toBe('number');
         expect(typeof vertex.lat).toBe('number');
         expect(typeof vertex.alt).toBe('number');
+      });
+    });
+
+    it('should normalize array-based vertices returned by provider', () => {
+      const adapter = new SpatialIdAdapter();
+
+      class MockSpace {
+        constructor() {
+          this.zfxy = { z: 25, f: 5, x: 12345, y: 67890 };
+          this.zfxyStr = '/25/5/12345/67890';
+        }
+
+        vertices3d() {
+          return [
+            [139, 35, 10],
+            [140, 35, 10],
+            [140, 36, 10],
+            [139, 36, 10],
+            [139, 35, 20],
+            [140, 35, 20],
+            [140, 36, 20],
+            [139, 36, 20]
+          ];
+        }
+      }
+
+      adapter.Space = MockSpace;
+      adapter.fallbackMode = false;
+      adapter.loaded = true;
+
+      const result = adapter.getVoxelBounds(139.5, 35.5, 15, 25);
+
+      expect(result.vertices).toHaveLength(8);
+      result.vertices.forEach((vertex) => {
+        expect(vertex).toEqual(expect.objectContaining({
+          lng: expect.any(Number),
+          lat: expect.any(Number),
+          alt: expect.any(Number)
+        }));
       });
     });
 
