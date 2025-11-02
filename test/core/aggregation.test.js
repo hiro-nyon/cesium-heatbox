@@ -110,11 +110,14 @@ describe('Layer Aggregation (ADR-0014)', () => {
         }
       }
 
-      if (targetVoxel) {
-        expect(targetVoxel.layerStats.get('residential')).toBe(3);
-        expect(targetVoxel.layerStats.get('commercial')).toBe(1);
-        expect(targetVoxel.layerTop).toBe('residential');
-      }
+      // Assert that the target voxel exists (regression detection)
+      expect(targetVoxel).toBeDefined();
+      expect(targetVoxel).not.toBeNull();
+      
+      // Verify layer counts
+      expect(targetVoxel.layerStats.get('residential')).toBe(3);
+      expect(targetVoxel.layerStats.get('commercial')).toBe(1);
+      expect(targetVoxel.layerTop).toBe('residential');
     });
 
     it('should handle missing property values', async () => {
