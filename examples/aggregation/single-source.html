@@ -63,6 +63,13 @@
   </div>
 
   <script>
+    // Load Heatbox from UMD module
+    const heatboxModule = window.CesiumHeatbox?.default || window.CesiumHeatbox;
+    const Heatbox = heatboxModule?.Heatbox || heatboxModule;
+    if (!Heatbox) {
+      throw new Error('Failed to load Heatbox library. Check dist/cesium-heatbox.umd.min.js');
+    }
+
     /* 新宿駅中心 / Shinjuku station center */
     const GENERATION_BOUNDS = {
       minLon: 139.69,
