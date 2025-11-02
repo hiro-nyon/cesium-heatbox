@@ -13,7 +13,7 @@
     }
   </script>
   <script src="../common/camera.js"></script>
-  <script type="module" src="../../dist/cesium-heatbox.esm.js"></script>
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
 </head>
 <body>
   <div id="cesiumContainer"></div>
@@ -73,8 +73,12 @@
     </div>
   </div>
 
-  <script type="module">
-    import { Heatbox } from '../../dist/cesium-heatbox.min.js';
+  <script>
+    const heatboxModule = window.CesiumHeatbox?.default || window.CesiumHeatbox;
+    const Heatbox = heatboxModule?.Heatbox || heatboxModule;
+    if (!Heatbox) {
+      throw new Error('Heatbox ライブラリを読み込めませんでした。dist/cesium-heatbox.umd.min.js を確認してください。');
+    }
     // focusCameraView is loaded as global from camera.js script tag
 
     // データ生成範囲（新宿駅周辺）
@@ -96,6 +100,13 @@
     };
 
     // Setup Viewer
+    const imageryProvider = new Cesium.UrlTemplateImageryProvider({
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      subdomains: 'abcd',
+      maximumLevel: 19,
+      credit: '© OpenStreetMap contributors © CARTO'
+    });
+
     const viewer = new Cesium.Viewer('cesiumContainer', {
       baseLayerPicker: false,
       geocoder: false,
@@ -106,15 +117,41 @@
       timeline: false,
       fullscreenButton: false,
       vrButton: false,
-      imageryProvider: new Cesium.UrlTemplateImageryProvider({
-        url: 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
-        credit: new Cesium.Credit('© OpenStreetMap contributors, © CartoDB')
-      })
+      imageryProvider
     });
+
+    viewer.imageryLayers.removeAll();
+    viewer.imageryLayers.addImageryProvider(imageryProvider);
+    viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
 
     let entities = [];
     let uniformHeatbox = null;
     let spatialHeatbox = null;
+    const CameraHelper = window.HeatboxDemoCamera || null;
+    const focusCameraView = (config = {}) => {
+      if (!CameraHelper) {
+        console.warn('HeatboxDemoCamera が見つからないため、カメラのフォーカスをスキップします。');
+        return null;
+      }
+      return CameraHelper.focus(viewer, config);
+    };
+    const formatGridInfo = (stats) => {
+      const grid = stats?.grid;
+      if (!grid) {
+        return 'N/A';
+      }
+      const x = grid.numVoxelsX ?? grid.x ?? null;
+      const y = grid.numVoxelsY ?? grid.y ?? null;
+      const z = grid.numVoxelsZ ?? grid.z ?? null;
+      if ([x, y, z].some((value) => typeof value !== 'number' || Number.isNaN(value))) {
+        return 'N/A';
+      }
+      return `${x} × ${y} × ${z}`;
+    };
+
+    focusCameraView({
+      useDefaultBounds: true
+    });
 
     // UI Elements
     const elements = {
@@ -209,7 +246,7 @@
             zoomControl: 'manual'
           },
           opacity: 0.6,
-          colorMap: 'plasma',
+          colorMap: 'inferno',
           showEmpty: false
         });
 
@@ -217,11 +254,14 @@
         console.log('Spatial ID stats:', spatialStats);
 
         // Display statistics
+        const uniformGridInfo = formatGridInfo(uniformStats);
+        const spatialGridInfo = formatGridInfo(spatialStats);
+
         elements.uniformStatsContent.innerHTML = `
           <div>Voxels: ${uniformStats.nonEmptyVoxels} / ${uniformStats.totalVoxels}</div>
           <div>Empty: ${uniformStats.emptyVoxels}</div>
           <div>Entities: ${uniformStats.totalEntities}</div>
-          <div>Grid: ${uniformStats.grid.numVoxelsX} × ${uniformStats.grid.numVoxelsY} × ${uniformStats.grid.numVoxelsZ}</div>
+          <div>Grid: ${uniformGridInfo}</div>
         `;
 
         elements.spatialStatsContent.innerHTML = `
@@ -230,7 +270,7 @@
           <div>Entities: ${spatialStats.totalEntities}</div>
           <div>Zoom: ${spatialStats.spatialIdZoom}</div>
           <div>Provider: ${spatialStats.spatialIdProvider || 'fallback'}</div>
-          <div>Grid: ${spatialStats.grid.numVoxelsX} × ${spatialStats.grid.numVoxelsY} × ${spatialStats.grid.numVoxelsZ}</div>
+          <div>Grid: ${spatialGridInfo}</div>
         `;
 
         elements.statsPanel.style.display = 'block';
@@ -267,4 +307,3 @@
   </script>
 </body>
 </html>
-

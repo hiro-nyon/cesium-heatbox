@@ -13,7 +13,7 @@
     }
   </script>
   <script src="../common/camera.js"></script>
-  <script type="module" src="../../dist/cesium-heatbox.esm.js"></script>
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
 </head>
 <body>
   <div id="cesiumContainer"></div>
@@ -38,23 +38,41 @@
     <div class="control-group">
       <label for="parentZoom">Parent Zoom (Larger cells):</label>
       <select id="parentZoom">
-        <option value="15">Zoom 15</option>
         <option value="20" selected>Zoom 20</option>
+        <option value="21">Zoom 21</option>
+        <option value="22">Zoom 22</option>
+        <option value="23">Zoom 23</option>
+        <option value="24">Zoom 24</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="childZoom">Child Zoom (Smaller cells = Parent + 1):</label>
+      <select id="childZoom">
+        <option value="21" selected>Zoom 21</option>
+        <option value="22">Zoom 22</option>
+        <option value="23">Zoom 23</option>
+        <option value="24">Zoom 24</option>
         <option value="25">Zoom 25</option>
       </select>
     </div>
 
     <div class="control-group">
-      <label for="childZoom">Child Zoom (Smaller cells):</label>
-      <select id="childZoom">
-        <option value="20">Zoom 20</option>
-        <option value="25" selected>Zoom 25</option>
-        <option value="30">Zoom 30</option>
+      <button id="verifyBtn" class="hb-btn" disabled>Verify Containment</button>
+    </div>
+
+    <div class="control-group">
+      <label for="displayMode">Display Mode:</label>
+      <select id="displayMode">
+        <option value="both">Parent + Child</option>
+        <option value="parent">Parent Only</option>
+        <option value="child">Child Only</option>
       </select>
     </div>
 
     <div class="control-group">
-      <button id="verifyBtn" class="hb-btn" disabled>Verify Containment</button>
+      <input type="checkbox" id="showHierarchyLabels">
+      <label for="showHierarchyLabels">Show Child Count Overlay</label>
     </div>
 
     <hr>
@@ -68,10 +86,19 @@
       <h4 style="margin-top: 0;">Statistics (統計)</h4>
       <div id="statsContent"></div>
     </div>
+
+    <div id="hierarchyPanel" style="font-size: 11px; margin-top: 15px; padding: 10px; background: #fff3e0; border-radius: 4px; display: none;">
+      <h4 style="margin-top: 0;">Hierarchy Summary (階層サマリ)</h4>
+      <div id="hierarchyContent"></div>
+    </div>
   </div>
 
-  <script type="module">
-    import { Heatbox } from '../../dist/cesium-heatbox.min.js';
+  <script>
+    const heatboxModule = window.CesiumHeatbox?.default || window.CesiumHeatbox;
+    const Heatbox = heatboxModule?.Heatbox || heatboxModule;
+    if (!Heatbox) {
+      throw new Error('Heatbox ライブラリを読み込めませんでした。dist/cesium-heatbox.umd.min.js を確認してください。');
+    }
     // focusCameraView is loaded as global from camera.js script tag
 
     const GENERATION_BOUNDS = {
@@ -89,6 +116,13 @@
     };
 
     // Setup Viewer
+    const imageryProvider = new Cesium.UrlTemplateImageryProvider({
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      subdomains: 'abcd',
+      maximumLevel: 19,
+      credit: '© OpenStreetMap contributors © CARTO'
+    });
+
     const viewer = new Cesium.Viewer('cesiumContainer', {
       baseLayerPicker: false,
       geocoder: false,
@@ -99,15 +133,45 @@
       timeline: false,
       fullscreenButton: false,
       vrButton: false,
-      imageryProvider: new Cesium.UrlTemplateImageryProvider({
-        url: 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
-        credit: new Cesium.Credit('© OpenStreetMap contributors, © CartoDB')
-      })
+      imageryProvider
     });
+
+    viewer.imageryLayers.removeAll();
+    viewer.imageryLayers.addImageryProvider(imageryProvider);
+    viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
 
     let entities = [];
     let parentHeatbox = null;
     let childHeatbox = null;
+    const hierarchyState = {
+      summary: null,
+      overlayEntities: []
+    };
+    const CameraHelper = window.HeatboxDemoCamera || null;
+    const focusCameraView = (config = {}) => {
+      if (!CameraHelper) {
+        console.warn('HeatboxDemoCamera が見つからないため、カメラのフォーカスをスキップします。');
+        return null;
+      }
+      return CameraHelper.focus(viewer, config);
+    };
+    const formatGridInfo = (stats) => {
+      const grid = stats?.grid;
+      if (!grid) {
+        return 'N/A';
+      }
+      const x = grid.numVoxelsX ?? grid.x ?? null;
+      const y = grid.numVoxelsY ?? grid.y ?? null;
+      const z = grid.numVoxelsZ ?? grid.z ?? null;
+      if ([x, y, z].some((value) => typeof value !== 'number' || Number.isNaN(value))) {
+        return 'N/A';
+      }
+      return `${x} × ${y} × ${z}`;
+    };
+
+    focusCameraView({
+      useDefaultBounds: true
+    });
 
     // UI Elements
     const elements = {
@@ -117,19 +181,293 @@
       parentZoom: document.getElementById('parentZoom'),
       childZoom: document.getElementById('childZoom'),
       verifyBtn: document.getElementById('verifyBtn'),
+      displayMode: document.getElementById('displayMode'),
+      showHierarchyLabels: document.getElementById('showHierarchyLabels'),
       resultsPanel: document.getElementById('resultsPanel'),
       resultsContent: document.getElementById('resultsContent'),
       statsPanel: document.getElementById('statsPanel'),
-      statsContent: document.getElementById('statsContent')
+      statsContent: document.getElementById('statsContent'),
+      hierarchyPanel: document.getElementById('hierarchyPanel'),
+      hierarchyContent: document.getElementById('hierarchyContent')
     };
+
+    function syncChildZoom() {
+      const parentValue = parseInt(elements.parentZoom.value, 10);
+      const targetChild = parentValue + 1;
+      const childOptions = Array.from(elements.childZoom.options);
+      const matchedOption = childOptions.find((opt) => parseInt(opt.value, 10) === targetChild);
+      if (matchedOption) {
+        elements.childZoom.value = matchedOption.value;
+      } else if (childOptions.length > 0) {
+        // fallback: pick closest higher zoom if exact match is not available
+        const fallback = childOptions.find((opt) => parseInt(opt.value, 10) > parentValue) || childOptions[childOptions.length - 1];
+        elements.childZoom.value = fallback.value;
+      }
+    }
+
+    const isEntityActive = (entity) => {
+      if (!entity) {
+        return false;
+      }
+      if (typeof entity.isDestroyed === 'function') {
+        return !entity.isDestroyed();
+      }
+      return true;
+    };
+
+    const buildSpatialKey = (z, f, x, y) => {
+      const face = Number.isFinite(f) ? f : 0;
+      return `z${z}-f${face}-x${x}-y${y}`;
+    };
+
+    function clearHierarchyOverlay() {
+      hierarchyState.overlayEntities.forEach((entity) => {
+        if (!entity) {
+          return;
+        }
+        try {
+          if (typeof entity.isDestroyed !== 'function' || !entity.isDestroyed()) {
+            viewer.entities.remove(entity);
+          }
+        } catch (_error) {
+          // ignore removal failures
+        }
+      });
+      hierarchyState.overlayEntities = [];
+    }
+
+    function updateHierarchyOverlay() {
+      clearHierarchyOverlay();
+      if (!elements.showHierarchyLabels.checked || !hierarchyState.summary) {
+        return;
+      }
+      const summary = hierarchyState.summary;
+      const time = Cesium.JulianDate.now();
+
+      summary.parentChildren.forEach((record) => {
+        if (!record.hasParent || !record.parentEntity) {
+          return;
+        }
+        const positionProperty = record.parentEntity.position;
+        const position = typeof positionProperty?.getValue === 'function'
+          ? positionProperty.getValue(time)
+          : positionProperty;
+        if (!position) {
+          return;
+        }
+
+        const label = viewer.entities.add({
+          position,
+          label: {
+            text: `×${record.childCount}`,
+            font: '14px sans-serif',
+            fillColor: Cesium.Color.CYAN,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 2,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -12),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          }
+        });
+        hierarchyState.overlayEntities.push(label);
+      });
+    }
+
+    function updateDisplayMode() {
+      const mode = elements.displayMode.value;
+      if (parentHeatbox) {
+        parentHeatbox.setVisible(mode === 'both' || mode === 'parent');
+      }
+      if (childHeatbox) {
+        childHeatbox.setVisible(mode === 'both' || mode === 'child');
+      }
+    }
+
+    function computeHierarchy(parentInstance, childInstance, parentZoom, childZoom) {
+      const summary = {
+        parentZoom,
+        childZoom,
+        zoomDiff: childZoom - parentZoom,
+        parentTiles: 0,
+        childTiles: 0,
+        matchedChildCount: 0,
+        unmatchedChildCount: 0,
+        parentChildren: [],
+        matchedParentCount: 0,
+        missingParentCount: 0,
+        averageChildrenPerParent: 0,
+        maxChildrenRecord: null
+      };
+
+      if (!parentInstance || !childInstance || summary.zoomDiff <= 0) {
+        return summary;
+      }
+
+      const parentEntities = Array.isArray(parentInstance.renderer?.voxelEntities)
+        ? parentInstance.renderer.voxelEntities.filter(isEntityActive)
+        : [];
+      const childEntities = Array.isArray(childInstance.renderer?.voxelEntities)
+        ? childInstance.renderer.voxelEntities.filter(isEntityActive)
+        : [];
+
+      summary.parentTiles = parentEntities.length;
+      summary.childTiles = childEntities.length;
+
+      if (childEntities.length === 0) {
+        return summary;
+      }
+
+      const time = Cesium.JulianDate.now();
+      const parentMap = new Map();
+
+      parentEntities.forEach((entity) => {
+        if (!entity?.properties) {
+          return;
+        }
+        let propValues = null;
+        try {
+          propValues = entity.properties.getValue(time);
+        } catch (_error) {
+          return;
+        }
+        const spatialId = propValues?.spatialId;
+        if (!spatialId || !Number.isFinite(spatialId.z) || !Number.isFinite(spatialId.x) || !Number.isFinite(spatialId.y)) {
+          return;
+        }
+        const key = buildSpatialKey(spatialId.z, spatialId.f, spatialId.x, spatialId.y);
+        parentMap.set(key, { entity, spatialId });
+      });
+
+      const parentChildrenMap = new Map();
+      const zoomDiff = summary.zoomDiff;
+      const scale = Math.pow(2, zoomDiff);
+
+      childEntities.forEach((entity) => {
+        if (!entity?.properties) {
+          return;
+        }
+        let propValues = null;
+        try {
+          propValues = entity.properties.getValue(time);
+        } catch (_error) {
+          return;
+        }
+        const spatialId = propValues?.spatialId;
+        if (!spatialId || !Number.isFinite(spatialId.z) || !Number.isFinite(spatialId.x) || !Number.isFinite(spatialId.y)) {
+          return;
+        }
+        if (spatialId.z <= parentZoom || !Number.isFinite(scale) || scale <= 0) {
+          return;
+        }
+
+        const parentKey = buildSpatialKey(
+          parentZoom,
+          spatialId.f,
+          Math.floor(spatialId.x / scale),
+          Math.floor(spatialId.y / scale)
+        );
+
+        if (!parentChildrenMap.has(parentKey)) {
+          parentChildrenMap.set(parentKey, {
+            key: parentKey,
+            childCount: 0,
+            childIds: [],
+            hasParent: false,
+            parentEntity: null,
+            parentSpatialId: null
+          });
+        }
+
+        const record = parentChildrenMap.get(parentKey);
+        record.childCount += 1;
+        record.childIds.push(spatialId.id || `${spatialId.z}/${spatialId.x}/${spatialId.y}`);
+
+        if (parentMap.has(parentKey)) {
+          const parentEntry = parentMap.get(parentKey);
+          record.hasParent = true;
+          record.parentEntity = parentEntry.entity;
+          record.parentSpatialId = parentEntry.spatialId;
+          summary.matchedChildCount += 1;
+        } else {
+          summary.unmatchedChildCount += 1;
+        }
+      });
+
+      const records = Array.from(parentChildrenMap.values());
+      summary.parentChildren = records;
+      summary.matchedParentCount = records.filter((record) => record.hasParent).length;
+      summary.missingParentCount = records.length - summary.matchedParentCount;
+
+      const matchedRecords = records.filter((record) => record.hasParent);
+      if (matchedRecords.length > 0) {
+        const totalChildren = matchedRecords.reduce((sum, record) => sum + record.childCount, 0);
+        summary.averageChildrenPerParent = totalChildren / matchedRecords.length;
+        summary.maxChildrenRecord = matchedRecords.reduce((best, record) => {
+          if (!best || record.childCount > best.childCount) {
+            return record;
+          }
+          return best;
+        }, null);
+      }
+
+      return summary;
+    }
+
+    elements.parentZoom.addEventListener('change', () => {
+      syncChildZoom();
+    });
+
+    elements.childZoom.addEventListener('change', () => {
+      const parentValue = parseInt(elements.parentZoom.value, 10);
+      const childValue = parseInt(elements.childZoom.value, 10);
+      if (childValue !== parentValue + 1) {
+        syncChildZoom();
+      }
+    });
 
     // Update entity count display
     elements.entityCount.addEventListener('input', () => {
       elements.entityCountValue.textContent = elements.entityCount.value;
     });
 
+    elements.displayMode.addEventListener('change', () => {
+      updateDisplayMode();
+      updateHierarchyOverlay();
+    });
+
+    elements.showHierarchyLabels.addEventListener('change', () => {
+      updateHierarchyOverlay();
+    });
+
+    elements.displayMode.value = 'both';
+    elements.displayMode.disabled = true;
+    elements.showHierarchyLabels.checked = false;
+    elements.showHierarchyLabels.disabled = true;
+    syncChildZoom();
+
     // Generate random entities
     function generateEntities(count) {
+      clearHierarchyOverlay();
+      hierarchyState.summary = null;
+      elements.showHierarchyLabels.checked = false;
+      elements.showHierarchyLabels.disabled = true;
+      elements.hierarchyPanel.style.display = 'none';
+      elements.resultsPanel.style.display = 'none';
+      elements.statsPanel.style.display = 'none';
+      elements.displayMode.value = 'both';
+      elements.displayMode.disabled = true;
+      syncChildZoom();
+
+      if (parentHeatbox) {
+        parentHeatbox.clear();
+        parentHeatbox = null;
+      }
+      if (childHeatbox) {
+        childHeatbox.clear();
+        childHeatbox = null;
+      }
+
       viewer.entities.removeAll();
       entities = [];
 
@@ -173,6 +511,13 @@
         elements.verifyBtn.disabled = true;
         elements.verifyBtn.textContent = 'Verifying...';
 
+        clearHierarchyOverlay();
+        hierarchyState.summary = null;
+        elements.showHierarchyLabels.checked = false;
+        elements.showHierarchyLabels.disabled = true;
+        elements.hierarchyPanel.style.display = 'none';
+        elements.displayMode.disabled = true;
+
         // Clear existing heatboxes
         if (parentHeatbox) {
           parentHeatbox.clear();
@@ -186,14 +531,15 @@
         const parentZoom = parseInt(elements.parentZoom.value);
         const childZoom = parseInt(elements.childZoom.value);
 
-        if (childZoom <= parentZoom) {
-          alert('Child zoom must be larger than parent zoom!');
+        if (childZoom !== parentZoom + 1) {
+          alert('Child zoom must be exactly one level greater than parent zoom (parent + 1).');
+          syncChildZoom();
           elements.verifyBtn.disabled = false;
           elements.verifyBtn.textContent = 'Verify Containment';
           return;
         }
 
-        console.log(`Verifying containment: parent zoom ${parentZoom}, child zoom ${childZoom}`);
+        console.log(`Verifying containment: parent zoom ${parentZoom} → child zoom ${childZoom}`);
 
         // Create parent heatbox
         parentHeatbox = new Heatbox(viewer, {
@@ -202,9 +548,12 @@
             zoom: parentZoom,
             zoomControl: 'manual'
           },
-          opacity: 0.5,
+          opacity: 0.2,
           colorMap: 'viridis',
-          showEmpty: false
+          showEmpty: false,
+          showOutline: true,
+          wireframeOnly: true,
+          outlineWidth: 2
         });
 
         const parentStats = await parentHeatbox.createFromEntities(entities);
@@ -218,8 +567,9 @@
             zoomControl: 'manual'
           },
           opacity: 0.6,
-          colorMap: 'plasma',
-          showEmpty: false
+          colorMap: 'viridis',
+          showEmpty: false,
+          showOutline: false
         });
 
         const childStats = await childHeatbox.createFromEntities(entities);
@@ -227,9 +577,20 @@
 
         // Verify containment
         const verification = verifyContainment(parentStats, childStats, parentZoom, childZoom);
+        hierarchyState.summary = computeHierarchy(parentHeatbox, childHeatbox, parentZoom, childZoom);
 
         // Display results
-        displayResults(verification, parentStats, childStats);
+        displayResults(verification, parentStats, childStats, hierarchyState.summary);
+
+        elements.displayMode.disabled = false;
+        elements.displayMode.value = 'both';
+        updateDisplayMode();
+
+        elements.showHierarchyLabels.disabled = hierarchyState.summary.parentChildren.length === 0;
+        if (elements.showHierarchyLabels.disabled) {
+          elements.showHierarchyLabels.checked = false;
+        }
+        updateHierarchyOverlay();
 
       } catch (error) {
         console.error('Error verifying containment:', error);
@@ -245,9 +606,9 @@
       // Basic verification: child should have more or equal voxels
       const childHasMore = childStats.nonEmptyVoxels >= parentStats.nonEmptyVoxels;
       
-      // Ratio check: child voxels should be roughly 2^(zoomDiff*2) times more
+      // Ratio check: child voxels should be roughly 2^(zoomDiff*3) times more (octree)
       const zoomDiff = childZoom - parentZoom;
-      const expectedRatio = Math.pow(4, zoomDiff); // 4^zoomDiff (2^2 for X and Y)
+      const expectedRatio = Math.pow(8, zoomDiff); // 8^zoomDiff (2^3 for X, Y, Z)
       const actualRatio = childStats.totalVoxels / parentStats.totalVoxels;
       const ratioMatch = actualRatio >= expectedRatio * 0.8; // Allow 20% tolerance
 
@@ -261,7 +622,7 @@
     }
 
     // Display results
-    function displayResults(verification, parentStats, childStats) {
+    function displayResults(verification, parentStats, childStats, hierarchySummary) {
       const statusIcon = (verification.childHasMore && verification.ratioMatch) ? '✅' : '⚠️';
       const statusText = (verification.childHasMore && verification.ratioMatch) 
         ? '<span style="color: green; font-weight: bold;">PASS</span>' 
@@ -269,6 +630,7 @@
 
       elements.resultsContent.innerHTML = `
         <div style="font-size: 16px; margin-bottom: 10px;">${statusIcon} Status: ${statusText}</div>
+        <div><strong>Pair:</strong> Zoom ${parentStats.spatialIdZoom} → Zoom ${childStats.spatialIdZoom}</div>
         <div><strong>Zoom Difference:</strong> ${verification.zoomDiff}</div>
         <div><strong>Expected Ratio:</strong> ${verification.expectedRatio.toFixed(1)}x</div>
         <div><strong>Actual Ratio:</strong> ${verification.actualRatio.toFixed(1)}x</div>
@@ -281,18 +643,72 @@
         <div style="margin-left: 10px;">
           <div>Total Voxels: ${parentStats.totalVoxels}</div>
           <div>Non-Empty: ${parentStats.nonEmptyVoxels}</div>
-          <div>Grid: ${parentStats.grid.numVoxelsX} × ${parentStats.grid.numVoxelsY} × ${parentStats.grid.numVoxelsZ}</div>
+          <div>Grid: ${formatGridInfo(parentStats)}</div>
         </div>
         <div style="margin-top: 10px;"><strong>Child (Zoom ${childStats.spatialIdZoom}):</strong></div>
         <div style="margin-left: 10px;">
           <div>Total Voxels: ${childStats.totalVoxels}</div>
           <div>Non-Empty: ${childStats.nonEmptyVoxels}</div>
-          <div>Grid: ${childStats.grid.numVoxelsX} × ${childStats.grid.numVoxelsY} × ${childStats.grid.numVoxelsZ}</div>
+          <div>Grid: ${formatGridInfo(childStats)}</div>
         </div>
       `;
 
       elements.resultsPanel.style.display = 'block';
       elements.statsPanel.style.display = 'block';
+
+      const summary = hierarchySummary || {
+        parentChildren: [],
+        parentTiles: 0,
+        childTiles: 0,
+        unmatchedChildCount: 0,
+        matchedParentCount: 0,
+        missingParentCount: 0,
+        averageChildrenPerParent: 0
+      };
+
+      if (summary.parentChildren.length > 0) {
+        const matchedRecords = summary.parentChildren.filter((record) => record.hasParent);
+        const averageChildren = summary.averageChildrenPerParent
+          ? summary.averageChildrenPerParent.toFixed(2)
+          : '0.00';
+        const hierarchyStatus = summary.unmatchedChildCount > 0
+          ? `<div style="color: #d32f2f;">Missing parent mappings: ${summary.unmatchedChildCount}</div>`
+          : '<div style="color: #388e3c;">All child tiles map to parent tiles.</div>';
+
+        const topParents = matchedRecords
+          .slice()
+          .sort((a, b) => b.childCount - a.childCount)
+          .slice(0, 5);
+        const topListHtml = topParents.length > 0
+          ? `<div style="margin-top: 8px;">
+              <strong>Top parent tiles:</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; list-style: disc;">
+                ${topParents.map((record) => {
+                  const spatial = record.parentSpatialId;
+                  const label = spatial
+                    ? `Z${spatial.z} F${spatial.f ?? 0} X${spatial.x} Y${spatial.y}`
+                    : record.key;
+                  return `<li>${label}: 子 ${record.childCount}</li>`;
+                }).join('')}
+              </ul>
+            </div>`
+          : '';
+
+        elements.hierarchyContent.innerHTML = `
+          <div>Parent tiles (rendered): ${summary.parentTiles}</div>
+          <div>Child tiles (rendered): ${summary.childTiles}</div>
+          <div>Expected parent tiles from children: ${summary.parentChildren.length}</div>
+          <div>Matched parent tiles: ${summary.matchedParentCount}</div>
+          <div>Missing parent tiles: ${summary.missingParentCount}</div>
+          <div>Average child tiles per matched parent: ${averageChildren}</div>
+          ${hierarchyStatus}
+          ${topListHtml}
+        `;
+        elements.hierarchyPanel.style.display = 'block';
+      } else {
+        elements.hierarchyContent.innerHTML = '<div>Hierarchy data is unavailable. Generate data and run verification.</div>';
+        elements.hierarchyPanel.style.display = 'none';
+      }
     }
 
     // Initialize
@@ -301,4 +717,3 @@
   </script>
 </body>
 </html>
-
