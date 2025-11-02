@@ -5,11 +5,41 @@ import { ZFXYConverter } from './ZFXYConverter.js';
  * SpatialIdAdapter - Abstraction layer for spatial ID providers
  * 空間IDプロバイダーの抽象化層
  * 
- * Supports dynamic loading of ouranos-gex with built-in fallback.
- * ouranos-gexの動的読み込みと内蔵フォールバックをサポート。
+ * Provides a unified interface for spatial ID conversion with support for:
+ * - Dynamic loading of ouranos-gex-lib-for-javascript (optional dependency)
+ * - Built-in Web Mercator-based fallback converter (ZFXYConverter)
+ * - Automatic zoom level selection based on target cell size
+ * - 8-vertex bounding box calculation for each spatial ID voxel
+ * 
+ * 以下をサポートする空間ID変換の統合インターフェースを提供：
+ * - ouranos-gex-lib-for-javascriptの動的読み込み（オプショナル依存）
+ * - 内蔵Web Mercatorベースのフォールバックコンバーター（ZFXYConverter）
+ * - 目標セルサイズに基づく自動ズームレベル選択
+ * - 各空間IDボクセルの8頂点バウンディングボックス計算
  * 
  * @class
  * @version 0.1.17
+ * @since 0.1.17
+ * 
+ * @example
+ * // Basic usage with auto zoom selection
+ * const adapter = new SpatialIdAdapter({ provider: 'ouranos-gex' });
+ * await adapter.loadProvider();
+ * 
+ * // Calculate optimal zoom for 30m target cell size at latitude 35.69
+ * const zoom = adapter.calculateOptimalZoom(30, 35.69, 10);
+ * 
+ * // Get voxel bounds
+ * const bounds = adapter.getVoxelBounds(139.7, 35.69, 50, zoom);
+ * console.log(bounds.zfxyStr); // e.g., "/25/12/28765/12850"
+ * console.log(bounds.vertices.length); // 8 vertices
+ * 
+ * @example
+ * // Fallback mode when ouranos-gex is not available
+ * const adapter = new SpatialIdAdapter();
+ * await adapter.loadProvider(); // Falls back to ZFXYConverter
+ * const status = adapter.getStatus();
+ * console.log(status.fallbackMode); // true
  */
 export class SpatialIdAdapter {
   /**
@@ -61,11 +91,45 @@ export class SpatialIdAdapter {
    * Get voxel bounds from geographic coordinates
    * 地理座標からボクセル境界を取得
    * 
-   * @param {number} lng - Longitude (degrees)
-   * @param {number} lat - Latitude (degrees)
-   * @param {number} alt - Altitude (meters)
-   * @param {number} zoom - Zoom level (0-35)
-   * @returns {{zfxy: {z, f, x, y}, zfxyStr: string, vertices: Array<{lng, lat, alt}>}}
+   * Converts a geographic point (lng/lat/alt) and zoom level into a spatial ID voxel
+   * with 8-vertex bounding box. Uses ouranos-gex if available, otherwise falls back
+   * to built-in Web Mercator converter.
+   * 
+   * 地理的な点（経度/緯度/高度）とズームレベルを、8頂点バウンディングボックスを
+   * 持つ空間IDボクセルに変換します。利用可能な場合はouranos-gexを使用し、
+   * それ以外の場合は内蔵Web Mercatorコンバーターにフォールバックします。
+   * 
+   * @param {number} lng - Longitude in degrees (経度、度単位)
+   * @param {number} lat - Latitude in degrees (緯度、度単位)
+   * @param {number} alt - Altitude in meters (高度、メートル単位)
+   * @param {number} zoom - Zoom level 0-35 (ズームレベル 0-35)
+   * 
+   * @returns {Object} Voxel bounds result
+   * @returns {Object} returns.zfxy - Spatial ID components {z, f, x, y}
+   * @returns {number} returns.zfxy.z - Zoom level
+   * @returns {number} returns.zfxy.f - Vertical (altitude) tile index
+   * @returns {number} returns.zfxy.x - Horizontal (longitude) tile index
+   * @returns {number} returns.zfxy.y - Vertical (latitude) tile index
+   * @returns {string} returns.zfxyStr - Spatial ID string format "/z/f/x/y"
+   * @returns {Array<{lng: number, lat: number, alt: number}>} returns.vertices - 
+   *   8 corner vertices of the voxel bounding box. Order: bottom 4 vertices (CCW from SW), 
+   *   then top 4 vertices (CCW from SW)
+   * 
+   * @throws {Error} If loadProvider() has not been called
+   * 
+   * @example
+   * const adapter = new SpatialIdAdapter();
+   * await adapter.loadProvider();
+   * 
+   * // Get voxel bounds for Shinjuku Station at zoom 25
+   * const bounds = adapter.getVoxelBounds(139.7, 35.69, 50, 25);
+   * 
+   * console.log(bounds.zfxy);     // {z: 25, f: 12, x: 28765, y: 12850}
+   * console.log(bounds.zfxyStr);  // "/25/12/28765/12850"
+   * console.log(bounds.vertices); // [{lng, lat, alt}, ...] (8 vertices)
+   * 
+   * // Vertices order: [SW_bottom, SE_bottom, NE_bottom, NW_bottom,
+   * //                  SW_top, SE_top, NE_top, NW_top]
    */
   getVoxelBounds(lng, lat, alt, zoom) {
     if (!this.loaded) {
@@ -94,10 +158,36 @@ export class SpatialIdAdapter {
    * Calculate optimal zoom level for target cell size
    * ターゲットセルサイズに対する最適なズームレベルを計算
    * 
-   * @param {number} targetSize - Target cell size in meters
-   * @param {number} centerLat - Center latitude for calculation (degrees)
-   * @param {number} [tolerance=10] - Tolerance percentage (default: 10%)
-   * @returns {number} Optimal zoom level (15-30)
+   * Automatically selects the best zoom level (15-30) to match a target cell size at a given
+   * latitude. The algorithm prioritizes zoom levels within the specified tolerance, falling back
+   * to the closest match if no zoom meets the tolerance.
+   * 
+   * 指定された緯度でターゲットセルサイズに最も近い最適なズームレベル（15-30）を
+   * 自動選択します。アルゴリズムは指定された許容範囲内のズームレベルを優先し、
+   * 許容範囲を満たすズームがない場合は最も近いものにフォールバックします。
+   * 
+   * @param {number} targetSize - Target cell size in meters (目標セルサイズ、メートル単位)
+   * @param {number} centerLat - Center latitude for calculation in degrees (計算用の中心緯度、度単位)
+   * @param {number} [tolerance=10] - Tolerance percentage, 0-100 (許容誤差、パーセント、0-100)
+   * 
+   * @returns {number} Optimal zoom level 15-30 (最適なズームレベル 15-30)
+   * 
+   * @example
+   * const adapter = new SpatialIdAdapter();
+   * await adapter.loadProvider();
+   * 
+   * // Find zoom for ~30m cells at Shinjuku latitude with 10% tolerance
+   * const zoom = adapter.calculateOptimalZoom(30, 35.69, 10);
+   * console.log(zoom); // e.g., 20 (~38m cells, within 10% tolerance)
+   * 
+   * @example
+   * // Tighter tolerance for precise cell size matching
+   * const preciseZoom = adapter.calculateOptimalZoom(100, 35.69, 5);
+   * 
+   * @example
+   * // If no zoom matches within tolerance, returns closest
+   * const largeCell = adapter.calculateOptimalZoom(5000, 35.69, 10);
+   * console.log(largeCell); // e.g., 15 (closest, even if >10% error)
    */
   calculateOptimalZoom(targetSize, centerLat, tolerance = 10) {
     const minZoom = 15;

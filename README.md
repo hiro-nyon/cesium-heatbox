@@ -247,6 +247,142 @@ heatbox.setPerformanceOverlayEnabled(true, { position: 'bottom-left' });
 heatbox.togglePerformanceOverlay();
 ```
 
+## 空間ID対応 / Spatial ID Support
+
+### 日本語
+
+**v0.1.17新機能**: 空間ID（METI準拠 / Ouranos）に基づくタイルグリッドモードに対応しました。
+
+#### 概要
+
+従来の一様グリッドに加え、地理空間タイルシステム（空間ID）を用いたボクセル生成が可能になりました：
+
+- **タイルグリッドモード**: 経度・緯度・高度を考慮した空間IDベースのボクセル配置
+- **Ouransos-GEXライブラリ統合**: METI準拠の空間ID変換（オプショナル依存）
+- **フォールバックメカニズム**: Ouranos未インストール時は内蔵Web Mercatorベース変換を使用
+- **自動ズーム選択**: データ範囲から最適なズームレベルを自動決定
+
+#### 基本的な使用方法
+
+```javascript
+import { Heatbox } from 'cesium-heatbox';
+
+// 空間IDモードを有効化（自動ズーム選択）
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,              // 空間IDモードを有効化
+    mode: 'tile-grid',          // タイルグリッドモード
+    provider: 'ouranos-gex',    // 空間IDプロバイダー
+    zoomControl: 'auto',        // 自動ズーム選択
+    zoomTolerancePct: 10        // 許容誤差 (%)
+  },
+  voxelSize: 30  // 目標ボクセルサイズ（メートル）
+});
+
+await heatbox.createFromEntities(entities);
+
+// 空間ID統計の確認
+const stats = heatbox.getStatistics();
+console.log('空間IDズーム:', stats.spatialIdZoom);
+console.log('プロバイダー:', stats.spatialIdProvider);
+```
+
+#### 手動ズーム指定
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,
+    zoom: 25,                    // ズームレベル 25（約1mセル）
+    zoomControl: 'manual'        // 手動ズーム
+  }
+});
+```
+
+#### ズームレベルとセルサイズの関係
+
+| ズーム | セルサイズ (赤道) | 用途例 |
+|--------|------------------|--------|
+| 15     | ~1220 m          | 広域エリア |
+| 20     | ~38 m            | 都市ブロック |
+| 25     | ~1.2 m           | 建物・詳細 |
+| 30     | ~3.7 cm          | 超高精度 |
+
+#### 制限事項（v0.1.17時点）
+
+- **高緯度対応**: ±85.0511°（Web Mercator限界）内で正常動作
+- **日付変更線対応**: 次バージョン（v0.1.19）で実装予定
+- **グローバルQA**: 高緯度・極地・日付変更線をまたぐケースは v0.1.19 で検証予定
+
+詳細は[空間ID使用例](examples/spatial-id/)を参照してください。
+
+### English
+
+**v0.1.17 New Feature**: Spatial ID (METI-compliant / Ouranos) tile-grid mode support.
+
+#### Overview
+
+In addition to uniform grids, voxel generation using geospatial tile systems (Spatial ID) is now available:
+
+- **Tile-Grid Mode**: Spatial ID-based voxel placement considering longitude, latitude, and altitude
+- **Ouranos-GEX Library Integration**: METI-compliant spatial ID conversion (optional dependency)
+- **Fallback Mechanism**: Built-in Web Mercator-based conversion when Ouranos is not installed
+- **Auto Zoom Selection**: Automatically determines optimal zoom level from data extent
+
+#### Basic Usage
+
+```javascript
+import { Heatbox } from 'cesium-heatbox';
+
+// Enable spatial ID mode with auto zoom
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,              // Enable spatial ID mode
+    mode: 'tile-grid',          // Tile-grid mode
+    provider: 'ouranos-gex',    // Spatial ID provider
+    zoomControl: 'auto',        // Auto zoom selection
+    zoomTolerancePct: 10        // Tolerance (%)
+  },
+  voxelSize: 30  // Target voxel size (meters)
+});
+
+await heatbox.createFromEntities(entities);
+
+// Check spatial ID statistics
+const stats = heatbox.getStatistics();
+console.log('Spatial ID zoom:', stats.spatialIdZoom);
+console.log('Provider:', stats.spatialIdProvider);
+```
+
+#### Manual Zoom Specification
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,
+    zoom: 25,                    // Zoom level 25 (~1m cells)
+    zoomControl: 'manual'        // Manual zoom
+  }
+});
+```
+
+#### Zoom Level vs Cell Size
+
+| Zoom | Cell Size (equator) | Use Case |
+|------|---------------------|----------|
+| 15   | ~1220 m             | Wide area |
+| 20   | ~38 m               | City blocks |
+| 25   | ~1.2 m              | Buildings/details |
+| 30   | ~3.7 cm             | Ultra-precision |
+
+#### Limitations (v0.1.17)
+
+- **High Latitude**: Operates normally within ±85.0511° (Web Mercator limit)
+- **Antimeridian**: Planned for next version (v0.1.19)
+- **Global QA**: High-latitude, polar, and antimeridian-crossing cases will be validated in v0.1.19
+
+See [Spatial ID Examples](examples/spatial-id/) for details.
+
 ## API
 
 ### 日本語

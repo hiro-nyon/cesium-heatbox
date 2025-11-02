@@ -2,14 +2,42 @@
  * ZFXYConverter - Built-in ZFXY (3D tile coordinates) converter
  * 内蔵ZFXY（3次元タイル座標）コンバーター
  * 
- * Provides basic ZFXY conversion without external dependencies.
- * This is a fallback when ouranos-gex is not available.
+ * Provides Web Mercator-based ZFXY conversion without external dependencies.
+ * This is a fallback when ouranos-gex-lib-for-javascript is not available.
  * 
- * 外部依存なしで基本的なZFXY変換を提供。
- * ouranos-gexが利用できない場合のフォールバック。
+ * Features:
+ * - Web Mercator projection for X/Y tile calculation
+ * - Fixed altitude binning for F (vertical) coordinate
+ * - 8-vertex bounding box generation
+ * - Coordinate normalization and clamping
+ * 
+ * 外部依存なしでWeb MercatorベースのZFXY変換を提供。
+ * ouranos-gex-lib-for-javascriptが利用できない場合のフォールバック。
+ * 
+ * 機能：
+ * - X/Yタイル計算にWeb Mercator投影を使用
+ * - F（垂直）座標の固定高度ビニング
+ * - 8頂点バウンディングボックス生成
+ * - 座標の正規化とクランプ
  * 
  * @class
  * @version 0.1.17
+ * @since 0.1.17
+ * 
+ * @example
+ * // Basic usage
+ * const result = ZFXYConverter.convert(139.7, 35.69, 50, 25);
+ * 
+ * console.log(result.zfxy);     // {z: 25, f: 5, x: 28765, y: 12850}
+ * console.log(result.zfxyStr);  // "/25/5/28765/12850"
+ * console.log(result.vertices.length); // 8
+ * 
+ * @example
+ * // Coordinates are automatically normalized
+ * const normalized = ZFXYConverter.convert(200, 90, -50, 25);
+ * // lng: 200 → -160 (normalized to -180..180)
+ * // lat: 90 → 85.0511 (clamped to Web Mercator limits)
+ * // alt: -50 → valid (negative altitudes supported)
  */
 export class ZFXYConverter {
   /**
