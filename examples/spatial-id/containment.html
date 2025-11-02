@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Spatial ID Containment Verification</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link href="../common/demo.css" rel="stylesheet">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../common/camera.js"></script>
+  <script type="module" src="../../dist/cesium-heatbox.esm.js"></script>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="control-panel hb-panel">
+    <h3>Containment Verification</h3>
+    <p style="font-size: 12px; margin-bottom: 15px;">
+      Verify zoom level hierarchy<br>
+      ズームレベル階層の検証
+    </p>
+
+    <div class="control-group">
+      <label for="entityCount">Entity Count: <span id="entityCountValue">50</span></label>
+      <input type="range" id="entityCount" min="20" max="200" value="50" step="10">
+    </div>
+
+    <div class="control-group">
+      <button id="generateBtn" class="hb-btn hb-btn-primary">Generate Data</button>
+    </div>
+
+    <hr>
+
+    <div class="control-group">
+      <label for="parentZoom">Parent Zoom (Larger cells):</label>
+      <select id="parentZoom">
+        <option value="15">Zoom 15</option>
+        <option value="20" selected>Zoom 20</option>
+        <option value="25">Zoom 25</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="childZoom">Child Zoom (Smaller cells):</label>
+      <select id="childZoom">
+        <option value="20">Zoom 20</option>
+        <option value="25" selected>Zoom 25</option>
+        <option value="30">Zoom 30</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <button id="verifyBtn" class="hb-btn" disabled>Verify Containment</button>
+    </div>
+
+    <hr>
+
+    <div id="resultsPanel" style="font-size: 11px; background: #f5f5f5; padding: 10px; border-radius: 4px; display: none;">
+      <h4 style="margin-top: 0;">Verification Results (検証結果)</h4>
+      <div id="resultsContent"></div>
+    </div>
+
+    <div id="statsPanel" style="font-size: 11px; margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 4px; display: none;">
+      <h4 style="margin-top: 0;">Statistics (統計)</h4>
+      <div id="statsContent"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Heatbox } from '../../dist/cesium-heatbox.esm.js';
+    import { focusCameraView } from '../common/camera.js';
+
+    const GENERATION_BOUNDS = {
+      minLon: 139.69,
+      maxLon: 139.71,
+      minLat: 35.68,
+      maxLat: 35.70,
+      minAlt: 0,
+      maxAlt: 200
+    };
+
+    const CAMERA_DEFAULTS = {
+      pitchDegrees: -45,
+      cameraLatOffset: -0.025
+    };
+
+    // Setup Viewer
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      animation: false,
+      timeline: false,
+      fullscreenButton: false,
+      vrButton: false,
+      imageryProvider: new Cesium.UrlTemplateImageryProvider({
+        url: 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
+        credit: new Cesium.Credit('© OpenStreetMap contributors, © CartoDB')
+      })
+    });
+
+    let entities = [];
+    let parentHeatbox = null;
+    let childHeatbox = null;
+
+    // UI Elements
+    const elements = {
+      entityCount: document.getElementById('entityCount'),
+      entityCountValue: document.getElementById('entityCountValue'),
+      generateBtn: document.getElementById('generateBtn'),
+      parentZoom: document.getElementById('parentZoom'),
+      childZoom: document.getElementById('childZoom'),
+      verifyBtn: document.getElementById('verifyBtn'),
+      resultsPanel: document.getElementById('resultsPanel'),
+      resultsContent: document.getElementById('resultsContent'),
+      statsPanel: document.getElementById('statsPanel'),
+      statsContent: document.getElementById('statsContent')
+    };
+
+    // Update entity count display
+    elements.entityCount.addEventListener('input', () => {
+      elements.entityCountValue.textContent = elements.entityCount.value;
+    });
+
+    // Generate random entities
+    function generateEntities(count) {
+      viewer.entities.removeAll();
+      entities = [];
+
+      for (let i = 0; i < count; i++) {
+        const lon = GENERATION_BOUNDS.minLon + Math.random() * (GENERATION_BOUNDS.maxLon - GENERATION_BOUNDS.minLon);
+        const lat = GENERATION_BOUNDS.minLat + Math.random() * (GENERATION_BOUNDS.maxLat - GENERATION_BOUNDS.minLat);
+        const alt = GENERATION_BOUNDS.minAlt + Math.random() * (GENERATION_BOUNDS.maxAlt - GENERATION_BOUNDS.minAlt);
+
+        const entity = viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+          point: {
+            pixelSize: 3,
+            color: Cesium.Color.YELLOW.withAlpha(0.8)
+          },
+          properties: {
+            value: Math.random() * 100
+          }
+        });
+        entities.push(entity);
+      }
+
+      focusCameraView({
+        bounds: GENERATION_BOUNDS,
+        pitchDegrees: CAMERA_DEFAULTS.pitchDegrees,
+        cameraLatOffset: CAMERA_DEFAULTS.cameraLatOffset
+      });
+
+      console.log(`Generated ${count} entities`);
+      elements.verifyBtn.disabled = false;
+    }
+
+    // Generate button handler
+    elements.generateBtn.addEventListener('click', () => {
+      const count = parseInt(elements.entityCount.value);
+      generateEntities(count);
+    });
+
+    // Verify containment
+    elements.verifyBtn.addEventListener('click', async () => {
+      try {
+        elements.verifyBtn.disabled = true;
+        elements.verifyBtn.textContent = 'Verifying...';
+
+        // Clear existing heatboxes
+        if (parentHeatbox) {
+          parentHeatbox.clear();
+          parentHeatbox = null;
+        }
+        if (childHeatbox) {
+          childHeatbox.clear();
+          childHeatbox = null;
+        }
+
+        const parentZoom = parseInt(elements.parentZoom.value);
+        const childZoom = parseInt(elements.childZoom.value);
+
+        if (childZoom <= parentZoom) {
+          alert('Child zoom must be larger than parent zoom!');
+          elements.verifyBtn.disabled = false;
+          elements.verifyBtn.textContent = 'Verify Containment';
+          return;
+        }
+
+        console.log(`Verifying containment: parent zoom ${parentZoom}, child zoom ${childZoom}`);
+
+        // Create parent heatbox
+        parentHeatbox = new Heatbox(viewer, {
+          spatialId: {
+            enabled: true,
+            zoom: parentZoom,
+            zoomControl: 'manual'
+          },
+          opacity: 0.5,
+          colorMap: 'viridis',
+          showEmpty: false
+        });
+
+        const parentStats = await parentHeatbox.createFromEntities(entities);
+        console.log('Parent stats:', parentStats);
+
+        // Create child heatbox
+        childHeatbox = new Heatbox(viewer, {
+          spatialId: {
+            enabled: true,
+            zoom: childZoom,
+            zoomControl: 'manual'
+          },
+          opacity: 0.6,
+          colorMap: 'plasma',
+          showEmpty: false
+        });
+
+        const childStats = await childHeatbox.createFromEntities(entities);
+        console.log('Child stats:', childStats);
+
+        // Verify containment
+        const verification = verifyContainment(parentStats, childStats, parentZoom, childZoom);
+
+        // Display results
+        displayResults(verification, parentStats, childStats);
+
+      } catch (error) {
+        console.error('Error verifying containment:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        elements.verifyBtn.disabled = false;
+        elements.verifyBtn.textContent = 'Verify Containment';
+      }
+    });
+
+    // Verify containment logic
+    function verifyContainment(parentStats, childStats, parentZoom, childZoom) {
+      // Basic verification: child should have more or equal voxels
+      const childHasMore = childStats.nonEmptyVoxels >= parentStats.nonEmptyVoxels;
+      
+      // Ratio check: child voxels should be roughly 2^(zoomDiff*2) times more
+      const zoomDiff = childZoom - parentZoom;
+      const expectedRatio = Math.pow(4, zoomDiff); // 4^zoomDiff (2^2 for X and Y)
+      const actualRatio = childStats.totalVoxels / parentStats.totalVoxels;
+      const ratioMatch = actualRatio >= expectedRatio * 0.8; // Allow 20% tolerance
+
+      return {
+        childHasMore,
+        ratioMatch,
+        expectedRatio,
+        actualRatio,
+        zoomDiff
+      };
+    }
+
+    // Display results
+    function displayResults(verification, parentStats, childStats) {
+      const statusIcon = (verification.childHasMore && verification.ratioMatch) ? '✅' : '⚠️';
+      const statusText = (verification.childHasMore && verification.ratioMatch) 
+        ? '<span style="color: green; font-weight: bold;">PASS</span>' 
+        : '<span style="color: orange; font-weight: bold;">WARN</span>';
+
+      elements.resultsContent.innerHTML = `
+        <div style="font-size: 16px; margin-bottom: 10px;">${statusIcon} Status: ${statusText}</div>
+        <div><strong>Zoom Difference:</strong> ${verification.zoomDiff}</div>
+        <div><strong>Expected Ratio:</strong> ${verification.expectedRatio.toFixed(1)}x</div>
+        <div><strong>Actual Ratio:</strong> ${verification.actualRatio.toFixed(1)}x</div>
+        <div><strong>Child Has More Voxels:</strong> ${verification.childHasMore ? 'Yes' : 'No'}</div>
+        <div><strong>Ratio Match:</strong> ${verification.ratioMatch ? 'Yes (within 20%)' : 'No'}</div>
+      `;
+
+      elements.statsContent.innerHTML = `
+        <div><strong>Parent (Zoom ${parentStats.spatialIdZoom}):</strong></div>
+        <div style="margin-left: 10px;">
+          <div>Total Voxels: ${parentStats.totalVoxels}</div>
+          <div>Non-Empty: ${parentStats.nonEmptyVoxels}</div>
+          <div>Grid: ${parentStats.grid.numVoxelsX} × ${parentStats.grid.numVoxelsY} × ${parentStats.grid.numVoxelsZ}</div>
+        </div>
+        <div style="margin-top: 10px;"><strong>Child (Zoom ${childStats.spatialIdZoom}):</strong></div>
+        <div style="margin-left: 10px;">
+          <div>Total Voxels: ${childStats.totalVoxels}</div>
+          <div>Non-Empty: ${childStats.nonEmptyVoxels}</div>
+          <div>Grid: ${childStats.grid.numVoxelsX} × ${childStats.grid.numVoxelsY} × ${childStats.grid.numVoxelsZ}</div>
+        </div>
+      `;
+
+      elements.resultsPanel.style.display = 'block';
+      elements.statsPanel.style.display = 'block';
+    }
+
+    // Initialize
+    console.log('Containment Verification Demo initialized');
+    console.log('Click "Generate Data" to start');
+  </script>
+</body>
+</html>
+

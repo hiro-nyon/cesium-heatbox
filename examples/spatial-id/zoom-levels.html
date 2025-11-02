@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Spatial ID Zoom Levels Demonstration</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link href="../common/demo.css" rel="stylesheet">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../common/camera.js"></script>
+  <script type="module" src="../../dist/cesium-heatbox.esm.js"></script>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="control-panel hb-panel">
+    <h3>Zoom Levels Demo</h3>
+    <p style="font-size: 12px; margin-bottom: 15px;">
+      Visualize different zoom levels<br>
+      異なるズームレベルの可視化
+    </p>
+
+    <div class="control-group">
+      <label for="entityCount">Entity Count: <span id="entityCountValue">100</span></label>
+      <input type="range" id="entityCount" min="50" max="500" value="100" step="50">
+    </div>
+
+    <div class="control-group">
+      <button id="generateBtn" class="hb-btn hb-btn-primary">Generate Data</button>
+    </div>
+
+    <hr>
+
+    <div class="control-group">
+      <label for="zoomLevel">Zoom Level:</label>
+      <select id="zoomLevel">
+        <option value="15">Zoom 15 (~1220m)</option>
+        <option value="20">Zoom 20 (~38m)</option>
+        <option value="25" selected>Zoom 25 (~1.2m)</option>
+        <option value="30">Zoom 30 (~3.7cm)</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <button id="createHeatmapBtn" class="hb-btn" disabled>Create Heatmap</button>
+    </div>
+
+    <hr>
+
+    <div id="statsPanel" style="font-size: 11px; background: #f5f5f5; padding: 10px; border-radius: 4px; display: none;">
+      <h4 style="margin-top: 0;">Statistics (統計)</h4>
+      <div id="statsContent"></div>
+    </div>
+
+    <div id="zoomInfo" style="font-size: 11px; margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 4px; display: none;">
+      <h4 style="margin-top: 0;">Zoom Info</h4>
+      <div id="zoomInfoContent"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Heatbox } from '../../dist/cesium-heatbox.esm.js';
+    import { focusCameraView } from '../common/camera.js';
+
+    const GENERATION_BOUNDS = {
+      minLon: 139.69,
+      maxLon: 139.71,
+      minLat: 35.68,
+      maxLat: 35.70,
+      minAlt: 0,
+      maxAlt: 200
+    };
+
+    const CAMERA_DEFAULTS = {
+      pitchDegrees: -45,
+      cameraLatOffset: -0.025
+    };
+
+    // Zoom level information
+    const ZOOM_INFO = {
+      15: { cellSize: '~1220m', description: 'Wide area coverage' },
+      20: { cellSize: '~38m', description: 'City block scale' },
+      25: { cellSize: '~1.2m', description: 'Building/detail scale' },
+      30: { cellSize: '~3.7cm', description: 'Ultra-precision scale' }
+    };
+
+    // Setup Viewer
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      animation: false,
+      timeline: false,
+      fullscreenButton: false,
+      vrButton: false,
+      imageryProvider: new Cesium.UrlTemplateImageryProvider({
+        url: 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
+        credit: new Cesium.Credit('© OpenStreetMap contributors, © CartoDB')
+      })
+    });
+
+    let entities = [];
+    let heatbox = null;
+
+    // UI Elements
+    const elements = {
+      entityCount: document.getElementById('entityCount'),
+      entityCountValue: document.getElementById('entityCountValue'),
+      generateBtn: document.getElementById('generateBtn'),
+      zoomLevel: document.getElementById('zoomLevel'),
+      createHeatmapBtn: document.getElementById('createHeatmapBtn'),
+      statsPanel: document.getElementById('statsPanel'),
+      statsContent: document.getElementById('statsContent'),
+      zoomInfo: document.getElementById('zoomInfo'),
+      zoomInfoContent: document.getElementById('zoomInfoContent')
+    };
+
+    // Update entity count display
+    elements.entityCount.addEventListener('input', () => {
+      elements.entityCountValue.textContent = elements.entityCount.value;
+    });
+
+    // Update zoom info display
+    elements.zoomLevel.addEventListener('change', updateZoomInfo);
+
+    function updateZoomInfo() {
+      const zoom = parseInt(elements.zoomLevel.value);
+      const info = ZOOM_INFO[zoom];
+      
+      elements.zoomInfoContent.innerHTML = `
+        <div><strong>Zoom:</strong> ${zoom}</div>
+        <div><strong>Cell Size:</strong> ${info.cellSize}</div>
+        <div><strong>Use Case:</strong> ${info.description}</div>
+      `;
+      elements.zoomInfo.style.display = 'block';
+    }
+
+    // Generate random entities
+    function generateEntities(count) {
+      viewer.entities.removeAll();
+      entities = [];
+
+      for (let i = 0; i < count; i++) {
+        const lon = GENERATION_BOUNDS.minLon + Math.random() * (GENERATION_BOUNDS.maxLon - GENERATION_BOUNDS.minLon);
+        const lat = GENERATION_BOUNDS.minLat + Math.random() * (GENERATION_BOUNDS.maxLat - GENERATION_BOUNDS.minLat);
+        const alt = GENERATION_BOUNDS.minAlt + Math.random() * (GENERATION_BOUNDS.maxAlt - GENERATION_BOUNDS.minAlt);
+
+        const entity = viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+          point: {
+            pixelSize: 3,
+            color: Cesium.Color.YELLOW.withAlpha(0.8)
+          },
+          properties: {
+            value: Math.random() * 100
+          }
+        });
+        entities.push(entity);
+      }
+
+      focusCameraView({
+        bounds: GENERATION_BOUNDS,
+        pitchDegrees: CAMERA_DEFAULTS.pitchDegrees,
+        cameraLatOffset: CAMERA_DEFAULTS.cameraLatOffset
+      });
+
+      console.log(`Generated ${count} entities`);
+      elements.createHeatmapBtn.disabled = false;
+      updateZoomInfo();
+    }
+
+    // Generate button handler
+    elements.generateBtn.addEventListener('click', () => {
+      const count = parseInt(elements.entityCount.value);
+      generateEntities(count);
+    });
+
+    // Create heatmap button handler
+    elements.createHeatmapBtn.addEventListener('click', async () => {
+      try {
+        elements.createHeatmapBtn.disabled = true;
+        elements.createHeatmapBtn.textContent = 'Creating...';
+
+        // Clear existing heatbox
+        if (heatbox) {
+          heatbox.clear();
+          heatbox = null;
+        }
+
+        const zoom = parseInt(elements.zoomLevel.value);
+        console.log(`Creating heatmap with zoom level ${zoom}...`);
+
+        heatbox = new Heatbox(viewer, {
+          spatialId: {
+            enabled: true,
+            mode: 'tile-grid',
+            zoom: zoom,
+            zoomControl: 'manual'
+          },
+          opacity: 0.7,
+          colorMap: 'viridis',
+          showEmpty: false
+        });
+
+        const stats = await heatbox.createFromEntities(entities);
+        console.log('Heatmap stats:', stats);
+
+        // Display statistics
+        elements.statsContent.innerHTML = `
+          <div><strong>Zoom Level:</strong> ${stats.spatialIdZoom}</div>
+          <div><strong>Cell Size:</strong> ${ZOOM_INFO[zoom].cellSize}</div>
+          <div><strong>Provider:</strong> ${stats.spatialIdProvider || 'fallback'}</div>
+          <div><strong>Total Voxels:</strong> ${stats.totalVoxels}</div>
+          <div><strong>Non-Empty:</strong> ${stats.nonEmptyVoxels}</div>
+          <div><strong>Empty:</strong> ${stats.emptyVoxels}</div>
+          <div><strong>Entities:</strong> ${stats.totalEntities}</div>
+          <div><strong>Grid:</strong> ${stats.grid.numVoxelsX} × ${stats.grid.numVoxelsY} × ${stats.grid.numVoxelsZ}</div>
+        `;
+        elements.statsPanel.style.display = 'block';
+
+      } catch (error) {
+        console.error('Error creating heatmap:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        elements.createHeatmapBtn.disabled = false;
+        elements.createHeatmapBtn.textContent = 'Create Heatmap';
+      }
+    });
+
+    // Initialize
+    console.log('Zoom Levels Demo initialized');
+    console.log('Click "Generate Data" to start');
+  </script>
+</body>
+</html>
+
