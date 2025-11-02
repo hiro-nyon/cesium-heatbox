@@ -5,90 +5,34 @@
     <title>CesiumJS Heatbox - Performance Overlay Demo</title>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <link href="../../common/demo.css" rel="stylesheet">
+    <script>
+        window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+        if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+            Cesium.Ion.defaultAccessToken = null; // Disable Ion by default to avoid black screens
+        }
+    </script>
+    <script src="../../common/camera.js"></script>
+    <script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
     <style>
-        html, body, #cesiumContainer {
-            width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
-        }
-        
-        #controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(42, 42, 42, 0.8);
-            padding: 15px;
-            border-radius: 5px;
-            color: white;
-            font-family: sans-serif;
-            font-size: 14px;
-            z-index: 100;
-            max-width: 300px;
-        }
-        
-        #controls h3 {
-            margin: 0 0 10px 0;
-            color: #4CAF50;
-        }
-        
-        .control-group {
-            margin-bottom: 15px;
-        }
-        
-        .control-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        
-        .control-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 3px;
-            cursor: pointer;
+        .hb-range-value {
+            display: inline-block;
+            min-width: 48px;
+            text-align: right;
             font-size: 12px;
-        }
-        
-        button:hover {
-            background: #45a049;
-        }
-        
-        button.secondary {
-            background: #2196F3;
-        }
-        
-        button.secondary:hover {
-            background: #1976D2;
-        }
-        
-        select, input[type="range"] {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        
-        .info {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 8px;
-            border-radius: 3px;
-            font-size: 12px;
-            margin-top: 10px;
+            color: #fbbf24;
         }
     </style>
 </head>
 <body>
     <div id="cesiumContainer"></div>
     
-    <div id="controls">
-        <h3>🚀 Performance Overlay Demo</h3>
-        
-        <div class="control-group">
-            <label>Profile:</label>
+    <aside class="hb-panel" id="controlsPanel">
+        <h2>🚀 Performance Overlay Demo</h2>
+        <p>Toggle the performance overlay, run benchmarks, and explore profiles around Shinjuku.</p>
+
+        <div class="hb-group">
+            <label for="profileSelect">Profile</label>
             <select id="profileSelect">
                 <option value="none">No Profile</option>
                 <option value="mobile-fast">Mobile Fast</option>
@@ -97,41 +41,94 @@
                 <option value="sparse-data">Sparse Data</option>
             </select>
         </div>
-        
-        <div class="control-group">
-            <label>Voxel Count: <span id="voxelCountLabel">1000</span></label>
+
+        <div class="hb-group">
+            <label for="voxelCountSlider">Voxel Count <span class="hb-range-value" id="voxelCountLabel">1000</span></label>
             <input type="range" id="voxelCountSlider" min="100" max="5000" value="1000" step="100">
         </div>
-        
-        <div class="control-row">
-            <button id="generateData">Generate Data</button>
-            <button id="toggleOverlay" class="secondary">Show Overlay</button>
+
+        <div class="hb-buttons">
+            <button class="hb-btn hb-btn-primary" id="generateData">Generate Data</button>
+            <button class="hb-btn hb-btn-secondary" id="toggleOverlay">Show Overlay</button>
         </div>
-        
-        <div class="control-row">
-            <button id="clearData">Clear</button>
-            <button id="runBenchmark">Benchmark</button>
+
+        <div class="hb-buttons">
+            <button class="hb-btn hb-btn-secondary" id="clearData">Clear</button>
+            <button class="hb-btn hb-btn-primary" id="runBenchmark">Benchmark</button>
         </div>
-        
-        <div class="info">
-            <div><strong>Instructions:</strong></div>
-            <div>• Select a profile to optimize for different scenarios</div>
-            <div>• Adjust voxel count to test performance</div>
-            <div>• Toggle overlay to see real-time stats</div>
-            <div>• Run benchmark for detailed analysis</div>
+
+        <div class="hb-info-box">
+            <div><strong>Instructions</strong></div>
+            <div>• Choose a profile to tune defaults</div>
+            <div>• Adjust voxel budget for stress-testing</div>
+            <div>• Toggle overlay for live metrics</div>
+            <div>• Run the benchmark to capture aggregation stats</div>
         </div>
-    </div>
+
+        <div id="status" class="hb-status">Ready.</div>
+    </aside>
 
     <script type="module">
         // Import Heatbox (assuming UMD build)
         const Heatbox = window.CesiumHeatbox || window.Heatbox;
-        
+        const CameraHelper = window.HeatboxDemoCamera || null;
+        const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+        const INITIAL_BOUNDS = {
+            minLon: SHINJUKU_CENTER.lon - 0.01,
+            maxLon: SHINJUKU_CENTER.lon + 0.01,
+            minLat: SHINJUKU_CENTER.lat - 0.01,
+            maxLat: SHINJUKU_CENTER.lat + 0.01,
+            minAlt: 0,
+            maxAlt: 240
+        };
+
+        function createImageryProvider() {
+            return new Cesium.UrlTemplateImageryProvider({
+                url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                subdomains: 'abcd',
+                maximumLevel: 19,
+                credit: '© OpenStreetMap contributors © CARTO'
+            });
+        }
+
+        function createTerrainProvider() {
+            try {
+                if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+                    return Cesium.createWorldTerrain();
+                }
+            } catch (error) {
+                console.warn('World Terrain unavailable, falling back to EllipsoidTerrainProvider:', error);
+            }
+            return new Cesium.EllipsoidTerrainProvider();
+        }
+
         // Initialize Cesium viewer
+        const imageryProvider = createImageryProvider();
         const viewer = new Cesium.Viewer('cesiumContainer', {
-            terrainProvider: Cesium.createWorldTerrain(),
+            imageryProvider,
+            terrainProvider: createTerrainProvider(),
+            baseLayerPicker: false,
             timeline: false,
-            animation: false
+            animation: false,
+            geocoder: false,
+            navigationHelpButton: false
         });
+
+        viewer.imageryLayers.removeAll();
+        viewer.imageryLayers.addImageryProvider(imageryProvider);
+        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
+if (CameraHelper?.focus) {
+    CameraHelper.focus(viewer, { bounds: INITIAL_BOUNDS, useDefaultBounds: false });
+} else {
+    viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 12000),
+        orientation: {
+            heading: 0,
+            pitch: -Cesium.Math.PI_OVER_FOUR,
+            roll: 0
+        }
+    });
+}
 
         // Global state
         let heatbox = null;
@@ -182,15 +179,9 @@
         // Generate test data
         function generateTestData(count) {
             const entities = [];
-            const bounds = {
-                minLon: 139.5,
-                maxLon: 139.8,
-                minLat: 35.5,
-                maxLat: 35.8,
-                minAlt: 0,
-                maxAlt: 200
-            };
+            const bounds = { ...INITIAL_BOUNDS };
 
+            // 新宿駅周辺で乱数データを生成 / Generate random data around Shinjuku station
             for (let i = 0; i < count; i++) {
                 const lon = bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon);
                 const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
@@ -204,8 +195,8 @@
                     
                     // Add points around cluster
                     for (let j = 0; j < 5 && entities.length < count; j++) {
-                        const clusterLon = centerLon + (Math.random() - 0.5) * 0.01;
-                        const clusterLat = centerLat + (Math.random() - 0.5) * 0.01;
+                        const clusterLon = Cesium.Math.clamp(centerLon + (Math.random() - 0.5) * 0.006, bounds.minLon, bounds.maxLon);
+                        const clusterLat = Cesium.Math.clamp(centerLat + (Math.random() - 0.5) * 0.006, bounds.minLat, bounds.maxLat);
                         
                         entities.push(viewer.entities.add({
                             position: Cesium.Cartesian3.fromDegrees(clusterLon, clusterLat, alt),

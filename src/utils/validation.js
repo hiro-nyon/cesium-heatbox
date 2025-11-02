@@ -574,6 +574,81 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.performanceOverlay = overlay;
   }
   
+  // v0.1.17: Spatial ID validation (ADR-0013)
+  if (mergedOptions.spatialId !== undefined) {
+    const spatialId = typeof mergedOptions.spatialId === 'object' && mergedOptions.spatialId !== null
+      ? { ...mergedOptions.spatialId }
+      : {};
+    
+    // enabled
+    spatialId.enabled = coerceBoolean(spatialId.enabled, false);
+    
+    // mode (v0.1.17: tile-grid only)
+    if (spatialId.mode !== undefined) {
+      if (spatialId.mode !== 'tile-grid') {
+        Logger.warn(`Invalid spatialId.mode: ${spatialId.mode}. Using 'tile-grid'.`);
+        spatialId.mode = 'tile-grid';
+      }
+    } else {
+      spatialId.mode = 'tile-grid';
+    }
+    
+    // provider
+    if (spatialId.provider !== undefined) {
+      if (spatialId.provider !== 'ouranos-gex') {
+        Logger.warn(`Unknown spatialId.provider: ${spatialId.provider}. Using 'ouranos-gex'.`);
+        spatialId.provider = 'ouranos-gex';
+      }
+    } else {
+      spatialId.provider = 'ouranos-gex';
+    }
+    
+    // zoom (number or 'auto')
+    if (spatialId.zoom !== undefined) {
+      if (spatialId.zoom === 'auto') {
+        spatialId.zoom = 'auto';
+      } else {
+        const zoomNum = parseInt(spatialId.zoom, 10);
+        if (Number.isNaN(zoomNum) || zoomNum < 0 || zoomNum > 35) {
+          Logger.warn(`Invalid spatialId.zoom: ${spatialId.zoom}. Using 25.`);
+          spatialId.zoom = 25;
+        } else {
+          spatialId.zoom = zoomNum;
+        }
+      }
+    } else {
+      spatialId.zoom = 25;
+    }
+    
+    // zoomControl
+    if (spatialId.zoomControl !== undefined) {
+      if (!['auto', 'manual'].includes(spatialId.zoomControl)) {
+        Logger.warn(`Invalid spatialId.zoomControl: ${spatialId.zoomControl}. Using 'auto'.`);
+        spatialId.zoomControl = 'auto';
+      }
+    } else {
+      spatialId.zoomControl = 'auto';
+    }
+    
+    // zoomTolerancePct
+    if (spatialId.zoomTolerancePct !== undefined) {
+      const tolerance = parseFloat(spatialId.zoomTolerancePct);
+      if (!Number.isFinite(tolerance) || tolerance <= 0 || tolerance > 100) {
+        Logger.warn(`Invalid spatialId.zoomTolerancePct: ${spatialId.zoomTolerancePct}. Using 10.`);
+        spatialId.zoomTolerancePct = 10;
+      } else {
+        spatialId.zoomTolerancePct = tolerance;
+      }
+    } else {
+      spatialId.zoomTolerancePct = 10;
+    }
+    
+    normalized.spatialId = spatialId;
+  } else {
+    // Use defaults from constants
+    normalized.spatialId = { ...DEFAULT_OPTIONS.spatialId };
+  }
+  
   return normalized;
 }
 

@@ -52,6 +52,115 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Determine release tag
+        id: release_tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.tag }}" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            ref_name="${GITHUB_REF##*/}"
+            if [ -n "$ref_name" ]; then
+              echo "tag=$ref_name" >> "$GITHUB_OUTPUT"
+            else
+              echo "tag=v${{ steps.meta.outputs.version }}" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Generate release notes
+        id: release_notes
+        uses: actions/github-script@v7
+        env:
+          RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
+        with:
+          result-encoding: string
+          script: |
+            const tag = process.env.RELEASE_TAG || `v${{ steps.meta.outputs.version }}`;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            try {
+              const notes = await github.rest.repos.generateReleaseNotes({
+                owner,
+                repo,
+                tag_name: tag,
+                target_commitish: context.sha
+              });
+              core.setOutput('body', notes.data.body || '');
+              core.setOutput('name', notes.data.name || tag);
+              core.setOutput('tag', tag);
+            } catch (error) {
+              core.warning(`Failed to generate release notes: ${error.message}`);
+              core.setOutput('body', '');
+              core.setOutput('name', tag);
+              core.setOutput('tag', tag);
+            }
+
+      - name: Create or update GitHub release (non-release event)
+        if: ${{ github.event_name != 'release' }}
+        uses: actions/github-script@v7
+        env:
+          RELEASE_BODY: ${{ steps.release_notes.outputs.body }}
+          RELEASE_NAME: ${{ steps.release_notes.outputs.name }}
+          RELEASE_TAG: ${{ steps.release_notes.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const tag = process.env.RELEASE_TAG || `v${process.env.VERSION}`;
+            const name = process.env.RELEASE_NAME || tag;
+            const body = process.env.RELEASE_BODY || '';
+            const prerelease = process.env.VERSION.includes('-');
+
+            try {
+              const existing = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+              await github.rest.repos.updateRelease({
+                owner,
+                repo,
+                release_id: existing.data.id,
+                tag_name: tag,
+                name,
+                body,
+                draft: false,
+                prerelease
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                await github.rest.repos.createRelease({
+                  owner,
+                  repo,
+                  tag_name: tag,
+                  name,
+                  body,
+                  draft: false,
+                  prerelease
+                });
+              } else {
+                throw error;
+              }
+            }
+
+      - name: Update GitHub release notes (release event)
+        if: ${{ github.event_name == 'release' }}
+        uses: actions/github-script@v7
+        env:
+          RELEASE_BODY: ${{ steps.release_notes.outputs.body }}
+          RELEASE_NAME: ${{ steps.release_notes.outputs.name }}
+        with:
+          script: |
+            const releaseId = context.payload.release.id;
+            const body = process.env.RELEASE_BODY || context.payload.release.body || '';
+            const name = process.env.RELEASE_NAME || context.payload.release.name || context.payload.release.tag_name;
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
+              body,
+              name
+            });
       
       # main の追加機能（ドキュメント生成）
       - name: Generate docs and sync wiki (stable only)

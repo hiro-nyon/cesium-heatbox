@@ -501,8 +501,8 @@ v0.1系における適応的可視化機能の仕上げバージョン。Phase 0
 - `heightBased` オプション: 密度に応じた高さベース表現
 - `outlineWidth` オプション: 枠線の太さ調整機能
 - Playgroundに新しい表示オプションのUI追加
-- `examples/advanced/wireframe-height-demo.js`: v0.1.2新機能の包括的デモ
-- `examples/advanced/performance-optimization.js`: 大量データ処理とパフォーマンス最適化例
+- `examples/rendering/wireframe-height-demo.js`: v0.1.2新機能の包括的デモ
+- `examples/selection-limits/performance-optimization.js`: 大量データ処理とパフォーマンス最適化例
 - `examples/advanced/README.md`: 高度な使用例の詳細ドキュメント
 
 ### Changed
@@ -510,7 +510,7 @@ v0.1系における適応的可視化機能の仕上げバージョン。Phase 0
 - デバッグログ出力の最適化（ESLintエラー対応）
 - 全ドキュメントの整備とインストール方法の更新
 - `examples/basic/`: v0.1.2新機能に対応したUI・ロジック更新
-- `examples/advanced/entity-filtering.js`: 削除されたAPIの置き換えと新機能対応
+- `examples/data/entity-filtering.js`: 削除されたAPIの置き換えと新機能対応
 - `wiki/Examples.md`: v0.1.2新機能の実用例を追加
 - `wiki/Getting-Started.md`: インストール手順の更新
 - `types/index.d.ts`: 新オプションの型定義追加

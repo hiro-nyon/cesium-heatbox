@@ -5,138 +5,30 @@
     <title>CesiumJS Heatbox - Adaptive Control Phase 3 Demo (ADR-0011)</title>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <link href="../../common/demo.css" rel="stylesheet">
+    <script>
+        window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+        if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+            Cesium.Ion.defaultAccessToken = null;
+        }
+    </script>
+    <script src="../../common/camera.js"></script>
+    <script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
     <style>
-        html, body, #cesiumContainer {
-            width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
-        }
-        
-        #controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(42, 42, 42, 0.95);
-            padding: 15px;
-            border-radius: 5px;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 13px;
-            z-index: 100;
-            max-width: 350px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        #controls h3 {
-            margin: 0 0 15px 0;
-            color: #4CAF50;
-            font-size: 16px;
-        }
-        
-        #controls h4 {
-            margin: 15px 0 8px 0;
-            color: #2196F3;
-            font-size: 14px;
-            border-bottom: 1px solid #444;
-            padding-bottom: 5px;
-        }
-        
-        .control-group {
-            margin-bottom: 12px;
-        }
-        
-        .control-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-        
-        .control-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-        
-        button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-        
-        button:hover {
-            background: #45a049;
-        }
-        
-        button.secondary {
-            background: #2196F3;
-        }
-        
-        button.secondary:hover {
-            background: #1976D2;
-        }
-        
-        button.danger {
-            background: #F44336;
-        }
-        
-        button.danger:hover {
-            background: #D32F2F;
-        }
-        
-        select, input[type="range"] {
-            width: 100%;
-            margin-bottom: 8px;
-            background: #333;
-            color: white;
-            border: 1px solid #555;
-            padding: 5px;
-            border-radius: 3px;
-        }
-        
-        input[type="checkbox"] {
-            margin-right: 8px;
-        }
-        
-        .value-display {
-            float: right;
-            color: #4CAF50;
-            font-weight: bold;
-        }
-        
-        .info {
-            background: rgba(33, 150, 243, 0.2);
-            border-left: 3px solid #2196F3;
-            padding: 10px;
-            border-radius: 3px;
-            font-size: 11px;
-            margin-top: 15px;
-            line-height: 1.5;
-        }
-        
-        .warning {
-            background: rgba(255, 152, 0, 0.2);
-            border-left: 3px solid #FF9800;
-            padding: 10px;
-            border-radius: 3px;
-            font-size: 11px;
-            margin-top: 10px;
-        }
+        .info { background: rgba(59, 130, 246, 0.16); border-left: 3px solid rgba(59, 130, 246, 0.45); padding: 10px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
+        .warning { background: rgba(239, 68, 68, 0.18); border-left: 3px solid rgba(248, 113, 113, 0.45); padding: 10px; border-radius: 10px; font-size: 12px; line-height: 1.5; color: #fecaca; }
     </style>
 </head>
 <body>
     <div id="cesiumContainer"></div>
     
-    <div id="controls">
-        <h3>📊 Adaptive Control Demo (Phase 3)</h3>
+    <div id="controls" class="hb-panel">
+        <span class="hb-badge">ADR-0011 Phase 3</span>
+        <h2>Adaptive Control Demo</h2>
+        <p>Generate patterned datasets around Shinjuku and adjust adaptive parameters for overlap handling.</p>
         
         <h4>🎯 Density Pattern</h4>
-        <div class="control-group">
+        <div class="hb-group">
             <label>Pattern Type:</label>
             <select id="patternSelect">
                 <option value="clustered">Clustered (Dense)</option>
@@ -146,13 +38,13 @@
             </select>
         </div>
         
-        <div class="control-group">
-            <label>Entity Count: <span class="value-display" id="countLabel">1000</span></label>
+        <div class="hb-group">
+            <label>Entity Count: <span class="hb-slider-value" id="countLabel">1000</span></label>
             <input type="range" id="countSlider" min="100" max="3000" value="1000" step="100">
         </div>
         
         <h4>⚙️ Adaptive Parameters</h4>
-        <div class="control-group">
+        <div class="hb-group">
             <label>
                 <input type="checkbox" id="zScaleCompensation" checked>
                 Z-Axis Scale Compensation
@@ -167,7 +59,7 @@
             </label>
         </div>
         
-        <div class="control-group">
+        <div class="hb-group">
             <label>Outline Render Mode:</label>
             <select id="renderModeSelect">
                 <option value="standard">Standard</option>
@@ -176,7 +68,7 @@
             </select>
         </div>
         
-        <div class="control-group">
+        <div class="hb-group">
             <label>Outline Preset:</label>
             <select id="presetSelect">
                 <option value="thin">Thin</option>
@@ -186,27 +78,27 @@
             </select>
         </div>
         
-        <div class="control-group">
-            <label>Density Threshold: <span class="value-display" id="densityThresholdLabel">3</span></label>
+        <div class="hb-group">
+            <label>Density Threshold: <span class="hb-slider-value" id="densityThresholdLabel">3</span></label>
             <input type="range" id="densityThresholdSlider" min="1" max="10" value="3" step="1">
         </div>
         
-        <div class="control-group">
-            <label>Neighborhood Radius: <span class="value-display" id="neighborhoodRadiusLabel">30</span></label>
+        <div class="hb-group">
+            <label>Neighborhood Radius: <span class="hb-slider-value" id="neighborhoodRadiusLabel">30</span></label>
             <input type="range" id="neighborhoodRadiusSlider" min="10" max="100" value="30" step="10">
         </div>
         
         <h4>🚀 Actions</h4>
-        <div class="control-row">
-            <button id="generateBtn">Generate Data</button>
-            <button id="overlayBtn" class="secondary">Show Overlay</button>
+        <div class="hb-buttons">
+            <button id="generateBtn" class="hb-btn hb-btn-primary">Generate Data</button>
+            <button id="overlayBtn" class="hb-btn hb-btn-secondary">Show Overlay</button>
         </div>
-        <div class="control-row">
-            <button id="clearBtn" class="danger">Clear</button>
-            <button id="benchmarkBtn" class="secondary">Benchmark</button>
+        <div class="hb-buttons">
+            <button id="clearBtn" class="hb-btn hb-btn-danger">Clear</button>
+            <button id="benchmarkBtn" class="hb-btn hb-btn-secondary">Benchmark</button>
         </div>
         
-        <div class="info">
+        <div class="hb-info-box info">
             <strong>📘 Phase 3 Features:</strong><br>
             • Enhanced performance overlay with adaptive metrics<br>
             • Density pattern generation (clustered/scattered/gradient/mixed)<br>
@@ -215,7 +107,7 @@
             • Adaptive parameter fine-tuning
         </div>
         
-        <div class="warning">
+        <div class="hb-info-box warning">
             <strong>⚠️ Note:</strong> Performance overlay shows adaptive control statistics including dense area detection, emulation usage, and overlap counts.
         </div>
     </div>
@@ -223,17 +115,69 @@
     <script type="module">
         // This demo requires the UMD build or ESM build of Heatbox
         const Heatbox = window.CesiumHeatbox || window.Heatbox;
+        const CameraHelper = window.HeatboxDemoCamera || null;
         
         if (!Heatbox) {
             alert('Heatbox library not found. Please ensure the library is loaded.');
         }
 
+        const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+        const INITIAL_BOUNDS = {
+            minLon: SHINJUKU_CENTER.lon - 0.012,
+            maxLon: SHINJUKU_CENTER.lon + 0.012,
+            minLat: SHINJUKU_CENTER.lat - 0.012,
+            maxLat: SHINJUKU_CENTER.lat + 0.012,
+            minAlt: 0,
+            maxAlt: 240
+        };
+
+        function createImageryProvider() {
+            return new Cesium.UrlTemplateImageryProvider({
+                url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                subdomains: 'abcd',
+                maximumLevel: 19,
+                credit: '© OpenStreetMap contributors © CARTO'
+            });
+        }
+
+        function createTerrainProvider() {
+            try {
+                if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+                    return Cesium.createWorldTerrain();
+                }
+            } catch (error) {
+                console.warn('World Terrain unavailable, falling back to EllipsoidTerrainProvider.', error);
+            }
+            return new Cesium.EllipsoidTerrainProvider();
+        }
+
         // Initialize Cesium viewer
+        const imageryProvider = createImageryProvider();
         const viewer = new Cesium.Viewer('cesiumContainer', {
-            terrainProvider: Cesium.createWorldTerrain(),
+            imageryProvider,
+            terrainProvider: createTerrainProvider(),
             timeline: false,
-            animation: false
+            animation: false,
+            baseLayerPicker: false,
+            geocoder: false,
+            navigationHelpButton: false,
+            sceneModePicker: false
         });
+        viewer.imageryLayers.removeAll();
+        viewer.imageryLayers.addImageryProvider(imageryProvider);
+        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
+if (CameraHelper?.focus) {
+    CameraHelper.focus(viewer, { bounds: INITIAL_BOUNDS, useDefaultBounds: false });
+} else {
+    viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 12000),
+        orientation: {
+            heading: 0,
+            pitch: -Cesium.Math.PI_OVER_FOUR,
+            roll: 0
+        }
+    });
+}
 
         // Global state
         let heatbox = null;
@@ -273,15 +217,11 @@
         // Generate sample data using density patterns
         function generateData(pattern, count) {
             const bounds = {
-                minLon: 139.5,
-                maxLon: 139.9,
-                minLat: 35.5,
-                maxLat: 35.9,
-                minAlt: 0,
-                maxAlt: 150
+                ...INITIAL_BOUNDS,
+                maxAlt: 180
             };
 
-            // Generate entities based on pattern
+            // 新宿駅周辺のパターンデータを生成 / Generate patterned data around Shinjuku
             let positions = [];
             
             switch (pattern) {
@@ -318,7 +258,7 @@
                 const centerLon = bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon);
                 const centerLat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
                 const centerAlt = bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt);
-                const radius = 0.02; // ~2km cluster radius
+                const radius = 0.005; // 約500mのクラスター半径 / ~500 m cluster radius
                 
                 const clusterSize = c < clusterCount - 1 ? entitiesPerCluster : (count - positions.length);
                 
@@ -327,9 +267,9 @@
                     const theta = Math.random() * Math.PI * 2;
                     
                     positions.push({
-                        lon: centerLon + r * Math.cos(theta),
-                        lat: centerLat + r * Math.sin(theta),
-                        alt: centerAlt + (Math.random() - 0.5) * 30
+                        lon: Cesium.Math.clamp(centerLon + r * Math.cos(theta), bounds.minLon, bounds.maxLon),
+                        lat: Cesium.Math.clamp(centerLat + r * Math.sin(theta), bounds.minLat, bounds.maxLat),
+                        alt: Math.max(bounds.minAlt, Math.min(bounds.maxAlt, centerAlt + (Math.random() - 0.5) * 30))
                     });
                 }
             }
@@ -366,10 +306,10 @@
                 
                 // Add extra entities in high-density areas
                 if (densityWeight > 0.7 && Math.random() > 0.5) {
-                    const offset = 0.001;
+                    const offset = 0.0015;
                     positions.push({
-                        lon: positions[positions.length - 1].lon + (Math.random() - 0.5) * offset,
-                        lat: positions[positions.length - 1].lat + (Math.random() - 0.5) * offset,
+                        lon: Cesium.Math.clamp(positions[positions.length - 1].lon + (Math.random() - 0.5) * offset, bounds.minLon, bounds.maxLon),
+                        lat: Cesium.Math.clamp(positions[positions.length - 1].lat + (Math.random() - 0.5) * offset, bounds.minLat, bounds.maxLat),
                         alt: positions[positions.length - 1].alt
                     });
                 }

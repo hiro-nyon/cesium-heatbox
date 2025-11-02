@@ -5,6 +5,8 @@
 import Heatbox from '../../src/index.js';
 import * as Cesium from 'cesium';
 
+const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+
 /**
  * パフォーマンス最適化デモクラス
  */
@@ -242,9 +244,12 @@ export class PerformanceOptimizationDemo {
   generateLargeDataset(count) {
     const entities = [];
     const bounds = {
-      minLon: 139.760, maxLon: 139.780,
-      minLat: 35.675, maxLat: 35.695,
-      minAlt: 0, maxAlt: 200
+      minLon: SHINJUKU_CENTER.lon - 0.015,
+      maxLon: SHINJUKU_CENTER.lon + 0.015,
+      minLat: SHINJUKU_CENTER.lat - 0.015,
+      maxLat: SHINJUKU_CENTER.lat + 0.015,
+      minAlt: 0,
+      maxAlt: 240
     };
     
     // クラスター化されたデータを生成（現実的なパターン）
@@ -254,14 +259,14 @@ export class PerformanceOptimizationDemo {
     for (let cluster = 0; cluster < clusterCount; cluster++) {
       const centerLon = bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon);
       const centerLat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
-      const clusterSize = 0.001 + Math.random() * 0.002; // クラスターサイズ
+      const clusterSize = 0.0015 + Math.random() * 0.0025; // クラスターサイズ（約150〜250m）
       
       for (let i = 0; i < entitiesPerCluster; i++) {
         const angle = Math.random() * 2 * Math.PI;
         const distance = Math.sqrt(Math.random()) * clusterSize;
         
-        const lon = centerLon + Math.cos(angle) * distance;
-        const lat = centerLat + Math.sin(angle) * distance;
+        const lon = Cesium.Math.clamp(centerLon + Math.cos(angle) * distance, bounds.minLon, bounds.maxLon);
+        const lat = Cesium.Math.clamp(centerLat + Math.sin(angle) * distance, bounds.minLat, bounds.maxLat);
         const alt = Math.random() * bounds.maxAlt;
         
         entities.push(this.viewer.entities.add({
@@ -330,9 +335,9 @@ export class PerformanceOptimizationDemo {
    */
   filterHighDensityArea(entities, stats) {
     // 実装を簡略化: 中央付近のエンティティを返す
-    const centerLon = 139.770;
-    const centerLat = 35.685;
-    const radius = 0.003;
+    const centerLon = SHINJUKU_CENTER.lon;
+    const centerLat = SHINJUKU_CENTER.lat;
+    const radius = 0.0035;
     
     return entities.filter(entity => {
       const position = entity.position.getValue(Cesium.JulianDate.now());

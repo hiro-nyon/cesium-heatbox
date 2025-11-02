@@ -96,12 +96,11 @@ Priority: High | Target: 2025-11
 ### v0.1.12（APIクリーンアップ＋観測可能性）- API Cleanup & Observability
 Priority: Medium | Target: 2026-01
 - Scope
-  - [API Cleanup（Breaking含む）]
-    - オプション名の統一: `fitViewOptions.pitch`/`heading` → `pitchDegrees`/`headingDegrees`（旧名削除）
-    - `outlineEmulation` → `outlineRenderMode: 'emulation-only'` に集約
-    - Resolver系の削除: `outlineWidthResolver`/`outlineOpacityResolver`/`boxOpacityResolver`
-    - 代替: `outlineWidthPreset` + `adaptiveOutlines` + `adaptiveParams`
-    - `types/` と README/Wiki の更新、`MIGRATION.md` に移行手順を掲載
+  - [API Cleanup（非破壊）]
+    - オプション名の統一: `fitViewOptions.pitch`/`heading` → `pitchDegrees`/`headingDegrees`。**旧名は互換のため残し、deprecation 警告のみ**（削除は v1.1.0 安定後、少なくとも2リリースのグレイス期間を設けてから）。
+    - `outlineEmulation` → `outlineRenderMode: 'emulation-only'` に集約。**旧名は 1.2.0 まで互換を維持**（deprecation 警告のみ）。
+    - Resolver 系は**削除しない**：`outlineWidthResolver` / `outlineOpacityResolver` / `boxOpacityResolver` は **非推奨のまま存続**。**削除は v1.1.0 の Adaptive 実装が安定化し、MIGRATION.md / RELEASE_NOTES.md が揃った後**（少なくとも2リリースのグレイス期間を置く）。
+    - 代替: `outlineWidthPreset` + `adaptiveOutlines` + `adaptiveParams`（新 API へ段階的移行）。
   - [Observability/Profiles]
   - [ ] Advanced に簡易パフォーマンスオーバーレイ（描画数/TopN比率/平均密度/フレーム時間）
   - [ ] ベンチ計測の整備（`npm run benchmark` の出力整形としきい値表示）
@@ -110,7 +109,8 @@ Priority: Medium | Target: 2026-01
   - [ ] Auto Quality（任意拡張）: `qualityMode: 'manual'|'auto'`, `targetFPS` 等で“選抜側のつまみ（K/比率/戦略）”のみを実測FPSに応じて微調整（グリッド再構築は既定で行わない）
 - Deliverables
   - [ ] `MIGRATION.md` 更新（0.1.9 → 0.1.11 → 0.1.12）とWiki「Migration」への同期
-  - [ ] `types/` 更新（削除・名称統一を反映）
+  - [ ] `types/` と README/Wiki の更新、`MIGRATION.md` に移行手順を掲載
+  - [ ] `types/` 更新（**旧名も型として受理**し deprecate、IDE で警告が出るように JSDoc を付与）
   - [ ] `examples/advanced/` にオーバーレイUI（ON/OFF）
   - [ ] `tools/benchmark.js` の改善（集計とCSV/markdownサマリ）
   - [ ] ドキュメント: パフォーマンスの見方/ボトルネック傾向
@@ -171,7 +171,57 @@ Priority: Medium | Target: 2026-02
   - [ ] メモリ使用量の増加 ≤ +10%（既存比）
   - [ ] 1000–5000ボクセル規模でのフレーム時間安定性（±20%以内）
 
-#### v0.1.15の非目標（v1.0.0へ延期）
+###  v0.1.16（Examples 体系化・整理）
+Priority: Medium | Target: 2025-11-02
+
+Scope（examples/advanced を体系化し、学習・検証導線を改善）
+
+[] カテゴリ別ディレクトリ構成の導入（既存ファイルは段階的に移行）
+- observability/（観測可能性）
+  - performance-overlay-demo.html（v0.1.12）
+  - benchmark-usage.md（CLIの使い方・CSV/MD出力サンプル）
+- rendering/（描画モード・高さ/ワイヤーフレーム）
+  - wireframe-height-demo.js / wireframe-height-demo-umd.html
+  - adaptive-rendering-demo.html / adaptive-rendering-demo.js（プリセット・   adaptiveOutlines）
+- outlines/（枠線：標準/インセット/エミュレーション）
+  - outline-overlap-demo-umd.html
+  - emulation-scope-demo.html（新規: standard/inset への部分エミュ重ね合わせ例）
+- selection-limits/（選択戦略と描画上限）
+  - selection-strategy-demo.html（新規: density/coverage/hybrid 比較）
+  - performance-optimization.js（段階的ロード・上限制御）
+- data/（データ生成・フィルタリング）
+  - entity-filtering.js（属性/高度/範囲フィルタ）
+
+ガイドライン（examples 統一ルール）
+
+[ ] Cesium 1.120 を参照し、UMD/ESMのどちらでも動く最小構成を提示
+[ ] Cesium 初期化の標準化（黒画面回避）：Ion 無効化＋OSM/Carto 画像＋EllipsoidTerrain を既定。必要時のみ Ion トークンを明示有効化
+[ ] 各カテゴリ配下に README.md（目的、前提、主要オプション、落とし穴）
+[ ] 例名・ファイル名はケバブケース、UIテキストは英語、READMEは日英併記
+[ ] Heatbox の profile と getEffectiveOptions() の使用例を各カテゴリに1つ以上配置
+[ ] fitView(..., { pitchDegrees, headingDegrees }) の統一APIで記述
+
+受け入れ基準（Acceptance Criteria）
+
+[ ] examples/advanced のトップ README にカテゴリ一覧と対応ファイルの表を掲載
+[ ] observability/rendering/outlines/selection-limits/data の5カテゴリが存在
+[ ] すべてのHTML例で「白/黒画面やコンソールエラー」が無い（ローカル確認）。`createWorldTerrain()` を使う例は Ion トークン無設定時でもフォールバックが効く
+[ ] 既存の UMD 例（wireframe/outline-overlap）は動作維持（リンクも更新）
+[ ] v0.1.12 の新API（outlineRenderMode/emulationScope、pitchDegrees/headingDegrees、profile）が少なくとも1つの例で確認可能
+
+移行計画（非破壊）
+
+- Step 1: 例の分類・README整備（ファイル移動は行わない）
+- Step 2: 新規例（emulation-scope-demo、selection-strategy-demo）を追加
+- Step 3: 影響範囲を確認しつつフェーズドでディレクトリ移動（git mv）し、リンク更新
+- Step 4: Wiki の Examples ページと同期（tools/wiki-sync.js）
+
+リスク & 緩和
+
+- URL/リンク切れ → Step 1ではリンクのみ先に整備、移動はStep 3で一括実施
+- ブラウザ互換 → 例のHTMLテンプレートを統一（Cesium CSS/JS、UMD/ESM切替コメント
+
+#### v0.1.15の非目標（v1.1.0へ延期）
 - opacity/width の classification 連携
 - resolver の完全置き換え（削除は v1.x 以降の段階的対応）
 
@@ -182,10 +232,317 @@ Priority: Medium | Target: 2026-02
 - Phase 3→4: Advanced Examplesが白画面/エラーなく動作
 - Phase 4→main: 全受け入れ基準を満たし、リリースノート/移行ガイド完成
 
+
+
 > 注: 0.1系では「コアのデータモデル変更や新レイヤー」は行わず、安定化と利用性向上に限定します。
 
-### v0.1.16（Examples 体系化・整理）
-Priority: Medium | Target: 2025-10
+### v0.1.17（空間ID対応—タイル準拠モード統合）— Spatial ID 準拠ボクセル（オプトイン）
+Priority: High | Target: 2025-11-02
+
+- 目的（非破壊導入・統合）
+  - **既存の一様ボクセルグリッドはデフォルト維持**（従来モード）。
+  - 新たに **空間ID（METI Spatial ID / Ouranos）準拠のボクセルを直接生成するモード**を追加（オプトイン）。
+  - 既存モードには空間IDを**付与しない**（`properties.spatialId` も出さない）。
+  - 旧 v0.1.19（tile-grid）は本版 v0.1.17 に**統合**。
+
+- 仕様
+  - 新規オプション: `spatialId: { enabled: boolean, mode?: 'tile-grid', provider?: 'ouranos-gex', zoom?: number|'auto', zoomControl?: 'auto'|'manual', zoomTolerancePct?: number }`
+    - 既定: `enabled=false`。有効化時は **`mode:'tile-grid'`** を使用。
+    - **ID 文字列表現は zfxyStr を正規形式**とする（公開API）。`tilehash` は **util 内でのみ使用**し公開しない。
+    - `zoomControl:'auto'|'manual'` を追加。`'manual'` の場合は `zoom` の明示指定を**そのまま採用**（METIガイドラインのレベル表に合わせて手動選択できる）。
+    - `zoomControl:'auto'` の場合、XYセル寸法の相対誤差が **`zoomTolerancePct ≤ 10%`** となる `z` を選択（XY優先）。
+  - DataProcessor（tile-grid モード時）
+    - 入力 `({lng,lat,alt})` を `z` に対し ZFXY に変換し、**`zfxyStr` をキーに集約**。
+    - `voxelInfo.bounds` を **ZFXY セル境界**（8頂点）から算出。
+    - ouranos-gex が存在する場合は `Space` を利用。未導入時は内蔵の ZFXY 変換式でフォールバック（警告ログのみ、処理は継続）。
+  - VoxelRenderer
+    - `voxelInfo.bounds` を用いて中心/寸法を計算し `Entity.box` で描画（Primitive 化は 3.x で検討）。
+  - 観測性
+    - `Heatbox.getStatistics()` に `spatialIdEnabled`, `spatialIdProvider`, `spatialIdZoom`, `zoomControl` を追加（任意）。
+  - 依存管理（ouranos-gex）
+    - インストールは **npm または GitHub** のいずれかから（利用者環境に合わせて選択）。
+    - 依存は **オプショナル** とし、**バージョンは現時点で未指定**（将来的にコミットハッシュ/タグpinへ移行可）。
+    - 例（GitHub 直指定）: `package.json`
+      ```json
+      {
+        "optionalDependencies": {
+          "ouranos-gex-lib-for-JavaScript": "github:ouranos-gex/ouranos-gex-lib-for-JavaScript"
+        }
+      }
+      ```
+    - 例（npm 公開時想定）: `package.json`
+      ```json
+      {
+        "optionalDependencies": {
+          "ouranos-gex-lib-for-JavaScript": "*"
+        }
+      }
+      ```
+    - ランタイムは dynamic import の try/catch で存在を検出。未導入時は **内蔵ZFXYアダプタ**にフォールバック（WARN を出すが処理は継続）。
+
+- Deliverables
+  - [ ] `SpatialIdAdapter`（tile-grid 専用）実装＋単体テスト
+  - [ ] `options.spatialId` の validation とドキュメント（zfxyStr を正、tilehash 非公開）
+  - [ ] DataProcessor の `tile-grid` 分岐と `voxelInfo.bounds` 計算
+  - [ ] ouranos-gex 未導入でもクラッシュしない採用ガード（WARN ログ）
+
+- Acceptance Criteria
+  - [ ] `spatialId.enabled=true` かつ `mode:'tile-grid'` で生成される各ボクセルの **8頂点が `Space.vertices3d()`（または内蔵式）と一致**（浮動小数許容内）。
+  - [ ] `properties.spatialId` は **`{ z:number, x:number, y:number, f:number, id:string /* zfxyStr */ }`** を持ち、`id` は zfxyStr 正規形式。
+  - [ ] `zoomControl:'auto'` の選択結果が **XY相対誤差 ≤ 10%** を満たす。
+  - [ ] ouranos-gex 未導入でも描画が継続し、`getStatistics()` に `spatialIdEnabled:true` かつ `spatialIdProvider:null` が反映される。
+
+- 非目標
+  - 時系列（4D）の実装（**v1.2.0 に延期**）。
+  - Primitive ベース描画（3.x 以降）。
+  - グローバルQA（±180°ラップ／±85.0511°帯の端ケース）は **v0.1.19** に委譲。
+
+### v0.1.18（集約機能）— ボクセル内情報のレイヤ別集約
+Priority: Medium | Target: 2025-11-02
+
+- 目的
+  - ボクセル内のエンティティを「レイヤ（任意キー）」で集約し、可視化・ピック時の説明/統計で参照可能にする。
+- 仕様
+  - 新規オプション: `aggregation: { enabled: boolean, byProperty?: string, keyResolver?: (entity)=>string }`
+    - 既定は `enabled=false`。`byProperty` が指定されればそのプロパティ値で集約。
+    - `keyResolver` があれば優先（自由なレイヤ定義に対応）。
+  - DataProcessor
+    - 分類時に `voxelInfo.layerStats = Map<layerKey, count>` を構築（必要最小のみ保持）。
+  - 取得API/ピック
+    - `Heatbox.getStatistics()` に `layers?: Array<{ key, total }>`（上位Nのみ）を追加（ログ肥大を防止）。
+    - ピック時 `properties.layerTop`（最多レイヤ）を説明に反映（任意）。
+- Deliverables
+  - [ ] `aggregation` オプションの validation と最小ドキュメント
+  - [ ] DataProcessor の軽量集約ロジック＋単体テスト
+  - [ ] ピック/説明の反映（任意、過剰出力は抑制）
+- Acceptance Criteria
+  - [ ] 指定したレイヤキーで `layerStats` が正しく集約される（単体テストで検証）
+  - [ ] 既定（無効）では現行と同一挙動
+  - [ ] メモリ増加 ≤ +10%、処理時間増加 ≤ +10%（1k–5k ボクセル）
+- 非目標
+  - レイヤ別の色/透明度/太さの自動切替（v1.x で検討）
+  - 実装の初期段階で Heatbox 以外の可視化系ライブラリへ汎用提供すること
+    - ただし将来、PLATEAU などポリゴン/3D Tiles 系や他形式ベクターデータを含む大規模集約が必要になった際には、共通集約レイヤを別パッケージへ切り出すことを再検討する。
+
+### v0.1.19（グローバルQA対応）— 空間ID tile-grid の国際対応テストと修正
+Priority: High | Target: 2025-11-15
+
+- 目的（学会後の仕上げ）
+  - 空間ID 準拠モード（v0.1.17）の **グローバル端ケース** を網羅テストし、必要な修正を反映。
+  - 対象: **±180°（日付変更線）ラップ**、**高緯度帯（±85.0511°近傍）**、半球跨ぎ、経度正規化の境界挙動。
+
+- Scope
+  - テストシナリオ
+    - 反対経度の隣接セル（+179.9°E ↔ -179.9°W）での `neighbors/children/parent` の連続性確認。
+    - 高緯度（例: 84.9°N / 84.9°S）での ZFXY セル境界算出（8頂点）と `voxelInfo.bounds` の一致。
+    - 赤道跨ぎ・子午線跨ぎの `zoom:'auto'` 選択精度（XY相対誤差 ≤ 10%）。
+    - ouranos-gex **有無**の双方での挙動一致（フォールバックの誤差/WARN ログ確認）。
+  - 実装面の調整（必要に応じて）
+    - `SpatialIdAdapter` の**経度ラップ処理**をユーティリティ化し、`neighbors`/`bounds` 両方で共通利用。
+    - `getStatistics()` へ `globalQATested:true` のフラグ（任意）。
+  - ドキュメント/Examples
+    - Examples に **antimeridian-demo** を追加（可視化でラップ挙動を確認）。
+    - README/Wiki にグローバル注意点（±180°/±85.0511°）と `zoomControl:'manual'` の推奨設定例を追記。
+
+- Deliverables
+  - [ ] `tests/spatialid-global/*.spec.js` に antimeridian / high-latitude / hemisphere-cross のケースを追加
+  - [ ] `SpatialIdAdapter` のラップ処理の共通化（必要なら）
+  - [ ] `examples/advanced/antimeridian-demo.*` の追加
+  - [ ] Docs/Wiki のグローバル注意点セクションの新設
+
+- Acceptance Criteria
+  - [ ] **±180°ラップ**で左右の `neighbors` が相互に参照整合（Aの右= B かつ Bの左= A）。
+  - [ ] **高緯度帯（±85.0511°近傍）**で `Space.vertices3d()`（または内蔵式）と `voxelInfo.bounds` の 8頂点が一致（浮動小数許容内）。
+  - [ ] `zoomControl:'auto'` の選択結果が **XY相対誤差 ≤ 10%** を満たす（赤道/子午線/高緯度の代表点）。
+  - [ ] ouranos-gex 未導入でも処理継続し、ログ/統計にフォールバック情報が出力される。
+  - [ ] パフォーマンス退行が ±10% 以内（同一ズーム・同程度セル数）。
+
+- 非目標
+  - 4D（時間次元）の実装（v1.2.0 で対応）
+  - Primitive ベース描画（3.x で検討）
+
+### v0.1.20（Examples再整備）— デモ体系のアップデート
+Priority: Medium | Target: 2025-12
+
+- Scope
+  - [ ] `examples/` 配下のカメラ初期化・UI スタイルを統一し、v0.1.12 以降の API 変更へ追従
+  - [ ] outline / selection / observability デモの既知バグを修正し、補助テキスト・スクリーンショットを刷新
+  - [ ] `gh-pages` ブランチとの乖離を解消し、参照ガイドラインを更新
+  - [ ] Wiki（Examples セクション）に最新版デモ構成と利用方法を反映
+
+- Deliverables
+  - [ ] 共通カメラヘルパーの仕様をドキュメント化し、各 example からの利用手順を整理
+  - [ ] デモ更新に合わせた README / docs/api の差分記載
+  - [ ] 回帰テスト手順（非自動）を wiki に明文化
+
+
+- リスク/緩和
+  - 高緯度での XY 縮尺差 → 仕様どおり受容、ズーム手動選択で回避可能（ドキュメントで注意喚起）。
+  - ライブラリ依存 → ouranos-gex は **optional**（peer/optionalDependencies）。未導入時はフォールバックで継続。
+
+
+### v1.0.0 — 最小の分類エンジン（colorのみ）
+Priority: High | Target: 2025-12
+
+- 分類スキーム（最小セット）
+  - [ ] `linear`（既定）, `log`, `equal-interval`, `quantize`, `threshold`
+  - ※ `quantile` と `jenks` は v1.1.0 に移行（本版では未対応）
+- 適用対象
+  - [ ] **color のみ**に分類を適用（`classificationTargets` は将来互換のため受付けるが、1.0.0では `color:true` のみ有効）
+  - [ ] `opacity` / `width` への適用は行わない（v1.1.0で対応）
+- API例
+  - `classification: 'linear'|'log'|'equal-interval'|'quantize'|'threshold'`
+  - `classes?: number`, `thresholds?: number[]`
+  - `classificationTargets?: { color?: boolean }`（1.0.0時点では `color` 以外は無視）
+- 実装方針
+  - `src/utils/classification.js` に最小スキームを実装
+  - `AdaptiveController` は **色スケールにのみ**分類を適用。`opacity/width` には一切触れない
+  - 既存 Resolver（`boxOpacityResolver`/`outlineOpacityResolver`/`outlineWidthResolver`）は**存続**（警告のみ）
+- 互換性
+  - 低（新オプション追加のみ）。既存デフォルトの色挙動は実質維持
+- 受け入れ基準
+  - [ ] 既存の例とテストが設定変更なしで動作（色のデフォルト見た目に退行がない）
+  - [ ] 5スキームで**色分布が仕様通り**（単体＆スナップショットテスト）
+  - [ ] パフォーマンス退行が ±10% 以内
+- Docs
+  - [ ] `MIGRATION.md`：旧Resolver→**color分類**の最小マッピング例を掲載（opacity/widthは次版で案内）
+  - [ ] README/Wiki：`classification` の基本と制限（colorのみ有効）を明記
+
+### v1.1.0 — 視覚パリティ拡張（opacity/width＋凡例）
+Priority: High | Target: 2026-01
+
+- 適用対象の拡張
+  - [ ] `classificationTargets` を `opacity` / `width` に拡張
+  - [ ] `adaptiveParams.boxOpacityRange` / `outlineOpacityRange` / `outlineWidthRange` を **分類と同期して補間**
+  - [ ] `TopN` ブーストとの合成仕様を明文化（優先順位・クランプを定義）
+- 分類スキームの補完
+  - [ ] `quantile`, `jenks` を追加（v1.0.0で未対応だった高度スキーム）
+- エミュレーション連携
+  - [ ] `outlineRenderMode: 'emulation-only'` 時の**エミュレーション・フック**を実装（最終α/太さをポリラインへ反映）
+- 凡例/ガイド
+  - [ ] 連続/離散に応じた凡例 UI（境界値・バー表示）、色＋透明度の表現ガイド
+- 実装方針
+  - `AdaptiveController` が color/opacity/width を**同一のclassificationユーティリティ**で補間
+  - `src/utils/classification.js` を color/opacity/width で共用（将来の `gamma`/`easing` 拡張を想定）
+  - Implementation Notes
+    - `src/core/adaptive/AdaptiveController.js`
+      - `calculateAdaptiveParams(...)` にて、`statistics` から算出される `normalizedDensity` を用い、
+        - `adaptiveParams.boxOpacityRange: [min, max]` に従って `boxOpacity` を補間して設定。
+        - `adaptiveParams.outlineOpacityRange: [min, max]` に従って `outlineOpacity` を補間して設定。
+        - `adaptiveParams.outlineWidthRange: [min, max]`（新設）に従って `outlineWidth` を補間して設定（TopN時の加算ブーストも許容）。
+        - 補間のロジックは v1.0.0 の分類（classification）と同期させる：
+          - 既定は linear だが、`classification` の設定が有効な場合は同じスキーム（log/equal-interval/quantize/threshold/quantile/jenks 等）で opacity/width にも適用。
+          - 実装は共通ユーティリティ（`src/utils/classification.js`）を用い、色・透明度・太さの補間ソースを統一する。
+          - 任意で `gamma` や `easing` を導入し、連続補間の特性を統一的に調整できるようにする。
+      - 必要に応じて `applyPresetLogic(...)` の戻り値とレンジ適用の優先順位を整理（レンジ優先→プリセット補正、もしくは逆）。
+    - `src/core/VoxelRenderer.js`
+      - 既存の `adaptiveParams.boxOpacity || options.opacity` をそのまま利用（AdaptiveController が最終値を入れる）。
+      - outline 側も `adaptiveParams.outlineOpacity` を優先的に使用。
+- 互換性
+  - 低（オプション追加）。既存デフォルトは維持、Resolver は**存続**（警告のみ）
+- Policy（重要・強い方針）
+  - 上記の AdaptiveController での opacity range 実装が完了し、安定版に含まれるまでは、`boxOpacityResolver` / `outlineOpacityResolver` を絶対に削除しない（正規化で消さない）。
+  - 削除の判断は、実装・検証・ドキュメント（MIGRATION.md/RELEASE_NOTES.md）のすべてが揃った後に行う。
+- 受け入れ基準（視覚パリティ）
+  1) 密度→ボックス不透明度（低密度：薄／高密度：濃）  
+  2) 密度→枠線透明度（`emulation-only` 含む）  
+  3) 密度→枠線太さ（`TopN` は加算ブースト）  
+  4) `TopN` による不透明度切替  
+  → 旧Resolver実装と**視覚パリティ**を達成（比較スクリーンショット同梱）
+  - [ ] 代表データで各分類が視覚的に区別でき、凡例/ガイドが同期表示される。
+  - [ ] 透明度分類を有効化した場合、fill/outline（標準/インセット/エミュ）に0–1で正しく反映される。
+  - [ ] 併用時の優先順位は **Resolver > Classification/Adaptive > Base** とし、Docs/テストに明記（0.1.15 の方針と一致）。
+- Docs / 移行
+  - [ ] `MIGRATION.md`：Resolver→`adaptiveParams.*Range`/`classificationTargets` の**対応表**を掲載（視覚比較あり）
+  - [ ] README/Wiki：凡例UIとベストプラクティス
+- 設定プリセット管理（新規）
+  - [ ] 設定プリセットのインポート/エクスポート（JSON）
+  - [ ] シナリオ別推奨セット（密集データ/広域表示/TopN重視 など）
+  - [ ] UI設定の永続化（localStorage）
+
+---
+
+Resolver 置き換え計画（v1.1.0で「別の形ですべて再実装」）
+
+目的
+- 既存の Resolver API（`outlineWidthResolver` / `outlineOpacityResolver` / `boxOpacityResolver`）で可能だった表現力を、宣言的で最適化しやすい新APIに置き換える。
+- パフォーマンス（関数呼び出し頻度の削減）と一貫性（UI/プロファイル/チューニングとの連携）を高める。
+
+設計（新API）
+- Adaptive Ranges（連続制御）
+  - `adaptiveParams.boxOpacityRange: [min, max]`
+  - `adaptiveParams.outlineOpacityRange: [min, max]`
+  - `adaptiveParams.outlineWidthRange: [min, max]`（新設）
+  - いずれも `normalizedDensity` に対する線形補間（将来的に `gamma` 係数や `easing` を追加検討）。
+- Classification（離散/連続の分類マップ）
+  - v1.0.0 の `classification.*` と連携し、色だけでなく透明度/太さにも適用可能にする。
+  - `classificationTargets: { color?: boolean; opacity?: boolean; width?: boolean }` を導入（デフォルト: colorのみ）。
+- Emulation Hook（エミュレーション時の後処理）
+  - `outlineRenderMode: 'emulation-only'` のとき、内部的にポリラインへ最終アルファ/太さを反映する軽量フックを設ける（Playgroundの後処理と同等の効果をライブラリ側に統合）。
+
+実装箇所
+- `src/core/adaptive/AdaptiveController.js`：range補間・TopN加算ロジックの中心。
+- `src/core/VoxelRenderer.js`：AdaptiveController が計算した最終値をそのまま使用（条件分岐の簡素化）。
+- `src/utils/validation.js`：新オプションの正規化・クランプ（0–1 / >0 の安全域）。
+- `src/utils/classification.js`（新規）：分類スキーム実装（linear/log/quantile 等の薄いユーティリティ）。
+
+互換性
+- v1.0.0 までは Resolver API を「警告のみで存続」。移行ガイドに従い新APIへ移してもらう。
+- v1.x（将来的に v2.0.0 で完全削除）で Resolver API を段階的に削除（ロードマップとリリースノートで事前告知）。
+
+受け入れ基準（パリティテスト）
+- 旧Resolverで実現していた代表シナリオで視覚的パリティ：
+  1) 密度ベースのボックス不透明度（低密度:薄 / 高密度:濃）
+  2) 密度ベースの枠線透明度（emulation-only を含む）
+  3) 密度ベースの枠線太さ（TopNは加算ブースト）
+  4) TopNベースの不透明度切替
+- Playground/Quick Start で実データを用いた比較スクリーンショットを添付し、差分が許容範囲に収まる。
+
+移行ガイド（MIGRATION.md 追記）
+- 旧: `*Resolver` → 新: `adaptiveParams.*Range` または `classification.*` のマッピング例を掲載。
+- emulation-only 時の透明度/太さの適用順序を明記（Adaptive → Emulation Hook の順）。
+
+スケジュール
+- 0.1.15: range の正規化＋クランプ基盤（AdaptiveController 側の最終値クランプ & テスト）。補間は v1.1.0 で実装。
+- 1.0.0: color分類のみ実装。Resolver は**存続**（警告のみ）。
+- 1.1.0: `outlineWidthRange` / classification 連携（opacity/width） / emulation hook を統合、Resolver を非推奨のまま維持。
+- 1.x（v1.1.0安定以降）: Resolver API の段階的削除（少なくとも2リリース以上のグレイス期間）。
+
+---
+
+### v1.2.0 - 時間依存データ（PoC）
+Priority: Medium | Target: 2026-02
+- [ ] `viewer.clock.currentTime` に基づく時刻評価・スライス描画（ステップ更新）
+- [ ] キャッシュ/再計算ポリシーの基本設計（時間次元の増加コスト抑制）
+- 分類スコープ（時系列の揺れへの対応）
+  - [ ] `temporalClassificationScope: 'per-time'|'global'` を追加。
+    - `per-time`（時刻ごと再スケール）: 現在時刻（または `timeWindow`）内の density 分布（min/max や分位）で分類を算出。
+    - `global`（全時刻で統一）: すべての時刻を通した分布で分類（domain/しきい値）を固定。
+  - [ ] 既存の `classification`（linear/log/equal-interval/quantize/threshold/quantile/jenks）と組み合わせ可能。
+  - [ ] 凡例はスコープに追随（per-time は時刻に応じて更新、global は固定）。
+- API/実装メモ
+  - [ ] `src/utils/classification.js` に `computeDomain(data, { scope: 'per-time'|'global', clock })` を追加し、`AdaptiveController` から利用。
+  - [ ] グローバル domain は初回計算をメモ化、per-time は時刻キーごとにメモ化して再計算を抑制。
+- 互換性: 低（オプション追加）。
+- 受け入れ基準
+  - [ ] 同一データで `temporalClassificationScope: 'per-time'` と `'global'` を切替えたとき、配色/凡例の挙動が仕様通りに変化する。
+  - [ ] いずれのスコープでも `classification` の各スキームが正しく適用される（最小限のスナップショットテスト）。
+  - [ ] サンプルで時刻操作に応じてボクセルが更新され、体感カクつきが許容範囲内。
+
+### v1.3.0 - メモリ/パフォーマンス最適化
+Priority: Medium | Target: 2026-03
+- [ ] 必要フィールドのみ保持（エンティティ配列の縮約）
+- [ ] 描画リストの再利用・差分更新
+- [ ] 描画優先度制御（重要ボクセル優先）
+- [ ] 動的LoD（Level of Detail）
+- [ ] ビューポートカリング最適化
+- [ ] ADR-0003 受け入れ基準の再達成（動的太さ制御のオーバーヘッド ≤ 5%）
+- [ ] 大規模データ時のヒープ増分最適化（レンダ/クリア反復での増分 ≤ 20MB 目安）
+- [ ] VoxelRenderer 行数の追加削減（≤ 300 行目標、パラメータ計算のヘルパー化）
+- 互換性: 変更なし（内部最適化）。
+
+### v1.4.0（Examples 体系化・整理）
+Priority: Medium | Target: 2026-06
 
 Scope（examples/advanced を体系化し、学習・検証導線を改善）
 - [ ] カテゴリ別ディレクトリ構成の導入（既存ファイルは段階的に移行）
@@ -227,142 +584,6 @@ Scope（examples/advanced を体系化し、学習・検証導線を改善）
 リスク & 緩和
 - URL/リンク切れ → Step 1ではリンクのみ先に整備、移動はStep 3で一括実施
 - ブラウザ互換 → 例のHTMLテンプレートを統一（Cesium CSS/JS、UMD/ESM切替コメント）
-
-
-#### 0.1 Exit Criteria（1.0 への移行基準）
-- [ ] Lint 0 errors、主要分岐に単体テストが存在（Heatbox/VoxelRenderer/Validation）
-- [ ] Examples（Basic/Advanced）が主要機能（TopN/インセット/エミュ/適応制御）の動作確認に十分
-- [ ] Docs/Wiki がバイリンガルで同期（API/FAQ/チューニング/運用）
-- [ ] ベンチ指標（代表データ）のベースライン化と目安（例: 1000ボクセル規模で安定60FPS、5000規模で操作可能）
-
----
-
-## 1.x 系（機能拡張フェーズ）
-
-### v1.0.0 - 分類スキームと凡例（連続/離散）
-Priority: High | Target: 2025-12
-- 分類スキーム（最小セット）
-  - [ ] linear（既定）、log（log10/2）、equal-interval、quantize、threshold（custom thresholds）
-  - [ ] quantile、jenks（ckmeans）
-  - [ ] 適用対象: 色（color）に加えて、透明度（opacity）にも適用（fill と outline の双方）
-  - [ ] API例: 
-    - `classification: 'linear'|'log'|'equal-interval'|'quantize'|'threshold'|'quantile'|'jenks'`
-    - `classes?: number`, `thresholds?: number[]`, `discrete?: boolean`
-    - `classificationTargets?: { color?: boolean; opacity?: boolean }`（既定: color=true, opacity=false）
-    - `opacityStops?`/`opacityRange?` など連続/離散の指定（0–1にクランプ）
-- 凡例/ガイド
-  - [ ] 連続/離散に応じたラベル・境界値表示（必要に応じて透明度の示唆も表現）
-  - [ ] TopN・diverging との整合（分類と強調の優先順位）
-  - [ ] ドキュメントに「色のみ/色+透明度」両パターンの例とベストプラクティスを追記
-- 実装方針
-  - 既存ライブラリの活用（d3-array/d3-scale/simple-statistics 等）を優先。バンドルサイズ配慮のためユーティリティ部品のみ導入。
-- 互換性: 低（新オプション追加のみ、既存デフォルト維持）。
-
-Implementation Notes（必ずここに実装する）
-- `src/core/adaptive/AdaptiveController.js`
-  - `calculateAdaptiveParams(...)` にて、`statistics` から算出される `normalizedDensity` を用い、
-    - `adaptiveParams.boxOpacityRange: [min, max]` に従って `boxOpacity` を補間して設定。
-    - `adaptiveParams.outlineOpacityRange: [min, max]` に従って `outlineOpacity` を補間して設定。
-    - `adaptiveParams.outlineWidthRange: [min, max]`（新設）に従って `outlineWidth` を補間して設定（TopN時の加算ブーストも許容）。
-    - 補間のロジックは v1.0.0 の分類（classification）と同期させる：
-      - 既定は linear だが、`classification` の設定が有効な場合は同じスキーム（log/equal-interval/quantize/threshold/quantile/jenks 等）で opacity/width にも適用。
-      - 実装は共通ユーティリティ（`src/utils/classification.js`）を用い、色・透明度・太さの補間ソースを統一する。
-      - 任意で `gamma` や `easing` を導入し、連続補間の特性を統一的に調整できるようにする。
-  - 必要に応じて `applyPresetLogic(...)` の戻り値とレンジ適用の優先順位を整理（レンジ優先→プリセット補正、もしくは逆）。
-- `src/core/VoxelRenderer.js`
-  - 既存の `adaptiveParams.boxOpacity || options.opacity` をそのまま利用（AdaptiveController が最終値を入れる）。
-  - outline 側も `adaptiveParams.outlineOpacity` を優先的に使用。
-
-Policy（重要・強い方針）
-- 上記の AdaptiveController での opacity range 実装が完了し、安定版に含まれるまでは、`boxOpacityResolver` / `outlineOpacityResolver` を絶対に削除しない（正規化で消さない）。
-- 削除の判断は、実装・検証・ドキュメント（MIGRATION.md/RELEASE_NOTES.md）のすべてが揃った後に行う。
-
----
-
-Resolver 置き換え計画（v1.0.0で「別の形ですべて再実装」）
-
-目的
-- 既存の Resolver API（`outlineWidthResolver` / `outlineOpacityResolver` / `boxOpacityResolver`）で可能だった表現力を、宣言的で最適化しやすい新APIに置き換える。
-- パフォーマンス（関数呼び出し頻度の削減）と一貫性（UI/プロファイル/チューニングとの連携）を高める。
-
-設計（新API）
-- Adaptive Ranges（連続制御）
-  - `adaptiveParams.boxOpacityRange: [min, max]`
-  - `adaptiveParams.outlineOpacityRange: [min, max]`
-  - `adaptiveParams.outlineWidthRange: [min, max]`（新設）
-  - いずれも `normalizedDensity` に対する線形補間（将来的に `gamma` 係数や `easing` を追加検討）。
-- Classification（離散/連続の分類マップ）
-  - v1.0.0 の `classification.*` と連携し、色だけでなく透明度/太さにも適用可能にする。
-  - `classificationTargets: { color?: boolean; opacity?: boolean; width?: boolean }` を導入（デフォルト: colorのみ）。
-- Emulation Hook（エミュレーション時の後処理）
-  - `outlineRenderMode: 'emulation-only'` のとき、内部的にポリラインへ最終アルファ/太さを反映する軽量フックを設ける（Playgroundの後処理と同等の効果をライブラリ側に統合）。
-
-実装箇所
-- `src/core/adaptive/AdaptiveController.js`：range補間・TopN加算ロジックの中心。
-- `src/core/VoxelRenderer.js`：AdaptiveController が計算した最終値をそのまま使用（条件分岐の簡素化）。
-- `src/utils/validation.js`：新オプションの正規化・クランプ（0–1 / >0 の安全域）。
-- `src/utils/classification.js`（新規）：分類スキーム実装（linear/log/quantile 等の薄いユーティリティ）。
-
-互換性
-- v1.0.0 までは Resolver API を「警告のみで存続」。移行ガイドに従い新APIへ移してもらう。
-- v1.x（将来的に v2.0.0 で完全削除）で Resolver API を段階的に削除（ロードマップとリリースノートで事前告知）。
-
-受け入れ基準（パリティテスト）
-- 旧Resolverで実現していた代表シナリオで視覚的パリティ：
-  1) 密度ベースのボックス不透明度（低密度:薄 / 高密度:濃）
-  2) 密度ベースの枠線透明度（emulation-only を含む）
-  3) 密度ベースの枠線太さ（TopNは加算ブースト）
-  4) TopNベースの不透明度切替
-- Playground/Quick Start で実データを用いた比較スクリーンショットを添付し、差分が許容範囲に収まる。
-
-移行ガイド（MIGRATION.md 追記）
-- 旧: `*Resolver` → 新: `adaptiveParams.*Range` または `classification.*` のマッピング例を掲載。
-- emulation-only 時の透明度/太さの適用順序を明記（Adaptive → Emulation Hook の順）。
-
-スケジュール
-- 0.1.15: range の正規化＋クランプ基盤（AdaptiveController 側の最終値クランプ & テスト）。補間は v1.0.0 で実装。
-- 1.0.0: `outlineWidthRange` / classification 連携 / emulation hook を統合、Resolver を非推奨のまま維持。
-- 1.x: Resolver API の段階的削除（少なくとも2リリース以上のグレイス期間）。
-- 受け入れ基準:
-  - [ ] 代表データで各分類が視覚的に区別でき、凡例/ガイドが同期表示される。
-  - [ ] 透明度分類を有効化した場合、fill/outline（標準/インセット/エミュ）に0–1で正しく反映される。
-  - [ ] 適応的透明度（resolver）と併用時の優先順位（分類→resolver もしくは resolver→分類）を明示し、挙動が一貫。
-
-- 設定プリセット管理（新規）
-  - [ ] 設定プリセットのインポート/エクスポート（JSON）
-  - [ ] シナリオ別推奨セット（密集データ/広域表示/TopN重視 など）
-  - [ ] UI設定の永続化（localStorage）
-
-### v1.1.0 - 時間依存データ（PoC）
-Priority: Medium | Target: 2026-01
-- [ ] `viewer.clock.currentTime` に基づく時刻評価・スライス描画（ステップ更新）
-- [ ] キャッシュ/再計算ポリシーの基本設計（時間次元の増加コスト抑制）
-- 分類スコープ（時系列の揺れへの対応）
-  - [ ] `temporalClassificationScope: 'per-time'|'global'` を追加。
-    - `per-time`（時刻ごと再スケール）: 現在時刻（または `timeWindow`）内の density 分布（min/max や分位）で分類を算出。
-    - `global`（全時刻で統一）: すべての時刻を通した分布で分類（domain/しきい値）を固定。
-  - [ ] 既存の `classification`（linear/log/equal-interval/quantize/threshold/quantile/jenks）と組み合わせ可能。
-  - [ ] 凡例はスコープに追随（per-time は時刻に応じて更新、global は固定）。
-- API/実装メモ
-  - [ ] `src/utils/classification.js` に `computeDomain(data, { scope: 'per-time'|'global', clock })` を追加し、`AdaptiveController` から利用。
-  - [ ] グローバル domain は初回計算をメモ化、per-time は時刻キーごとにメモ化して再計算を抑制。
-- 互換性: 低（オプション追加）。
-- 受け入れ基準
-  - [ ] 同一データで `temporalClassificationScope: 'per-time'` と `'global'` を切替えたとき、配色/凡例の挙動が仕様通りに変化する。
-  - [ ] いずれのスコープでも `classification` の各スキームが正しく適用される（最小限のスナップショットテスト）。
-  - [ ] サンプルで時刻操作に応じてボクセルが更新され、体感カクつきが許容範囲内。
-
-### v1.2.0 - メモリ/パフォーマンス最適化
-Priority: Medium | Target: 2026-02
-- [ ] 必要フィールドのみ保持（エンティティ配列の縮約）
-- [ ] 描画リストの再利用・差分更新
-- [ ] 描画優先度制御（重要ボクセル優先）
-- [ ] 動的LoD（Level of Detail）
-- [ ] ビューポートカリング最適化
-- [ ] ADR-0003 受け入れ基準の再達成（動的太さ制御のオーバーヘッド ≤ 5%）
-- [ ] 大規模データ時のヒープ増分最適化（レンダ/クリア反復での増分 ≤ 20MB 目安）
-- [ ] VoxelRenderer 行数の追加削減（≤ 300 行目標、パラメータ計算のヘルパー化）
-- 互換性: 変更なし（内部最適化）。
 
 ---
 

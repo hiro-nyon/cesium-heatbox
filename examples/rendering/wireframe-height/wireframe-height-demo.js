@@ -5,6 +5,8 @@
 import Heatbox from '../../src/index.js';
 import * as Cesium from 'cesium';
 
+const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+
 /**
  * 高度なヒートマップデモクラス
  */
@@ -186,9 +188,12 @@ export class WireframeHeightDemo {
    */
   generateTestData() {
     const bounds = {
-      minLon: 139.765, maxLon: 139.770,
-      minLat: 35.680, maxLat: 35.685,
-      minAlt: 0, maxAlt: 100
+      minLon: SHINJUKU_CENTER.lon - 0.008,
+      maxLon: SHINJUKU_CENTER.lon + 0.008,
+      minLat: SHINJUKU_CENTER.lat - 0.008,
+      maxLat: SHINJUKU_CENTER.lat + 0.008,
+      minAlt: 0,
+      maxAlt: 160
     };
 
     this.testEntities = [];
@@ -201,8 +206,8 @@ export class WireframeHeightDemo {
       const entityCount = 50 + Math.random() * 100; // クラスターごとに異なる密度
       
       for (let i = 0; i < entityCount; i++) {
-        const lon = centerLon + (Math.random() - 0.5) * 0.001;
-        const lat = centerLat + (Math.random() - 0.5) * 0.001;
+        const lon = Cesium.Math.clamp(centerLon + (Math.random() - 0.5) * 0.0015, bounds.minLon, bounds.maxLon);
+        const lat = Cesium.Math.clamp(centerLat + (Math.random() - 0.5) * 0.0015, bounds.minLat, bounds.maxLat);
         const alt = Math.random() * bounds.maxAlt;
         
         this.testEntities.push(this.viewer.entities.add({
@@ -228,10 +233,10 @@ export class WireframeHeightDemo {
     this.testEntities = [];
     
     // 高密度エリア
-    this.addDensityCluster(139.766, 35.681, 200, 0.0005, 'high');
+    this.addDensityCluster(SHINJUKU_CENTER.lon - 0.001, SHINJUKU_CENTER.lat + 0.001, 220, 0.0006, 'high');
     
     // 低密度エリア
-    this.addDensityCluster(139.768, 35.683, 50, 0.001, 'low');
+    this.addDensityCluster(SHINJUKU_CENTER.lon + 0.002, SHINJUKU_CENTER.lat - 0.0015, 60, 0.0012, 'low');
   }
 
   /**
@@ -319,10 +324,10 @@ export class WireframeHeightDemo {
    */
   addComparisonLabels() {
     const labels = [
-      { text: '従来表示', lon: 139.763, lat: 35.682 },
-      { text: '枠線のみ', lon: 139.772, lat: 35.682 },
-      { text: '高さベース', lon: 139.763, lat: 35.679 },
-      { text: '組み合わせ', lon: 139.772, lat: 35.679 }
+      { text: '従来表示', lon: SHINJUKU_CENTER.lon - 0.003, lat: SHINJUKU_CENTER.lat + 0.0015 },
+      { text: '枠線のみ', lon: SHINJUKU_CENTER.lon + 0.003, lat: SHINJUKU_CENTER.lat + 0.0015 },
+      { text: '高さベース', lon: SHINJUKU_CENTER.lon - 0.003, lat: SHINJUKU_CENTER.lat - 0.0015 },
+      { text: '組み合わせ', lon: SHINJUKU_CENTER.lon + 0.003, lat: SHINJUKU_CENTER.lat - 0.0015 }
     ];
 
     labels.forEach(label => {
@@ -369,4 +374,3 @@ console.log('比較デモ統計:', comparisonStats);
 // インタラクティブデモ（キー1-4で切り替え）
 // const interactiveHeatbox = demo.setupInteractiveDemo();
 */
-

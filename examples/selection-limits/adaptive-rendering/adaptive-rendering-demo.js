@@ -12,13 +12,62 @@ import * as Cesium from 'cesium';
 import { Heatbox } from '../../src/index.js';
 import { generateSampleData } from '../../src/utils/sampleData.js';
 
-// シーン設定
+const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+const CameraHelper = typeof window !== 'undefined' ? (window.HeatboxDemoCamera || null) : null;
+const INITIAL_BOUNDS = {
+  minLon: SHINJUKU_CENTER.lon - 0.012,
+  maxLon: SHINJUKU_CENTER.lon + 0.012,
+  minLat: SHINJUKU_CENTER.lat - 0.012,
+  maxLat: SHINJUKU_CENTER.lat + 0.012,
+  minAlt: 0,
+  maxAlt: 240
+};
+
+function createImageryProvider() {
+  return new Cesium.UrlTemplateImageryProvider({
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+    subdomains: 'abcd',
+    maximumLevel: 19,
+    credit: '© OpenStreetMap contributors © CARTO'
+  });
+}
+
+function createTerrainProvider() {
+  try {
+    if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+      return Cesium.createWorldTerrain();
+    }
+  } catch (error) {
+    console.warn('World Terrain unavailable, using EllipsoidTerrainProvider.', error);
+  }
+  return new Cesium.EllipsoidTerrainProvider();
+}
+
+// シーン設定 / Viewer configuration
+const imageryProvider = createImageryProvider();
 const viewer = new Cesium.Viewer('cesiumContainer', {
+  imageryProvider,
+  terrainProvider: createTerrainProvider(),
   shouldAnimate: false,
   homeButton: false,
   sceneModePicker: false,
   baseLayerPicker: false
 });
+viewer.imageryLayers.removeAll();
+viewer.imageryLayers.addImageryProvider(imageryProvider);
+viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
+if (CameraHelper?.focus) {
+  CameraHelper.focus(viewer, { bounds: INITIAL_BOUNDS, useDefaultBounds: false });
+} else {
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 12000),
+    orientation: {
+      heading: 0.0,
+      pitch: -0.5,
+      roll: 0.0
+    }
+  });
+}
 
 // v0.1.9 新機能のデモンストレーション
 async function demonstrateAdaptiveRendering() {
@@ -26,13 +75,13 @@ async function demonstrateAdaptiveRendering() {
 
   // 大規模データセットを生成（適応的レンダリングのテスト用）
   const largeDataset = generateSampleData(20000, {
-    // 密集したデータクラスター
+    // 新宿駅周辺で密度差を持たせたクラスター / Clusters around Shinjuku
     clusters: [
-      { center: [139.7, 35.7, 50], radius: 0.02, density: 0.8, count: 8000 },
-      { center: [139.72, 35.68, 100], radius: 0.015, density: 0.6, count: 6000 },
-      { center: [139.75, 35.72, 75], radius: 0.01, density: 0.9, count: 4000 },
-      // 疎なデータ領域
-      { center: [139.8, 35.75, 30], radius: 0.05, density: 0.1, count: 2000 }
+      { center: [SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 60], radius: 0.006, density: 0.8, count: 8000 },
+      { center: [SHINJUKU_CENTER.lon + 0.003, SHINJUKU_CENTER.lat - 0.002, 110], radius: 0.0045, density: 0.6, count: 6000 },
+      { center: [SHINJUKU_CENTER.lon - 0.0035, SHINJUKU_CENTER.lat + 0.0025, 80], radius: 0.0035, density: 0.7, count: 4000 },
+      // 疎なデータ領域 / Sparse background distribution
+      { center: [SHINJUKU_CENTER.lon + 0.006, SHINJUKU_CENTER.lat + 0.003, 40], radius: 0.006, density: 0.2, count: 2000 }
     ]
   });
 
@@ -301,9 +350,9 @@ function setupUserControls() {
   // 初期データセットを保存
   currentData = generateSampleData(10000, {
     clusters: [
-      { center: [139.7, 35.7, 50], radius: 0.02, density: 0.7, count: 5000 },
-      { center: [139.75, 35.72, 100], radius: 0.015, density: 0.5, count: 3000 },
-      { center: [139.8, 35.75, 30], radius: 0.03, density: 0.2, count: 2000 }
+      { center: [SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 60], radius: 0.006, density: 0.8, count: 4000 },
+      { center: [SHINJUKU_CENTER.lon + 0.003, SHINJUKU_CENTER.lat - 0.002, 110], radius: 0.0045, density: 0.6, count: 3200 },
+      { center: [SHINJUKU_CENTER.lon - 0.0035, SHINJUKU_CENTER.lat + 0.0025, 80], radius: 0.0035, density: 0.5, count: 2800 }
     ]
   });
 }

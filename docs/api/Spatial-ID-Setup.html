@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Spatial ID Setup Guide</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Spatial ID Setup Guide / 空間IDセットアップガイド</h1>
+
+    <section>
+        <article>
+            <div class="class-description">
+                <h2>English</h2>
+
+                <h3>Overview</h3>
+
+                <p>The Spatial ID feature in cesium-heatbox (v0.1.17+) allows you to generate voxels based on geospatial tile systems (METI-compliant Spatial ID / Ouranos). This provides:</p>
+
+                <ul>
+                    <li><strong>Geographic accuracy</strong>: Voxels aligned to standardized spatial ID tiles</li>
+                    <li><strong>Zoom level control</strong>: Flexible cell size selection via zoom levels (15-30)</li>
+                    <li><strong>Two modes</strong>:
+                        <ul>
+                            <li><strong>Fallback mode</strong> (built-in): Works immediately, no extra setup</li>
+                            <li><strong>Ouranos mode</strong> (optional): High-precision METI-compliant conversion</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <p><strong>Key Challenge</strong>: The official <a href="https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript">ouranos-gex-lib-for-javascript</a> repository does not include pre-built distribution files. Standard <code>npm install</code> will download the source code but not the compiled library, causing runtime errors.</p>
+
+                <p><strong>Solution</strong>: This package includes a helper script (<code>tools/install-ouranos.js</code>) that automates the build process.</p>
+
+                <hr>
+
+                <h3>Installation Options</h3>
+
+                <h4>Option 1: Fallback Mode (Recommended for Quick Start)</h4>
+
+                <p><strong>No additional setup required.</strong></p>
+
+                <pre class="prettyprint source"><code>npm install cesium-heatbox</code></pre>
+
+                <p><strong>Advantages</strong>:</p>
+                <ul>
+                    <li>✅ Zero configuration</li>
+                    <li>✅ Works immediately</li>
+                    <li>✅ Sufficient accuracy for most use cases</li>
+                    <li>✅ No external dependencies</li>
+                </ul>
+
+                <p><strong>How it works</strong>:<br>
+                The built-in <code>ZFXYConverter</code> uses Web Mercator projection for tile calculation. This provides good accuracy within ±85.0511° latitude.</p>
+
+                <hr>
+
+                <h4>Option 2: Ouranos Mode (High Precision)</h4>
+
+                <p><strong>Requires special setup.</strong></p>
+
+                <p>This mode uses the official METI-compliant Ouranos library for maximum accuracy.</p>
+
+                <hr>
+
+                <h3>Detailed Setup Steps</h3>
+
+                <h4>Prerequisites</h4>
+
+                <ul>
+                    <li>Node.js &gt;= 18.0.0</li>
+                    <li>npm &gt;= 8.0.0</li>
+                    <li>Git (for cloning Ouranos repository)</li>
+                </ul>
+
+                <h4>Step-by-Step Installation</h4>
+
+                <h5>Step 1: Install cesium-heatbox</h5>
+
+                <pre class="prettyprint source"><code>npm install cesium-heatbox</code></pre>
+
+                <p>This installs the core library with built-in fallback support.</p>
+
+                <h5>Step 2: Install Ouranos as Optional Dependency</h5>
+
+                <pre class="prettyprint source"><code>npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save</code></pre>
+
+                <p><strong>Why <code>--no-save</code>?</strong></p>
+
+                <p>The <code>--no-save</code> flag prevents adding Ouranos to your <code>package.json</code> dependencies. This is intentional because:</p>
+                <ol>
+                    <li>Ouranos is already listed in cesium-heatbox's <code>optionalDependencies</code></li>
+                    <li>Adding it again would create redundant entries</li>
+                    <li>Optional dependencies should not be enforced on downstream users</li>
+                </ol>
+
+                <h5>Step 3: Build and Setup Ouranos</h5>
+
+                <pre class="prettyprint source"><code>npx cesium-heatbox-install-ouranos</code></pre>
+
+                <p>This command:</p>
+                <ol>
+                    <li>Checks if <code>node_modules/ouranos-gex-lib-for-javascript</code> exists</li>
+                    <li>Clones the Ouranos repository to <code>vendor/ouranos-gex-lib-for-JavaScript</code></li>
+                    <li>Installs Ouranos dependencies (<code>npm install</code> inside vendor)</li>
+                    <li>Builds the library (<code>npm run build</code>)</li>
+                    <li>Copies <code>dist/</code> files to <code>node_modules/ouranos-gex-lib-for-javascript/dist/</code></li>
+                </ol>
+
+                <h5>Step 4: Verify Installation</h5>
+
+                <p>Check that the built files exist:</p>
+
+                <pre class="prettyprint source"><code>ls -la node_modules/ouranos-gex-lib-for-javascript/dist/</code></pre>
+
+                <p>You should see <code>index.js</code> and related files.</p>
+
+                <p>Test in your code:</p>
+
+                <pre class="prettyprint source lang-javascript"><code>import { Heatbox } from 'cesium-heatbox';
+
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,
+    zoomControl: 'auto'
+  },
+  voxelSize: 30
+});
+
+await heatbox.createFromEntities(entities);
+
+const stats = heatbox.getStatistics();
+console.log('Provider:', stats.spatialIdProvider);
+// Expected: "ouranos-gex" (if setup successful)
+// Expected: "fallback" or null (if Ouranos not available)</code></pre>
+
+                <h5>Step 5: Rebuild Heatbox</h5>
+
+                <p>Rebuild the library so the newly prepared provider shim is bundled:</p>
+
+                <pre class="prettyprint source"><code>npm run build</code></pre>
+
+                <h5>Step 6: Serve over HTTP</h5>
+
+                <p>Dynamic <code>import()</code> requires the examples to be served via HTTP(S). Launch the dev server before opening the spatial ID demos:</p>
+
+                <pre class="prettyprint source"><code>npm run dev</code></pre>
+
+                <p><strong>Important:</strong> Opening the HTML files directly with <code>file://</code> will prevent the browser from loading the ouranos provider chunk, forcing fallback mode.</p>
+
+                <hr>
+
+                <h3>Troubleshooting</h3>
+
+                <h4>Issue 1: <code>npx cesium-heatbox-install-ouranos</code> command not found</h4>
+
+                <p><strong>Symptom</strong>:</p>
+                <pre class="prettyprint source"><code>zsh: command not found: cesium-heatbox-install-ouranos</code></pre>
+
+                <p><strong>Cause</strong>: The <code>bin</code> entry in <code>package.json</code> is not recognized, or the package is installed locally but not globally.</p>
+
+                <p><strong>Solution</strong>:</p>
+
+                <p>Use the full path to the script:</p>
+
+                <pre class="prettyprint source"><code>node node_modules/cesium-heatbox/tools/install-ouranos.js</code></pre>
+
+                <p>Or if developing cesium-heatbox itself:</p>
+
+                <pre class="prettyprint source"><code>node tools/install-ouranos.js</code></pre>
+
+                <hr>
+
+                <h4>Issue 2: Ouranos build fails</h4>
+
+                <p><strong>Symptom</strong>:</p>
+                <pre class="prettyprint source"><code>[ouranos] building upstream library...
+Error: ...</code></pre>
+
+                <p><strong>Possible Causes</strong>:</p>
+
+                <ol>
+                    <li><strong>Missing Git</strong>: Cloning requires Git installed
+                        <ul><li><strong>Solution</strong>: Install Git from https://git-scm.com/</li></ul>
+                    </li>
+                    <li><strong>Network Issues</strong>: Cannot reach GitHub
+                        <ul><li><strong>Solution</strong>: Check your internet connection and proxy settings</li></ul>
+                    </li>
+                    <li><strong>Node/npm Version Mismatch</strong>: Ouranos may have specific requirements
+                        <ul><li><strong>Solution</strong>: Ensure Node &gt;= 18, npm &gt;= 8</li></ul>
+                    </li>
+                    <li><strong>Corrupted Clone</strong>: Previous failed attempt left incomplete files
+                        <ul><li><strong>Solution</strong>: Delete <code>vendor/</code> directory and retry:
+                            <pre class="prettyprint source"><code>rm -rf vendor/
+npx cesium-heatbox-install-ouranos</code></pre>
+                        </li></ul>
+                    </li>
+                </ol>
+
+                <hr>
+
+                <h4>Issue 3: Webpack warning <code>Module not found: ouranos-gex-lib-for-javascript</code></h4>
+
+                <p><strong>Symptom</strong>:</p>
+                <pre class="prettyprint source"><code>WARNING in ./src/core/spatial/SpatialIdAdapter.js
+Module not found: Error: Can't resolve 'ouranos-gex-lib-for-javascript'</code></pre>
+
+                <p><strong>Cause</strong>: Webpack tries to statically resolve the import, but Ouranos is an optional dependency loaded via dynamic <code>import()</code>.</p>
+
+                <p><strong>Solution</strong>:</p>
+
+                <p><strong>This warning is normal and safe to ignore.</strong></p>
+
+                <p>The code uses try-catch and fallback logic:</p>
+
+                <pre class="prettyprint source lang-javascript"><code>try {
+  const module = await import('ouranos-gex-lib-for-javascript');
+  // Use Ouranos
+} catch (error) {
+  // Fall back to ZFXYConverter
+}</code></pre>
+
+                <p>At runtime, if Ouranos is available, it will be loaded. Otherwise, the fallback converter is used.</p>
+
+                <p>To suppress the warning (optional), add to your webpack config:</p>
+
+                <pre class="prettyprint source lang-javascript"><code>module.exports = {
+  externals: {
+    'ouranos-gex-lib-for-javascript': 'commonjs ouranos-gex-lib-for-javascript'
+  }
+};</code></pre>
+
+                <hr>
+
+                <h4>Issue 4: Spatial ID not working, provider is <code>null</code></h4>
+
+                <p><strong>Symptom</strong>:</p>
+                <pre class="prettyprint source lang-javascript"><code>const stats = heatbox.getStatistics();
+console.log(stats.spatialIdProvider); // null or "fallback"</code></pre>
+
+                <p><strong>Cause</strong>: Ouranos is not correctly installed or built.</p>
+
+                <p><strong>Solution</strong>:</p>
+
+                <ol>
+                    <li>Check if dist exists:
+                        <pre class="prettyprint source"><code>ls -la node_modules/ouranos-gex-lib-for-javascript/dist/index.js</code></pre>
+                    </li>
+                    <li>If missing, run setup:
+                        <pre class="prettyprint source"><code>npx cesium-heatbox-install-ouranos</code></pre>
+                    </li>
+                    <li>Check for errors in browser console:
+                        <ul>
+                            <li>Open DevTools → Console</li>
+                            <li>Look for import errors or module not found messages</li>
+                        </ul>
+                    </li>
+                    <li>Verify that <code>spatialId.enabled</code> is <code>true</code>:
+                        <pre class="prettyprint source lang-javascript"><code>const heatbox = new Heatbox(viewer, {
+  spatialId: { enabled: true }  // ← Must be true
+});</code></pre>
+                    </li>
+                </ol>
+
+                <hr>
+
+                <h3>Architecture</h3>
+
+                <h4>How Dynamic Import Works</h4>
+
+                <pre class="prettyprint source lang-javascript"><code>// src/core/spatial/SpatialIdAdapter.js
+
+async loadProvider() {
+  if (this.options.provider === 'ouranos-gex') {
+    try {
+      const module = await import('ouranos-gex-lib-for-javascript');
+      this._converter = module;
+      this._providerName = 'ouranos-gex';
+      Logger.info('SpatialIdAdapter: loaded ouranos-gex');
+    } catch (error) {
+      Logger.warn('SpatialIdAdapter: ouranos-gex not available, using fallback');
+      this._useFallback();
+    }
+  } else {
+    this._useFallback();
+  }
+}</code></pre>
+
+                <p><strong>Key Points</strong>:</p>
+
+                <ol>
+                    <li><strong>Try-Catch Pattern</strong>: If <code>import()</code> fails, fallback is used automatically</li>
+                    <li><strong>No Hard Dependency</strong>: Code gracefully degrades without Ouranos</li>
+                    <li><strong>Optional Setup</strong>: Users can choose whether to install Ouranos</li>
+                    <li><strong>Vertex Normalization</strong>: Regardless of provider, Heatbox normalizes vertices to <code>{lng, lat, alt}</code> objects before rendering</li>
+                </ol>
+
+                <h4>File Structure</h4>
+
+                <pre class="prettyprint source"><code>cesium-heatbox/
+├── node_modules/
+│   └── ouranos-gex-lib-for-javascript/
+│       ├── dist/               ← Built by install-ouranos.js
+│       │   └── index.js
+│       ├── src/                ← Source code from GitHub
+│       └── package.json
+├── vendor/                     ← Created by install-ouranos.js
+│   └── ouranos-gex-lib-for-JavaScript/
+│       ├── dist/               ← Build output
+│       ├── src/
+│       └── package.json
+├── tools/
+│   └── install-ouranos.js      ← Setup automation script
+└── src/
+    └── core/spatial/
+        ├── SpatialIdAdapter.js ← Dynamic import logic
+        └── ZFXYConverter.js    ← Built-in fallback</code></pre>
+
+                <hr>
+
+                <h3>FAQ</h3>
+
+                <p><strong>Q1: Do I need Ouranos for basic Spatial ID functionality?</strong></p>
+
+                <p><strong>A</strong>: No. The built-in fallback mode works without Ouranos and is sufficient for most applications.</p>
+
+                <hr>
+
+                <p><strong>Q2: What's the difference between Ouranos and fallback mode?</strong></p>
+
+                <p><strong>A</strong>:</p>
+                <ul>
+                    <li><strong>Ouranos</strong>: Official METI-compliant implementation, higher precision</li>
+                    <li><strong>Fallback</strong>: Built-in Web Mercator-based converter, simpler, no dependencies</li>
+                </ul>
+
+                <p>For most visualization purposes, the difference is negligible.</p>
+
+                <hr>
+
+                <p><strong>Q3: Can I distribute my app without Ouranos?</strong></p>
+
+                <p><strong>A</strong>: Yes. If you use fallback mode, your app has no dependency on Ouranos. Users will automatically get the built-in converter.</p>
+
+                <hr>
+
+                <p><strong>Q4: Why not include Ouranos pre-built in cesium-heatbox?</strong></p>
+
+                <p><strong>A</strong>:</p>
+                <ol>
+                    <li><strong>Licensing</strong>: Ouranos has its own license terms</li>
+                    <li><strong>Size</strong>: Adding pre-built files would increase package size</li>
+                    <li><strong>Maintenance</strong>: Ouranos is actively developed; bundling could cause version conflicts</li>
+                    <li><strong>Flexibility</strong>: Users can choose their preferred mode</li>
+                </ol>
+
+                <hr>
+
+                <p><strong>Q5: Is there a Docker/CI-friendly setup?</strong></p>
+
+                <p><strong>A</strong>: Yes. Add this to your Dockerfile or CI script:</p>
+
+                <pre class="prettyprint source lang-dockerfile"><code># Dockerfile
+RUN npm install cesium-heatbox
+RUN npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+RUN npx cesium-heatbox-install-ouranos</code></pre>
+
+                <p>Or in <code>.github/workflows/</code>:</p>
+
+                <pre class="prettyprint source lang-yaml"><code>- name: Setup Spatial ID
+  run: |
+    npm install cesium-heatbox
+    npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+    npx cesium-heatbox-install-ouranos</code></pre>
+
+                <hr>
+
+                <h3>Additional Resources</h3>
+
+                <ul>
+                    <li><a href="https://github.com/hiro-nyon/cesium-heatbox#readme">Main README</a> - Quick start and API overview</li>
+                    <li><a href="https://github.com/hiro-nyon/cesium-heatbox/tree/main/examples/spatial-id">Spatial ID Examples</a> - Live demos</li>
+                    <li><a href="https://github.com/hiro-nyon/cesium-heatbox/blob/main/docs/adr/ADR-0013-v0.1.17-spatial-id-support.md">ADR-0013</a> - Architecture decision record</li>
+                    <li><a href="https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript">Ouranos GitHub</a> - Official repository</li>
+                </ul>
+
+                <hr>
+
+                <h2>日本語</h2>
+
+                <h3>概要</h3>
+
+                <p>cesium-heatboxの空間ID機能（v0.1.17以降）は、地理空間タイルシステム（METI準拠空間ID / Ouranos）に基づいてボクセルを生成します。以下の利点があります：</p>
+
+                <ul>
+                    <li><strong>地理的精度</strong>: 標準化された空間IDタイルに整合したボクセル配置</li>
+                    <li><strong>ズームレベル制御</strong>: ズームレベル（15-30）による柔軟なセルサイズ選択</li>
+                    <li><strong>2つのモード</strong>:
+                        <ul>
+                            <li><strong>フォールバックモード</strong>（内蔵）: すぐに動作、追加セットアップ不要</li>
+                            <li><strong>Ouranosモード</strong>（オプション）: 高精度なMETI準拠変換</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <p><strong>主な課題</strong>: 公式の<a href="https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript">ouranos-gex-lib-for-javascript</a>リポジトリにはビルド済み配布ファイルが含まれていません。通常の<code>npm install</code>ではソースコードがダウンロードされますが、コンパイル済みライブラリがないため実行時エラーが発生します。</p>
+
+                <p><strong>解決策</strong>: このパッケージにはビルドプロセスを自動化するヘルパースクリプト（<code>tools/install-ouranos.js</code>）が含まれています。</p>
+
+                <hr>
+
+                <h3>インストールオプション</h3>
+
+                <h4>オプション1: フォールバックモード（クイックスタート推奨）</h4>
+
+                <p><strong>追加セットアップ不要。</strong></p>
+
+                <pre class="prettyprint source"><code>npm install cesium-heatbox</code></pre>
+
+                <p><strong>利点</strong>:</p>
+                <ul>
+                    <li>✅ 設定不要</li>
+                    <li>✅ すぐに動作</li>
+                    <li>✅ 多くの用途で十分な精度</li>
+                    <li>✅ 外部依存なし</li>
+                </ul>
+
+                <p><strong>動作原理</strong>:<br>
+                内蔵の<code>ZFXYConverter</code>はタイル計算にWeb Mercator投影を使用します。これは緯度±85.0511°以内で良好な精度を提供します。</p>
+
+                <hr>
+
+                <h4>オプション2: Ouranosモード（高精度）</h4>
+
+                <p><strong>特別なセットアップが必要。</strong></p>
+
+                <p>このモードは公式のMETI準拠Ouranosライブラリを使用して最高精度を実現します。</p>
+
+                <hr>
+
+                <h3>詳細なセットアップ手順</h3>
+
+                <h4>前提条件</h4>
+
+                <ul>
+                    <li>Node.js &gt;= 18.0.0</li>
+                    <li>npm &gt;= 8.0.0</li>
+                    <li>Git（Ouranosリポジトリのクローンに必要）</li>
+                </ul>
+
+                <h4>ステップバイステップのインストール</h4>
+
+                <h5>ステップ1: cesium-heatboxのインストール</h5>
+
+                <pre class="prettyprint source"><code>npm install cesium-heatbox</code></pre>
+
+                <p>これにより、内蔵フォールバック機能を含むコアライブラリがインストールされます。</p>
+
+                <h5>ステップ2: Ouranosをオプショナル依存としてインストール</h5>
+
+                <pre class="prettyprint source"><code>npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save</code></pre>
+
+                <p><strong>なぜ<code>--no-save</code>?</strong></p>
+
+                <p><code>--no-save</code>フラグはOuranosを<code>package.json</code>の依存関係に追加することを防ぎます。これは意図的です：</p>
+                <ol>
+                    <li>Ouranosはすでにcesium-heatboxの<code>optionalDependencies</code>に記載されています</li>
+                    <li>再度追加すると冗長なエントリが作成されます</li>
+                    <li>オプショナル依存は下流ユーザーに強制されるべきではありません</li>
+                </ol>
+
+                <h5>ステップ3: Ouranosのビルドとセットアップ</h5>
+
+                <pre class="prettyprint source"><code>npx cesium-heatbox-install-ouranos</code></pre>
+
+                <p>このコマンドは：</p>
+                <ol>
+                    <li><code>node_modules/ouranos-gex-lib-for-javascript</code>の存在を確認</li>
+                    <li>Ouranosリポジトリを<code>vendor/ouranos-gex-lib-for-JavaScript</code>にクローン</li>
+                    <li>Ouranosの依存関係をインストール（vendor内で<code>npm install</code>）</li>
+                    <li>ライブラリをビルド（<code>npm run build</code>）</li>
+                    <li><code>dist/</code>ファイルを<code>node_modules/ouranos-gex-lib-for-javascript/dist/</code>にコピー</li>
+                </ol>
+
+                <h5>ステップ4: インストールの確認</h5>
+
+                <p>ビルド済みファイルが存在することを確認：</p>
+
+                <pre class="prettyprint source"><code>ls -la node_modules/ouranos-gex-lib-for-javascript/dist/</code></pre>
+
+                <p><code>index.js</code>および関連ファイルが表示されるはずです。</p>
+
+                <p>コードでテスト：</p>
+
+                <pre class="prettyprint source lang-javascript"><code>import { Heatbox } from 'cesium-heatbox';
+
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,
+    zoomControl: 'auto'
+  },
+  voxelSize: 30
+});
+
+await heatbox.createFromEntities(entities);
+
+const stats = heatbox.getStatistics();
+console.log('Provider:', stats.spatialIdProvider);
+// 期待値: "ouranos-gex"（セットアップ成功時）
+// 期待値: "fallback" または null（Ouranos利用不可時）</code></pre>
+
+                <h5>ステップ5: Heatboxを再ビルド</h5>
+
+                <p>準備したプロバイダーをバンドルに含めるため、ライブラリを再ビルドします：</p>
+
+                <pre class="prettyprint source"><code>npm run build</code></pre>
+
+                <h5>ステップ6: HTTP経由で提供</h5>
+
+                <p>動的<code>import()</code>を使用するため、空間IDのデモはHTTP(S)経由で提供する必要があります。HTMLを開く前に開発サーバーを起動してください：</p>
+
+                <pre class="prettyprint source"><code>npm run dev</code></pre>
+
+                <p><strong>重要:</strong> <code>file://</code>で直接HTMLを開くと、ouranosプロバイダーチャンクの読み込みに失敗しフォールバックモードになります。</p>
+
+                <hr>
+
+                <h3>トラブルシューティング</h3>
+
+                <h4>問題1: <code>npx cesium-heatbox-install-ouranos</code>コマンドが見つからない</h4>
+
+                <p><strong>症状</strong>:</p>
+                <pre class="prettyprint source"><code>zsh: command not found: cesium-heatbox-install-ouranos</code></pre>
+
+                <p><strong>原因</strong>: <code>package.json</code>の<code>bin</code>エントリが認識されていない、またはパッケージがグローバルではなくローカルにインストールされています。</p>
+
+                <p><strong>解決策</strong>:</p>
+
+                <p>スクリプトのフルパスを使用：</p>
+
+                <pre class="prettyprint source"><code>node node_modules/cesium-heatbox/tools/install-ouranos.js</code></pre>
+
+                <p>または、cesium-heatbox自体を開発している場合：</p>
+
+                <pre class="prettyprint source"><code>node tools/install-ouranos.js</code></pre>
+
+                <hr>
+
+                <h4>問題2: Ouranosのビルドが失敗する</h4>
+
+                <p><strong>症状</strong>:</p>
+                <pre class="prettyprint source"><code>[ouranos] building upstream library...
+Error: ...</code></pre>
+
+                <p><strong>考えられる原因</strong>:</p>
+
+                <ol>
+                    <li><strong>Gitがない</strong>: クローンにはGitのインストールが必要
+                        <ul><li><strong>解決策</strong>: https://git-scm.com/ からGitをインストール</li></ul>
+                    </li>
+                    <li><strong>ネットワーク問題</strong>: GitHubに到達できない
+                        <ul><li><strong>解決策</strong>: インターネット接続とプロキシ設定を確認</li></ul>
+                    </li>
+                    <li><strong>Node/npmバージョン不一致</strong>: Ouranosに特定の要件がある可能性
+                        <ul><li><strong>解決策</strong>: Node &gt;= 18、npm &gt;= 8を確認</li></ul>
+                    </li>
+                    <li><strong>破損したクローン</strong>: 以前の失敗した試行で不完全なファイルが残っている
+                        <ul><li><strong>解決策</strong>: <code>vendor/</code>ディレクトリを削除して再試行：
+                            <pre class="prettyprint source"><code>rm -rf vendor/
+npx cesium-heatbox-install-ouranos</code></pre>
+                        </li></ul>
+                    </li>
+                </ol>
+
+                <hr>
+
+                <h4>問題3: Webpack警告 <code>Module not found: ouranos-gex-lib-for-javascript</code></h4>
+
+                <p><strong>症状</strong>:</p>
+                <pre class="prettyprint source"><code>WARNING in ./src/core/spatial/SpatialIdAdapter.js
+Module not found: Error: Can't resolve 'ouranos-gex-lib-for-javascript'</code></pre>
+
+                <p><strong>原因</strong>: Webpackはimportを静的に解決しようとしますが、Ouranosは動的<code>import()</code>で読み込まれるオプショナル依存です。</p>
+
+                <p><strong>解決策</strong>:</p>
+
+                <p><strong>この警告は正常で、無視しても問題ありません。</strong></p>
+
+                <p>コードはtry-catchとフォールバックロジックを使用：</p>
+
+                <pre class="prettyprint source lang-javascript"><code>try {
+  const module = await import('ouranos-gex-lib-for-javascript');
+  // Ouranosを使用
+} catch (error) {
+  // ZFXYConverterにフォールバック
+}</code></pre>
+
+                <p>実行時にOuranosが利用可能であれば読み込まれます。そうでなければフォールバックコンバーターが使用されます。</p>
+
+                <p>警告を抑制する（オプション）には、webpackの設定に追加：</p>
+
+                <pre class="prettyprint source lang-javascript"><code>module.exports = {
+  externals: {
+    'ouranos-gex-lib-for-javascript': 'commonjs ouranos-gex-lib-for-javascript'
+  }
+};</code></pre>
+
+                <hr>
+
+                <h4>問題4: 空間IDが動作せず、プロバイダーが<code>null</code></h4>
+
+                <p><strong>症状</strong>:</p>
+                <pre class="prettyprint source lang-javascript"><code>const stats = heatbox.getStatistics();
+console.log(stats.spatialIdProvider); // null または "fallback"</code></pre>
+
+                <p><strong>原因</strong>: Ouranosが正しくインストールまたはビルドされていません。</p>
+
+                <p><strong>解決策</strong>:</p>
+
+                <ol>
+                    <li>distが存在するか確認：
+                        <pre class="prettyprint source"><code>ls -la node_modules/ouranos-gex-lib-for-javascript/dist/index.js</code></pre>
+                    </li>
+                    <li>存在しない場合、セットアップを実行：
+                        <pre class="prettyprint source"><code>npx cesium-heatbox-install-ouranos</code></pre>
+                    </li>
+                    <li>ブラウザコンソールでエラーを確認：
+                        <ul>
+                            <li>DevTools → Console を開く</li>
+                            <li>importエラーやモジュールが見つからないメッセージを確認</li>
+                        </ul>
+                    </li>
+                    <li><code>spatialId.enabled</code>が<code>true</code>であることを確認：
+                        <pre class="prettyprint source lang-javascript"><code>const heatbox = new Heatbox(viewer, {
+  spatialId: { enabled: true }  // ← trueである必要があります
+});</code></pre>
+                    </li>
+                </ol>
+
+                <hr>
+
+                <h3>アーキテクチャ</h3>
+
+                <h4>動的インポートの仕組み</h4>
+
+                <pre class="prettyprint source lang-javascript"><code>// src/core/spatial/SpatialIdAdapter.js
+
+async loadProvider() {
+  if (this.options.provider === 'ouranos-gex') {
+    try {
+      const module = await import('ouranos-gex-lib-for-javascript');
+      this._converter = module;
+      this._providerName = 'ouranos-gex';
+      Logger.info('SpatialIdAdapter: loaded ouranos-gex');
+    } catch (error) {
+      Logger.warn('SpatialIdAdapter: ouranos-gex not available, using fallback');
+      this._useFallback();
+    }
+  } else {
+    this._useFallback();
+  }
+}</code></pre>
+
+                <p><strong>重要なポイント</strong>:</p>
+
+                <ol>
+                    <li><strong>Try-Catchパターン</strong>: <code>import()</code>が失敗すると、フォールバックが自動的に使用されます</li>
+                    <li><strong>ハード依存なし</strong>: Ouranosなしでもコードは適切に機能低下します</li>
+                    <li><strong>オプションのセットアップ</strong>: ユーザーはOuranosをインストールするかどうかを選択できます</li>
+                    <li><strong>頂点の正規化</strong>: プロバイダーに関係なく、描画前に頂点は<code>{lng, lat, alt}</code>形式へ正規化されます</li>
+                </ol>
+
+                <h4>ファイル構造</h4>
+
+                <pre class="prettyprint source"><code>cesium-heatbox/
+├── node_modules/
+│   └── ouranos-gex-lib-for-javascript/
+│       ├── dist/               ← install-ouranos.jsでビルド
+│       │   └── index.js
+│       ├── src/                ← GitHubからのソースコード
+│       └── package.json
+├── vendor/                     ← install-ouranos.jsで作成
+│   └── ouranos-gex-lib-for-JavaScript/
+│       ├── dist/               ← ビルド出力
+│       ├── src/
+│       └── package.json
+├── tools/
+│   └── install-ouranos.js      ← セットアップ自動化スクリプト
+└── src/
+    └── core/spatial/
+        ├── SpatialIdAdapter.js ← 動的インポートロジック
+        └── ZFXYConverter.js    ← 内蔵フォールバック</code></pre>
+
+                <hr>
+
+                <h3>よくある質問</h3>
+
+                <p><strong>Q1: 基本的な空間ID機能にOuranosは必要ですか？</strong></p>
+
+                <p><strong>A</strong>: いいえ。内蔵のフォールバックモードはOuranosなしで動作し、ほとんどのアプリケーションで十分です。</p>
+
+                <hr>
+
+                <p><strong>Q2: Ouranosとフォールバックモードの違いは何ですか？</strong></p>
+
+                <p><strong>A</strong>:</p>
+                <ul>
+                    <li><strong>Ouranos</strong>: 公式のMETI準拠実装、高精度</li>
+                    <li><strong>フォールバック</strong>: 内蔵のWeb Mercatorベースコンバーター、シンプル、依存なし</li>
+                </ul>
+
+                <p>ほとんどの可視化目的では、違いは無視できます。</p>
+
+                <hr>
+
+                <p><strong>Q3: Ouranosなしでアプリを配布できますか？</strong></p>
+
+                <p><strong>A</strong>: はい。フォールバックモードを使用する場合、アプリはOuranosに依存しません。ユーザーは自動的に内蔵コンバーターを使用します。</p>
+
+                <hr>
+
+                <p><strong>Q4: なぜcesium-heatboxにOuranosをビルド済みで含めないのですか？</strong></p>
+
+                <p><strong>A</strong>:</p>
+                <ol>
+                    <li><strong>ライセンス</strong>: Ouranosには独自のライセンス条項があります</li>
+                    <li><strong>サイズ</strong>: ビルド済みファイルを追加するとパッケージサイズが増加します</li>
+                    <li><strong>メンテナンス</strong>: Ouranosは活発に開発されています。バンドルするとバージョン競合が発生する可能性があります</li>
+                    <li><strong>柔軟性</strong>: ユーザーは希望するモードを選択できます</li>
+                </ol>
+
+                <hr>
+
+                <p><strong>Q5: Docker/CIフレンドリーなセットアップはありますか？</strong></p>
+
+                <p><strong>A</strong>: はい。DockerfileまたはCIスクリプトに以下を追加：</p>
+
+                <pre class="prettyprint source lang-dockerfile"><code># Dockerfile
+RUN npm install cesium-heatbox
+RUN npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+RUN npx cesium-heatbox-install-ouranos</code></pre>
+
+                <p>または<code>.github/workflows/</code>内：</p>
+
+                <pre class="prettyprint source lang-yaml"><code>- name: Setup Spatial ID
+  run: |
+    npm install cesium-heatbox
+    npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+    npx cesium-heatbox-install-ouranos</code></pre>
+
+                <hr>
+
+                <h3>追加リソース</h3>
+
+                <ul>
+                    <li><a href="https://github.com/hiro-nyon/cesium-heatbox#readme">メインREADME</a> - クイックスタートとAPI概要</li>
+                    <li><a href="https://github.com/hiro-nyon/cesium-heatbox/tree/main/examples/spatial-id">空間ID使用例</a> - ライブデモ</li>
+                    <li><a href="https://github.com/hiro-nyon/cesium-heatbox/blob/main/docs/adr/ADR-0013-v0.1.17-spatial-id-support.md">ADR-0013</a> - アーキテクチャ決定記録</li>
+                    <li><a href="https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript">Ouranos GitHub</a> - 公式リポジトリ</li>
+                </ul>
+
+                <hr>
+
+                <p><strong>Last Updated</strong>: 2024-11-02<br>
+                <strong>Version</strong>: cesium-heatbox v0.1.17</p>
+            </div>
+        </article>
+    </section>
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
+

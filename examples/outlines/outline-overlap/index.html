@@ -5,40 +5,127 @@
   <title>Outline Overlap Mitigation Demo (v0.1.6.1)</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-  <style>
-    html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; }
-    .panel { position: absolute; top: 10px; left: 10px; background: rgba(40, 40, 40, 0.9); padding: 14px; border-radius: 6px; color: #fff; font-family: sans-serif; width: 320px; }
-    .panel h3 { margin: 0 0 10px; font-size: 16px; color: #4fc3f7; }
-    .group { margin-bottom: 10px; }
-    .group label { display: block; font-size: 13px; margin-bottom: 4px; }
-    .row { display: flex; gap: 8px; margin-bottom: 6px; }
-    .row input[type="range"], .row input[type="number"], .row select, .row button { flex: 1; }
-    .btn { padding: 8px; border: 0; border-radius: 4px; font-weight: 600; cursor: pointer; }
-    .btn-primary { background: #1976d2; color: #fff; }
-    .btn-secondary { background: #455a64; color: #fff; }
-    .btn-danger { background: #c62828; color: #fff; }
-    #status { margin-top: 8px; font-weight: bold; }
-    small.hint { color: #bbb; }
-  </style>
+  <link href="../../common/demo.css" rel="stylesheet">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../../common/camera.js"></script>
   <!-- UMD build of cesium-heatbox -->
-  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
+  <script src="../../../dist/cesium-heatbox.umd.min.js"></script>
   <script>
     const Heatbox = window.CesiumHeatbox || window.Heatbox;
+    const CameraHelper = window.HeatboxDemoCamera || null;
+    const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+    const INITIAL_BOUNDS = {
+      minLon: SHINJUKU_CENTER.lon - 0.008,
+      maxLon: SHINJUKU_CENTER.lon + 0.008,
+      minLat: SHINJUKU_CENTER.lat - 0.008,
+      maxLat: SHINJUKU_CENTER.lat + 0.008,
+      minAlt: 0,
+      maxAlt: 160
+    };
+    const CAMERA_FOCUS_OVERRIDES = {
+      pitchDegrees: -48
+    };
     let viewer;
     let heatbox;
     let entities = [];
 
-    function initViewer() {
+    function focusCameraView(config = {}) {
+      if (!viewer || !viewer.camera) return;
+      const { bounds = null, useDefaultBounds = !config.bounds, ...overrides } = config;
+      const helperDefaults = CameraHelper?.DEFAULT_OPTIONS ?? {};
+      const focusOptions = { ...helperDefaults, ...CAMERA_FOCUS_OVERRIDES, ...overrides };
+
+      if (CameraHelper?.focus) {
+        CameraHelper.focus(viewer, {
+          ...focusOptions,
+          bounds,
+          useDefaultBounds
+        });
+        return;
+      }
+
+      if (bounds && CameraHelper?.setViewToBounds) {
+        CameraHelper.setViewToBounds(viewer, bounds, focusOptions);
+        return;
+      }
+
+      if (CameraHelper?.setViewToShinjuku) {
+        CameraHelper.setViewToShinjuku(viewer, { ...focusOptions, useDefaultBounds });
+        return;
+      }
+
+      if (bounds) {
+        const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+        const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+        const altitude = focusOptions.altitude;
+        viewer.camera.setView({
+          destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, altitude),
+          orientation: {
+            heading: Cesium.Math.toRadians(focusOptions.headingDegrees),
+            pitch: Cesium.Math.toRadians(focusOptions.pitchDegrees),
+            roll: 0
+          }
+        });
+        return;
+      }
+
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(
+          SHINJUKU_CENTER.lon,
+          SHINJUKU_CENTER.lat,
+          focusOptions.altitude
+        ),
+        orientation: {
+          heading: Cesium.Math.toRadians(focusOptions.headingDegrees),
+          pitch: Cesium.Math.toRadians(focusOptions.pitchDegrees),
+          roll: 0
+        }
+      });
+    }
+
+    function createImageryProvider() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        subdomains: 'abcd',
+        maximumLevel: 19,
+        credit: '© OpenStreetMap contributors © CARTO'
+      });
+    }
+
+    function createTerrainProvider() {
+      try {
+        if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+          return Cesium.createWorldTerrain();
+        }
+      } catch (error) {
+        console.warn('World Terrain unavailable, using EllipsoidTerrainProvider.', error);
+      }
+      return new Cesium.EllipsoidTerrainProvider();
+    }
+
+    async function initViewer() {
+      if (viewer) {
+        return viewer;
+      }
+      const imageryProvider = createImageryProvider();
       viewer = new Cesium.Viewer('cesiumContainer', {
+        imageryProvider,
+        terrainProvider: createTerrainProvider(),
         homeButton: false, sceneModePicker: false, baseLayerPicker: false,
         navigationHelpButton: false, animation: false, timeline: false,
         fullscreenButton: false, geocoder: false, infoBox: true,
         selectionIndicator: true, creditContainer: document.createElement('div')
       });
-      viewer.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(139.7665, 35.6807, 700),
-        orientation: { heading: Cesium.Math.toRadians(0), pitch: Cesium.Math.toRadians(-35), roll: 0 }
-      });
+      viewer.imageryLayers.removeAll();
+      viewer.imageryLayers.addImageryProvider(imageryProvider);
+      viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
+      focusCameraView({ bounds: INITIAL_BOUNDS, useDefaultBounds: false });
+      return viewer;
     }
 
     function updateStatus(msg, color = 'white') {
@@ -51,18 +138,18 @@
     function genClusteredEntities() {
       // 近接配置のクラスターを複数作り、枠線重なりが起きやすい条件を作る
       const list = [];
-      const bounds = { minLon: 139.7640, maxLon: 139.7690, minLat: 35.6790, maxLat: 35.6830, minAlt: 0, maxAlt: 120 };
+      const bounds = INITIAL_BOUNDS;
       const clusters = [
-        { lon: 139.7662, lat: 35.6810, n: 600 },
-        { lon: 139.7670, lat: 35.6805, n: 500 },
-        { lon: 139.7655, lat: 35.6815, n: 400 }
+        { lon: SHINJUKU_CENTER.lon, lat: SHINJUKU_CENTER.lat, n: 650 },
+        { lon: SHINJUKU_CENTER.lon + 0.002, lat: SHINJUKU_CENTER.lat - 0.0015, n: 520 },
+        { lon: SHINJUKU_CENTER.lon - 0.0025, lat: SHINJUKU_CENTER.lat + 0.0012, n: 420 }
       ];
       clusters.forEach(c => {
         for (let i = 0; i < c.n; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const r = Math.sqrt(Math.random()) * 0.0012; // 密なクラスター
-          const lon = Math.max(bounds.minLon, Math.min(bounds.maxLon, c.lon + Math.cos(angle) * r));
-          const lat = Math.max(bounds.minLat, Math.min(bounds.maxLat, c.lat + Math.sin(angle) * r));
+          const r = Math.sqrt(Math.random()) * 0.0015; // 密なクラスター / Dense cluster radius
+          const lon = Cesium.Math.clamp(c.lon + Math.cos(angle) * r, bounds.minLon, bounds.maxLon);
+          const lat = Cesium.Math.clamp(c.lat + Math.sin(angle) * r, bounds.minLat, bounds.maxLat);
           const alt = Math.random() * bounds.maxAlt;
           list.push(viewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
@@ -127,6 +214,8 @@
       if (entities.length === 0) entities = genClusteredEntities();
       heatbox = new Heatbox(viewer, getOptionsFromUI(false));
       const stats = await heatbox.createFromEntities(entities);
+      const bounds = heatbox.getBounds?.();
+      focusCameraView({ bounds });
       updateStatus(`Baseline rendered: voxels=${stats.renderedVoxels}`);
     }
 
@@ -135,6 +224,8 @@
       if (entities.length === 0) entities = genClusteredEntities();
       heatbox = new Heatbox(viewer, getOptionsFromUI(true));
       const stats = await heatbox.createFromEntities(entities);
+      const bounds = heatbox.getBounds?.();
+      focusCameraView({ bounds });
       updateStatus(`Mitigation rendered: voxels=${stats.renderedVoxels}`);
     }
 
@@ -144,8 +235,8 @@
       entities = [];
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      initViewer();
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initViewer();
       // UI wiring
       document.getElementById('voxelGap').addEventListener('input', (e) => {
         document.getElementById('voxelGapVal').textContent = parseFloat(e.target.value).toFixed(1);
@@ -178,11 +269,13 @@
 </head>
 <body>
   <div id="cesiumContainer"></div>
-  <div class="panel">
-    <h3>v0.1.6.1 枠線重なり対策 + インセット枠線デモ</h3>
-    <div class="group">
+  <div class="panel hb-panel">
+    <span class="hb-badge">v0.1.6.1</span>
+    <h2>Outline Overlap Mitigation</h2>
+    <p>Compare baseline and mitigated outlines for dense voxels around Shinjuku.</p>
+    <div class="hb-group">
       <label>Color Map</label>
-      <div class="row">
+      <div class="hb-buttons">
         <select id="colorMap">
           <option value="custom">custom (min/max)</option>
           <option value="viridis" selected>viridis</option>
@@ -190,30 +283,30 @@
         </select>
       </div>
     </div>
-    <div class="group">
-      <label>Voxel Gap (m): <span id="voxelGapVal">0.0</span></label>
-      <div class="row"><input type="range" id="voxelGap" min="0" max="5" step="0.5" value="0"></div>
+    <div class="hb-group">
+      <label>Voxel Gap (m): <span id="voxelGapVal" class="hb-slider-value">0.0</span></label>
+      <div class="hb-buttons"><input type="range" id="voxelGap" min="0" max="5" step="0.5" value="0"></div>
       <small class="hint">ボクセル寸法を縮めて枠線の重なりを軽減</small>
     </div>
-    <div class="group">
-      <label>Outline Opacity: <span id="outlineOpacityVal">1.0</span></label>
-      <div class="row"><input type="range" id="outlineOpacity" min="0.1" max="1.0" step="0.1" value="1.0"></div>
+    <div class="hb-group">
+      <label>Outline Opacity: <span id="outlineOpacityVal" class="hb-slider-value">1.0</span></label>
+      <div class="hb-buttons"><input type="range" id="outlineOpacity" min="0.1" max="1.0" step="0.1" value="1.0"></div>
       <small class="hint">重なった枠線の視覚ノイズを低減</small>
     </div>
-    <div class="group">
+    <div class="hb-group">
       <label><input type="checkbox" id="adaptiveOutline"> Adaptive Outline</label>
       <small class="hint">密度に応じて枠線太さを調整（TopNは太く）</small>
     </div>
     <!-- v0.1.6.1: インセット枠線 -->
-    <div class="group" style="border-top: 1px solid #666; padding-top: 8px; margin-top: 12px;">
+    <div class="hb-group" style="border-top: 1px solid #666; padding-top: 8px; margin-top: 12px;">
       <label style="color: #81c784; font-weight: 600;">v0.1.6.1 Inset Outline</label>
       <div style="margin: 6px 0;">
-        <label>Inset Distance (m): <span id="insetDistVal">0.0</span></label>
-        <div class="row"><input type="range" id="insetDistance" min="0" max="8" step="0.5" value="0"></div>
+        <label>Inset Distance (m): <span id="insetDistVal" class="hb-slider-value">0.0</span></label>
+        <div class="hb-buttons"><input type="range" id="insetDistance" min="0" max="8" step="0.5" value="0"></div>
       </div>
       <div style="margin: 6px 0;">
         <label>Inset Mode</label>
-        <div class="row">
+        <div class="hb-buttons">
           <select id="insetMode">
             <option value="off">OFF</option>
             <option value="topn">TopN のみ</option>
@@ -223,15 +316,14 @@
       </div>
       <small class="hint">枠線を内側にオフセット。不透明塗りでは効果限定的</small>
     </div>
-    <div class="group row">
-      <button class="btn btn-secondary" id="btnBaseline">Baseline</button>
-      <button class="btn btn-primary" id="btnMitigated">Mitigated</button>
+    <div class="hb-buttons">
+      <button class="hb-btn hb-btn-secondary" id="btnBaseline">Baseline</button>
+      <button class="hb-btn hb-btn-primary" id="btnMitigated">Mitigated</button>
     </div>
-    <div class="group row">
-      <button class="btn btn-danger" id="btnClear">Clear</button>
+    <div class="hb-buttons">
+      <button class="hb-btn hb-btn-danger" id="btnClear">Clear</button>
     </div>
-    <div id="status">Ready</div>
+    <div id="status" class="hb-status">Ready</div>
   </div>
 </body>
 </html>
-
