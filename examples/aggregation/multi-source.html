@@ -293,8 +293,26 @@
         aggregation: {
           enabled: aggregationEnabled,
           keyResolver: (entity) => {
-            // Use dataSource property as layer key
-            return entity.properties?.dataSource || 'unknown';
+            // Resolve Cesium Property to get actual value
+            // Cesium Propertyを解決して実際の値を取得
+            const prop = entity.properties?.dataSource;
+            if (!prop) return 'unknown';
+            
+            // If it's a Cesium Property, call getValue()
+            // Cesium Propertyの場合はgetValue()を呼び出す
+            if (typeof prop.getValue === 'function') {
+              try {
+                const value = prop.getValue(Cesium.JulianDate.now());
+                return value || 'unknown';
+              } catch (error) {
+                console.warn('Failed to resolve property:', error);
+                return 'unknown';
+              }
+            }
+            
+            // Otherwise use the raw value
+            // それ以外は生の値を使用
+            return prop;
           },
           showInDescription: elements.showInDescription.checked
         }
