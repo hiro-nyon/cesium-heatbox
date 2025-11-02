@@ -34,13 +34,35 @@ export class DataProcessor {
     // v0.1.18: Layer aggregation setup (ADR-0014)
     const aggregationEnabled = options.aggregation?.enabled || false;
     let getLayerKey = null;
+    const currentTime = Cesium.JulianDate.now();
     
     if (aggregationEnabled) {
       if (options.aggregation.keyResolver) {
         getLayerKey = options.aggregation.keyResolver;
       } else if (options.aggregation.byProperty) {
         const propKey = options.aggregation.byProperty;
-        getLayerKey = (entity) => entity.properties?.[propKey] || 'unknown';
+        // Resolve Cesium PropertyBag values before using as layer key
+        // Cesium PropertyBagの値を解決してからレイヤキーとして使用
+        getLayerKey = (entity) => {
+          const prop = entity.properties?.[propKey];
+          if (!prop) return 'unknown';
+          
+          // If it's a Cesium Property, call getValue()
+          // Cesium Propertyの場合はgetValue()を呼び出す
+          if (typeof prop.getValue === 'function') {
+            try {
+              const value = prop.getValue(currentTime);
+              return value !== undefined && value !== null ? value : 'unknown';
+            } catch (error) {
+              Logger.warn(`[aggregation] Failed to resolve property ${propKey}, using "unknown"`, error);
+              return 'unknown';
+            }
+          }
+          
+          // Otherwise use the raw value
+          // それ以外は生の値を使用
+          return prop;
+        };
       } else {
         Logger.warn('[aggregation] enabled but no byProperty or keyResolver specified, using "default" key');
         getLayerKey = () => 'default';
@@ -48,8 +70,6 @@ export class DataProcessor {
     }
     
     Logger.debug(`Processing ${entities.length} entities for classification`);
-    
-    const currentTime = Cesium.JulianDate.now();
     
     entities.forEach((entity, index) => {
       try {
@@ -350,13 +370,35 @@ export class DataProcessor {
     // v0.1.18: Layer aggregation setup (ADR-0014)
     const aggregationEnabled = options.aggregation?.enabled || false;
     let getLayerKey = null;
+    const currentTime = Cesium.JulianDate.now();
     
     if (aggregationEnabled) {
       if (options.aggregation.keyResolver) {
         getLayerKey = options.aggregation.keyResolver;
       } else if (options.aggregation.byProperty) {
         const propKey = options.aggregation.byProperty;
-        getLayerKey = (entity) => entity.properties?.[propKey] || 'unknown';
+        // Resolve Cesium PropertyBag values before using as layer key
+        // Cesium PropertyBagの値を解決してからレイヤキーとして使用
+        getLayerKey = (entity) => {
+          const prop = entity.properties?.[propKey];
+          if (!prop) return 'unknown';
+          
+          // If it's a Cesium Property, call getValue()
+          // Cesium Propertyの場合はgetValue()を呼び出す
+          if (typeof prop.getValue === 'function') {
+            try {
+              const value = prop.getValue(currentTime);
+              return value !== undefined && value !== null ? value : 'unknown';
+            } catch (error) {
+              Logger.warn(`[aggregation] Failed to resolve property ${propKey}, using "unknown"`, error);
+              return 'unknown';
+            }
+          }
+          
+          // Otherwise use the raw value
+          // それ以外は生の値を使用
+          return prop;
+        };
       } else {
         Logger.warn('[aggregation] enabled but no byProperty or keyResolver specified, using "default" key');
         getLayerKey = () => 'default';
@@ -367,8 +409,6 @@ export class DataProcessor {
     const voxelMap = new Map();
     let processedCount = 0;
     let skippedCount = 0;
-    
-    const currentTime = Cesium.JulianDate.now();
     
     for (const entity of entities) {
       try {

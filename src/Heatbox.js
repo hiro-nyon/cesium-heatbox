@@ -782,6 +782,33 @@ export class Heatbox {
       stats.occupancyRatio = null;
     }
 
+    // v0.1.18: Layer aggregation statistics (ADR-0014)
+    if (this.options.aggregation?.enabled && this._voxelData) {
+      const globalLayerCounts = new Map();
+      
+      // Aggregate across all voxels / 全ボクセルを集約
+      for (const voxelInfo of this._voxelData.values()) {
+        if (voxelInfo.layerStats) {
+          for (const [layerKey, count] of voxelInfo.layerStats) {
+            globalLayerCounts.set(
+              layerKey,
+              (globalLayerCounts.get(layerKey) || 0) + count
+            );
+          }
+        }
+      }
+      
+      // Top N layers (default: 10) / 上位N個のレイヤ（デフォルト：10）
+      const topN = 10;
+      const sorted = Array.from(globalLayerCounts.entries())
+        .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
+        .slice(0, topN);
+      
+      stats.layers = sorted.map(([key, total]) => ({ key, total }));
+      
+      Logger.debug(`[aggregation] Aggregated ${globalLayerCounts.size} unique layers, returning top ${stats.layers.length}`);
+    }
+
     return stats;
   }
 
