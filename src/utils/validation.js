@@ -649,6 +649,13 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.spatialId = { ...DEFAULT_OPTIONS.spatialId };
   }
   
+  // v0.1.18: Aggregation options validation (ADR-0014)
+  if (normalized.aggregation !== undefined) {
+    normalized.aggregation = validateAggregationOptions(normalized.aggregation);
+  } else {
+    normalized.aggregation = { ...DEFAULT_OPTIONS.aggregation };
+  }
+  
   return normalized;
 }
 
@@ -843,4 +850,55 @@ export function calculateDataRange(bounds) {
     // フォールバック値
     return { x: 1000, y: 1000, z: 100 };
   }
+}
+
+/**
+ * Validate and normalize aggregation options (v0.1.18 ADR-0014).
+ * 集約オプションの検証と正規化（v0.1.18 ADR-0014）
+ * @param {Object} aggregation - Aggregation options / 集約オプション
+ * @returns {Object} Normalized aggregation options / 正規化された集約オプション
+ */
+export function validateAggregationOptions(aggregation) {
+  const normalized = { ...DEFAULT_OPTIONS.aggregation };
+  
+  if (!aggregation || typeof aggregation !== 'object') {
+    return normalized;
+  }
+  
+  // enabled
+  if (aggregation.enabled !== undefined) {
+    normalized.enabled = coerceBoolean(aggregation.enabled, false);
+  }
+  
+  // byProperty
+  if (aggregation.byProperty !== undefined && aggregation.byProperty !== null) {
+    if (typeof aggregation.byProperty === 'string' && aggregation.byProperty.trim() !== '') {
+      normalized.byProperty = aggregation.byProperty.trim();
+    } else {
+      Logger.warn('[aggregation] byProperty must be a non-empty string, ignoring');
+      normalized.byProperty = null;
+    }
+  }
+  
+  // keyResolver
+  if (aggregation.keyResolver !== undefined && aggregation.keyResolver !== null) {
+    if (typeof aggregation.keyResolver === 'function') {
+      normalized.keyResolver = aggregation.keyResolver;
+    } else {
+      Logger.warn('[aggregation] keyResolver must be a function, ignoring');
+      normalized.keyResolver = null;
+    }
+  }
+  
+  // showInDescription
+  if (aggregation.showInDescription !== undefined) {
+    normalized.showInDescription = coerceBoolean(aggregation.showInDescription, true);
+  }
+  
+  // Validation: if enabled but neither byProperty nor keyResolver is set, warn
+  if (normalized.enabled && !normalized.byProperty && !normalized.keyResolver) {
+    Logger.warn('[aggregation] enabled=true but neither byProperty nor keyResolver is set. Will use default key "default".');
+  }
+  
+  return normalized;
 }

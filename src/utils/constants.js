@@ -103,6 +103,14 @@ export const DEFAULT_OPTIONS = {
     zoom: 25, // ズームレベル（0-35）または 'auto'
     zoomControl: 'auto', // 'auto' | 'manual' - ズーム制御モード
     zoomTolerancePct: 10 // 自動ズーム選択時の許容誤差パーセンテージ
+  },
+  
+  // v0.1.18: レイヤ別集約（ADR-0014）
+  aggregation: {
+    enabled: false, // レイヤ別集約を有効化（デフォルト: 無効）
+    byProperty: null, // エンティティプロパティキーをレイヤキーとして使用（例: 'buildingType'）
+    keyResolver: null, // カスタム関数 (entity) => layerKey（byPropertyより優先）
+    showInDescription: true // ボクセル説明文にレイヤ内訳を表示
   }
 };
 
