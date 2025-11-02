@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Layer Aggregation - Multi-Source (Pedestrian Flow + POI)</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link href="../common/demo.css" rel="stylesheet">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../common/camera.js"></script>
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="control-panel hb-panel">
+    <h3>Layer Aggregation - Multi-Source</h3>
+    <p style="font-size: 0.9em; color: #666;">Pedestrian flow + POI analysis</p>
+    
+    <div class="control-group">
+      <label for="pedestrianCount">Pedestrian Count: <span id="pedestrianCountValue">800</span></label>
+      <input type="range" id="pedestrianCount" min="100" max="2000" value="800" step="100">
+    </div>
+    
+    <div class="control-group">
+      <label for="poiCount">POI Count: <span id="poiCountValue">200</span></label>
+      <input type="range" id="poiCount" min="50" max="500" value="200" step="50">
+    </div>
+    
+    <div class="control-group">
+      <button id="generateBtn" class="hb-btn hb-btn-primary">1. Generate Data</button>
+    </div>
+    
+    <hr>
+    
+    <div class="control-group">
+      <input type="checkbox" id="enableAggregation" checked>
+      <label for="enableAggregation">Enable Layer Aggregation</label>
+    </div>
+    
+    <div class="control-group">
+      <input type="checkbox" id="showInDescription" checked>
+      <label for="showInDescription">Show in Description</label>
+    </div>
+    
+    <div class="control-group">
+      <label for="voxelSize">Voxel Size (meters):</label>
+      <input type="number" id="voxelSize" value="40" min="20" max="150">
+    </div>
+    
+    <div class="control-group">
+      <button id="createHeatmapBtn" class="hb-btn hb-btn-success">2. Create Heatmap</button>
+    </div>
+    
+    <hr>
+    
+    <div id="statsPanel" style="display: none;">
+      <h4>Statistics</h4>
+      <div id="statsContent"></div>
+      
+      <h4 style="margin-top: 15px;">Source Distribution</h4>
+      <div id="layerStats"></div>
+      
+      <h4 style="margin-top: 15px;">Legend</h4>
+      <div id="legend"></div>
+    </div>
+  </div>
+
+  <script>
+    /* 新宿駅中心 / Shinjuku station center */
+    const GENERATION_BOUNDS = {
+      minLon: 139.69,
+      maxLon: 139.71,
+      minLat: 35.68,
+      maxLat: 35.70,
+      minAlt: 0,
+      maxAlt: 150
+    };
+
+    const CAMERA_DEFAULTS = {
+      headingDegrees: 0,
+      pitchDegrees: -45,
+      altitude: 2000,
+      altitudeScale: 0.5,
+      cameraLatOffset: -0.025
+    };
+
+    // Data source types with colors
+    const DATA_SOURCES = {
+      pedestrian_morning: { label: 'Pedestrian (Morning)', color: '#FF6B6B', weight: 20 },
+      pedestrian_daytime: { label: 'Pedestrian (Daytime)', color: '#FFA500', weight: 30 },
+      pedestrian_evening: { label: 'Pedestrian (Evening)', color: '#FFD700', weight: 25 },
+      pedestrian_night: { label: 'Pedestrian (Night)', color: '#4169E1', weight: 10 },
+      poi_restaurant: { label: 'POI: Restaurant', color: '#32CD32', weight: 5 },
+      poi_retail: { label: 'POI: Retail', color: '#00CED1', weight: 4 },
+      poi_station: { label: 'POI: Station', color: '#9370DB', weight: 3 },
+      poi_park: { label: 'POI: Park', color: '#228B22', weight: 3 }
+    };
+
+    let viewer, heatbox, generatedEntities;
+
+    // Initialize Cesium viewer
+    viewer = new Cesium.Viewer('cesiumContainer', {
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      animation: false,
+      timeline: false,
+      fullscreenButton: false,
+      vrButton: false,
+      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://tile.openstreetmap.org/'
+      })
+    });
+
+    viewer.scene.globe.enableLighting = false;
+
+    // Initial camera setup
+    focusCameraView({ bounds: GENERATION_BOUNDS, pitchDegrees: CAMERA_DEFAULTS.pitchDegrees });
+
+    // UI Elements
+    const elements = {
+      pedestrianCount: document.getElementById('pedestrianCount'),
+      pedestrianCountValue: document.getElementById('pedestrianCountValue'),
+      poiCount: document.getElementById('poiCount'),
+      poiCountValue: document.getElementById('poiCountValue'),
+      generateBtn: document.getElementById('generateBtn'),
+      enableAggregation: document.getElementById('enableAggregation'),
+      showInDescription: document.getElementById('showInDescription'),
+      voxelSize: document.getElementById('voxelSize'),
+      createHeatmapBtn: document.getElementById('createHeatmapBtn'),
+      statsPanel: document.getElementById('statsPanel'),
+      statsContent: document.getElementById('statsContent'),
+      layerStats: document.getElementById('layerStats'),
+      legend: document.getElementById('legend')
+    };
+
+    // Update count displays
+    elements.pedestrianCount.addEventListener('input', (e) => {
+      elements.pedestrianCountValue.textContent = e.target.value;
+    });
+    
+    elements.poiCount.addEventListener('input', (e) => {
+      elements.poiCountValue.textContent = e.target.value;
+    });
+
+    // Weighted random selection
+    function selectWeightedRandom(items) {
+      const itemArray = Object.entries(items).map(([key, value]) => ({ key, ...value }));
+      const totalWeight = itemArray.reduce((sum, item) => sum + item.weight, 0);
+      let random = Math.random() * totalWeight;
+      
+      for (const item of itemArray) {
+        random -= item.weight;
+        if (random <= 0) return item;
+      }
+      
+      return itemArray[0];
+    }
+
+    // Generate pedestrian flow data (clustered around hotspots)
+    function generatePedestrianData(count) {
+      const entities = [];
+      const hotspots = [
+        { lon: 139.700, lat: 35.690, radius: 0.003 },  // Station area
+        { lon: 139.705, lat: 35.685, radius: 0.002 },  // Shopping district
+        { lon: 139.695, lat: 35.695, radius: 0.002 }   // Office area
+      ];
+      
+      for (let i = 0; i < count; i++) {
+        const hotspot = hotspots[Math.floor(Math.random() * hotspots.length)];
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = Math.random() * hotspot.radius;
+        
+        const lon = hotspot.lon + distance * Math.cos(angle);
+        const lat = hotspot.lat + distance * Math.sin(angle);
+        const alt = Math.random() * 50; // Ground level pedestrians
+        
+        // Select time period
+        const timeTypes = ['pedestrian_morning', 'pedestrian_daytime', 'pedestrian_evening', 'pedestrian_night'];
+        const sourceKey = timeTypes[Math.floor(Math.random() * timeTypes.length)];
+        const source = DATA_SOURCES[sourceKey];
+        
+        const entity = viewer.entities.add({
+          id: `pedestrian-${i}`,
+          position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+          point: {
+            pixelSize: 2,
+            color: Cesium.Color.fromCssColorString(source.color),
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 0.5
+          },
+          properties: {
+            dataSource: sourceKey,
+            timestamp: Date.now() - Math.random() * 86400000 // Random within last 24h
+          }
+        });
+        
+        entities.push(entity);
+      }
+      
+      return entities;
+    }
+
+    // Generate POI data (more sparse, strategic locations)
+    function generatePOIData(count) {
+      const entities = [];
+      const poiTypes = ['poi_restaurant', 'poi_retail', 'poi_station', 'poi_park'];
+      
+      for (let i = 0; i < count; i++) {
+        const lon = GENERATION_BOUNDS.minLon + Math.random() * (GENERATION_BOUNDS.maxLon - GENERATION_BOUNDS.minLon);
+        const lat = GENERATION_BOUNDS.minLat + Math.random() * (GENERATION_BOUNDS.maxLat - GENERATION_BOUNDS.minLat);
+        const alt = Math.random() * 30; // POIs at ground/low level
+        
+        const sourceKey = poiTypes[Math.floor(Math.random() * poiTypes.length)];
+        const source = DATA_SOURCES[sourceKey];
+        
+        const entity = viewer.entities.add({
+          id: `poi-${i}`,
+          position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+          point: {
+            pixelSize: 4,
+            color: Cesium.Color.fromCssColorString(source.color),
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 1
+          },
+          properties: {
+            dataSource: sourceKey,
+            name: `${source.label} #${i}`
+          }
+        });
+        
+        entities.push(entity);
+      }
+      
+      return entities;
+    }
+
+    // Generate all data
+    elements.generateBtn.addEventListener('click', () => {
+      const pedestrianCount = parseInt(elements.pedestrianCount.value);
+      const poiCount = parseInt(elements.poiCount.value);
+      
+      // Clear existing entities
+      if (generatedEntities) {
+        generatedEntities.forEach(e => viewer.entities.remove(e));
+      }
+      
+      generatedEntities = [];
+      
+      // Generate pedestrian flow
+      const pedestrians = generatePedestrianData(pedestrianCount);
+      generatedEntities.push(...pedestrians);
+      
+      // Generate POIs
+      const pois = generatePOIData(poiCount);
+      generatedEntities.push(...pois);
+      
+      console.log(`Generated ${pedestrianCount} pedestrian points and ${poiCount} POIs`);
+      console.log(`Total entities: ${generatedEntities.length}`);
+      elements.createHeatmapBtn.disabled = false;
+      
+      // Display legend
+      displayLegend();
+    });
+
+    // Create heatmap with custom keyResolver
+    elements.createHeatmapBtn.addEventListener('click', async () => {
+      if (!generatedEntities || generatedEntities.length === 0) {
+        alert('Please generate data first');
+        return;
+      }
+      
+      // Clear existing heatbox
+      if (heatbox) {
+        heatbox.clear();
+      }
+      
+      const aggregationEnabled = elements.enableAggregation.checked;
+      
+      // Create heatbox with aggregation using keyResolver
+      heatbox = new Heatbox.Heatbox(viewer, {
+        voxelSize: parseInt(elements.voxelSize.value),
+        opacity: 0.6,
+        showOutline: true,
+        outlineWidth: 1,
+        aggregation: {
+          enabled: aggregationEnabled,
+          keyResolver: (entity) => {
+            // Use dataSource property as layer key
+            return entity.properties?.dataSource || 'unknown';
+          },
+          showInDescription: elements.showInDescription.checked
+        }
+      });
+      
+      await heatbox.createFromEntities(generatedEntities);
+      
+      // Display statistics
+      const stats = heatbox.getStatistics();
+      displayStatistics(stats);
+      
+      console.log('Heatmap created with multi-source aggregation');
+      console.log('Statistics:', stats);
+    });
+
+    // Display statistics
+    function displayStatistics(stats) {
+      elements.statsPanel.style.display = 'block';
+      
+      // Basic stats
+      elements.statsContent.innerHTML = `
+        <table style="width: 100%; font-size: 0.9em;">
+          <tr><td><b>Total Entities:</b></td><td>${stats.totalEntities}</td></tr>
+          <tr><td><b>Rendered Voxels:</b></td><td>${stats.renderedVoxels}</td></tr>
+          <tr><td><b>Non-empty Voxels:</b></td><td>${stats.nonEmptyVoxels}</td></tr>
+          <tr><td><b>Avg Count/Voxel:</b></td><td>${stats.averageCount.toFixed(1)}</td></tr>
+        </table>
+      `;
+      
+      // Layer stats
+      if (stats.layers && stats.layers.length > 0) {
+        const maxTotal = Math.max(...stats.layers.map(l => l.total));
+        
+        let layerHtml = '<div style="font-size: 0.9em;">';
+        stats.layers.forEach(layer => {
+          const source = DATA_SOURCES[layer.key];
+          const color = source ? source.color : '#999';
+          const label = source ? source.label : layer.key;
+          const percentage = (layer.total / stats.totalEntities * 100).toFixed(1);
+          const barWidth = (layer.total / maxTotal * 100).toFixed(1);
+          
+          layerHtml += `
+            <div style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                <span style="font-size: 0.85em;"><span style="display: inline-block; width: 12px; height: 12px; background: ${color}; margin-right: 5px;"></span>${label}</span>
+                <span>${layer.total} (${percentage}%)</span>
+              </div>
+              <div style="background: #eee; height: 8px; border-radius: 4px;">
+                <div style="background: ${color}; height: 100%; width: ${barWidth}%; border-radius: 4px;"></div>
+              </div>
+            </div>
+          `;
+        });
+        layerHtml += '</div>';
+        
+        elements.layerStats.innerHTML = layerHtml;
+      } else {
+        elements.layerStats.innerHTML = '<p style="color: #999; font-size: 0.9em;">Aggregation disabled</p>';
+      }
+    }
+
+    // Display legend
+    function displayLegend() {
+      let legendHtml = '<div style="font-size: 0.85em;">';
+      
+      // Group by category
+      const pedestrianSources = Object.entries(DATA_SOURCES).filter(([key]) => key.startsWith('pedestrian_'));
+      const poiSources = Object.entries(DATA_SOURCES).filter(([key]) => key.startsWith('poi_'));
+      
+      legendHtml += '<p style="margin: 5px 0; font-weight: bold;">Pedestrian Flow:</p>';
+      pedestrianSources.forEach(([key, source]) => {
+        legendHtml += `
+          <div style="margin: 3px 0;">
+            <span style="display: inline-block; width: 10px; height: 10px; background: ${source.color}; margin-right: 5px;"></span>
+            ${source.label}
+          </div>
+        `;
+      });
+      
+      legendHtml += '<p style="margin: 10px 0 5px 0; font-weight: bold;">POI:</p>';
+      poiSources.forEach(([key, source]) => {
+        legendHtml += `
+          <div style="margin: 3px 0;">
+            <span style="display: inline-block; width: 10px; height: 10px; background: ${source.color}; margin-right: 5px;"></span>
+            ${source.label}
+          </div>
+        `;
+      });
+      
+      legendHtml += '</div>';
+      elements.legend.innerHTML = legendHtml;
+    }
+
+    // Initialize
+    elements.createHeatmapBtn.disabled = true;
+    console.log('Multi-Source Aggregation Demo initialized');
+    console.log('Click "Generate Data" to start');
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Layer Aggregation - Single Source (Building Types)</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link href="../common/demo.css" rel="stylesheet">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../common/camera.js"></script>
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="control-panel hb-panel">
+    <h3>Layer Aggregation - Single Source</h3>
+    <p style="font-size: 0.9em; color: #666;">Building type classification example</p>
+    
+    <div class="control-group">
+      <label for="entityCount">Building Count: <span id="entityCountValue">500</span></label>
+      <input type="range" id="entityCount" min="100" max="2000" value="500" step="100">
+    </div>
+    
+    <div class="control-group">
+      <button id="generateBtn" class="hb-btn hb-btn-primary">1. Generate Buildings</button>
+    </div>
+    
+    <hr>
+    
+    <div class="control-group">
+      <input type="checkbox" id="enableAggregation" checked>
+      <label for="enableAggregation">Enable Layer Aggregation</label>
+    </div>
+    
+    <div class="control-group">
+      <input type="checkbox" id="showInDescription" checked>
+      <label for="showInDescription">Show in Description</label>
+    </div>
+    
+    <div class="control-group">
+      <label for="voxelSize">Voxel Size (meters):</label>
+      <input type="number" id="voxelSize" value="50" min="20" max="200">
+    </div>
+    
+    <div class="control-group">
+      <button id="createHeatmapBtn" class="hb-btn hb-btn-success">2. Create Heatmap</button>
+    </div>
+    
+    <hr>
+    
+    <div id="statsPanel" style="display: none;">
+      <h4>Statistics</h4>
+      <div id="statsContent"></div>
+      
+      <h4 style="margin-top: 15px;">Layer Distribution</h4>
+      <div id="layerStats"></div>
+    </div>
+  </div>
+
+  <script>
+    /* 新宿駅中心 / Shinjuku station center */
+    const GENERATION_BOUNDS = {
+      minLon: 139.69,
+      maxLon: 139.71,
+      minLat: 35.68,
+      maxLat: 35.70,
+      minAlt: 0,
+      maxAlt: 200
+    };
+
+    const CAMERA_DEFAULTS = {
+      headingDegrees: 0,
+      pitchDegrees: -45,
+      altitude: 2000,
+      altitudeScale: 0.5,
+      cameraLatOffset: -0.025
+    };
+
+    // Building type distribution (weighted)
+    const BUILDING_TYPES = [
+      { type: 'residential', weight: 40, color: '#4CAF50' },
+      { type: 'commercial', weight: 25, color: '#2196F3' },
+      { type: 'office', weight: 20, color: '#FF9800' },
+      { type: 'industrial', weight: 10, color: '#9C27B0' },
+      { type: 'mixed-use', weight: 5, color: '#F44336' }
+    ];
+
+    let viewer, heatbox, generatedEntities;
+
+    // Initialize Cesium viewer
+    viewer = new Cesium.Viewer('cesiumContainer', {
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      animation: false,
+      timeline: false,
+      fullscreenButton: false,
+      vrButton: false,
+      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://tile.openstreetmap.org/'
+      })
+    });
+
+    viewer.scene.globe.enableLighting = false;
+
+    // Initial camera setup
+    focusCameraView({ bounds: GENERATION_BOUNDS, pitchDegrees: CAMERA_DEFAULTS.pitchDegrees });
+
+    // UI Elements
+    const elements = {
+      entityCount: document.getElementById('entityCount'),
+      entityCountValue: document.getElementById('entityCountValue'),
+      generateBtn: document.getElementById('generateBtn'),
+      enableAggregation: document.getElementById('enableAggregation'),
+      showInDescription: document.getElementById('showInDescription'),
+      voxelSize: document.getElementById('voxelSize'),
+      createHeatmapBtn: document.getElementById('createHeatmapBtn'),
+      statsPanel: document.getElementById('statsPanel'),
+      statsContent: document.getElementById('statsContent'),
+      layerStats: document.getElementById('layerStats')
+    };
+
+    // Update entity count display
+    elements.entityCount.addEventListener('input', (e) => {
+      elements.entityCountValue.textContent = e.target.value;
+    });
+
+    // Weighted random selection
+    function selectWeightedRandom(items) {
+      const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+      let random = Math.random() * totalWeight;
+      
+      for (const item of items) {
+        random -= item.weight;
+        if (random <= 0) return item;
+      }
+      
+      return items[0];
+    }
+
+    // Generate building entities
+    elements.generateBtn.addEventListener('click', () => {
+      const count = parseInt(elements.entityCount.value);
+      
+      // Clear existing entities
+      if (generatedEntities) {
+        generatedEntities.forEach(e => viewer.entities.remove(e));
+      }
+      
+      generatedEntities = [];
+      
+      for (let i = 0; i < count; i++) {
+        const lon = GENERATION_BOUNDS.minLon + Math.random() * (GENERATION_BOUNDS.maxLon - GENERATION_BOUNDS.minLon);
+        const lat = GENERATION_BOUNDS.minLat + Math.random() * (GENERATION_BOUNDS.maxLat - GENERATION_BOUNDS.minLat);
+        const alt = GENERATION_BOUNDS.minAlt + Math.random() * (GENERATION_BOUNDS.maxAlt - GENERATION_BOUNDS.minAlt);
+        
+        const buildingType = selectWeightedRandom(BUILDING_TYPES);
+        
+        const entity = viewer.entities.add({
+          id: `building-${i}`,
+          position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+          point: {
+            pixelSize: 3,
+            color: Cesium.Color.fromCssColorString(buildingType.color),
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 1
+          },
+          properties: {
+            buildingType: buildingType.type,
+            height: Math.floor(10 + Math.random() * 100)
+          }
+        });
+        
+        generatedEntities.push(entity);
+      }
+      
+      console.log(`Generated ${count} building entities`);
+      elements.createHeatmapBtn.disabled = false;
+    });
+
+    // Create heatmap
+    elements.createHeatmapBtn.addEventListener('click', async () => {
+      if (!generatedEntities || generatedEntities.length === 0) {
+        alert('Please generate entities first');
+        return;
+      }
+      
+      // Clear existing heatbox
+      if (heatbox) {
+        heatbox.clear();
+      }
+      
+      const aggregationEnabled = elements.enableAggregation.checked;
+      
+      // Create heatbox with aggregation
+      heatbox = new Heatbox.Heatbox(viewer, {
+        voxelSize: parseInt(elements.voxelSize.value),
+        opacity: 0.6,
+        showOutline: true,
+        outlineWidth: 1,
+        aggregation: {
+          enabled: aggregationEnabled,
+          byProperty: 'buildingType',
+          showInDescription: elements.showInDescription.checked
+        }
+      });
+      
+      await heatbox.createFromEntities(generatedEntities);
+      
+      // Display statistics
+      const stats = heatbox.getStatistics();
+      displayStatistics(stats);
+      
+      console.log('Heatmap created with aggregation:', aggregationEnabled);
+      console.log('Statistics:', stats);
+    });
+
+    // Display statistics
+    function displayStatistics(stats) {
+      elements.statsPanel.style.display = 'block';
+      
+      // Basic stats
+      elements.statsContent.innerHTML = `
+        <table style="width: 100%; font-size: 0.9em;">
+          <tr><td><b>Total Entities:</b></td><td>${stats.totalEntities}</td></tr>
+          <tr><td><b>Rendered Voxels:</b></td><td>${stats.renderedVoxels}</td></tr>
+          <tr><td><b>Non-empty Voxels:</b></td><td>${stats.nonEmptyVoxels}</td></tr>
+          <tr><td><b>Avg Count/Voxel:</b></td><td>${stats.averageCount.toFixed(1)}</td></tr>
+        </table>
+      `;
+      
+      // Layer stats
+      if (stats.layers && stats.layers.length > 0) {
+        const maxTotal = Math.max(...stats.layers.map(l => l.total));
+        
+        let layerHtml = '<div style="font-size: 0.9em;">';
+        stats.layers.forEach(layer => {
+          const buildingType = BUILDING_TYPES.find(t => t.type === layer.key);
+          const color = buildingType ? buildingType.color : '#999';
+          const percentage = (layer.total / stats.totalEntities * 100).toFixed(1);
+          const barWidth = (layer.total / maxTotal * 100).toFixed(1);
+          
+          layerHtml += `
+            <div style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                <span><span style="display: inline-block; width: 12px; height: 12px; background: ${color}; margin-right: 5px;"></span>${layer.key}</span>
+                <span>${layer.total} (${percentage}%)</span>
+              </div>
+              <div style="background: #eee; height: 8px; border-radius: 4px;">
+                <div style="background: ${color}; height: 100%; width: ${barWidth}%; border-radius: 4px;"></div>
+              </div>
+            </div>
+          `;
+        });
+        layerHtml += '</div>';
+        
+        elements.layerStats.innerHTML = layerHtml;
+      } else {
+        elements.layerStats.innerHTML = '<p style="color: #999; font-size: 0.9em;">Aggregation disabled</p>';
+      }
+    }
+
+    // Initialize
+    elements.createHeatmapBtn.disabled = true;
+    console.log('Single Source Aggregation Demo initialized');
+    console.log('Click "Generate Buildings" to start');
+  </script>
+</body>
+</html>
+
