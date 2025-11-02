@@ -117,6 +117,16 @@
     viewer.imageryLayers.addImageryProvider(imageryProvider);
     viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
 
+    // Camera helper
+    const CameraHelper = window.HeatboxDemoCamera || null;
+    const focusCameraView = (config = {}) => {
+      if (!CameraHelper) {
+        console.warn('HeatboxDemoCamera not found, skipping camera focus');
+        return null;
+      }
+      return CameraHelper.focus(viewer, config);
+    };
+
     // Initial camera setup
     focusCameraView({ bounds: GENERATION_BOUNDS, pitchDegrees: CAMERA_DEFAULTS.pitchDegrees });
 
