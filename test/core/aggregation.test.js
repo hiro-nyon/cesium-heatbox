@@ -4,6 +4,8 @@
 
 import { DataProcessor } from '../../src/core/DataProcessor.js';
 import { VoxelGrid } from '../../src/core/VoxelGrid.js';
+import { Heatbox } from '../../src/Heatbox.js';
+import { createMockViewer } from '../helpers/testHelpers.js';
 
 describe('Layer Aggregation (ADR-0014)', () => {
   let mockEntities;
@@ -475,135 +477,146 @@ describe('Layer Aggregation (ADR-0014)', () => {
   });
 
   describe('Global layer aggregation (Phase 3)', () => {
-    it('should return top N layers in statistics', () => {
-      // Create mock voxelData with layerStats
-      const mockVoxelData = new Map();
-      
-      // Voxel 1: residential=5, commercial=3
-      mockVoxelData.set('0_0_0', {
-        x: 0, y: 0, z: 0,
-        count: 8,
-        entities: [],
-        layerStats: new Map([
-          ['residential', 5],
-          ['commercial', 3]
-        ]),
-        layerTop: 'residential'
-      });
-      
-      // Voxel 2: industrial=7, commercial=2
-      mockVoxelData.set('1_0_0', {
-        x: 1, y: 0, z: 0,
-        count: 9,
-        entities: [],
-        layerStats: new Map([
-          ['industrial', 7],
-          ['commercial', 2]
-        ]),
-        layerTop: 'industrial'
-      });
-      
-      // Voxel 3: residential=4
-      mockVoxelData.set('2_0_0', {
-        x: 2, y: 0, z: 0,
-        count: 4,
-        entities: [],
-        layerStats: new Map([
-          ['residential', 4]
-        ]),
-        layerTop: 'residential'
-      });
-      
-      // Simulate Heatbox.getStatistics() logic
-      const globalLayerCounts = new Map();
-      for (const voxelInfo of mockVoxelData.values()) {
-        for (const [layerKey, count] of voxelInfo.layerStats) {
-          globalLayerCounts.set(
-            layerKey,
-            (globalLayerCounts.get(layerKey) || 0) + count
-          );
-        }
-      }
-      
-      const topN = 10; // Default
-      const sorted = Array.from(globalLayerCounts.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, topN);
-      
-      const layers = sorted.map(([key, total]) => ({ key, total }));
-      
-      // Verify results
-      expect(layers).toHaveLength(3);
-      expect(layers[0]).toEqual({ key: 'residential', total: 9 }); // 5+4
-      expect(layers[1]).toEqual({ key: 'industrial', total: 7 });
-      expect(layers[2]).toEqual({ key: 'commercial', total: 5 }); // 3+2
+    let viewer;
+    let heatbox;
+
+    beforeEach(() => {
+      viewer = createMockViewer();
     });
 
-    it('should respect custom topN value', () => {
-      // Create mock voxelData with many layers
-      const mockVoxelData = new Map();
-      
-      const layerNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-      layerNames.forEach((name, index) => {
-        mockVoxelData.set(`${index}_0_0`, {
-          x: index, y: 0, z: 0,
-          count: 1,
-          entities: [],
-          layerStats: new Map([[name, layerNames.length - index]]), // Descending counts
-          layerTop: name
-        });
-      });
-      
-      // Simulate Heatbox.getStatistics() logic with custom topN
-      const globalLayerCounts = new Map();
-      for (const voxelInfo of mockVoxelData.values()) {
-        for (const [layerKey, count] of voxelInfo.layerStats) {
-          globalLayerCounts.set(
-            layerKey,
-            (globalLayerCounts.get(layerKey) || 0) + count
-          );
-        }
+    afterEach(() => {
+      if (heatbox) {
+        heatbox.clear();
+        heatbox = null;
       }
+    });
+
+    it('should return top N layers in statistics', async () => {
+      // Create entities with known distribution:
+      // residential: 9 total (5+4)
+      // industrial: 7 total
+      // commercial: 5 total (3+2)
+      const entities = [
+        // Voxel 1: residential=5, commercial=3
+        ...Array.from({ length: 5 }, (_, i) => ({
+          id: `res-1-${i}`,
+          position: { x: 139.70, y: 35.69, z: 50 },
+          properties: { type: 'residential' }
+        })),
+        ...Array.from({ length: 3 }, (_, i) => ({
+          id: `com-1-${i}`,
+          position: { x: 139.70, y: 35.69, z: 50 },
+          properties: { type: 'commercial' }
+        })),
+        // Voxel 2: industrial=7, commercial=2
+        ...Array.from({ length: 7 }, (_, i) => ({
+          id: `ind-2-${i}`,
+          position: { x: 139.71, y: 35.70, z: 100 },
+          properties: { type: 'industrial' }
+        })),
+        ...Array.from({ length: 2 }, (_, i) => ({
+          id: `com-2-${i}`,
+          position: { x: 139.71, y: 35.70, z: 100 },
+          properties: { type: 'commercial' }
+        })),
+        // Voxel 3: residential=4
+        ...Array.from({ length: 4 }, (_, i) => ({
+          id: `res-3-${i}`,
+          position: { x: 139.69, y: 35.68, z: 150 },
+          properties: { type: 'residential' }
+        }))
+      ];
+
+      heatbox = new Heatbox(viewer, {
+        voxelSize: 30,
+        aggregation: {
+          enabled: true,
+          byProperty: 'type'
+        }
+      });
+
+      await heatbox.createFromEntities(entities);
+      const stats = heatbox.getStatistics();
       
-      const topN = 5; // Custom value
-      const sorted = Array.from(globalLayerCounts.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, topN);
+      // Verify layers are returned
+      expect(stats.layers).toBeDefined();
+      expect(Array.isArray(stats.layers)).toBe(true);
+      expect(stats.layers).toHaveLength(3);
       
-      const layers = sorted.map(([key, total]) => ({ key, total }));
+      // Verify correct totals and sorting (descending)
+      expect(stats.layers[0]).toEqual({ key: 'residential', total: 9 }); // 5+4
+      expect(stats.layers[1]).toEqual({ key: 'industrial', total: 7 });
+      expect(stats.layers[2]).toEqual({ key: 'commercial', total: 5 }); // 3+2
+    });
+
+    it('should respect custom topN value', async () => {
+      // Create entities with 12 different layers (A-L)
+      const layerNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+      const entities = [];
+      
+      layerNames.forEach((name, index) => {
+        // Create entities with descending counts: A=12, B=11, ..., L=1
+        const count = layerNames.length - index;
+        for (let i = 0; i < count; i++) {
+          entities.push({
+            id: `${name}-${i}`,
+            position: {
+              x: 139.69 + (index * 0.001),
+              y: 35.68 + (index * 0.001),
+              z: 50 + (i * 10)
+            },
+            properties: { type: name }
+          });
+        }
+      });
+
+      heatbox = new Heatbox(viewer, {
+        voxelSize: 30,
+        aggregation: {
+          enabled: true,
+          byProperty: 'type',
+          topN: 5 // Custom value
+        }
+      });
+
+      await heatbox.createFromEntities(entities);
+      const stats = heatbox.getStatistics();
       
       // Verify only top 5 are returned
-      expect(layers).toHaveLength(5);
-      expect(layers[0].key).toBe('A');
-      expect(layers[4].key).toBe('E');
+      expect(stats.layers).toBeDefined();
+      expect(stats.layers).toHaveLength(5);
+      expect(stats.layers[0].key).toBe('A');
+      expect(stats.layers[4].key).toBe('E');
     });
 
-    it('should handle empty layerStats', () => {
-      const mockVoxelData = new Map();
-      
-      // Voxel without layerStats (aggregation disabled)
-      mockVoxelData.set('0_0_0', {
-        x: 0, y: 0, z: 0,
-        count: 5,
-        entities: []
-        // No layerStats
-      });
-      
-      // Simulate Heatbox.getStatistics() logic
-      const globalLayerCounts = new Map();
-      for (const voxelInfo of mockVoxelData.values()) {
-        if (voxelInfo.layerStats) {
-          for (const [layerKey, count] of voxelInfo.layerStats) {
-            globalLayerCounts.set(
-              layerKey,
-              (globalLayerCounts.get(layerKey) || 0) + count
-            );
-          }
+    it('should not return layers when aggregation is disabled', async () => {
+      const entities = [
+        {
+          id: 'entity-1',
+          position: { x: 139.70, y: 35.69, z: 50 },
+          properties: { type: 'residential' }
+        },
+        {
+          id: 'entity-2',
+          position: { x: 139.70, y: 35.69, z: 50 },
+          properties: { type: 'commercial' }
         }
-      }
+      ];
+
+      heatbox = new Heatbox(viewer, {
+        voxelSize: 30,
+        aggregation: {
+          enabled: false // Explicitly disabled
+        }
+      });
+
+      await heatbox.createFromEntities(entities);
+      const stats = heatbox.getStatistics();
       
-      expect(globalLayerCounts.size).toBe(0);
+      // Verify layers are not returned when aggregation is disabled
+      expect(stats.layers).toBeUndefined();
     });
   });
 });
+
 
