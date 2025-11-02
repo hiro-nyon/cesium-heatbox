@@ -116,6 +116,20 @@ export class GeometryRenderer {
     if (voxelInfo.spatialId) {
       entityConfig.properties.spatialId = voxelInfo.spatialId;
     }
+    
+    // v0.1.18: Add layer aggregation info to properties (ADR-0014)
+    if (voxelInfo.layerTop) {
+      entityConfig.properties.layerTop = voxelInfo.layerTop;
+    }
+    if (voxelInfo.layerStats) {
+      // Convert Map to plain object for Cesium properties
+      // MapをCesiumプロパティ用のプレーンオブジェクトに変換
+      const layerStatsObj = {};
+      for (const [key, count] of voxelInfo.layerStats) {
+        layerStatsObj[key] = count;
+      }
+      entityConfig.properties.layerStats = layerStatsObj;
+    }
 
     // Material configuration based on wireframe mode and render mode
     const hideBox = this.options.wireframeOnly || this.options.outlineRenderMode === 'emulation-only';
@@ -549,16 +563,41 @@ export class GeometryRenderer {
           <tr><td><b>タイル座標:</b></td><td>X=${voxelInfo.spatialId.x}, Y=${voxelInfo.spatialId.y}</td></tr>
     ` : '';
     
+    // v0.1.18: Include layer breakdown if aggregation enabled and showInDescription is true (ADR-0014)
+    let layerInfo = '';
+    const showLayerInfo = this.options.aggregation?.enabled && 
+                          this.options.aggregation?.showInDescription !== false &&
+                          voxelInfo.layerStats && 
+                          voxelInfo.layerStats.size > 0;
+    
+    if (showLayerInfo) {
+      const layerRows = Array.from(voxelInfo.layerStats.entries())
+        .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
+        .map(([key, count]) => `
+          <tr><td style="padding-left: 10px;">${key}</td><td>${count}</td></tr>
+        `).join('');
+      
+      const topLayerInfo = voxelInfo.layerTop ? `
+          <tr><td><b>支配的レイヤ:</b></td><td>${voxelInfo.layerTop}</td></tr>
+      ` : '';
+      
+      layerInfo = `
+          ${topLayerInfo}
+          <tr><td colspan="2"><b>レイヤ内訳:</b></td></tr>
+          ${layerRows}
+      `;
+    }
+    
     return `
       <div style="padding: 10px; font-family: Arial, sans-serif;">
         <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
         <table style="width: 100%;">
           <tr><td><b>エンティティ数:</b></td><td>${voxelInfo.count}</td></tr>
           <tr><td><b>ボクセルキー:</b></td><td>${voxelKey}</td></tr>
-          <tr><td><b>座標:</b></td><td>X=${voxelInfo.x}, Y=${voxelInfo.y}, Z=${voxelInfo.z}</td></tr>${spatialIdInfo}
+          <tr><td><b>座標:</b></td><td>X=${voxelInfo.x}, Y=${voxelInfo.y}, Z=${voxelInfo.z}</td></tr>${spatialIdInfo}${layerInfo}
         </table>
         <p style="margin-bottom: 0;">
-          <small>v0.1.17 GeometryRenderer (Spatial ID support)</small>
+          <small>v0.1.18 GeometryRenderer (Layer aggregation support)</small>
         </p>
       </div>
     `;
