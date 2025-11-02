@@ -5,6 +5,7 @@ import * as Cesium from 'cesium';
 import { VoxelGrid } from './VoxelGrid.js';
 import { Logger } from '../utils/logger.js';
 import { SpatialIdAdapter } from './spatial/SpatialIdAdapter.js';
+import { resolvePropertyValue } from '../utils/cesiumProperty.js';
 
 /**
  * Class responsible for processing entity data.
@@ -30,10 +31,63 @@ export class DataProcessor {
     const voxelData = new Map();
     let processedCount = 0;
     let skippedCount = 0;
-    
-    Logger.debug(`Processing ${entities.length} entities for classification`);
-    
+
+    // v0.1.18: Layer aggregation setup (ADR-0014)
+    const aggregationOptions = options.aggregation || {};
+    const aggregationEnabled = Boolean(aggregationOptions.enabled);
     const currentTime = Cesium.JulianDate.now();
+    const byProperty = typeof aggregationOptions.byProperty === 'string' && aggregationOptions.byProperty.trim() !== ''
+      ? aggregationOptions.byProperty.trim()
+      : null;
+    const userResolver = typeof aggregationOptions.keyResolver === 'function' ? aggregationOptions.keyResolver : null;
+    let resolveLayerKey = null;
+
+    if (aggregationEnabled) {
+      if (userResolver || byProperty) {
+        resolveLayerKey = (entity, entityIndex) => {
+          let value;
+
+          if (userResolver) {
+            try {
+              value = userResolver(entity);
+            } catch (error) {
+              Logger.warn(`[aggregation] keyResolver threw error for entity ${entityIndex}, using "unknown"`, error);
+              return 'unknown';
+            }
+            value = resolvePropertyValue(value, currentTime);
+          } else if (byProperty) {
+            let resolved;
+            try {
+              const bag = entity.properties?.getValue?.(currentTime);
+              if (bag && typeof bag === 'object' && byProperty in bag) {
+                resolved = bag[byProperty];
+              }
+            } catch (error) {
+              Logger.warn(`[aggregation] Failed to resolve PropertyBag for ${byProperty}, fallback to direct property`, error);
+            }
+
+            if (resolved === undefined) {
+              const prop = entity.properties?.[byProperty];
+              resolved = resolvePropertyValue(prop, currentTime);
+            }
+
+            value = resolved;
+          }
+
+          if (value === undefined || value === null || (typeof value === 'number' && Number.isNaN(value))) {
+            return 'unknown';
+          }
+
+          const stringValue = String(value);
+          return stringValue.trim() === '' ? 'unknown' : stringValue;
+        };
+      } else {
+        Logger.warn('[aggregation] enabled but no byProperty or keyResolver specified, using "default" key');
+        resolveLayerKey = () => 'default';
+      }
+    }
+
+    Logger.debug(`Processing ${entities.length} entities for classification`);
     
     entities.forEach((entity, index) => {
       try {
@@ -100,18 +154,32 @@ export class DataProcessor {
           const voxelKey = VoxelGrid.getVoxelKey(voxelX, voxelY, voxelZ);
           
           if (!voxelData.has(voxelKey)) {
-            voxelData.set(voxelKey, {
+            const newVoxelInfo = {
               x: voxelX,
               y: voxelY,
               z: voxelZ,
               entities: [],
               count: 0
-            });
+            };
+            
+            // v0.1.18: Initialize layerStats if aggregation enabled (ADR-0014)
+            if (aggregationEnabled) {
+              newVoxelInfo.layerStats = new Map();
+            }
+            
+            voxelData.set(voxelKey, newVoxelInfo);
           }
           
           const voxelInfo = voxelData.get(voxelKey);
           voxelInfo.entities.push(entity);
           voxelInfo.count++;
+          
+          // v0.1.18: Aggregate by layer (ADR-0014)
+          if (aggregationEnabled && resolveLayerKey) {
+            const layerKey = resolveLayerKey(entity, index) || 'unknown';
+            const currentCount = voxelInfo.layerStats.get(layerKey) || 0;
+            voxelInfo.layerStats.set(layerKey, currentCount + 1);
+          }
           
           processedCount++;
         } else {
@@ -122,6 +190,27 @@ export class DataProcessor {
         skippedCount++;
       }
     });
+    
+    // v0.1.18: Calculate layerTop (most common layer per voxel) (ADR-0014)
+    if (aggregationEnabled) {
+      for (const voxelInfo of voxelData.values()) {
+        if (voxelInfo.layerStats && voxelInfo.layerStats.size > 0) {
+          let maxCount = 0;
+          let topLayer = null;
+          
+          for (const [layerKey, count] of voxelInfo.layerStats) {
+            if (count > maxCount) {
+              maxCount = count;
+              topLayer = layerKey;
+            }
+          }
+          
+          voxelInfo.layerTop = topLayer;
+        }
+      }
+      
+      Logger.debug(`[aggregation] Calculated layerTop for ${voxelData.size} voxels`);
+    }
     
     Logger.info(`${processedCount}個のエンティティを${voxelData.size}個のボクセルに分類（${skippedCount}個はスキップ）`);
     return voxelData;
@@ -287,13 +376,67 @@ export class DataProcessor {
     options._resolvedZoom = zoom;
     options._spatialIdProvider = adapter.fallbackMode ? null : options.spatialId.provider;
     
+    // v0.1.18: Layer aggregation setup (ADR-0014)
+    const aggregationOptions = options.aggregation || {};
+    const aggregationEnabled = Boolean(aggregationOptions.enabled);
+    const currentTime = Cesium.JulianDate.now();
+    const byProperty = typeof aggregationOptions.byProperty === 'string' && aggregationOptions.byProperty.trim() !== ''
+      ? aggregationOptions.byProperty.trim()
+      : null;
+    const userResolver = typeof aggregationOptions.keyResolver === 'function' ? aggregationOptions.keyResolver : null;
+    let resolveLayerKey = null;
+
+    if (aggregationEnabled) {
+      if (userResolver || byProperty) {
+        resolveLayerKey = (entity, entityIndex) => {
+          let value;
+
+          if (userResolver) {
+            try {
+              value = userResolver(entity);
+            } catch (error) {
+              Logger.warn(`[aggregation] keyResolver threw error for entity ${entityIndex}, using "unknown"`, error);
+              return 'unknown';
+            }
+            value = resolvePropertyValue(value, currentTime);
+          } else if (byProperty) {
+            let resolved;
+            try {
+              const bag = entity.properties?.getValue?.(currentTime);
+              if (bag && typeof bag === 'object' && byProperty in bag) {
+                resolved = bag[byProperty];
+              }
+            } catch (error) {
+              Logger.warn(`[aggregation] Failed to resolve PropertyBag for ${byProperty}, fallback to direct property`, error);
+            }
+
+            if (resolved === undefined) {
+              const prop = entity.properties?.[byProperty];
+              resolved = resolvePropertyValue(prop, currentTime);
+            }
+
+            value = resolved;
+          }
+
+          if (value === undefined || value === null || (typeof value === 'number' && Number.isNaN(value))) {
+            return 'unknown';
+          }
+
+          const stringValue = String(value);
+          return stringValue.trim() === '' ? 'unknown' : stringValue;
+        };
+      } else {
+        Logger.warn('[aggregation] enabled but no byProperty or keyResolver specified, using "default" key');
+        resolveLayerKey = () => 'default';
+      }
+    }
+    
     // Process entities and aggregate by spatial ID / エンティティを処理して空間IDで集約
     const voxelMap = new Map();
     let processedCount = 0;
     let skippedCount = 0;
     
-    const currentTime = Cesium.JulianDate.now();
-    
+    let entityIndex = 0;
     for (const entity of entities) {
       try {
         // Get entity position / エンティティの位置を取得
@@ -353,7 +496,7 @@ export class DataProcessor {
 
           const { x: safeX, y: safeY, z: safeZ } = DataProcessor._normalizeGridIndices(centerLng, centerLat, centerAlt, bounds, grid);
 
-          voxelMap.set(zfxyStr, {
+          const newVoxelInfo = {
             key: zfxyStr,
             // Normalized indices for compatibility with VoxelSelector and other systems
             // VoxelSelectorなど他システムとの互換性のための正規化インデックス
@@ -364,18 +507,56 @@ export class DataProcessor {
             spatialId: { ...zfxy, id: zfxyStr },
             entities: [],
             count: 0
-          });
+          };
+          
+          // v0.1.18: Initialize layerStats if aggregation enabled (ADR-0014)
+          if (aggregationEnabled) {
+            newVoxelInfo.layerStats = new Map();
+          }
+          
+          voxelMap.set(zfxyStr, newVoxelInfo);
         }
         
         const voxelInfo = voxelMap.get(zfxyStr);
         voxelInfo.entities.push(entity);
         voxelInfo.count++;
-        processedCount++;
         
+        // v0.1.18: Aggregate by layer (ADR-0014)
+        if (aggregationEnabled && resolveLayerKey) {
+          const layerKey = resolveLayerKey(entity, entityIndex) || 'unknown';
+          const currentCount = voxelInfo.layerStats.get(layerKey) || 0;
+          voxelInfo.layerStats.set(layerKey, currentCount + 1);
+        }
+
+        processedCount++;
+
       } catch (error) {
         Logger.warn(`Failed to process entity for spatial ID:`, error);
         skippedCount++;
       }
+
+      entityIndex++;
+    }
+    
+    // v0.1.18: Calculate layerTop (most common layer per voxel) (ADR-0014)
+    if (aggregationEnabled) {
+      for (const voxelInfo of voxelMap.values()) {
+        if (voxelInfo.layerStats && voxelInfo.layerStats.size > 0) {
+          let maxCount = 0;
+          let topLayer = null;
+          
+          for (const [layerKey, count] of voxelInfo.layerStats) {
+            if (count > maxCount) {
+              maxCount = count;
+              topLayer = layerKey;
+            }
+          }
+          
+          voxelInfo.layerTop = topLayer;
+        }
+      }
+      
+      Logger.debug(`[aggregation] Calculated layerTop for ${voxelMap.size} voxels (Spatial ID mode)`);
     }
     
     Logger.info(`Spatial ID: ${processedCount} entities classified into ${voxelMap.size} voxels (${skippedCount} skipped)`);

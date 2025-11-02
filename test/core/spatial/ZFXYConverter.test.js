@@ -35,7 +35,7 @@ describe('ZFXYConverter', () => {
     it('should return vertices with lng/lat/alt properties', () => {
       const result = ZFXYConverter.convert(139.6917, 35.6895, 50, 25);
       
-      result.vertices.forEach((vertex, index) => {
+      result.vertices.forEach((vertex) => {
         expect(vertex).toHaveProperty('lng');
         expect(vertex).toHaveProperty('lat');
         expect(vertex).toHaveProperty('alt');
