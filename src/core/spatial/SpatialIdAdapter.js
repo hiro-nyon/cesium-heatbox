@@ -104,19 +104,31 @@ export class SpatialIdAdapter {
     const maxZoom = 30;
     let bestZoom = 25;  // Default fallback
     let minError = Infinity;
+    let bestZoomWithinTolerance = null;
 
     for (let z = minZoom; z <= maxZoom; z++) {
       const cellSizeXY = this._calculateCellSizeAtZoom(z, centerLat);
       const relativeError = Math.abs(cellSizeXY - targetSize) / targetSize;
 
-      if (relativeError < minError && relativeError <= tolerance / 100) {
+      // Always track the zoom with minimum error
+      if (relativeError < minError) {
         bestZoom = z;
         minError = relativeError;
       }
+
+      // Also track the first zoom within tolerance
+      if (bestZoomWithinTolerance === null && relativeError <= tolerance / 100) {
+        bestZoomWithinTolerance = z;
+      }
     }
 
-    Logger.debug(`SpatialIdAdapter: Optimal zoom ${bestZoom} for target size ${targetSize}m (error: ${(minError * 100).toFixed(1)}%)`);
-    return bestZoom;
+    // Prefer zoom within tolerance, otherwise use closest
+    const selectedZoom = bestZoomWithinTolerance !== null ? bestZoomWithinTolerance : bestZoom;
+    const selectedCellSize = this._calculateCellSizeAtZoom(selectedZoom, centerLat);
+    const selectedErrorPct = Math.abs(selectedCellSize - targetSize) / targetSize * 100;
+
+    Logger.debug(`SpatialIdAdapter: Optimal zoom ${selectedZoom} for target size ${targetSize}m (cell size: ${selectedCellSize.toFixed(1)}m, error: ${selectedErrorPct.toFixed(1)}%)${bestZoomWithinTolerance === null ? ' [closest, exceeds tolerance]' : ''}`);
+    return selectedZoom;
   }
 
   /**
