@@ -103,7 +103,14 @@
 
     let viewer, heatbox, generatedEntities;
 
-    // Initialize Cesium viewer
+    // Setup Viewer with CartoDB imagery
+    const imageryProvider = new Cesium.UrlTemplateImageryProvider({
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      subdomains: 'abcd',
+      maximumLevel: 19,
+      credit: '© OpenStreetMap contributors © CARTO'
+    });
+
     viewer = new Cesium.Viewer('cesiumContainer', {
       baseLayerPicker: false,
       geocoder: false,
@@ -114,12 +121,12 @@
       timeline: false,
       fullscreenButton: false,
       vrButton: false,
-      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://tile.openstreetmap.org/'
-      })
+      imageryProvider
     });
 
-    viewer.scene.globe.enableLighting = false;
+    viewer.imageryLayers.removeAll();
+    viewer.imageryLayers.addImageryProvider(imageryProvider);
+    viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
 
     // Initial camera setup
     focusCameraView({ bounds: GENERATION_BOUNDS, pitchDegrees: CAMERA_DEFAULTS.pitchDegrees });
