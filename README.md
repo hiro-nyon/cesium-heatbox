@@ -262,6 +262,75 @@ heatbox.togglePerformanceOverlay();
 - **フォールバックメカニズム**: Ouranos未インストール時は内蔵Web Mercatorベース変換を使用
 - **自動ズーム選択**: 目標ボクセルサイズ（voxelSize）と緯度から最適なズームレベルを自動決定
 
+#### インストール方法
+
+空間ID機能は本体のインストールだけで基本的に動作しますが、公式の[ouranos-gex-lib-for-javascript](https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript)を使用する場合は追加の手順が必要です。
+
+##### ⚠️ 重要な注意事項
+
+`ouranos-gex-lib-for-javascript`は**GitHub上にビルド済みファイルが含まれていません**。そのため、通常の`npm install`では動作しません。以下の特別な手順が必要です：
+
+##### オプション1: 内蔵フォールバックモードで使用（推奨・簡単）
+
+**インストール不要**です。`cesium-heatbox`本体のみをインストールすれば、内蔵のWeb Mercatorベース変換が自動的に使用されます：
+
+```bash
+npm install cesium-heatbox
+```
+
+このモードでは、Ouranoscが利用できない場合に自動的に内蔵変換に切り替わります。多くの用途で十分な精度を提供します。
+
+##### オプション2: Ouranos公式ライブラリを使用（高精度）
+
+METI準拠の高精度な空間ID変換が必要な場合は、以下の手順でOuranosライブラリをセットアップします：
+
+```bash
+# 1. cesium-heatboxをインストール
+npm install cesium-heatbox
+
+# 2. ouranos-gexをオプショナル依存としてインストール
+npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+
+# 3. 専用スクリプトでビルド＆セットアップ
+npx cesium-heatbox-install-ouranos
+```
+
+> **Note**: `npx cesium-heatbox-install-ouranos`は`node_modules/cesium-heatbox/tools/install-ouranos.js`を実行します。このスクリプトは：
+> 1. `vendor/`ディレクトリにOuranosリポジトリをクローン
+> 2. 依存関係をインストールしてビルド
+> 3. ビルド済みファイルを`node_modules/`にコピー
+
+##### インストール確認
+
+正しくインストールされているか確認するには：
+
+```javascript
+import { Heatbox } from 'cesium-heatbox';
+
+const heatbox = new Heatbox(viewer, {
+  spatialId: { enabled: true }
+});
+
+// 統計情報でプロバイダーを確認
+const stats = heatbox.getStatistics();
+console.log('Provider:', stats.spatialIdProvider); 
+// "ouranos-gex" = 公式ライブラリ使用中
+// "fallback" or null = 内蔵変換使用中
+```
+
+##### トラブルシューティング
+
+**問題**: `npm install`後に空間ID機能が動作しない
+
+**解決策**:
+1. `node_modules/ouranos-gex-lib-for-javascript/dist/index.js`が存在するか確認
+2. 存在しない場合は`npx cesium-heatbox-install-ouranos`を実行
+3. それでも失敗する場合は、`vendor/`ディレクトリを削除してから再試行
+
+**問題**: `Module not found: Error: Can't resolve 'ouranos-gex-lib-for-javascript'`という警告
+
+**解決策**: これは**正常**です。Ouranosはオプショナル依存のため、webpackビルド時に警告が出ますが、実行時には動的importでフォールバックします。警告を無視して問題ありません。
+
 #### 基本的な使用方法
 
 ```javascript
@@ -328,6 +397,75 @@ In addition to uniform grids, voxel generation using geospatial tile systems (Sp
 - **Ouranos-GEX Library Integration**: METI-compliant spatial ID conversion (optional dependency)
 - **Fallback Mechanism**: Built-in Web Mercator-based conversion when Ouranos is not installed
 - **Auto Zoom Selection**: Automatically determines optimal zoom level from target voxel size (voxelSize) and latitude
+
+#### Installation
+
+The Spatial ID feature works out of the box with basic installation, but using the official [ouranos-gex-lib-for-javascript](https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript) requires additional setup.
+
+##### ⚠️ Important Notice
+
+**`ouranos-gex-lib-for-javascript` does not include pre-built files on GitHub**. Therefore, standard `npm install` will not work. Special setup steps are required:
+
+##### Option 1: Use Built-in Fallback Mode (Recommended, Easy)
+
+**No additional installation needed**. Simply install `cesium-heatbox` and the built-in Web Mercator-based converter will be used automatically:
+
+```bash
+npm install cesium-heatbox
+```
+
+This mode automatically falls back to the built-in converter when Ouranos is unavailable. It provides sufficient accuracy for most use cases.
+
+##### Option 2: Use Official Ouranos Library (High Accuracy)
+
+If you need METI-compliant high-precision spatial ID conversion, follow these steps to set up the Ouranos library:
+
+```bash
+# 1. Install cesium-heatbox
+npm install cesium-heatbox
+
+# 2. Install ouranos-gex as optional dependency
+npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+
+# 3. Build and setup using dedicated script
+npx cesium-heatbox-install-ouranos
+```
+
+> **Note**: `npx cesium-heatbox-install-ouranos` runs `node_modules/cesium-heatbox/tools/install-ouranos.js`. This script:
+> 1. Clones the Ouranos repository into `vendor/` directory
+> 2. Installs dependencies and builds the library
+> 3. Copies built files into `node_modules/`
+
+##### Installation Verification
+
+To verify correct installation:
+
+```javascript
+import { Heatbox } from 'cesium-heatbox';
+
+const heatbox = new Heatbox(viewer, {
+  spatialId: { enabled: true }
+});
+
+// Check provider in statistics
+const stats = heatbox.getStatistics();
+console.log('Provider:', stats.spatialIdProvider); 
+// "ouranos-gex" = using official library
+// "fallback" or null = using built-in converter
+```
+
+##### Troubleshooting
+
+**Issue**: Spatial ID feature doesn't work after `npm install`
+
+**Solution**:
+1. Check if `node_modules/ouranos-gex-lib-for-javascript/dist/index.js` exists
+2. If not, run `npx cesium-heatbox-install-ouranos`
+3. If still failing, delete `vendor/` directory and retry
+
+**Issue**: Warning `Module not found: Error: Can't resolve 'ouranos-gex-lib-for-javascript'`
+
+**Solution**: This is **normal**. Ouranos is an optional dependency, so webpack shows warnings during build, but the runtime will dynamically import and fallback. You can safely ignore this warning.
 
 #### Basic Usage
 
