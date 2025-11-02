@@ -398,7 +398,8 @@
         heatboxOptions.spatialId = {
           enabled: true,
           mode: 'tile-grid',
-          zoom: parseInt(elements.zoomLevel.value)
+          zoom: parseInt(elements.zoomLevel.value),
+          zoomControl: 'manual'
         };
       } else {
         heatboxOptions.voxelSize = parseInt(elements.voxelSize.value);
@@ -502,4 +503,3 @@
   </script>
 </body>
 </html>
-
