@@ -176,16 +176,35 @@
       elements.entityCountValue.textContent = e.target.value;
     });
 
-    // Update zoom level display
+    // Update zoom level display and trigger regeneration if heatbox exists
     elements.zoomLevel.addEventListener('input', (e) => {
       elements.zoomLevelValue.textContent = e.target.value;
     });
+    
+    elements.zoomLevel.addEventListener('change', () => {
+      // Auto-regenerate if heatbox already exists
+      if (heatbox && generatedEntities && generatedEntities.length > 0) {
+        elements.createHeatmapBtn.click();
+      }
+    });
 
-    // Toggle spatial ID options
+    // Auto-regenerate when voxel size changes
+    elements.voxelSize.addEventListener('change', () => {
+      if (heatbox && generatedEntities && generatedEntities.length > 0) {
+        elements.createHeatmapBtn.click();
+      }
+    });
+
+    // Toggle spatial ID options and regenerate
     elements.useSpatialId.addEventListener('change', () => {
       const useSpatialId = elements.useSpatialId.checked;
       elements.zoomLevelGroup.style.display = useSpatialId ? 'block' : 'none';
       elements.manualVoxelSizeGroup.style.display = useSpatialId ? 'none' : 'block';
+      
+      // Auto-regenerate if heatbox already exists
+      if (heatbox && generatedEntities && generatedEntities.length > 0) {
+        elements.createHeatmapBtn.click();
+      }
     });
 
     // Weighted random selection
