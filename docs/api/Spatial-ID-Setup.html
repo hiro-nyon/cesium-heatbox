@@ -145,6 +145,20 @@ console.log('Provider:', stats.spatialIdProvider);
 // Expected: "ouranos-gex" (if setup successful)
 // Expected: "fallback" or null (if Ouranos not available)</code></pre>
 
+                <h5>Step 5: Rebuild Heatbox</h5>
+
+                <p>Rebuild the library so the newly prepared provider shim is bundled:</p>
+
+                <pre class="prettyprint source"><code>npm run build</code></pre>
+
+                <h5>Step 6: Serve over HTTP</h5>
+
+                <p>Dynamic <code>import()</code> requires the examples to be served via HTTP(S). Launch the dev server before opening the spatial ID demos:</p>
+
+                <pre class="prettyprint source"><code>npm run dev</code></pre>
+
+                <p><strong>Important:</strong> Opening the HTML files directly with <code>file://</code> will prevent the browser from loading the ouranos provider chunk, forcing fallback mode.</p>
+
                 <hr>
 
                 <h3>Troubleshooting</h3>
@@ -289,6 +303,7 @@ async loadProvider() {
                     <li><strong>Try-Catch Pattern</strong>: If <code>import()</code> fails, fallback is used automatically</li>
                     <li><strong>No Hard Dependency</strong>: Code gracefully degrades without Ouranos</li>
                     <li><strong>Optional Setup</strong>: Users can choose whether to install Ouranos</li>
+                    <li><strong>Vertex Normalization</strong>: Regardless of provider, Heatbox normalizes vertices to <code>{lng, lat, alt}</code> objects before rendering</li>
                 </ol>
 
                 <h4>File Structure</h4>
@@ -505,6 +520,20 @@ console.log('Provider:', stats.spatialIdProvider);
 // 期待値: "ouranos-gex"（セットアップ成功時）
 // 期待値: "fallback" または null（Ouranos利用不可時）</code></pre>
 
+                <h5>ステップ5: Heatboxを再ビルド</h5>
+
+                <p>準備したプロバイダーをバンドルに含めるため、ライブラリを再ビルドします：</p>
+
+                <pre class="prettyprint source"><code>npm run build</code></pre>
+
+                <h5>ステップ6: HTTP経由で提供</h5>
+
+                <p>動的<code>import()</code>を使用するため、空間IDのデモはHTTP(S)経由で提供する必要があります。HTMLを開く前に開発サーバーを起動してください：</p>
+
+                <pre class="prettyprint source"><code>npm run dev</code></pre>
+
+                <p><strong>重要:</strong> <code>file://</code>で直接HTMLを開くと、ouranosプロバイダーチャンクの読み込みに失敗しフォールバックモードになります。</p>
+
                 <hr>
 
                 <h3>トラブルシューティング</h3>
@@ -649,6 +678,7 @@ async loadProvider() {
                     <li><strong>Try-Catchパターン</strong>: <code>import()</code>が失敗すると、フォールバックが自動的に使用されます</li>
                     <li><strong>ハード依存なし</strong>: Ouranosなしでもコードは適切に機能低下します</li>
                     <li><strong>オプションのセットアップ</strong>: ユーザーはOuranosをインストールするかどうかを選択できます</li>
+                    <li><strong>頂点の正規化</strong>: プロバイダーに関係なく、描画前に頂点は<code>{lng, lat, alt}</code>形式へ正規化されます</li>
                 </ol>
 
                 <h4>ファイル構造</h4>
