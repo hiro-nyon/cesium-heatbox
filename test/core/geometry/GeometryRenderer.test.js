@@ -281,7 +281,7 @@ describe('GeometryRenderer', () => {
       expect(description).toContain('ボクセル [1, 2, 3]');
       expect(description).toContain('42');
       expect(description).toContain('desc-key');
-      expect(description).toContain('v0.1.11 GeometryRenderer');
+      expect(description).toContain('v0.1.17 GeometryRenderer');
     });
   });
 
