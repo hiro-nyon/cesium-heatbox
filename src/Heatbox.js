@@ -544,9 +544,11 @@ export class Heatbox {
       this._grid = VoxelGrid.createGrid(this._bounds, finalVoxelSize);
       Logger.debug('グリッド生成完了:', this._grid);
       
-      // 3. エンティティ分類
+      // 3. エンティティ分類（v0.1.17: 空間IDサポート）
       Logger.debug('Step 3: エンティティ分類');
-      this._voxelData = DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid);
+      // Pass options with voxelSize for spatial ID auto zoom calculation
+      const classificationOptions = { ...this.options, voxelSize: finalVoxelSize };
+      this._voxelData = await DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid, classificationOptions);
       Logger.debug('エンティティ分類完了:', this._voxelData.size, '個のボクセル');
       
       // 4. 統計計算
@@ -560,6 +562,17 @@ export class Heatbox {
         this._statistics.originalVoxelSize = autoAdjustmentInfo.originalSize;
         this._statistics.finalVoxelSize = autoAdjustmentInfo.finalSize;
         this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
+      }
+      
+      // v0.1.17: 空間ID情報を統計に追加
+      if (classificationOptions.spatialId?.enabled) {
+        this._statistics.spatialIdEnabled = true;
+        this._statistics.spatialIdMode = classificationOptions.spatialId.mode;
+        this._statistics.spatialIdProvider = classificationOptions._spatialIdProvider || null;
+        this._statistics.spatialIdZoom = classificationOptions._resolvedZoom || null;
+        this._statistics.zoomControl = classificationOptions.spatialId.zoomControl;
+      } else {
+        this._statistics.spatialIdEnabled = false;
       }
       
       // 5. 描画（レンダリング時間の計測）

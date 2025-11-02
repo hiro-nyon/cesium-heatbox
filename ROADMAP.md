@@ -171,6 +171,56 @@ Priority: Medium | Target: 2026-02
   - [ ] メモリ使用量の増加 ≤ +10%（既存比）
   - [ ] 1000–5000ボクセル規模でのフレーム時間安定性（±20%以内）
 
+###  v0.1.16（Examples 体系化・整理）
+Priority: Medium | Target: 2025-11-02
+
+Scope（examples/advanced を体系化し、学習・検証導線を改善）
+
+[] カテゴリ別ディレクトリ構成の導入（既存ファイルは段階的に移行）
+- observability/（観測可能性）
+  - performance-overlay-demo.html（v0.1.12）
+  - benchmark-usage.md（CLIの使い方・CSV/MD出力サンプル）
+- rendering/（描画モード・高さ/ワイヤーフレーム）
+  - wireframe-height-demo.js / wireframe-height-demo-umd.html
+  - adaptive-rendering-demo.html / adaptive-rendering-demo.js（プリセット・   adaptiveOutlines）
+- outlines/（枠線：標準/インセット/エミュレーション）
+  - outline-overlap-demo-umd.html
+  - emulation-scope-demo.html（新規: standard/inset への部分エミュ重ね合わせ例）
+- selection-limits/（選択戦略と描画上限）
+  - selection-strategy-demo.html（新規: density/coverage/hybrid 比較）
+  - performance-optimization.js（段階的ロード・上限制御）
+- data/（データ生成・フィルタリング）
+  - entity-filtering.js（属性/高度/範囲フィルタ）
+
+ガイドライン（examples 統一ルール）
+
+[ ] Cesium 1.120 を参照し、UMD/ESMのどちらでも動く最小構成を提示
+[ ] Cesium 初期化の標準化（黒画面回避）：Ion 無効化＋OSM/Carto 画像＋EllipsoidTerrain を既定。必要時のみ Ion トークンを明示有効化
+[ ] 各カテゴリ配下に README.md（目的、前提、主要オプション、落とし穴）
+[ ] 例名・ファイル名はケバブケース、UIテキストは英語、READMEは日英併記
+[ ] Heatbox の profile と getEffectiveOptions() の使用例を各カテゴリに1つ以上配置
+[ ] fitView(..., { pitchDegrees, headingDegrees }) の統一APIで記述
+
+受け入れ基準（Acceptance Criteria）
+
+[ ] examples/advanced のトップ README にカテゴリ一覧と対応ファイルの表を掲載
+[ ] observability/rendering/outlines/selection-limits/data の5カテゴリが存在
+[ ] すべてのHTML例で「白/黒画面やコンソールエラー」が無い（ローカル確認）。`createWorldTerrain()` を使う例は Ion トークン無設定時でもフォールバックが効く
+[ ] 既存の UMD 例（wireframe/outline-overlap）は動作維持（リンクも更新）
+[ ] v0.1.12 の新API（outlineRenderMode/emulationScope、pitchDegrees/headingDegrees、profile）が少なくとも1つの例で確認可能
+
+移行計画（非破壊）
+
+- Step 1: 例の分類・README整備（ファイル移動は行わない）
+- Step 2: 新規例（emulation-scope-demo、selection-strategy-demo）を追加
+- Step 3: 影響範囲を確認しつつフェーズドでディレクトリ移動（git mv）し、リンク更新
+- Step 4: Wiki の Examples ページと同期（tools/wiki-sync.js）
+
+リスク & 緩和
+
+- URL/リンク切れ → Step 1ではリンクのみ先に整備、移動はStep 3で一括実施
+- ブラウザ互換 → 例のHTMLテンプレートを統一（Cesium CSS/JS、UMD/ESM切替コメント
+
 #### v0.1.15の非目標（v1.1.0へ延期）
 - opacity/width の classification 連携
 - resolver の完全置き換え（削除は v1.x 以降の段階的対応）
@@ -182,7 +232,153 @@ Priority: Medium | Target: 2026-02
 - Phase 3→4: Advanced Examplesが白画面/エラーなく動作
 - Phase 4→main: 全受け入れ基準を満たし、リリースノート/移行ガイド完成
 
+
+
 > 注: 0.1系では「コアのデータモデル変更や新レイヤー」は行わず、安定化と利用性向上に限定します。
+
+### v0.1.17（空間ID対応—タイル準拠モード統合）— Spatial ID 準拠ボクセル（オプトイン）
+Priority: High | Target: 2025-11-02
+
+- 目的（非破壊導入・統合）
+  - **既存の一様ボクセルグリッドはデフォルト維持**（従来モード）。
+  - 新たに **空間ID（METI Spatial ID / Ouranos）準拠のボクセルを直接生成するモード**を追加（オプトイン）。
+  - 既存モードには空間IDを**付与しない**（`properties.spatialId` も出さない）。
+  - 旧 v0.1.19（tile-grid）は本版 v0.1.17 に**統合**。
+
+- 仕様
+  - 新規オプション: `spatialId: { enabled: boolean, mode?: 'tile-grid', provider?: 'ouranos-gex', zoom?: number|'auto', zoomControl?: 'auto'|'manual', zoomTolerancePct?: number }`
+    - 既定: `enabled=false`。有効化時は **`mode:'tile-grid'`** を使用。
+    - **ID 文字列表現は zfxyStr を正規形式**とする（公開API）。`tilehash` は **util 内でのみ使用**し公開しない。
+    - `zoomControl:'auto'|'manual'` を追加。`'manual'` の場合は `zoom` の明示指定を**そのまま採用**（METIガイドラインのレベル表に合わせて手動選択できる）。
+    - `zoomControl:'auto'` の場合、XYセル寸法の相対誤差が **`zoomTolerancePct ≤ 10%`** となる `z` を選択（XY優先）。
+  - DataProcessor（tile-grid モード時）
+    - 入力 `({lng,lat,alt})` を `z` に対し ZFXY に変換し、**`zfxyStr` をキーに集約**。
+    - `voxelInfo.bounds` を **ZFXY セル境界**（8頂点）から算出。
+    - ouranos-gex が存在する場合は `Space` を利用。未導入時は内蔵の ZFXY 変換式でフォールバック（警告ログのみ、処理は継続）。
+  - VoxelRenderer
+    - `voxelInfo.bounds` を用いて中心/寸法を計算し `Entity.box` で描画（Primitive 化は 3.x で検討）。
+  - 観測性
+    - `Heatbox.getStatistics()` に `spatialIdEnabled`, `spatialIdProvider`, `spatialIdZoom`, `zoomControl` を追加（任意）。
+  - 依存管理（ouranos-gex）
+    - インストールは **npm または GitHub** のいずれかから（利用者環境に合わせて選択）。
+    - 依存は **オプショナル** とし、**バージョンは現時点で未指定**（将来的にコミットハッシュ/タグpinへ移行可）。
+    - 例（GitHub 直指定）: `package.json`
+      ```json
+      {
+        "optionalDependencies": {
+          "ouranos-gex-lib-for-JavaScript": "github:ouranos-gex/ouranos-gex-lib-for-JavaScript"
+        }
+      }
+      ```
+    - 例（npm 公開時想定）: `package.json`
+      ```json
+      {
+        "optionalDependencies": {
+          "ouranos-gex-lib-for-JavaScript": "*"
+        }
+      }
+      ```
+    - ランタイムは dynamic import の try/catch で存在を検出。未導入時は **内蔵ZFXYアダプタ**にフォールバック（WARN を出すが処理は継続）。
+
+- Deliverables
+  - [ ] `SpatialIdAdapter`（tile-grid 専用）実装＋単体テスト
+  - [ ] `options.spatialId` の validation とドキュメント（zfxyStr を正、tilehash 非公開）
+  - [ ] DataProcessor の `tile-grid` 分岐と `voxelInfo.bounds` 計算
+  - [ ] ouranos-gex 未導入でもクラッシュしない採用ガード（WARN ログ）
+
+- Acceptance Criteria
+  - [ ] `spatialId.enabled=true` かつ `mode:'tile-grid'` で生成される各ボクセルの **8頂点が `Space.vertices3d()`（または内蔵式）と一致**（浮動小数許容内）。
+  - [ ] `properties.spatialId` は **`{ z:number, x:number, y:number, f:number, id:string /* zfxyStr */ }`** を持ち、`id` は zfxyStr 正規形式。
+  - [ ] `zoomControl:'auto'` の選択結果が **XY相対誤差 ≤ 10%** を満たす。
+  - [ ] ouranos-gex 未導入でも描画が継続し、`getStatistics()` に `spatialIdEnabled:true` かつ `spatialIdProvider:null` が反映される。
+
+- 非目標
+  - 時系列（4D）の実装（**v1.2.0 に延期**）。
+  - Primitive ベース描画（3.x 以降）。
+  - グローバルQA（±180°ラップ／±85.0511°帯の端ケース）は **v0.1.19** に委譲。
+
+### v0.1.18（集約機能）— ボクセル内情報のレイヤ別集約
+Priority: Medium | Target: 2025-11-02
+
+- 目的
+  - ボクセル内のエンティティを「レイヤ（任意キー）」で集約し、可視化・ピック時の説明/統計で参照可能にする。
+- 仕様
+  - 新規オプション: `aggregation: { enabled: boolean, byProperty?: string, keyResolver?: (entity)=>string }`
+    - 既定は `enabled=false`。`byProperty` が指定されればそのプロパティ値で集約。
+    - `keyResolver` があれば優先（自由なレイヤ定義に対応）。
+  - DataProcessor
+    - 分類時に `voxelInfo.layerStats = Map<layerKey, count>` を構築（必要最小のみ保持）。
+  - 取得API/ピック
+    - `Heatbox.getStatistics()` に `layers?: Array<{ key, total }>`（上位Nのみ）を追加（ログ肥大を防止）。
+    - ピック時 `properties.layerTop`（最多レイヤ）を説明に反映（任意）。
+- Deliverables
+  - [ ] `aggregation` オプションの validation と最小ドキュメント
+  - [ ] DataProcessor の軽量集約ロジック＋単体テスト
+  - [ ] ピック/説明の反映（任意、過剰出力は抑制）
+- Acceptance Criteria
+  - [ ] 指定したレイヤキーで `layerStats` が正しく集約される（単体テストで検証）
+  - [ ] 既定（無効）では現行と同一挙動
+  - [ ] メモリ増加 ≤ +10%、処理時間増加 ≤ +10%（1k–5k ボクセル）
+- 非目標
+  - レイヤ別の色/透明度/太さの自動切替（v1.x で検討）
+  - 実装の初期段階で Heatbox 以外の可視化系ライブラリへ汎用提供すること
+    - ただし将来、PLATEAU などポリゴン/3D Tiles 系や他形式ベクターデータを含む大規模集約が必要になった際には、共通集約レイヤを別パッケージへ切り出すことを再検討する。
+
+### v0.1.19（グローバルQA対応）— 空間ID tile-grid の国際対応テストと修正
+Priority: High | Target: 2025-11-15
+
+- 目的（学会後の仕上げ）
+  - 空間ID 準拠モード（v0.1.17）の **グローバル端ケース** を網羅テストし、必要な修正を反映。
+  - 対象: **±180°（日付変更線）ラップ**、**高緯度帯（±85.0511°近傍）**、半球跨ぎ、経度正規化の境界挙動。
+
+- Scope
+  - テストシナリオ
+    - 反対経度の隣接セル（+179.9°E ↔ -179.9°W）での `neighbors/children/parent` の連続性確認。
+    - 高緯度（例: 84.9°N / 84.9°S）での ZFXY セル境界算出（8頂点）と `voxelInfo.bounds` の一致。
+    - 赤道跨ぎ・子午線跨ぎの `zoom:'auto'` 選択精度（XY相対誤差 ≤ 10%）。
+    - ouranos-gex **有無**の双方での挙動一致（フォールバックの誤差/WARN ログ確認）。
+  - 実装面の調整（必要に応じて）
+    - `SpatialIdAdapter` の**経度ラップ処理**をユーティリティ化し、`neighbors`/`bounds` 両方で共通利用。
+    - `getStatistics()` へ `globalQATested:true` のフラグ（任意）。
+  - ドキュメント/Examples
+    - Examples に **antimeridian-demo** を追加（可視化でラップ挙動を確認）。
+    - README/Wiki にグローバル注意点（±180°/±85.0511°）と `zoomControl:'manual'` の推奨設定例を追記。
+
+- Deliverables
+  - [ ] `tests/spatialid-global/*.spec.js` に antimeridian / high-latitude / hemisphere-cross のケースを追加
+  - [ ] `SpatialIdAdapter` のラップ処理の共通化（必要なら）
+  - [ ] `examples/advanced/antimeridian-demo.*` の追加
+  - [ ] Docs/Wiki のグローバル注意点セクションの新設
+
+- Acceptance Criteria
+  - [ ] **±180°ラップ**で左右の `neighbors` が相互に参照整合（Aの右= B かつ Bの左= A）。
+  - [ ] **高緯度帯（±85.0511°近傍）**で `Space.vertices3d()`（または内蔵式）と `voxelInfo.bounds` の 8頂点が一致（浮動小数許容内）。
+  - [ ] `zoomControl:'auto'` の選択結果が **XY相対誤差 ≤ 10%** を満たす（赤道/子午線/高緯度の代表点）。
+  - [ ] ouranos-gex 未導入でも処理継続し、ログ/統計にフォールバック情報が出力される。
+  - [ ] パフォーマンス退行が ±10% 以内（同一ズーム・同程度セル数）。
+
+- 非目標
+  - 4D（時間次元）の実装（v1.2.0 で対応）
+  - Primitive ベース描画（3.x で検討）
+
+### v0.1.20（Examples再整備）— デモ体系のアップデート
+Priority: Medium | Target: 2025-12
+
+- Scope
+  - [ ] `examples/` 配下のカメラ初期化・UI スタイルを統一し、v0.1.12 以降の API 変更へ追従
+  - [ ] outline / selection / observability デモの既知バグを修正し、補助テキスト・スクリーンショットを刷新
+  - [ ] `gh-pages` ブランチとの乖離を解消し、参照ガイドラインを更新
+  - [ ] Wiki（Examples セクション）に最新版デモ構成と利用方法を反映
+
+- Deliverables
+  - [ ] 共通カメラヘルパーの仕様をドキュメント化し、各 example からの利用手順を整理
+  - [ ] デモ更新に合わせた README / docs/api の差分記載
+  - [ ] 回帰テスト手順（非自動）を wiki に明文化
+
+
+- リスク/緩和
+  - 高緯度での XY 縮尺差 → 仕様どおり受容、ズーム手動選択で回避可能（ドキュメントで注意喚起）。
+  - ライブラリ依存 → ouranos-gex は **optional**（peer/optionalDependencies）。未導入時はフォールバックで継続。
 
 
 ### v1.0.0 — 最小の分類エンジン（colorのみ）

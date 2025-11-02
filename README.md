@@ -247,6 +247,280 @@ heatbox.setPerformanceOverlayEnabled(true, { position: 'bottom-left' });
 heatbox.togglePerformanceOverlay();
 ```
 
+## 空間ID対応 / Spatial ID Support
+
+### 日本語
+
+**v0.1.17新機能**: 空間ID（METI準拠 / Ouranos）に基づくタイルグリッドモードに対応しました。
+
+#### 概要
+
+従来の一様グリッドに加え、地理空間タイルシステム（空間ID）を用いたボクセル生成が可能になりました：
+
+- **タイルグリッドモード**: 経度・緯度・高度を考慮した空間IDベースのボクセル配置
+- **Ouransos-GEXライブラリ統合**: METI準拠の空間ID変換（オプショナル依存）
+- **フォールバックメカニズム**: Ouranos未インストール時は内蔵Web Mercatorベース変換を使用
+- **自動ズーム選択**: 目標ボクセルサイズ（voxelSize）と緯度から最適なズームレベルを自動決定
+
+#### インストール方法
+
+空間ID機能は本体のインストールだけで基本的に動作しますが、公式の[ouranos-gex-lib-for-javascript](https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript)を使用する場合は追加の手順が必要です。
+
+##### ⚠️ 重要な注意事項
+
+`ouranos-gex-lib-for-javascript`は**GitHub上にビルド済みファイルが含まれていません**。そのため、通常の`npm install`では動作しません。以下の特別な手順が必要です：
+
+##### オプション1: 内蔵フォールバックモードで使用（推奨・簡単）
+
+**インストール不要**です。`cesium-heatbox`本体のみをインストールすれば、内蔵のWeb Mercatorベース変換が自動的に使用されます：
+
+```bash
+npm install cesium-heatbox
+```
+
+このモードでは、Ouranoscが利用できない場合に自動的に内蔵変換に切り替わります。多くの用途で十分な精度を提供します。
+
+##### オプション2: Ouranos公式ライブラリを使用（高精度）
+
+METI準拠の高精度な空間ID変換が必要な場合は、以下の手順でOuranosライブラリをセットアップします：
+
+```bash
+# 1. cesium-heatboxをインストール
+npm install cesium-heatbox
+
+# 2. ouranos-gexをオプショナル依存としてインストール
+npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+
+# 3. 専用スクリプトでビルド＆セットアップ
+npx cesium-heatbox-install-ouranos
+```
+
+> **Note**: `npx cesium-heatbox-install-ouranos`は`node_modules/cesium-heatbox/tools/install-ouranos.js`を実行します。このスクリプトは：
+> 1. `vendor/`ディレクトリにOuranosリポジトリをクローン
+> 2. 依存関係をインストールしてビルド
+> 3. ビルド済みファイルを`node_modules/`にコピー
+
+##### インストール確認
+
+正しくインストールされているか確認するには：
+
+```javascript
+import { Heatbox } from 'cesium-heatbox';
+
+const heatbox = new Heatbox(viewer, {
+  spatialId: { enabled: true }
+});
+
+// 統計情報でプロバイダーを確認
+const stats = heatbox.getStatistics();
+console.log('Provider:', stats.spatialIdProvider); 
+// "ouranos-gex" = 公式ライブラリ使用中
+// "fallback" or null = 内蔵変換使用中
+```
+
+##### トラブルシューティング
+
+**問題**: `npm install`後に空間ID機能が動作しない
+
+**解決策**:
+1. `node_modules/ouranos-gex-lib-for-javascript/dist/index.js`が存在するか確認
+2. 存在しない場合は`npx cesium-heatbox-install-ouranos`を実行
+3. それでも失敗する場合は、`vendor/`ディレクトリを削除してから再試行
+
+**問題**: `Module not found: Error: Can't resolve 'ouranos-gex-lib-for-javascript'`という警告
+
+**解決策**: これは**正常**です。Ouranosはオプショナル依存のため、webpackビルド時に警告が出ますが、実行時には動的importでフォールバックします。警告を無視して問題ありません。
+
+#### 基本的な使用方法
+
+```javascript
+import { Heatbox } from 'cesium-heatbox';
+
+// 空間IDモードを有効化（自動ズーム選択）
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,              // 空間IDモードを有効化
+    mode: 'tile-grid',          // タイルグリッドモード
+    provider: 'ouranos-gex',    // 空間IDプロバイダー
+    zoomControl: 'auto',        // 自動ズーム選択
+    zoomTolerancePct: 10        // 許容誤差 (%)
+  },
+  voxelSize: 30  // 目標ボクセルサイズ（メートル）
+});
+
+await heatbox.createFromEntities(entities);
+
+// 空間ID統計の確認
+const stats = heatbox.getStatistics();
+console.log('空間IDズーム:', stats.spatialIdZoom);
+console.log('プロバイダー:', stats.spatialIdProvider);
+```
+
+#### 手動ズーム指定
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,
+    zoom: 25,                    // ズームレベル 25（約1mセル）
+    zoomControl: 'manual'        // 手動ズーム
+  }
+});
+```
+
+#### ズームレベルとセルサイズの関係
+
+| ズーム | セルサイズ (赤道) | 用途例 |
+|--------|------------------|--------|
+| 15     | ~1220 m          | 広域エリア |
+| 20     | ~38 m            | 都市ブロック |
+| 25     | ~1.2 m           | 建物・詳細 |
+| 30     | ~3.7 cm          | 超高精度 |
+
+#### 制限事項（v0.1.17時点）
+
+- **高緯度対応**: ±85.0511°（Web Mercator限界）内で正常動作
+- **日付変更線対応**: 次バージョン（v0.1.19）で実装予定
+- **グローバルQA**: 高緯度・極地・日付変更線をまたぐケースは v0.1.19 で検証予定
+
+詳細は[空間ID使用例](examples/spatial-id/)を参照してください。
+
+### English
+
+**v0.1.17 New Feature**: Spatial ID (METI-compliant / Ouranos) tile-grid mode support.
+
+#### Overview
+
+In addition to uniform grids, voxel generation using geospatial tile systems (Spatial ID) is now available:
+
+- **Tile-Grid Mode**: Spatial ID-based voxel placement considering longitude, latitude, and altitude
+- **Ouranos-GEX Library Integration**: METI-compliant spatial ID conversion (optional dependency)
+- **Fallback Mechanism**: Built-in Web Mercator-based conversion when Ouranos is not installed
+- **Auto Zoom Selection**: Automatically determines optimal zoom level from target voxel size (voxelSize) and latitude
+
+#### Installation
+
+The Spatial ID feature works out of the box with basic installation, but using the official [ouranos-gex-lib-for-javascript](https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript) requires additional setup.
+
+##### ⚠️ Important Notice
+
+**`ouranos-gex-lib-for-javascript` does not include pre-built files on GitHub**. Therefore, standard `npm install` will not work. Special setup steps are required:
+
+##### Option 1: Use Built-in Fallback Mode (Recommended, Easy)
+
+**No additional installation needed**. Simply install `cesium-heatbox` and the built-in Web Mercator-based converter will be used automatically:
+
+```bash
+npm install cesium-heatbox
+```
+
+This mode automatically falls back to the built-in converter when Ouranos is unavailable. It provides sufficient accuracy for most use cases.
+
+##### Option 2: Use Official Ouranos Library (High Accuracy)
+
+If you need METI-compliant high-precision spatial ID conversion, follow these steps to set up the Ouranos library:
+
+```bash
+# 1. Install cesium-heatbox
+npm install cesium-heatbox
+
+# 2. Install ouranos-gex as optional dependency
+npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+
+# 3. Build and setup using dedicated script
+npx cesium-heatbox-install-ouranos
+```
+
+> **Note**: `npx cesium-heatbox-install-ouranos` runs `node_modules/cesium-heatbox/tools/install-ouranos.js`. This script:
+> 1. Clones the Ouranos repository into `vendor/` directory
+> 2. Installs dependencies and builds the library
+> 3. Copies built files into `node_modules/`
+
+##### Installation Verification
+
+To verify correct installation:
+
+```javascript
+import { Heatbox } from 'cesium-heatbox';
+
+const heatbox = new Heatbox(viewer, {
+  spatialId: { enabled: true }
+});
+
+// Check provider in statistics
+const stats = heatbox.getStatistics();
+console.log('Provider:', stats.spatialIdProvider); 
+// "ouranos-gex" = using official library
+// "fallback" or null = using built-in converter
+```
+
+##### Troubleshooting
+
+**Issue**: Spatial ID feature doesn't work after `npm install`
+
+**Solution**:
+1. Check if `node_modules/ouranos-gex-lib-for-javascript/dist/index.js` exists
+2. If not, run `npx cesium-heatbox-install-ouranos`
+3. If still failing, delete `vendor/` directory and retry
+
+**Issue**: Warning `Module not found: Error: Can't resolve 'ouranos-gex-lib-for-javascript'`
+
+**Solution**: This is **normal**. Ouranos is an optional dependency, so webpack shows warnings during build, but the runtime will dynamically import and fallback. You can safely ignore this warning.
+
+#### Basic Usage
+
+```javascript
+import { Heatbox } from 'cesium-heatbox';
+
+// Enable spatial ID mode with auto zoom
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,              // Enable spatial ID mode
+    mode: 'tile-grid',          // Tile-grid mode
+    provider: 'ouranos-gex',    // Spatial ID provider
+    zoomControl: 'auto',        // Auto zoom selection
+    zoomTolerancePct: 10        // Tolerance (%)
+  },
+  voxelSize: 30  // Target voxel size (meters)
+});
+
+await heatbox.createFromEntities(entities);
+
+// Check spatial ID statistics
+const stats = heatbox.getStatistics();
+console.log('Spatial ID zoom:', stats.spatialIdZoom);
+console.log('Provider:', stats.spatialIdProvider);
+```
+
+#### Manual Zoom Specification
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,
+    zoom: 25,                    // Zoom level 25 (~1m cells)
+    zoomControl: 'manual'        // Manual zoom
+  }
+});
+```
+
+#### Zoom Level vs Cell Size
+
+| Zoom | Cell Size (equator) | Use Case |
+|------|---------------------|----------|
+| 15   | ~1220 m             | Wide area |
+| 20   | ~38 m               | City blocks |
+| 25   | ~1.2 m              | Buildings/details |
+| 30   | ~3.7 cm             | Ultra-precision |
+
+#### Limitations (v0.1.17)
+
+- **High Latitude**: Operates normally within ±85.0511° (Web Mercator limit)
+- **Antimeridian**: Planned for next version (v0.1.19)
+- **Global QA**: High-latitude, polar, and antimeridian-crossing cases will be validated in v0.1.19
+
+See [Spatial ID Examples](examples/spatial-id/) for details.
+
 ## API
 
 ### 日本語

@@ -4,95 +4,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>CesiumJS Heatbox v0.1.9 - Adaptive Rendering Demo</title>
-    <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
-    <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-    <style>
-        html, body, #cesiumContainer {
-            width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <link href="../../common/demo.css" rel="stylesheet">
+    <script>
+        window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+        if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+            Cesium.Ion.defaultAccessToken = null;
         }
-        
-        #info {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px;
-            border-radius: 5px;
-            font-family: Arial, sans-serif;
-            max-width: 350px;
-            z-index: 1000;
-        }
-        
-        #adaptiveControls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: Arial, sans-serif;
-            min-width: 280px;
-            z-index: 1000;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        
-        #adaptiveControls h3 {
-            margin-top: 0;
-            color: #4CAF50;
-        }
-        
-        #adaptiveControls select, #adaptiveControls button {
-            width: 100%;
-            padding: 5px;
-            margin: 5px 0;
-            border: 1px solid #555;
-            background: #333;
-            color: white;
-            border-radius: 3px;
-        }
-        
-        #adaptiveControls button {
-            background: #4CAF50;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
-        #adaptiveControls button:hover {
-            background: #45a049;
-        }
-        
-        .control-group {
-            margin: 10px 0;
-        }
-        
-        .control-group label {
-            display: block;
-            margin-bottom: 3px;
-            font-size: 12px;
-            color: #ccc;
-        }
-        
-        #status {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 11px;
-            max-width: 400px;
-            z-index: 1000;
-        }
+    </script>
+    <script src="../../common/camera.js"></script>
+        <style>
+        .hb-panel.right { left: auto; right: 20px; }
     </style>
 </head>
 <body>
     <div id="cesiumContainer"></div>
     
-    <div id="info">
+    <aside id="info" class="hb-panel right">
         <h3>🚀 CesiumJS Heatbox v0.1.9</h3>
         <h4>Adaptive Rendering Demo</h4>
         <p><strong>新機能:</strong></p>
@@ -116,9 +45,9 @@
         </ol>
         
         <p><em>ブラウザのコンソール (F12) で詳細ログを確認できます。</em></p>
-    </div>
+    </aside>
     
-    <div id="status">
+    <div id="status" class="hb-status">
         <div id="statusText">初期化中...</div>
     </div>
 
@@ -135,9 +64,97 @@
             document.getElementById('statusText').textContent = message;
             console.log('📱 Status:', message);
         }
-        
+
+        const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+        const CameraHelper = window.HeatboxDemoCamera || null;
+        const INITIAL_BOUNDS = {
+            minLon: SHINJUKU_CENTER.lon - 0.012,
+            maxLon: SHINJUKU_CENTER.lon + 0.012,
+            minLat: SHINJUKU_CENTER.lat - 0.012,
+            maxLat: SHINJUKU_CENTER.lat + 0.012,
+            minAlt: 0,
+            maxAlt: 240
+        };
+
+        function createImageryProvider() {
+            return new Cesium.UrlTemplateImageryProvider({
+                url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                subdomains: 'abcd',
+                maximumLevel: 19,
+                credit: '© OpenStreetMap contributors © CARTO'
+            });
+        }
+
+        function createTerrainProvider() {
+            try {
+                if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+                    return Cesium.createWorldTerrain();
+                }
+            } catch (error) {
+                console.warn('World Terrain unavailable, using EllipsoidTerrainProvider.', error);
+            }
+            return new Cesium.EllipsoidTerrainProvider();
+        }
+
+        function focusCameraView(viewerInstance, config = {}) {
+            if (!viewerInstance || !viewerInstance.camera) return;
+            const { bounds = null, useDefaultBounds = !config.bounds, ...overrides } = config;
+            const helperDefaults = CameraHelper?.DEFAULT_OPTIONS ?? {};
+            const focusOptions = { ...helperDefaults, ...overrides };
+
+            if (CameraHelper?.focus) {
+                CameraHelper.focus(viewerInstance, {
+                    ...focusOptions,
+                    bounds,
+                    useDefaultBounds
+                });
+                return;
+            }
+
+            if (bounds && CameraHelper?.setViewToBounds) {
+                CameraHelper.setViewToBounds(viewerInstance, bounds, focusOptions);
+                return;
+            }
+
+            if (CameraHelper?.setViewToShinjuku) {
+                CameraHelper.setViewToShinjuku(viewerInstance, { ...focusOptions, useDefaultBounds });
+                return;
+            }
+
+            const targetBounds = bounds || (CameraHelper?.DEFAULT_BOUNDS ?? null);
+            if (targetBounds) {
+                const centerLon = (targetBounds.minLon + targetBounds.maxLon) / 2;
+                const centerLat = (targetBounds.minLat + targetBounds.maxLat) / 2;
+                viewerInstance.camera.setView({
+                    destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, focusOptions.altitude),
+                    orientation: {
+                        heading: Cesium.Math.toRadians(focusOptions.headingDegrees),
+                        pitch: Cesium.Math.toRadians(focusOptions.pitchDegrees),
+                        roll: 0
+                    }
+                });
+                return;
+            }
+
+            viewerInstance.camera.setView({
+                destination: Cesium.Cartesian3.fromDegrees(
+                    SHINJUKU_CENTER.lon,
+                    SHINJUKU_CENTER.lat,
+                    focusOptions.altitude
+                ),
+                orientation: {
+                    heading: Cesium.Math.toRadians(focusOptions.headingDegrees),
+                    pitch: Cesium.Math.toRadians(focusOptions.pitchDegrees),
+                    roll: 0
+                }
+            });
+        }
+
         // シーン設定
+        const imageryProvider = createImageryProvider();
         const viewer = new Cesium.Viewer('cesiumContainer', {
+            imageryProvider,
+            terrainProvider: createTerrainProvider(),
             shouldAnimate: false,
             homeButton: false,
             sceneModePicker: false,
@@ -147,16 +164,12 @@
             timeline: false,
             fullscreenButton: false
         });
+        viewer.imageryLayers.removeAll();
+        viewer.imageryLayers.addImageryProvider(imageryProvider);
+        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
         
-        // 東京周辺にカメラを設定
-        viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(139.7, 35.7, 5000),
-            orientation: {
-                heading: 0.0,
-                pitch: -0.5,
-                roll: 0.0
-            }
-        });
+        // 新宿駅周辺にカメラを設定 / Focus camera on Shinjuku
+        focusCameraView(viewer, { bounds: INITIAL_BOUNDS, useDefaultBounds: false });
         
         // コントロール作成
         function createControls() {
@@ -164,7 +177,7 @@
                 <div id="adaptiveControls">
                     <h3>🚀 v0.1.9 Adaptive Controls</h3>
                     
-                    <div class="control-group">
+                    <div class="hb-group">
                         <label>🎯 Render Strategy:</label>
                         <select id="strategySelect">
                             <option value="density">🔥 Density-based (密度重視)</option>
@@ -173,7 +186,7 @@
                         </select>
                     </div>
                     
-                    <div class="control-group">
+                    <div class="hb-group">
                         <label>💻 Max Render Voxels:</label>
                         <select id="budgetSelect">
                             <option value="auto" selected>🤖 Auto Budget</option>
@@ -183,7 +196,7 @@
                         </select>
                     </div>
                     
-                    <div class="control-group">
+                    <div class="hb-group">
                         <label>📏 Auto Voxel Size Mode:</label>
                         <select id="voxelModeSelect">
                             <option value="simple">📐 Simple (v0.1.8)</option>
@@ -191,7 +204,7 @@
                         </select>
                     </div>
                     
-                    <div class="control-group">
+                    <div class="hb-group">
                         <label>📊 Dataset Size:</label>
                         <select id="dataSizeSelect">
                             <option value="small">小規模 (5,000 entities)</option>
@@ -200,10 +213,10 @@
                         </select>
                     </div>
                     
-                    <button id="applySettings">✅ Apply Settings</button>
-                    <button id="fitViewBtn">🎯 Fit View</button>
-                    <button id="showStats">📊 Show Stats</button>
-                    <button id="clearBtn">🗑️ Clear</button>
+                    <button id="applySettings" class="hb-btn hb-btn-primary">✅ Apply Settings</button>
+                    <button id="fitViewBtn" class="hb-btn hb-btn-secondary">🎯 Fit View</button>
+                    <button id="showStats" class="hb-btn hb-btn-secondary">📊 Show Stats</button>
+                    <button id="clearBtn" class="hb-btn hb-btn-danger">🗑️ Clear</button>
                 </div>
             `;
             
@@ -234,10 +247,10 @@
                     
                     window.currentData = generateSampleData(totalEntities, {
                         clusters: [
-                            { center: [139.7, 35.7, 50], radius: 0.02, density: 0.7, count: Math.floor(totalEntities * 0.4) },
-                            { center: [139.75, 35.72, 100], radius: 0.015, density: 0.5, count: Math.floor(totalEntities * 0.3) },
-                            { center: [139.8, 35.75, 30], radius: 0.03, density: 0.3, count: Math.floor(totalEntities * 0.2) },
-                            { center: [139.73, 35.65, 80], radius: 0.01, density: 0.8, count: Math.floor(totalEntities * 0.1) }
+                            { center: [SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 60], radius: 0.006, density: 0.8, count: Math.floor(totalEntities * 0.4) },
+                            { center: [SHINJUKU_CENTER.lon + 0.0025, SHINJUKU_CENTER.lat - 0.0015, 90], radius: 0.004, density: 0.6, count: Math.floor(totalEntities * 0.3) },
+                            { center: [SHINJUKU_CENTER.lon - 0.002, SHINJUKU_CENTER.lat + 0.002, 40], radius: 0.005, density: 0.4, count: Math.floor(totalEntities * 0.2) },
+                            { center: [SHINJUKU_CENTER.lon + 0.004, SHINJUKU_CENTER.lat + 0.001, 120], radius: 0.003, density: 0.7, count: Math.floor(totalEntities * 0.1) }
                         ]
                     });
                     
@@ -256,7 +269,9 @@
                     const loadTime = performance.now() - startTime;
                     
                     // 統計情報取得
-                    const stats = window.currentHeatbox.getStatistics();
+                   const stats = window.currentHeatbox.getStatistics();
+                   const bounds = window.currentHeatbox.getBounds?.();
+                    focusCameraView(viewer, { bounds, useDefaultBounds: false });
                     
                     updateStatus(`✅ 完了 (${loadTime.toFixed(0)}ms) | ${stats.selectionStrategy} | ${stats.renderedVoxels}/${stats.totalVoxels} voxels`);
                     

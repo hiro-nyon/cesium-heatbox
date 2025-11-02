@@ -279,7 +279,7 @@ Experience v0.1.9 features with the comprehensive demo:
 
 ```bash
 # Open advanced demo
-open examples/advanced/adaptive-rendering-demo.html
+open examples/selection-limits/adaptive-rendering-demo.html
 ```
 
 The demo includes:

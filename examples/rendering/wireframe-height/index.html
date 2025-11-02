@@ -5,6 +5,13 @@
   <title>Wireframe & Height Demo - UMD版（ブラウザ直接実行対応）</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../../common/camera.js"></script>
   <style>
     html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; }
     .demo-panel { position: absolute; top: 10px; left: 10px; background: rgba(40, 40, 40, 0.9); padding: 20px; border-radius: 8px; color: white; font-family: sans-serif; max-width: 380px; }
@@ -59,45 +66,128 @@
   <!-- CesiumJS Heatbox UMD Build -->
   <script src="../../dist/cesium-heatbox.umd.min.js"></script>
   <script>
-    // UMDビルドからCesiumHeatboxを取得
+    // UMDビルドからCesiumHeatboxを取得 / Use Heatbox from UMD bundle
     const Heatbox = window.CesiumHeatbox || window.Heatbox;
-    
+    const CameraHelper = window.HeatboxDemoCamera || null;
+    const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 }; // 新宿駅中心 / Shinjuku station center
+    const GENERATION_BOUNDS = {
+      minLon: SHINJUKU_CENTER.lon - 0.01,
+      maxLon: SHINJUKU_CENTER.lon + 0.01,
+      minLat: SHINJUKU_CENTER.lat - 0.01,
+      maxLat: SHINJUKU_CENTER.lat + 0.01,
+      minAlt: 0,
+      maxAlt: 180
+    };
+    const CAMERA_FOCUS_OVERRIDES = {};
+
     // アプリケーション状態
     let viewer;
     let testEntities = [];
     let activeHeatboxes = [];
-    
+
     // UI要素
     const elements = {};
+
+    function createImageryProvider() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        subdomains: 'abcd',
+        maximumLevel: 19,
+        credit: '© OpenStreetMap contributors © CARTO'
+      });
+    }
+
+    function createTerrainProvider() {
+      try {
+        if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+          return Cesium.createWorldTerrain();
+        }
+      } catch (error) {
+        console.warn('World Terrain unavailable, using EllipsoidTerrainProvider.', error);
+      }
+      return new Cesium.EllipsoidTerrainProvider();
+    }
     
+    function focusCameraView(config = {}) {
+      if (!viewer || !viewer.camera) return;
+      const { bounds = null, useDefaultBounds = !config.bounds, ...overrides } = config;
+      const helperDefaults = CameraHelper?.DEFAULT_OPTIONS ?? {};
+      const focusOptions = { ...helperDefaults, ...CAMERA_FOCUS_OVERRIDES, ...overrides };
+
+      if (CameraHelper?.focus) {
+        CameraHelper.focus(viewer, {
+          ...focusOptions,
+          bounds,
+          useDefaultBounds
+        });
+        return;
+      }
+
+      if (bounds && CameraHelper?.setViewToBounds) {
+        CameraHelper.setViewToBounds(viewer, bounds, focusOptions);
+        return;
+      }
+
+      if (CameraHelper?.setViewToShinjuku) {
+        CameraHelper.setViewToShinjuku(viewer, { ...focusOptions, useDefaultBounds });
+        return;
+      }
+
+      const targetBounds = bounds || (CameraHelper?.DEFAULT_BOUNDS ?? null);
+      if (targetBounds) {
+        const centerLon = (targetBounds.minLon + targetBounds.maxLon) / 2;
+        const centerLat = (targetBounds.minLat + targetBounds.maxLat) / 2;
+        viewer.camera.setView({
+          destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, focusOptions.altitude),
+          orientation: {
+            heading: Cesium.Math.toRadians(focusOptions.headingDegrees),
+            pitch: Cesium.Math.toRadians(focusOptions.pitchDegrees),
+            roll: 0
+          }
+        });
+        return;
+      }
+
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(
+          SHINJUKU_CENTER.lon,
+          SHINJUKU_CENTER.lat,
+          focusOptions.altitude
+        ),
+        orientation: {
+          heading: Cesium.Math.toRadians(focusOptions.headingDegrees),
+          pitch: Cesium.Math.toRadians(focusOptions.pitchDegrees),
+          roll: 0
+        }
+      });
+    }
+
+    function applyDefaultCameraView(overrides = {}) {
+      focusCameraView({ bounds: GENERATION_BOUNDS, useDefaultBounds: false, ...overrides });
+    }
+
     /**
      * テストデータ生成（東京駅周辺の密度分布パターン）
      */
     function generateTestData() {
       const entities = [];
-      const bounds = {
-        minLon: 139.760, maxLon: 139.775,
-        minLat: 35.677, maxLat: 35.687,
-        minAlt: 0, maxAlt: 120
-      };
+      const bounds = GENERATION_BOUNDS;
       
-      // 高密度クラスター3個を生成
+      // 新宿周辺に高密度クラスターを配置 / Generate dense clusters around Shinjuku
       const clusters = [
-        { centerLon: 139.7665, centerLat: 35.6807, density: 800 }, // 東京駅
-        { centerLon: 139.7700, centerLat: 35.6820, density: 600 }, // 大手町
-        { centerLon: 139.7640, centerLat: 35.6795, density: 400 }  // 有楽町
+        { centerLon: SHINJUKU_CENTER.lon, centerLat: SHINJUKU_CENTER.lat, density: 800 },
+        { centerLon: SHINJUKU_CENTER.lon + 0.002, centerLat: SHINJUKU_CENTER.lat - 0.0015, density: 600 },
+        { centerLon: SHINJUKU_CENTER.lon - 0.0025, centerLat: SHINJUKU_CENTER.lat + 0.001, density: 400 }
       ];
       
       clusters.forEach((cluster, clusterIndex) => {
         for (let i = 0; i < cluster.density; i++) {
           // ガウス分布っぽい配置
           const angle = Math.random() * 2 * Math.PI;
-          const distance = Math.sqrt(-2 * Math.log(Math.random())) * 0.001;
+          const distance = Math.sqrt(-2 * Math.log(Math.random())) * 0.0015;
           
-          const lon = Math.max(bounds.minLon, Math.min(bounds.maxLon, 
-            cluster.centerLon + Math.cos(angle) * distance));
-          const lat = Math.max(bounds.minLat, Math.min(bounds.maxLat, 
-            cluster.centerLat + Math.sin(angle) * distance));
+          const lon = Cesium.Math.clamp(cluster.centerLon + Math.cos(angle) * distance, bounds.minLon, bounds.maxLon);
+          const lat = Cesium.Math.clamp(cluster.centerLat + Math.sin(angle) * distance, bounds.minLat, bounds.maxLat);
           const alt = Math.random() * bounds.maxAlt;
           
           const entity = viewer.entities.add({
@@ -269,8 +359,11 @@
      */
     async function initializeApp() {
       try {
-        // CesiumJS Viewer初期化
+        // CesiumJS Viewer初期化 / Initialize viewer with Carto imagery
+        const imageryProvider = createImageryProvider();
         viewer = new Cesium.Viewer('cesiumContainer', {
+          imageryProvider,
+          terrainProvider: createTerrainProvider(),
           homeButton: false,
           sceneModePicker: false,
           baseLayerPicker: false,
@@ -283,16 +376,12 @@
           selectionIndicator: true,
           creditContainer: document.createElement('div')
         });
+        viewer.imageryLayers.removeAll();
+        viewer.imageryLayers.addImageryProvider(imageryProvider);
+        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
         
-        // カメラを東京駅周辺に設定
-        viewer.camera.setView({
-          destination: Cesium.Cartesian3.fromDegrees(139.7665, 35.6807, 600),
-          orientation: {
-            heading: Cesium.Math.toRadians(0),
-            pitch: Cesium.Math.toRadians(-45),
-            roll: 0
-          }
-        });
+        // カメラを新宿駅周辺に設定 / Focus camera on Shinjuku
+        applyDefaultCameraView({ headingDegrees: 0, pitchDegrees: -45 });
         
         // UI要素取得
         const uiIds = ['traditionalBtn', 'wireframeBtn', 'heightBasedBtn', 'combinedBtn', 'autoCompareBtn', 'clearAllBtn', 'status'];

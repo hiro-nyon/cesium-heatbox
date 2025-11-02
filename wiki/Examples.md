@@ -198,7 +198,8 @@ const heatbox = new Heatbox(viewer, {
 
 ### リポジトリ内の実行可能サンプル
 - `examples/basic/` ブラウザ UI 付きの基本例（エンティティ生成→ヒートマップ作成）
- - `examples/advanced/outline-overlap-demo-umd.html` 0.1.6 の枠線重なり対策デモ（ブラウザで直接開けます）
+- `examples/outlines/outline-overlap-demo-umd.html` 0.1.6 の枠線重なり対策デモ（ブラウザで直接開けます）
+- `examples/outlines/emulation-scope-demo.html` エミュレーションスコープと TopN ハイライトの比較デモ
 
 実行方法:
 ```

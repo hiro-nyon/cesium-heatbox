@@ -7,9 +7,13 @@
   "types": "types/index.d.ts",
   "browser": "dist/cesium-heatbox.umd.min.js",
   "sideEffects": false,
+  "bin": {
+    "cesium-heatbox-install-ouranos": "./tools/install-ouranos.js"
+  },
   "files": [
     "dist/",
     "types/",
+    "tools/",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
@@ -98,5 +102,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "optionalDependencies": {
+    "ouranos-gex-lib-for-javascript": "github:ouranos-gex/ouranos-gex-lib-for-JavaScript"
   }
 }

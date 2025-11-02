@@ -5,32 +5,36 @@
   <title>CesiumJS Heatbox - Basic Example</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-  <style>
-    html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; }
-    .control-panel { position: absolute; top: 10px; left: 10px; background: rgba(40, 40, 40, 0.85); padding: 15px; border-radius: 5px; color: white; font-family: sans-serif; max-width: 320px; }
-    .control-panel h3 { margin: 0 0 10px; }
-    .control-group { margin-bottom: 12px; }
-    .control-group label { display: block; margin-bottom: 4px; font-size: 14px; }
-    .control-group input[type="number"], .control-group input[type="range"], .control-group button { width: 100%; box-sizing: border-box; }
-    .control-group button { padding: 8px; margin-top: 5px; }
-    #statistics { margin-top: 10px; padding-top: 10px; border-top: 1px solid #555; }
-    #status { margin-top: 10px; font-weight: bold; }
-  </style>
+  <link href="../common/demo.css" rel="stylesheet">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../common/camera.js"></script>
 </head>
 <body>
   <div id="cesiumContainer"></div>
-  <div class="control-panel">
+  <div class="control-panel hb-panel">
     <h3>Cesium-Heatbox Example</h3>
     <div class="control-group">
       <label for="entityCount">Entity Count: <span id="entityCountValue">1000</span></label>
       <input type="range" id="entityCount" min="100" max="5000" value="1000" step="100">
     </div>
     <div class="control-group">
-      <button id="generateBtn">1. Generate Entities</button>
+      <button id="generateBtn" class="hb-btn hb-btn-primary">1. Generate Entities</button>
     </div>
     <hr>
     <div class="control-group">
       <input type="checkbox" id="autoVoxelSize"> <label for="autoVoxelSize">Auto Voxel Size (v0.1.4)</label>
+    </div>
+    <div class="control-group" id="autoVoxelSizeModeGroup" style="display: none; padding-left: 20px;">
+      <label for="autoVoxelSizeMode">Auto Mode:</label>
+      <select id="autoVoxelSizeMode">
+        <option value="basic">Basic (基本)</option>
+        <option value="occupancy">Occupancy (占有率)</option>
+      </select>
     </div>
     <div class="control-group" id="manualVoxelSizeGroup">
       <label for="voxelSize">Voxel Size (meters):</label>
@@ -127,12 +131,12 @@
       <input type="checkbox" id="useOpacityResolvers"> <label for="useOpacityResolvers">Demo: Custom Opacity Resolvers</label>
     </div>
     <div class="control-group">
-      <button id="createHeatmapBtn" disabled>2. Create Heatmap</button>
+      <button id="createHeatmapBtn" class="hb-btn hb-btn-primary" disabled>2. Create Heatmap</button>
     </div>
     <hr>
     <div class="control-group">
-      <button id="toggleBtn" disabled>非表示</button>
-      <button id="clearBtn" disabled>Clear All</button>
+      <button id="toggleBtn" class="hb-btn hb-btn-secondary" disabled>非表示</button>
+      <button id="clearBtn" class="hb-btn hb-btn-danger" disabled>Clear All</button>
     </div>
     <div id="status">Ready</div>
     <div id="statistics" style="display: none;">
