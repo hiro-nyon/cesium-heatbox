@@ -521,6 +521,170 @@ const heatbox = new Heatbox(viewer, {
 
 See [Spatial ID Examples](examples/spatial-id/) for details.
 
+## レイヤ別集約 / Layer Aggregation
+
+### 日本語
+
+**v0.1.18新機能**: ボクセル内のエンティティをカテゴリ・種別・データソース等のレイヤで集約できるようになりました。
+
+#### 概要
+
+従来のボクセルごとの総エンティティ数に加え、各ボクセル内のエンティティを**レイヤ（カテゴリ）別**に集計できます：
+
+- **プロパティベース集約**: エンティティの特定プロパティをレイヤキーとして使用
+- **カスタムリゾルバ**: 任意のロジックでレイヤキーを決定
+- **ボクセルごとの内訳**: 各ボクセルの支配的レイヤ（layerTop）と詳細内訳（layerStats）
+- **グローバル統計**: 全ボクセルを通じた上位Nレイヤの集計
+- **ピッキング統合**: ボクセルクリック時にレイヤ構成を表示
+
+#### 基本的な使用方法
+
+```javascript
+import { Heatbox } from 'cesium-heatbox';
+
+// プロパティベース集約（建物種別）
+const heatbox = new Heatbox(viewer, {
+  aggregation: {
+    enabled: true,
+    byProperty: 'buildingType',  // entity.properties.buildingType をレイヤキーとして使用
+    showInDescription: true,     // ボクセル説明文にレイヤ内訳を表示
+    topN: 10                     // 統計情報で上位10レイヤを返却
+  }
+});
+
+await heatbox.createFromEntities(entities);
+
+// グローバル統計の確認
+const stats = heatbox.getStatistics();
+console.log(stats.layers);
+// [
+//   { key: 'residential', total: 5234 },
+//   { key: 'commercial', total: 2103 },
+//   { key: 'industrial', total: 987 }
+// ]
+```
+
+#### カスタムリゾルバ
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  aggregation: {
+    enabled: true,
+    keyResolver: (entity) => {
+      // カスタムロジックでレイヤキーを決定
+      const hour = new Date(entity.timestamp).getHours();
+      return hour < 12 ? 'morning' : 'afternoon';
+    }
+  }
+});
+```
+
+#### ボクセルピッキング
+
+ボクセルをクリックすると、レイヤ構成が表示されます：
+
+```
+ボクセル構成:
+- residential: 30 (60%)
+- commercial: 15 (30%)
+- industrial: 5 (10%)
+```
+
+#### ベストプラクティス
+
+- **カテゴリカルキーを使用**: タイムスタンプやIDなど連続値は避け、カテゴリ値を使用してください
+- **ユニークレイヤ数を制限**: ボクセルあたり100未満のユニークレイヤを推奨
+- **エラーハンドリング**: `keyResolver`は文字列を返すべきです。エラー時は'unknown'にフォールバックします
+
+#### パフォーマンス
+
+- **メモリ**: ボクセルあたりのユニークレイヤあたり ~8-16 バイト
+- **処理時間**: 有効時 ≤ +10% オーバーヘッド
+- **無効時**: オーバーヘッドなし（デフォルト）
+
+詳細は[集約使用例](examples/aggregation/)を参照してください。
+
+### English
+
+**v0.1.18 New Feature**: Aggregate entities within voxels by category, type, data source, or custom layers.
+
+#### Overview
+
+In addition to total entity counts per voxel, you can now aggregate entities by **layers (categories)**:
+
+- **Property-based aggregation**: Use a specific entity property as the layer key
+- **Custom resolver**: Determine layer keys with arbitrary logic
+- **Per-voxel breakdown**: Dominant layer (layerTop) and detailed breakdown (layerStats) for each voxel
+- **Global statistics**: Top-N layer aggregation across all voxels
+- **Picking integration**: Display layer composition when clicking voxels
+
+#### Basic Usage
+
+```javascript
+import { Heatbox } from 'cesium-heatbox';
+
+// Property-based aggregation (building types)
+const heatbox = new Heatbox(viewer, {
+  aggregation: {
+    enabled: true,
+    byProperty: 'buildingType',  // Use entity.properties.buildingType as layer key
+    showInDescription: true,     // Show layer breakdown in voxel description
+    topN: 10                     // Return top 10 layers in statistics
+  }
+});
+
+await heatbox.createFromEntities(entities);
+
+// Check global statistics
+const stats = heatbox.getStatistics();
+console.log(stats.layers);
+// [
+//   { key: 'residential', total: 5234 },
+//   { key: 'commercial', total: 2103 },
+//   { key: 'industrial', total: 987 }
+// ]
+```
+
+#### Custom Resolver
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  aggregation: {
+    enabled: true,
+    keyResolver: (entity) => {
+      // Custom logic to determine layer key
+      const hour = new Date(entity.timestamp).getHours();
+      return hour < 12 ? 'morning' : 'afternoon';
+    }
+  }
+});
+```
+
+#### Voxel Picking
+
+When you click a voxel, the layer composition is displayed:
+
+```
+Voxel Composition:
+- residential: 30 (60%)
+- commercial: 15 (30%)
+- industrial: 5 (10%)
+```
+
+#### Best Practices
+
+- **Use categorical keys**: Avoid continuous values like timestamps or IDs; use categorical values
+- **Limit unique layers**: Keep unique layer count < 100 per voxel for optimal performance
+- **Error handling**: `keyResolver` should return strings; errors fall back to 'unknown'
+
+#### Performance
+
+- **Memory**: ~8-16 bytes per unique layer per voxel
+- **Processing**: ≤ +10% overhead when enabled
+- **No overhead**: When disabled (default)
+
+See [Aggregation Examples](examples/aggregation/) for details.
+
 ## API
 
 ### 日本語

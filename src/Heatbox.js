@@ -221,6 +221,18 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {PerformanceOverlayConfig|null} [performanceOverlay=null] - Performance overlay config / パフォーマンスオーバーレイ設定
  * @property {('manual'|'auto')} [renderBudgetMode='manual'] - Render budget mode / レンダーバジェット制御モード
  * @property {(boolean|Object)} [debug=false] - Debug options (`true` enables verbose logging, object can contain `showBounds`) / デバッグ設定（trueで詳細ログ、オブジェクトの場合は`showBounds`などを指定）
+ * @property {Object} [spatialId] - Spatial ID configuration (v0.1.17+) / 空間ID設定（v0.1.17+）
+ * @property {boolean} [spatialId.enabled=false] - Enable spatial ID mode / 空間IDモードを有効化
+ * @property {('tile-grid'|'voxel-grid')} [spatialId.mode='tile-grid'] - Spatial ID mode / 空間IDモード
+ * @property {(number|'auto')} [spatialId.zoom='auto'] - Zoom level or auto / ズームレベルまたは自動
+ * @property {('auto'|'manual')} [spatialId.zoomControl='auto'] - Zoom control mode / ズーム制御モード
+ * @property {number} [spatialId.zoomTolerancePct=10] - Zoom tolerance percentage / ズーム許容誤差（%）
+ * @property {Object} [aggregation] - Layer aggregation configuration (v0.1.18+) / レイヤ別集約設定（v0.1.18+）
+ * @property {boolean} [aggregation.enabled=false] - Enable layer aggregation / レイヤ別集約を有効化
+ * @property {string|null} [aggregation.byProperty=null] - Entity property key to use as layer key / レイヤキーとして使用するエンティティプロパティ
+ * @property {?function(entity):string} [aggregation.keyResolver=null] - Custom layer key resolver function (takes precedence over byProperty) / カスタムレイヤキー解決関数（byPropertyより優先）
+ * @property {boolean} [aggregation.showInDescription=true] - Show layer breakdown in voxel description / ボクセル説明文にレイヤ内訳を表示
+ * @property {number} [aggregation.topN=10] - Number of top layers to include in statistics / 統計情報に含める上位レイヤ数
  */
 
 /**
