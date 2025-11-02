@@ -104,6 +104,12 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  */
 
 /**
+ * @typedef {Object} HeatboxLayerStat
+ * @property {string} key - Layer key / レイヤキー
+ * @property {number} total - Total entity count for this layer / このレイヤの総エンティティ数
+ */
+
+/**
  * @typedef {Object} HeatboxStatistics
  * @property {number} totalVoxels - Total voxels generated / 生成された総ボクセル数
  * @property {number} renderedVoxels - Voxels actually rendered / 実際に描画されたボクセル数
@@ -124,6 +130,7 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {string} [renderBudgetTier] - Auto render budget tier label / 自動レンダーバジェットの区分
  * @property {number} [autoMaxRenderVoxels] - Auto-assigned maxRenderVoxels / 自動設定された maxRenderVoxels
  * @property {number|null} [occupancyRatio] - Ratio of rendered voxels to limit / 描画ボクセルと上限の比率
+ * @property {HeatboxLayerStat[]} [layers] - Top-N layer aggregation (v0.1.18 ADR-0014) / 上位N個のレイヤ集約
  */
 
 /**
