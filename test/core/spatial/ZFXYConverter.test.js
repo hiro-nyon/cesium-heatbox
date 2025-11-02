@@ -178,6 +178,28 @@ describe('ZFXYConverter', () => {
     });
   });
 
+  describe('Hierarchical Subdivision', () => {
+    it('should reduce altitude slice size as zoom increases', () => {
+      const zoomPairs = [
+        { parent: 20, child: 21 },
+        { parent: 21, child: 22 },
+        { parent: 22, child: 23 },
+        { parent: 23, child: 24 },
+        { parent: 24, child: 25 }
+      ];
+
+      zoomPairs.forEach(({ parent, child }) => {
+        const parentResult = ZFXYConverter.convert(139.6917, 35.6895, 50, parent);
+        const childResult = ZFXYConverter.convert(139.6917, 35.6895, 50, child);
+
+        const parentHeight = parentResult.vertices[4].alt - parentResult.vertices[0].alt;
+        const childHeight = childResult.vertices[4].alt - childResult.vertices[0].alt;
+
+        expect(childHeight).toBeLessThan(parentHeight);
+      });
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle coordinates at prime meridian', () => {
       const result = ZFXYConverter.convert(0, 35.6895, 50, 25);
@@ -243,4 +265,3 @@ describe('ZFXYConverter', () => {
     });
   });
 });
-

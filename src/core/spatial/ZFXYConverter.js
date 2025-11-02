@@ -65,7 +65,7 @@ export class ZFXYConverter {
     // Calculate F (altitude index)
     // Simplified: use fixed altitude bins (e.g., 10m per level at zoom 25)
     // This is an approximation; actual F calculation depends on zoom level
-    const altitudePerBin = ZFXYConverter._getAltitudePerBin(zoom);
+    const altitudePerBin = ZFXYConverter._getAltitudePerBin(zoom, lat);
     const f = Math.floor(alt / altitudePerBin);
 
     const zfxy = { z: zoom, f, x, y };
@@ -117,17 +117,20 @@ export class ZFXYConverter {
    * @returns {number} Altitude per bin in meters
    * @private
    */
-  static _getAltitudePerBin(zoom) {
-    // Simplified altitude binning
-    // Actual specification may vary; this is an approximation
-    // 簡略化された高度ビン
-    // 実際の仕様は異なる可能性があります；これは近似値
-    
-    if (zoom <= 10) return 1000;  // 1km per bin
-    if (zoom <= 15) return 100;   // 100m per bin
-    if (zoom <= 20) return 50;    // 50m per bin
-    if (zoom <= 25) return 10;    // 10m per bin
-    return 5;  // 5m per bin for zoom > 25
+  static _getAltitudePerBin(zoom, lat) {
+    const EARTH_CIRCUMFERENCE = 40075016.68557849; // meters
+    const MIN_BIN_SIZE = 0.5;  // meters
+    const MAX_BIN_SIZE = 5000; // meters
+    const ALTITUDE_SCALE = 1.0; // Ratio between XY tile size and altitude slice
+
+    const safeZoom = Math.max(0, Math.min(35, Math.floor(zoom)));
+    const latRadians = Number.isFinite(lat) ? lat * Math.PI / 180 : 0;
+    const cosLat = Math.max(Math.cos(latRadians), 1e-5);
+
+    const tileSizeXY = (EARTH_CIRCUMFERENCE * cosLat) / Math.pow(2, safeZoom);
+    const scaled = tileSizeXY * ALTITUDE_SCALE;
+
+    return Math.min(MAX_BIN_SIZE, Math.max(MIN_BIN_SIZE, scaled));
   }
 
   /**
@@ -236,4 +239,3 @@ export class ZFXYConverter {
     return ZFXYConverter.validateZFXY(zfxy) ? zfxy : null;
   }
 }
-
