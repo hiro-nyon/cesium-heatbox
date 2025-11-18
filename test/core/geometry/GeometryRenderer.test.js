@@ -252,6 +252,24 @@ describe('GeometryRenderer', () => {
       expect(callArgs.properties.type).toBe('voxel-edge-polyline');
       expect(callArgs.properties.parentKey).toBe('props-key');
     });
+
+    test('Should apply outlineOpacity when color supports withAlpha', () => {
+      const outlineColor = { withAlpha: jest.fn(opacity => ({ alpha: opacity })) };
+      const config = {
+        centerLon: 0, centerLat: 0, centerAlt: 0,
+        cellSizeX: 10, cellSizeY: 10, boxHeight: 10,
+        outlineColor,
+        outlineWidth: 4,
+        outlineOpacity: 0.4,
+        voxelKey: 'opacity-key'
+      };
+
+      geometryRenderer.createEdgePolylines(config);
+
+      expect(outlineColor.withAlpha).toHaveBeenCalledWith(0.4);
+      const callArgs = mockViewer.entities.add.mock.calls[0][0];
+      expect(callArgs.polyline.material).toEqual({ alpha: 0.4 });
+    });
   });
 
   describe('Thick Outline Frames Creation', () => {

@@ -681,6 +681,7 @@ export class VoxelRenderer {
           cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
           outlineColor: params.outlineColor,
           outlineWidth: Math.max(params.outlineWidth, 1),
+          outlineOpacity: adaptiveParams.outlineOpacity ?? params.outlineColor?.alpha ?? null,
           voxelKey: key
         });
       } catch (e) {

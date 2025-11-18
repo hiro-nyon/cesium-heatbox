@@ -397,6 +397,7 @@ export class GeometryRenderer {
    * `boxHeight` (number) / ボックス高さ、
    * `outlineColor` (Cesium.Color) / 枠線色、
    * `outlineWidth` (number) / 枠線太さ、
+   * `outlineOpacity` (number) / 枠線透明度、
    * `voxelKey` (string) / ボクセルキー
    * @returns {Array<Cesium.Entity>} Created polyline entities / 作成されたポリラインエンティティ配列
    */
@@ -404,7 +405,7 @@ export class GeometryRenderer {
     const {
       centerLon, centerLat, centerAlt,
       cellSizeX, cellSizeY, boxHeight,
-      outlineColor, outlineWidth, voxelKey
+      outlineColor, outlineWidth, outlineOpacity = null, voxelKey
     } = config;
 
     const polylineEntities = [];
@@ -520,11 +521,19 @@ export class GeometryRenderer {
           return;
         }
 
+        let effectiveMaterial = outlineColor;
+        if (outlineOpacity !== null && outlineOpacity !== undefined && typeof outlineColor?.withAlpha === 'function') {
+          const clampedOpacity = Math.max(0, Math.min(1, outlineOpacity));
+          effectiveMaterial = outlineColor.withAlpha(clampedOpacity);
+        }
+
+        const safeOutlineWidth = Number.isFinite(outlineWidth) ? outlineWidth : 1;
+
         const polylineEntity = this.viewer.entities.add({
           polyline: {
             positions: positions,
-            width: Math.max(Math.min(outlineWidth, 20), 1), // width制限も追加
-            material: outlineColor,
+            width: Math.max(Math.min(safeOutlineWidth, 20), 1), // width制限も追加
+            material: effectiveMaterial,
             clampToGround: false
           },
           properties: {
