@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
+## [0.1.18] - 2025-11-18
+
+### Added
+- **Layer aggregation pipeline**: `Heatbox` の `aggregation` オプションでレイヤカテゴリ別にボクセルを集計し、`layerStats`/`layerTop`/`layers`（トップN）などの統計を取得できるようにしました。プロパティベースと `keyResolver` の両方をサポートし、ピッキング説明文にもレイヤ構成を表示できます。
+- **Examples & ADR**: `examples/aggregation/*` と `docs/adr/ADR-0014-v0.1.18-voxel-layer-aggregation.md` を追加し、単一/複数ソースのユースケースや推奨値を示しました。
+- **Helper utilities**: `src/utils/cesiumProperty.js`、`src/utils/escapeHtml.js` を追加し、レイヤ統計の整形と Cesium Property ラッパーを共通化しました。
+
+### Changed
+- **DataProcessor / GeometryRenderer**: レイヤ集計のために内部データ構造を拡張し、グローバル統計とピッキング説明を自動生成するよう更新しました。
+- **Validation & constants**: 参照テーブルを拡充し、`aggregation.topN` や `aggregation.byProperty` などの検証を強化しました。
+- **テスト**: `test/core/aggregation.test.js`、`test/integration/aggregation.test.js`、`test/performance/aggregation-performance.test.js` を追加/拡張し、層別集計の回帰・性能を担保しました。
+
+### Documentation
+- README/Wiki にレイヤ集計ガイドを追記し、日本語/英語のコード例、ベストプラクティス、Spatial ID セットアップガイドを更新しました。
+
 ## [0.1.15-alpha.4] - 2025-10-10
 
 ### Added
