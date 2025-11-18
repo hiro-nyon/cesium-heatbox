@@ -4,7 +4,7 @@
  */
 import { SpatialIdAdapter } from '../../src/core/spatial/SpatialIdAdapter.js';
 import { Heatbox } from '../../src/Heatbox.js';
-import { createMockViewer } from '../helpers/testHelpers.js';
+import { createMockViewer, generateMockEntities } from '../helpers/testHelpers.js';
 
 describe('Global Spatial ID QA (ADR-0015)', () => {
   describe('Dateline neighbors / children / parent continuity', () => {
@@ -55,7 +55,7 @@ describe('Global Spatial ID QA (ADR-0015)', () => {
     });
   });
 
-  describe('Hemisphere-crossing dataset robustness (fallback mode)', () => {
+  describe('Dateline-crossing dataset robustness (fallback mode)', () => {
     it('handles entities around the dateline without crashing', async () => {
       const viewer = createMockViewer();
 
@@ -90,7 +90,7 @@ describe('Global Spatial ID QA (ADR-0015)', () => {
           mode: 'tile-grid',
           zoomControl: 'auto'
         },
-        voxelSize: 3000
+        voxelSize: 30
       });
 
       await expect(heatbox.createFromEntities(entities)).resolves.toBeDefined();
@@ -104,5 +104,71 @@ describe('Global Spatial ID QA (ADR-0015)', () => {
       }
     });
   });
-});
 
+  describe('Polar tiles dataset (high latitude)', () => {
+    it('handles high-latitude entities near ±85° without crashing', async () => {
+      const viewer = createMockViewer();
+
+      const entities = generateMockEntities(50, {
+        minLon: -10,
+        maxLon: 10,
+        minLat: 80,
+        maxLat: 85,
+        minAlt: 0,
+        maxAlt: 200
+      });
+
+      const heatbox = new Heatbox(viewer, {
+        spatialId: {
+          enabled: true,
+          mode: 'tile-grid',
+          zoomControl: 'auto'
+        },
+        voxelSize: 30
+      });
+
+      const stats = await heatbox.createFromEntities(entities);
+
+      expect(stats).not.toBeNull();
+      expect(stats.nonEmptyVoxels).toBeGreaterThan(0);
+      expect(stats.spatialIdEnabled).toBe(true);
+      if (stats.spatialId) {
+        expect(stats.spatialId.enabled).toBe(true);
+      }
+    });
+  });
+
+  describe('Hemisphere-crossing bounds via entities', () => {
+    it('handles entities across 170E/-170W without crashing', async () => {
+      const viewer = createMockViewer();
+
+      const entities = generateMockEntities(80, {
+        minLon: 170,
+        maxLon: 190, // Wraps beyond 180 into -170
+        minLat: 35,
+        maxLat: 40,
+        minAlt: 0,
+        maxAlt: 500
+      });
+
+      const heatbox = new Heatbox(viewer, {
+        spatialId: {
+          enabled: true,
+          mode: 'tile-grid',
+          zoomControl: 'auto'
+        },
+        voxelSize: 30
+      });
+
+      const stats = await heatbox.createFromEntities(entities);
+
+      expect(stats).not.toBeNull();
+      expect(stats.nonEmptyVoxels).toBeGreaterThan(0);
+      expect(stats.totalEntities).toBe(entities.length);
+      expect(stats.spatialIdEnabled).toBe(true);
+      if (stats.spatialId) {
+        expect(stats.spatialId.enabled).toBe(true);
+      }
+    });
+  });
+});
