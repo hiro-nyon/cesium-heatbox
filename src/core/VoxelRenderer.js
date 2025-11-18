@@ -676,12 +676,13 @@ export class VoxelRenderer {
       (this.options.emulationScope && this.options.emulationScope !== 'off');
     if (allowEmulationEdges && params.emulateThick) {
       try {
+        const adaptiveOutlineOpacity = params.adaptiveParams?.outlineOpacity ?? params.outlineColor?.alpha ?? null;
         this.geometryRenderer.createEdgePolylines({
           centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
           cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
           outlineColor: params.outlineColor,
           outlineWidth: Math.max(params.outlineWidth, 1),
-          outlineOpacity: adaptiveParams.outlineOpacity ?? params.outlineColor?.alpha ?? null,
+          outlineOpacity: adaptiveOutlineOpacity,
           voxelKey: key
         });
       } catch (e) {

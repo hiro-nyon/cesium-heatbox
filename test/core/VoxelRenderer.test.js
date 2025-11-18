@@ -148,6 +148,41 @@ describe('VoxelRenderer', () => {
       colorSpy.mockRestore();
     });
   });
+
+  describe('emulation edge rendering', () => {
+    test('passes adaptive outline opacity to edge polylines', () => {
+      const viewer = testUtils.createMockViewer();
+      const renderer = new VoxelRenderer(viewer, {
+        outlineRenderMode: 'emulation-only',
+        emulationScope: 'all'
+      });
+
+      // Stub geometry renderer methods to avoid Cesium dependencies during this test
+      renderer.geometryRenderer.createVoxelBox = jest.fn();
+      renderer.geometryRenderer.createInsetOutline = jest.fn();
+      renderer.geometryRenderer.shouldApplyInsetOutline = jest.fn(() => false);
+      renderer.geometryRenderer.createEdgePolylines = jest.fn();
+
+      const params = {
+        centerLon: 0, centerLat: 0, centerAlt: 0,
+        cellSizeX: 10, cellSizeY: 10, boxHeight: 10,
+        color: {}, opacity: 1,
+        shouldShowOutline: true,
+        outlineColor: { withAlpha: jest.fn(alpha => ({ alpha })), alpha: 0.6 },
+        outlineWidth: 3,
+        voxelInfo: { x: 0, y: 0, z: 0, count: 1 },
+        emulateThick: true,
+        isTopN: false,
+        adaptiveParams: { outlineOpacity: 0.4 }
+      };
+
+      renderer._delegateVoxelRendering('edge-key', params);
+
+      expect(renderer.geometryRenderer.createEdgePolylines).toHaveBeenCalledWith(expect.objectContaining({
+        outlineOpacity: 0.4
+      }));
+    });
+  });
   
   test('maxRenderVoxels により描画数が制限される', () => {
     const viewer = testUtils.createMockViewer();
