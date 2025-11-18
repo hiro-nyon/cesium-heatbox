@@ -7,8 +7,8 @@ import { ZFXYConverter } from './ZFXYConverter.js';
  * 主にテスト用の軽量なQAヘルパーであり、本番運用では明示的に呼び出さない限り
  * メトリクスは計算されません。
  *
- * @param {import('./SpatialIdAdapter.js').SpatialIdAdapter} adapter - Loaded SpatialIdAdapter instance
- * @returns {import('../../Heatbox.js').SpatialIdEdgeCaseMetrics}
+ * @param {Object} adapter - Loaded SpatialIdAdapter instance / 初期化済みSpatialIdAdapterインスタンス
+ * @returns {Object} SpatialIdEdgeCaseMetrics-like object / SpatialIdEdgeCaseMetrics互換オブジェクト
  */
 export function computeSpatialIdEdgeCaseMetrics(adapter) {
   const datelineZoom = 24;
@@ -82,4 +82,3 @@ export function computeSpatialIdEdgeCaseMetrics(adapter) {
     hemisphereBoundsMismatched
   };
 }
-

@@ -97,7 +97,7 @@ export class SpatialIdAdapter {
    * 経度±180°付近ではX方向のラップを考慮し、x=0 と x=max を隣接セルとして扱います。
    *
    * @param {{z:number,f:number,x:number,y:number}} zfxy - Tile identifier / タイル識別子
-   * @returns {{z:number,f:number,x:number,y:number}[]} Neighbor tiles / 隣接タイル群
+   * @returns {Array.<{z:number,f:number,x:number,y:number}>} Neighbor tiles / 隣接タイル群
    */
   neighbors(zfxy) {
     const { z, f, x, y } = zfxy;
@@ -131,7 +131,7 @@ export class SpatialIdAdapter {
    * 高度方向Fはそのままとし、垂直方向の細分化は扱いません。
    *
    * @param {{z:number,f:number,x:number,y:number}} zfxy - Parent tile / 親タイル
-   * @returns {{z:number,f:number,x:number,y:number}[]} Child tiles / 子タイル群
+   * @returns {Array.<{z:number,f:number,x:number,y:number}>} Child tiles / 子タイル群
    */
   children(zfxy) {
     const { z, f, x, y } = zfxy;
