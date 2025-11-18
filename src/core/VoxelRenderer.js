@@ -124,12 +124,20 @@ export class VoxelRenderer {
    * @param {boolean} isTopN - Whether it is TopN / TopNボクセルかどうか
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @param {Object} statistics - Statistics / 統計情報
-   * @returns {Object} Adaptive params / 適応的パラメータ
-   * @private
-   */
+  * @returns {Object} Adaptive params / 適応的パラメータ
+  * @private
+  */
   _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, grid) {
     // v0.1.11: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
-    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options, grid);
+    return this.adaptiveController.calculateAdaptiveParams(
+      voxelInfo,
+      isTopN,
+      voxelData,
+      statistics,
+      this.options,
+      grid,
+      this._classifier
+    );
   }
 
   /**
@@ -476,10 +484,10 @@ export class VoxelRenderer {
           opacity = isNaN(resolverOpacity) ? this.options.opacity : Math.max(0, Math.min(1, resolverOpacity));
         } catch (e) {
           Logger.warn('boxOpacityResolver error, using fallback:', e);
-          opacity = adaptiveParams.boxOpacity || this.options.opacity;
+          opacity = (adaptiveParams.boxOpacity ?? this.options.opacity);
         }
       } else {
-        opacity = adaptiveParams.boxOpacity || this.options.opacity;
+        opacity = (adaptiveParams.boxOpacity ?? this.options.opacity);
       }
       
       // TopN highlight adjustment 
@@ -552,7 +560,7 @@ export class VoxelRenderer {
         finalOutlineWidth = adaptiveParams.outlineWidth || this.options.outlineWidth;
       }
     } else {
-      if (this.options.adaptiveOutlines && adaptiveParams.outlineWidth !== null) {
+      if (adaptiveParams.outlineWidth !== null && adaptiveParams.outlineWidth !== undefined) {
         finalOutlineWidth = adaptiveParams.outlineWidth;
       } else {
         finalOutlineWidth = isTopN && this.options.highlightTopN ? 
@@ -562,7 +570,7 @@ export class VoxelRenderer {
     }
 
     // Outline opacity
-    const finalOutlineOpacity = adaptiveParams.outlineOpacity || (this.options.outlineOpacity ?? 1.0);
+    const finalOutlineOpacity = adaptiveParams.outlineOpacity ?? (this.options.outlineOpacity ?? 1.0);
     const outlineColorWithOpacity = color.withAlpha(finalOutlineOpacity);
 
     // Render mode configuration
