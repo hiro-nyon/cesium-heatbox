@@ -129,8 +129,11 @@ export class Legend {
     return this.container;
   }
 
-  update(classifier, classificationOptions = {}) {
-    return this.render(classifier ?? this._classifier, classificationOptions ?? this._classificationOptions);
+  update(classifier, classificationOptions) {
+    return this.render(
+      classifier ?? this._classifier,
+      classificationOptions ?? this._classificationOptions
+    );
   }
 
   destroy() {
