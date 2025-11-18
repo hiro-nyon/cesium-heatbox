@@ -18,6 +18,7 @@
     rangeText: document.getElementById('rangeText')
   };
 
+  const CENTER = { lon: 139.71, lat: 35.67, height: 2600 };
   let viewer;
   let heatbox;
   let entities = [];
@@ -37,6 +38,13 @@
       apply();
     });
 
+    const imageryProvider = new Cesium.UrlTemplateImageryProvider({
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      subdomains: 'abcd',
+      maximumLevel: 19,
+      credit: '© OpenStreetMap contributors © CARTO'
+    });
+
     viewer = new Cesium.Viewer('cesiumContainer', {
       animation: false,
       timeline: false,
@@ -47,16 +55,13 @@
       geocoder: false,
       infoBox: true,
       creditContainer: document.createElement('div'),
-      imageryProvider: new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        subdomains: 'abcd',
-        maximumLevel: 19,
-        credit: '© OpenStreetMap contributors © CARTO'
-      }),
+      imageryProvider,
       terrainProvider: new Cesium.EllipsoidTerrainProvider()
     });
     viewer.imageryLayers.removeAll();
+    viewer.imageryLayers.addImageryProvider(imageryProvider);
     viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
+    focusCamera();
 
     heatbox = new Heatbox(viewer, {
       voxelSize: 50,
@@ -80,6 +85,22 @@
 
     generateEntities();
     apply();
+  }
+
+  function focusCamera() {
+    if (!viewer?.camera) return;
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(
+        CENTER.lon,
+        CENTER.lat,
+        CENTER.height
+      ),
+      orientation: {
+        heading: Cesium.Math.toRadians(-25),
+        pitch: Cesium.Math.toRadians(-45),
+        roll: 0
+      }
+    });
   }
 
   function generateEntities() {

@@ -24,6 +24,7 @@
     legend: document.getElementById('legendContainer')
   };
 
+  const CENTER = { lon: 139.77, lat: 35.68, height: 2500 };
   let viewer;
   let heatbox;
   let entities = [];
@@ -31,6 +32,13 @@
   init();
 
   function init() {
+    const imageryProvider = new Cesium.UrlTemplateImageryProvider({
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      subdomains: 'abcd',
+      maximumLevel: 19,
+      credit: '© OpenStreetMap contributors © CARTO'
+    });
+
     viewer = new Cesium.Viewer('cesiumContainer', {
       animation: false,
       timeline: false,
@@ -41,15 +49,12 @@
       geocoder: false,
       infoBox: true,
       creditContainer: document.createElement('div'),
-      imageryProvider: new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        subdomains: 'abcd',
-        maximumLevel: 19,
-        credit: '© OpenStreetMap contributors © CARTO'
-      }),
+      imageryProvider,
       terrainProvider: new Cesium.EllipsoidTerrainProvider()
     });
     viewer.imageryLayers.removeAll();
+    viewer.imageryLayers.addImageryProvider(imageryProvider);
+    focusCamera();
 
     heatbox = new Heatbox(viewer, {
       voxelSize: 40,
@@ -82,6 +87,22 @@
 
     generateEntities();
     applyClassification();
+  }
+
+  function focusCamera() {
+    if (!viewer?.camera) return;
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(
+        CENTER.lon,
+        CENTER.lat,
+        CENTER.height
+      ),
+      orientation: {
+        heading: Cesium.Math.toRadians(-20),
+        pitch: Cesium.Math.toRadians(-45),
+        roll: 0
+      }
+    });
   }
 
   function generateEntities() {
