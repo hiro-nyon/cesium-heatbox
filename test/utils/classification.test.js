@@ -1,4 +1,5 @@
 import { createClassifier } from '../../src/utils/classification.js';
+import * as Cesium from 'cesium';
 
 describe('classification', () => {
   describe('linear scheme', () => {
@@ -96,5 +97,44 @@ describe('classification', () => {
       }).toThrow(/not supported in v1.0.0/);
     });
   });
-});
 
+  describe('color map handling', () => {
+    test('should accept simple palette arrays', () => {
+      const classifier = createClassifier({
+        scheme: 'linear',
+        domain: [0, 100],
+        colorMap: ['#000000', '#ffffff']
+      });
+
+      const start = classifier.getColor(0);
+      const end = classifier.getColor(1);
+      const mid = classifier.getColor(0.5);
+      const expectedMid = Cesium.Color.lerp(
+        Cesium.Color.fromCssColorString('#000000'),
+        Cesium.Color.fromCssColorString('#ffffff'),
+        0.5,
+        new Cesium.Color()
+      );
+
+      expect(start.equals(Cesium.Color.fromCssColorString('#000000'))).toBe(true);
+      expect(end.equals(Cesium.Color.fromCssColorString('#ffffff'))).toBe(true);
+      expect(mid.red).toBeCloseTo(expectedMid.red, 2);
+      expect(mid.green).toBeCloseTo(expectedMid.green, 2);
+      expect(mid.blue).toBeCloseTo(expectedMid.blue, 2);
+    });
+
+    test('should preserve stop objects', () => {
+      const classifier = createClassifier({
+        scheme: 'linear',
+        domain: [0, 1],
+        colorMap: [
+          { position: 0, color: '#000000' },
+          { position: 1, color: '#ffffff' }
+        ]
+      });
+
+      const color = classifier.getColor(0.0);
+      expect(color.equals(Cesium.Color.fromCssColorString('#000000'))).toBe(true);
+    });
+  });
+});

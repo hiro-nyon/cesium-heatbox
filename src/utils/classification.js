@@ -2,6 +2,23 @@ import * as Cesium from 'cesium';
 import { interpolateColorMap } from './colorMap.js';
 import { getBackend } from './classificationBackend.js';
 
+function normalizeColorStops (colorMap) {
+  if (!Array.isArray(colorMap) || colorMap.length === 0) {
+    return null;
+  }
+
+  const isStopObject = colorMap.every((entry) => entry && typeof entry === 'object' && Object.prototype.hasOwnProperty.call(entry, 'position'));
+  if (isStopObject) {
+    return colorMap;
+  }
+
+  const lastIndex = colorMap.length > 1 ? colorMap.length - 1 : 1;
+  return colorMap.map((color, index) => ({
+    position: colorMap.length === 1 ? 0 : index / lastIndex,
+    color
+  }));
+}
+
 export function createClassifier (options = {}) {
   const {
     scheme = 'linear',
@@ -110,8 +127,9 @@ export function createClassifier (options = {}) {
       throw new Error(`unknown classification scheme: ${scheme}`);
   }
 
-  const getColor = colorMap
-    ? (t) => interpolateColorMap(colorMap, Math.max(0, Math.min(1, t)))
+  const normalizedStops = normalizeColorStops(colorMap);
+  const getColor = normalizedStops
+    ? (t) => interpolateColorMap(normalizedStops, Math.max(0, Math.min(1, t)))
     : (t) => Cesium.Color.lerp(
         Cesium.Color.BLUE || new Cesium.Color(0, 0, 1, 1),
         Cesium.Color.RED || new Cesium.Color(1, 0, 0, 1),
