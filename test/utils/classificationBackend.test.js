@@ -36,4 +36,14 @@ describe('classificationBackend', () => {
     expect(backend.quantile([1, 2, 3], 0.5)).toBe(42);
     expect(mockBackend.quantile).toHaveBeenCalled();
   });
+
+  test('jenksBreaks uses upper cluster bounds for breakpoints', () => {
+    const backend = getBackend();
+    const values = [1, 2, 3, 4, 5, 6];
+
+    const breaks = backend.jenksBreaks(values, 2);
+
+    // ckmeans で [1,2,3] / [4,5,6] に分かれる場合、境界は 3 を返す
+    expect(breaks).toEqual([3]);
+  });
 });

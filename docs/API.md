@@ -43,7 +43,7 @@ Creates a new Heatbox instance.
   - `heading` (number, default: 0) - Camera heading (degrees)
   - `pitch` (number, default: -30) - Camera pitch (degrees)
   - `paddingPercent` (number, default: 0.1) - Padding ratio around data bounds
-- **`classification` (string | ClassificationOptions | false) - v1.0.0: Declarative classification engine for color ramp (`linear`/`log`/`equal-interval`/`quantize`/`threshold`). When `false`, the legacy min/max interpolation is used. See [ClassificationOptions](#classificationoptions-v100).**
+- **`classification` (string | ClassificationOptions | false) - v1.1.0: Declarative classification engine (`linear`/`log`/`equal-interval`/`quantize`/`threshold`/`quantile`/`jenks`) with multi-target control (color / opacity / width). When `false`, the legacy min/max interpolation is used. See [ClassificationOptions](#classificationoptions-v110).**
 
 For brevity, see the Japanese section below for complete option details and examples.
 
@@ -495,26 +495,28 @@ interface HeatboxStatistics {
   originalVoxelSize?: number | null;
   finalVoxelSize?: number | null;
   adjustmentReason?: string | null;
-  classification?: ClassificationStatistics | null; // v1.0.0: 分類メタデータ
+  classification?: ClassificationStatistics | null; // v1.1.0: 分類メタデータ
 }
 
 interface ClassificationStatistics {
   enabled: boolean;
-  scheme: 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold';
+  scheme: 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold' | 'quantile' | 'jenks';
   domain: [number, number];
   classes: number | null;
   thresholds: number[] | null;
   sampleSize: number;
-  quantiles: [number, number, number] | null;
+  quantiles: [number, number, number, number] | null;
   histogram: {
     bins: Array<{ start: number; end: number }>;
     counts: number[];
   } | null;
   breaks: number[] | null;
+  jenksBreaks: number[] | null;
+  ckmeansClusters: number[][] | null;
 }
 ```
 
-`classification` には DataProcessor が算出したメタデータが格納されます。`histogram` は最大10ビンで自動作成され、`breaks` は現在のスキームに応じた境界値（threshold では `[min, ...thresholds, max]`）です。
+`classification` には DataProcessor が算出したメタデータが格納されます。`histogram` は最大10ビンで自動作成され、`breaks` は現在のスキームに応じた境界値（threshold では `[min, ...thresholds, max]`、quantile/jenks ではデータ分布に応じた境界）。`jenksBreaks` と `ckmeansClusters` は jenks スキーム時にのみ付与されます。
 
 ### HeatboxOptions
 
@@ -529,29 +531,37 @@ interface HeatboxOptions {
   maxColor?: [number, number, number];
   maxRenderVoxels?: number; // レンダリング上限（非空ボクセルが上限超過時は高密度トップNのみ描画）
   batchMode?: 'auto' | 'primitive' | 'entity';
-  classification?: ClassificationOptions | 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold' | false;
+  classification?: ClassificationOptions | 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold' | 'quantile' | 'jenks' | false;
 }
 ```
 
-#### `ClassificationOptions` (v1.0.0)
+#### `ClassificationOptions` (v1.1.0)
 
 ```typescript
 interface ClassificationOptions {
   enabled?: boolean; // 省略時は scheme 指定で自動的に true
-  scheme?: 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold';
-  classes?: number; // 2-20 の整数。threshold の場合は無視
+  scheme?: 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold' | 'quantile' | 'jenks';
+  classes?: number; // 2-20 の整数。threshold の場合は無視。quantile/jenks は values 必須
   thresholds?: number[]; // threshold 時のみ必須。昇順で指定
   colorMap?: Array<string | { position: number; color: string }>;
   domain?: [number, number]; // オプション。未指定時はデータドメインを使用
   classificationTargets?: {
-    color?: boolean; // v1.0.0 では color のみ有効。他は将来拡張
+    color?: boolean;
+    opacity?: boolean;
+    width?: boolean;
   };
 }
 ```
 
-`classification` に文字列（例: `'log'`）を渡すと `scheme` を略記できます。`false`/`null` は明示的に無効化します。`colorResolver` が存在する場合は従来どおり resolver が優先され、分類エンジンはスキップされます。
+`classification` に文字列（例: `'log'`）を渡すと `scheme` を略記できます。`false`/`null` は明示的に無効化します。`colorResolver` が存在する場合は従来どおり resolver が優先され、分類エンジンはスキップされます。`classificationTargets` で color/opacity/width の適用可否を切り替え、`adaptiveParams.*Range` と組み合わせて不透明度や線幅を補間します。
 
 ## ユーティリティ関数
+
+### Legend API (v1.1.0)
+
+- `createLegend(container?: HTMLElement): HTMLElement|null` — 現在の classifier で凡例 DOM を生成（省略時は body に追加）。`classificationTargets` に応じたターゲットを表示。
+- `updateLegend()` — `updateOptions` / `createFromEntities` 後に最新状態で凡例を再描画。
+- `destroyLegend()` — 生成済み凡例を破棄し、DOM から除去。
 
 ### `createHeatbox(viewer, options)`
 

@@ -580,6 +580,7 @@ export class DataProcessor {
       : {};
     const enabled = Boolean(normalizedOptions.enabled);
     const scheme = (normalizedOptions.scheme || 'linear').toLowerCase();
+    const classes = Math.max(2, normalizedOptions.classes || 5);
     let domain = null;
     if (Array.isArray(normalizedOptions.domain) && normalizedOptions.domain.length === 2) {
       const [minDomain, maxDomain] = normalizedOptions.domain;
@@ -593,23 +594,25 @@ export class DataProcessor {
       domain = [safeMin, safeMax];
     }
 
+    const numericValues = Array.isArray(counts)
+      ? counts.filter(value => Number.isFinite(value))
+      : [];
+    const sortedValues = [...numericValues].sort((a, b) => a - b);
+
     const stats = {
       enabled,
       scheme,
       domain,
-      classes: normalizedOptions.classes ?? null,
+      classes: normalizedOptions.classes ?? classes,
       thresholds: normalizedOptions.thresholds ?? null,
-      sampleSize: counts.length,
+      sampleSize: sortedValues.length,
       quantiles: null,
       histogram: null,
-      breaks: null
+      breaks: null,
+      jenksBreaks: null,
+      ckmeansClusters: null
     };
 
-    if (!Array.isArray(counts) || counts.length === 0) {
-      return stats;
-    }
-
-    const sortedValues = [...counts].filter(value => Number.isFinite(value)).sort((a, b) => a - b);
     if (sortedValues.length === 0) {
       return stats;
     }
@@ -619,7 +622,8 @@ export class DataProcessor {
       stats.quantiles = [
         backend.quantile(sortedValues, 0.25),
         backend.quantile(sortedValues, 0.5),
-        backend.quantile(sortedValues, 0.75)
+        backend.quantile(sortedValues, 0.75),
+        backend.quantile(sortedValues, 1)
       ];
     } catch (error) {
       Logger.warn('Failed to compute quantiles for classification statistics:', error);
@@ -627,6 +631,24 @@ export class DataProcessor {
     }
 
     stats.histogram = DataProcessor._createHistogramFromSorted(sortedValues);
+
+    const safeClassCount = Math.min(Math.max(2, classes), sortedValues.length);
+    if (enabled && scheme === 'jenks' && sortedValues.length >= 2 && safeClassCount >= 2) {
+      try {
+        const backend = getBackend();
+        const jenks = backend.jenksBreaks(sortedValues, safeClassCount);
+        stats.jenksBreaks = Array.isArray(jenks) && jenks.length > 0 ? jenks : null;
+
+        if (typeof backend.ckmeans === 'function') {
+          const clusters = backend.ckmeans(sortedValues, safeClassCount);
+          stats.ckmeansClusters = Array.isArray(clusters) && clusters.length > 0 ? clusters : null;
+        }
+      } catch (error) {
+        Logger.warn('Failed to compute jenks statistics:', error);
+        stats.jenksBreaks = null;
+        stats.ckmeansClusters = null;
+      }
+    }
 
     if (enabled) {
       try {

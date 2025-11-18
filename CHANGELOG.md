@@ -41,6 +41,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0-alpha.1] - 2024-11-19
+
+### Added
+- Classification extension (quantile/jenks) with multi-target control (color/opacity/width) and Legend UI.
+- DataProcessor statistics now expose quantiles (Q1–Q4), jenks breaks, and ckmeans clusters.
+- New advanced examples: `classification-extension-demo` and `emulation-opacity-demo`.
+
+### Changed
+- Performance tests cover v1.1.0 classification targets to guard regressions.
+
+### Fixed
+- Emulation polylines inherit classified outline opacity; legend updates preserve options and Heatbox destroy cleans legend.
+
 > **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
 
 ## [0.1.18] - 2025-11-18

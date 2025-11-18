@@ -88,9 +88,44 @@ describe('Classification Performance & Memory (ADR-0016 Phase 6)', () => {
     expect(delta).toBeLessThanOrEqual(allowedDelta);
   }, 20000);
 
-  it('scales near-linearly up to 2k entities', async () => {
+  it('quantile + multi-target stays within 3x of color-only quantile median', async () => {
+    const entities = generateLatLonEntities(2000);
+
+    const baseline = await measureMedianProcessingTime(entities, {
+      ...baseOptions,
+      classification: {
+        enabled: true,
+        scheme: 'quantile',
+        classes: 5,
+        colorMap: classificationPreset.colorMap,
+        classificationTargets: { color: true }
+      }
+    }, 2);
+
+    const multiTarget = await measureMedianProcessingTime(entities, {
+      ...baseOptions,
+      classification: {
+        enabled: true,
+        scheme: 'quantile',
+        classes: 5,
+        classificationTargets: { color: true, opacity: true, width: true },
+        colorMap: classificationPreset.colorMap
+      },
+      adaptiveParams: {
+        boxOpacityRange: [0.35, 0.95],
+        outlineOpacityRange: [0.4, 1.0],
+        outlineWidthRange: [1, 5]
+      }
+    }, 2);
+
+    const ratio = multiTarget.median / Math.max(1, baseline.median);
+
+    console.log(`[classification-quantile-multi] color=${baseline.median.toFixed(2)}ms multi=${multiTarget.median.toFixed(2)}ms ratio=${ratio.toFixed(2)}x`);
+    expect(ratio).toBeLessThanOrEqual(3);
+  }, 20000);
+
+  it('classification stays under 80ms up to 2k entities', async () => {
     const counts = [500, 1000, 2000];
-    const measurements = [];
 
     for (const count of counts) {
       const entities = generateLatLonEntities(count);
@@ -98,20 +133,36 @@ describe('Classification Performance & Memory (ADR-0016 Phase 6)', () => {
         ...baseOptions,
         classification: classificationPreset
       }, 3);
-      measurements.push(result);
       console.log(`[classification-scale] count=${count} median=${result.median.toFixed(2)}ms`);
+      expect(result.median).toBeLessThan(80);
     }
-
-    const ratios = [
-      measurements[1].median / Math.max(measurements[0].median, 1),
-      measurements[2].median / Math.max(measurements[1].median, 1)
-    ];
-
-    ratios.forEach((ratio, index) => {
-      console.log(`[classification-scale] ratio${index + 1}=${ratio.toFixed(2)}x`);
-      expect(ratio).toBeLessThan(3.5); // buffer for CI noise
-    });
   }, 30000);
+
+  it('jenks stays within 3x of quantile median at 2k entities', async () => {
+    const entities = generateLatLonEntities(2000);
+
+    const quantile = await measureMedianProcessingTime(entities, {
+      ...baseOptions,
+      classification: {
+        ...classificationPreset,
+        scheme: 'quantile',
+        classes: 5
+      }
+    }, 2);
+
+    const jenks = await measureMedianProcessingTime(entities, {
+      ...baseOptions,
+      classification: {
+        ...classificationPreset,
+        scheme: 'jenks',
+        classes: 5
+      }
+    }, 2);
+
+    const ratio = jenks.median / Math.max(1, quantile.median);
+    console.log(`[classification-jenks] quantile=${quantile.median.toFixed(2)}ms jenks=${jenks.median.toFixed(2)}ms ratio=${ratio.toFixed(2)}x`);
+    expect(ratio).toBeLessThanOrEqual(3);
+  }, 25000);
 
   it('incurs ≤20% memory overhead with classification enabled', async () => {
     if (typeof global.gc !== 'function') {
@@ -147,5 +198,52 @@ describe('Classification Performance & Memory (ADR-0016 Phase 6)', () => {
 
     console.log(`[classification-memory] baseline=${(baselineMem / 1024 / 1024).toFixed(2)}MB classified=${(classifiedMem / 1024 / 1024).toFixed(2)}MB overhead=${(overhead * 100).toFixed(2)}%`);
     expect(overhead).toBeLessThan(0.2);
+  }, 30000);
+
+  it('multi-target classification keeps memory overhead within 15%', async () => {
+    if (typeof global.gc !== 'function') {
+      console.warn('[classification-memory-multitarget] Skipping memory test: run with --expose-gc to enable');
+      return;
+    }
+
+    const entities = generateLatLonEntities(1800);
+
+    global.gc();
+    const memBeforeBaseline = process.memoryUsage().heapUsed;
+    const baselineHeatbox = new Heatbox(viewer, {
+      ...baseOptions,
+      classification: { enabled: false }
+    });
+    await baselineHeatbox.createFromEntities(entities);
+    const memAfterBaseline = process.memoryUsage().heapUsed;
+    baselineHeatbox.clear();
+
+    global.gc();
+    const memBeforeMulti = process.memoryUsage().heapUsed;
+    const multiHeatbox = new Heatbox(viewer, {
+      ...baseOptions,
+      classification: {
+        enabled: true,
+        scheme: 'quantile',
+        classes: 5,
+        classificationTargets: { color: true, opacity: true, width: true },
+        colorMap: classificationPreset.colorMap
+      },
+      adaptiveParams: {
+        boxOpacityRange: [0.35, 0.95],
+        outlineOpacityRange: [0.4, 1.0],
+        outlineWidthRange: [1, 5]
+      }
+    });
+    await multiHeatbox.createFromEntities(entities);
+    const memAfterMulti = process.memoryUsage().heapUsed;
+    multiHeatbox.clear();
+
+    const baselineMem = Math.max(memAfterBaseline - memBeforeBaseline, 1);
+    const multiMem = Math.max(memAfterMulti - memBeforeMulti, 1);
+    const overhead = (multiMem - baselineMem) / baselineMem;
+
+    console.log(`[classification-memory-multi] baseline=${(baselineMem / 1024 / 1024).toFixed(2)}MB multi=${(multiMem / 1024 / 1024).toFixed(2)}MB overhead=${(overhead * 100).toFixed(2)}%`);
+    expect(overhead).toBeLessThan(0.15);
   }, 30000);
 });

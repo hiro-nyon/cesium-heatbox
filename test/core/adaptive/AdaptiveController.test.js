@@ -8,6 +8,7 @@
 
 import { jest } from '@jest/globals';
 import { AdaptiveController } from '../../../src/core/adaptive/AdaptiveController.js';
+import { createClassifier } from '../../../src/utils/classification.js';
 
 // Mock Logger
 jest.mock('../../../src/utils/logger.js', () => ({
@@ -918,6 +919,79 @@ describe('AdaptiveController', () => {
         expect(result._debug.neighborhoodResult.isDenseArea).toBe(true);
         expect(result._debug.overlapRecommendation.recommendedMode).toBe('inset');
       });
+    });
+  });
+
+  describe('classificationTargets integration (v1.1.0)', () => {
+    test('applies classification-based opacity ranges when enabled', () => {
+      const controller = new AdaptiveController();
+      const classifier = createClassifier({
+        scheme: 'linear',
+        domain: [0, 100]
+      });
+
+      const voxelInfo = { x: 0, y: 0, z: 0, count: 50 };
+      const renderOptions = createMockRenderOptions({
+        adaptiveOutlines: false,
+        classification: {
+          enabled: true,
+          classificationTargets: { opacity: true }
+        },
+        adaptiveParams: {
+          boxOpacityRange: [0.2, 0.8],
+          outlineOpacityRange: [0.1, 0.9]
+        }
+      });
+      const statistics = createMockStatistics(0, 100);
+
+      const result = controller.calculateAdaptiveParams(
+        voxelInfo,
+        false,
+        new Map(),
+        statistics,
+        renderOptions,
+        null,
+        classifier
+      );
+
+      expect(result.boxOpacity).toBeCloseTo(0.5, 2);
+      expect(result.outlineOpacity).toBeCloseTo(0.5, 2);
+    });
+
+    test('applies classification-based width range and topN boost', () => {
+      const controller = new AdaptiveController();
+      const classifier = createClassifier({
+        scheme: 'linear',
+        domain: [0, 100]
+      });
+
+      const voxelInfo = { x: 0, y: 0, z: 0, count: 50 };
+      const renderOptions = createMockRenderOptions({
+        adaptiveOutlines: false,
+        highlightTopN: 1,
+        highlightTopNWidthBoost: 2,
+        classification: {
+          enabled: true,
+          classificationTargets: { width: true }
+        },
+        adaptiveParams: {
+          outlineWidthRange: [1, 5]
+        }
+      });
+      const statistics = createMockStatistics(0, 100);
+
+      const result = controller.calculateAdaptiveParams(
+        voxelInfo,
+        true,
+        new Map(),
+        statistics,
+        renderOptions,
+        null,
+        classifier
+      );
+
+      // outlineWidthRangeで 1→5 の中間 (3) に topN boost 2 を加算
+      expect(result.outlineWidth).toBeCloseTo(5, 2);
     });
   });
 });

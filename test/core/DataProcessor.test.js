@@ -50,12 +50,40 @@ describe('DataProcessor utils', () => {
     expect(stats.classification.scheme).toBe('equal-interval');
     expect(stats.classification.domain).toEqual([1, 9]);
     expect(stats.classification.breaks).toHaveLength(4);
-    expect(stats.classification.quantiles).toHaveLength(3);
+    expect(stats.classification.quantiles).toHaveLength(4);
+    expect(stats.classification.quantiles?.[3]).toBe(9);
+    expect(stats.classification.jenksBreaks).toBeNull();
+    expect(stats.classification.ckmeansClusters).toBeNull();
     const histTotal = stats.classification.histogram.counts.reduce((sum, val) => sum + val, 0);
     expect(histTotal).toBe(vd.size);
   });
 
-  
+  test('jenks statistics return breaks and clusters', () => {
+    const grid = { totalVoxels: 20 };
+    const vd = makeVoxelData([
+      { x: 0, y: 0, z: 0, count: 1 },
+      { x: 1, y: 1, z: 1, count: 2 },
+      { x: 2, y: 2, z: 2, count: 3 },
+      { x: 3, y: 3, z: 3, count: 10 },
+      { x: 4, y: 4, z: 4, count: 11 },
+      { x: 5, y: 5, z: 5, count: 12 },
+      { x: 6, y: 6, z: 6, count: 20 },
+      { x: 7, y: 7, z: 7, count: 21 },
+      { x: 8, y: 8, z: 8, count: 22 }
+    ]);
+    const stats = DataProcessor.calculateStatistics(vd, grid, {
+      classification: {
+        enabled: true,
+        scheme: 'jenks',
+        classes: 3
+      }
+    });
+
+    expect(stats.classification.breaks).toEqual([1, 3, 12, 22]);
+    expect(stats.classification.jenksBreaks).toEqual([3, 12]);
+    expect(stats.classification.ckmeansClusters).toHaveLength(3);
+    expect(stats.classification.ckmeansClusters?.[0]).toEqual([1, 2, 3]);
+  });
 
   test('getTopNVoxels が上位Nを返す', () => {
     const vd = makeVoxelData([
