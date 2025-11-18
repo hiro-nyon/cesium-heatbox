@@ -494,8 +494,26 @@ interface HeatboxStatistics {
   originalVoxelSize?: number | null;
   finalVoxelSize?: number | null;
   adjustmentReason?: string | null;
+  classification?: ClassificationStatistics | null; // v1.0.0: 分類メタデータ
+}
+
+interface ClassificationStatistics {
+  enabled: boolean;
+  scheme: 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold';
+  domain: [number, number];
+  classes: number | null;
+  thresholds: number[] | null;
+  sampleSize: number;
+  quantiles: [number, number, number] | null;
+  histogram: {
+    bins: Array<{ start: number; end: number }>;
+    counts: number[];
+  } | null;
+  breaks: number[] | null;
 }
 ```
+
+`classification` には DataProcessor が算出したメタデータが格納されます。`histogram` は最大10ビンで自動作成され、`breaks` は現在のスキームに応じた境界値（threshold では `[min, ...thresholds, max]`）です。
 
 ### HeatboxOptions
 
@@ -510,8 +528,27 @@ interface HeatboxOptions {
   maxColor?: [number, number, number];
   maxRenderVoxels?: number; // レンダリング上限（非空ボクセルが上限超過時は高密度トップNのみ描画）
   batchMode?: 'auto' | 'primitive' | 'entity';
+  classification?: ClassificationOptions | 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold' | false;
 }
 ```
+
+#### `ClassificationOptions` (v1.0.0)
+
+```typescript
+interface ClassificationOptions {
+  enabled?: boolean; // 省略時は scheme 指定で自動的に true
+  scheme?: 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold';
+  classes?: number; // 2-20 の整数。threshold の場合は無視
+  thresholds?: number[]; // threshold 時のみ必須。昇順で指定
+  colorMap?: Array<string | { position: number; color: string }>;
+  domain?: [number, number]; // オプション。未指定時はデータドメインを使用
+  classificationTargets?: {
+    color?: boolean; // v1.0.0 では color のみ有効。他は将来拡張
+  };
+}
+```
+
+`classification` に文字列（例: `'log'`）を渡すと `scheme` を略記できます。`false`/`null` は明示的に無効化します。`colorResolver` が存在する場合は従来どおり resolver が優先され、分類エンジンはスキップされます。
 
 ## ユーティリティ関数
 

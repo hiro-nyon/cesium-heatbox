@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>CesiumJS Heatbox - Classification Demo</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link href="../common/demo.css" rel="stylesheet">
+  <style>
+    html, body, #cesiumContainer {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    }
+    .classification-panel {
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      width: 380px;
+    }
+    .classification-panel h3 {
+      margin-top: 0;
+    }
+    .palette-preview {
+      height: 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      margin-top: 6px;
+    }
+    .scheme-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .scheme-badges button {
+      flex: 1 1 45%;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+    .stats-block {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .stats-block h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: #cbd5f5;
+    }
+    .stats-block dl {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 4px 8px;
+      margin: 0;
+    }
+    .stats-block dt {
+      opacity: 0.8;
+    }
+    .stats-block dd {
+      margin: 0;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+    .breaks-list {
+      margin: 8px 0 0;
+      padding-left: 16px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .breaks-list li {
+      font-size: 12px;
+      color: #e2e8f0;
+    }
+    .status-text {
+      font-size: 12px;
+      margin-top: 6px;
+      opacity: 0.8;
+    }
+    @media (max-height: 720px) {
+      .classification-panel {
+        max-height: unset;
+      }
+    }
+  </style>
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../common/camera.js"></script>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="control-panel hb-panel classification-panel">
+    <h3>Classification Demo (v1.0.0)</h3>
+    <p style="margin-top: -6px; font-size: 13px; color: #cbd5f5;">
+      `classification.scheme` の 5 方式（linear/log/equal-interval/quantize/threshold）を切り替え、
+      `colorMap` による離散パレットを即時プレビューします（色 resolver より後順位）。
+    </p>
+    <div class="control-group">
+      <label for="datasetPreset">データ分布 / Dataset</label>
+      <select id="datasetPreset">
+        <option value="clusters">Clusters（3クラス + 外れ値）</option>
+        <option value="gradient">Gradient（連続バンド）</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <button id="generateBtn" class="hb-btn hb-btn-primary">1. Generate Sample Data</button>
+      <div class="status-text" id="generateStatus">Idle</div>
+    </div>
+    <hr>
+    <div class="control-group">
+      <label>Scheme Presets</label>
+      <div class="scheme-badges">
+        <button data-scheme="linear" class="hb-btn hb-btn-secondary">Linear</button>
+        <button data-scheme="log" class="hb-btn hb-btn-secondary">Log</button>
+        <button data-scheme="equal-interval" class="hb-btn hb-btn-secondary">Equal Interval</button>
+        <button data-scheme="quantize" class="hb-btn hb-btn-secondary">Quantize</button>
+        <button data-scheme="threshold" class="hb-btn hb-btn-secondary">Threshold</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <label for="schemeSelect">Classification Scheme</label>
+      <select id="schemeSelect">
+        <option value="linear">linear (default)</option>
+        <option value="log">log</option>
+        <option value="equal-interval">equal-interval</option>
+        <option value="quantize">quantize</option>
+        <option value="threshold">threshold (manual)</option>
+      </select>
+    </div>
+    <div class="control-group" id="classesGroup">
+      <label for="classCount">Classes: <span id="classCountValue">5</span></label>
+      <input type="range" id="classCount" min="2" max="10" value="5">
+    </div>
+    <div class="control-group" id="thresholdGroup" style="display: none;">
+      <label for="thresholdsInput">Thresholds (comma separated)</label>
+      <input type="text" id="thresholdsInput" value="40,65,90">
+      <small style="display: block; margin-top: 4px; opacity: 0.7;">例: 30,45,60 → 4 classes (<=30 / <=45 / <=60 / &gt;60)</small>
+    </div>
+    <div class="control-group">
+      <label for="paletteSelect">Color Map</label>
+      <select id="paletteSelect">
+        <option value="sunset">Sunset (暖色)</option>
+        <option value="aurora">Aurora (寒色)</option>
+        <option value="heatmap">Heatmap (classic)</option>
+        <option value="contrast">Contrast (divergent)</option>
+      </select>
+      <div id="palettePreview" class="palette-preview"></div>
+    </div>
+    <div class="control-group">
+      <button id="applyBtn" class="hb-btn hb-btn-primary" disabled>2. Apply Classification</button>
+      <div class="status-text" id="applyStatus">Waiting for data...</div>
+    </div>
+    <div class="stats-block">
+      <h4>Classification Stats (HeatboxStatistics.classification)</h4>
+      <dl id="statsList">
+        <dt>Scheme</dt><dd>-</dd>
+        <dt>Domain</dt><dd>-</dd>
+        <dt>Classes</dt><dd>-</dd>
+        <dt>Sample Size</dt><dd>-</dd>
+        <dt>Quantiles (Q1/Q2/Q3)</dt><dd>-</dd>
+        <dt>Breaks</dt><dd>-</dd>
+      </dl>
+      <ol id="breaksList" class="breaks-list"></ol>
+    </div>
+  </div>
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
+  <script src="./classification-demo.js"></script>
+</body>
+</html>
