@@ -102,7 +102,8 @@ describe('Spatial ID Integration Tests', () => {
       const heatbox = new Heatbox(mockViewer, {
         spatialId: {
           enabled: true,
-          zoom: 25
+          zoom: 25,
+          zoomControl: 'manual'
         }
       });
 
