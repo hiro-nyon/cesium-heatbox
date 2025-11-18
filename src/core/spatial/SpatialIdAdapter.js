@@ -89,6 +89,91 @@ export class SpatialIdAdapter {
   }
 
   /**
+   * Get neighbors for given ZFXY tile (8-connected in X/Y).
+   * 指定ZFXYタイルの隣接セル（X/Yの8近傍）を取得します。
+   *
+   * Dateline wrapping is handled in X so that tiles at x=0 and x=max
+   * are considered neighbors across the ±180° meridian.
+   * 経度±180°付近ではX方向のラップを考慮し、x=0 と x=max を隣接セルとして扱います。
+   *
+   * @param {{z:number,f:number,x:number,y:number}} zfxy - Tile identifier / タイル識別子
+   * @returns {{z:number,f:number,x:number,y:number}[]} Neighbor tiles / 隣接タイル群
+   */
+  neighbors(zfxy) {
+    const { z, f, x, y } = zfxy;
+    const n = Math.pow(2, z);
+    const neighbors = [];
+
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) {
+          continue;
+        }
+
+        const ny = y + dy;
+        if (ny < 0 || ny >= n) {
+          continue;
+        }
+
+        const nx = (x + dx + n) % n;
+        neighbors.push({ z, f, x: nx, y: ny });
+      }
+    }
+
+    return neighbors;
+  }
+
+  /**
+   * Get children for given ZFXY tile (4-way subdivision in X/Y).
+   * 指定ZFXYタイルの子セル（X/Yを2分割した4セル）を取得します。
+   *
+   * Altitude index F is kept as-is; vertical subdivision is not modeled here.
+   * 高度方向Fはそのままとし、垂直方向の細分化は扱いません。
+   *
+   * @param {{z:number,f:number,x:number,y:number}} zfxy - Parent tile / 親タイル
+   * @returns {{z:number,f:number,x:number,y:number}[]} Child tiles / 子タイル群
+   */
+  children(zfxy) {
+    const { z, f, x, y } = zfxy;
+    const childZ = z + 1;
+    const baseX = x * 2;
+    const baseY = y * 2;
+    const nChild = Math.pow(2, childZ);
+
+    const children = [];
+    for (let dy = 0; dy <= 1; dy++) {
+      for (let dx = 0; dx <= 1; dx++) {
+        const cx = (baseX + dx) % nChild;
+        const cy = baseY + dy;
+        if (cy < 0 || cy >= nChild) {
+          continue;
+        }
+        children.push({ z: childZ, f, x: cx, y: cy });
+      }
+    }
+
+    return children;
+  }
+
+  /**
+   * Get parent tile for given ZFXY tile.
+   * 指定ZFXYタイルの親セルを取得します。
+   *
+   * @param {{z:number,f:number,x:number,y:number}} zfxy - Child tile / 子タイル
+   * @returns {{z:number,f:number,x:number,y:number}|null} Parent tile or null at root / 親タイルまたはルートの場合null
+   */
+  parent(zfxy) {
+    const { z, f, x, y } = zfxy;
+    if (z <= 0) {
+      return null;
+    }
+    const parentZ = z - 1;
+    const parentX = Math.floor(x / 2);
+    const parentY = Math.floor(y / 2);
+    return { z: parentZ, f, x: parentX, y: parentY };
+  }
+
+  /**
    * Get voxel bounds from geographic coordinates
    * 地理座標からボクセル境界を取得
    * 
@@ -318,4 +403,3 @@ export class SpatialIdAdapter {
     };
   }
 }
-
