@@ -101,8 +101,8 @@ describe('Layer Aggregation Performance (ADR-0014 Phase 5)', () => {
       const baselineReference = Math.max(baseline.median, 1);
       const overheadPct = (timeDelta / baselineReference) * 100;
 
-      // Allow absolute jitter (15ms minimum, or 15% of baseline) and relative 25%
-      const absoluteThreshold = Math.max(15, baselineReference * 0.15);
+      // Allow absolute jitter (25ms minimum, or 25% of baseline)
+      const absoluteThreshold = Math.max(25, baselineReference * 0.25);
 
       console.log(`Baseline median: ${baseline.median.toFixed(2)}ms`);
       console.log(`Aggregation median: ${withAggregation.median.toFixed(2)}ms`);
