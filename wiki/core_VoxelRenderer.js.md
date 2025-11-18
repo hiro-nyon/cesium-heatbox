@@ -339,12 +339,48 @@ export class VoxelRenderer {
       return null;
     }
     
-    const { x, y, z } = info;
+    // v0.1.17: Spatial ID mode - calculate position from 8-vertex bounds / 空間IDモード - 8頂点boundsから位置を計算
+    let centerLon, centerLat, centerAlt, cellSizeX, cellSizeY, baseCellSizeZ;
     
-    // Position calculation
-    const centerLon = bounds.minLon + (x + 0.5) * (bounds.maxLon - bounds.minLon) / grid.numVoxelsX;
-    const centerLat = bounds.minLat + (y + 0.5) * (bounds.maxLat - bounds.minLat) / grid.numVoxelsY;
-    const centerAlt = bounds.minAlt + (z + 0.5) * (bounds.maxAlt - bounds.minAlt) / grid.numVoxelsZ;
+    if (info.bounds && Array.isArray(info.bounds) && info.bounds.length === 8) {
+      // Spatial ID mode: use 8 vertices to calculate center and dimensions
+      // 空間IDモード: 8頂点を使って中心と寸法を計算
+      const vertices = info.bounds;
+      
+      // Calculate center from vertices (average of all 8 points)
+      // 頂点から中心を計算（8点の平均）
+      centerLon = vertices.reduce((sum, v) => sum + v.lng, 0) / 8;
+      centerLat = vertices.reduce((sum, v) => sum + v.lat, 0) / 8;
+      centerAlt = vertices.reduce((sum, v) => sum + v.alt, 0) / 8;
+      
+      // Calculate dimensions from vertices (distance between corners)
+      // 頂点から寸法を計算（角間の距離）
+      // Assume vertices[0-3] are bottom face, vertices[4-7] are top face
+      // vertices[0], [1], [2], [3] form bottom rectangle
+      // SpatialIdAdapter/ZFXYConverter guarantee this ordering.
+      const v0 = Cesium.Cartesian3.fromDegrees(vertices[0].lng, vertices[0].lat, vertices[0].alt);
+      const v1 = Cesium.Cartesian3.fromDegrees(vertices[1].lng, vertices[1].lat, vertices[1].alt);
+      const v3 = Cesium.Cartesian3.fromDegrees(vertices[3].lng, vertices[3].lat, vertices[3].alt);
+      const v4 = Cesium.Cartesian3.fromDegrees(vertices[4].lng, vertices[4].lat, vertices[4].alt);
+      
+      cellSizeX = Cesium.Cartesian3.distance(v0, v1);
+      cellSizeY = Cesium.Cartesian3.distance(v0, v3);
+      baseCellSizeZ = Cesium.Cartesian3.distance(v0, v4);
+    } else {
+      // Uniform grid mode: use x/y/z indices (legacy)
+      // 一様グリッドモード: x/y/zインデックスを使用（レガシー）
+      const { x, y, z } = info;
+      
+      centerLon = bounds.minLon + (x + 0.5) * (bounds.maxLon - bounds.minLon) / grid.numVoxelsX;
+      centerLat = bounds.minLat + (y + 0.5) * (bounds.maxLat - bounds.minLat) / grid.numVoxelsY;
+      centerAlt = bounds.minAlt + (z + 0.5) * (bounds.maxAlt - bounds.minAlt) / grid.numVoxelsZ;
+      
+      // Calculate dimensions from grid (legacy)
+      // グリッドから寸法を計算（レガシー）
+      cellSizeX = grid.cellSizeX || (grid.lonRangeMeters ? (grid.lonRangeMeters / grid.numVoxelsX) : grid.voxelSizeMeters);
+      cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
+      baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
+    }
     
     // Normalized density
     const normalizedDensity = statistics.maxCount > statistics.minCount ? 
@@ -356,15 +392,40 @@ export class VoxelRenderer {
     // Color and opacity
     const { color, opacity } = this._calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx);
     
-    // Dimensions
-    const { cellSizeX, cellSizeY, boxHeight } = this._calculateDimensions(grid, normalizedDensity);
+    // Dimensions (v0.1.17: use pre-calculated dimensions for spatial ID mode)
+    let finalCellSizeX, finalCellSizeY, boxHeight;
+    if (info.bounds) {
+      // Spatial ID mode: use pre-calculated dimensions, apply voxel gap
+      // 空間IDモード: 事前計算された寸法を使用、voxelGapを適用
+      finalCellSizeX = cellSizeX;
+      finalCellSizeY = cellSizeY;
+      let finalBaseCellSizeZ = baseCellSizeZ;
+      
+      if (this.options.voxelGap > 0) {
+        finalCellSizeX = Math.max(cellSizeX - this.options.voxelGap, cellSizeX * 0.1);
+        finalCellSizeY = Math.max(cellSizeY - this.options.voxelGap, cellSizeY * 0.1);
+        finalBaseCellSizeZ = Math.max(baseCellSizeZ - this.options.voxelGap, baseCellSizeZ * 0.1);
+      }
+      
+      boxHeight = finalBaseCellSizeZ;
+      if (this.options.heightBased) {
+        boxHeight = finalBaseCellSizeZ * (0.1 + normalizedDensity * 0.9);
+      }
+    } else {
+      // Uniform grid mode: calculate dimensions from grid
+      // 一様グリッドモード: グリッドから寸法を計算
+      const dimensions = this._calculateDimensions(grid, normalizedDensity);
+      finalCellSizeX = dimensions.cellSizeX;
+      finalCellSizeY = dimensions.cellSizeY;
+      boxHeight = dimensions.boxHeight;
+    }
     
     // Outline properties
     const outlineProps = this._calculateOutlineProperties(info, isTopN, normalizedDensity, adaptiveParams, statistics, color, reusableVoxelCtx, reusableWidthResolverParams);
     
     return {
       centerLon, centerLat, centerAlt,
-      cellSizeX, cellSizeY, boxHeight,
+      cellSizeX: finalCellSizeX, cellSizeY: finalCellSizeY, boxHeight,
       color, opacity,
       ...outlineProps,
       voxelInfo: info,
@@ -1051,12 +1112,48 @@ export class VoxelRenderer {
       return null;
     }
     
-    const { x, y, z } = info;
+    // v0.1.17: Spatial ID mode - calculate position from 8-vertex bounds / 空間IDモード - 8頂点boundsから位置を計算
+    let centerLon, centerLat, centerAlt, cellSizeX, cellSizeY, baseCellSizeZ;
     
-    // Position calculation
-    const centerLon = bounds.minLon + (x + 0.5) * (bounds.maxLon - bounds.minLon) / grid.numVoxelsX;
-    const centerLat = bounds.minLat + (y + 0.5) * (bounds.maxLat - bounds.minLat) / grid.numVoxelsY;
-    const centerAlt = bounds.minAlt + (z + 0.5) * (bounds.maxAlt - bounds.minAlt) / grid.numVoxelsZ;
+    if (info.bounds && Array.isArray(info.bounds) && info.bounds.length === 8) {
+      // Spatial ID mode: use 8 vertices to calculate center and dimensions
+      // 空間IDモード: 8頂点を使って中心と寸法を計算
+      const vertices = info.bounds;
+      
+      // Calculate center from vertices (average of all 8 points)
+      // 頂点から中心を計算（8点の平均）
+      centerLon = vertices.reduce((sum, v) => sum + v.lng, 0) / 8;
+      centerLat = vertices.reduce((sum, v) => sum + v.lat, 0) / 8;
+      centerAlt = vertices.reduce((sum, v) => sum + v.alt, 0) / 8;
+      
+      // Calculate dimensions from vertices (distance between corners)
+      // 頂点から寸法を計算（角間の距離）
+      // Assume vertices[0-3] are bottom face, vertices[4-7] are top face
+      // vertices[0], [1], [2], [3] form bottom rectangle
+      // SpatialIdAdapter/ZFXYConverter guarantee this ordering.
+      const v0 = Cesium.Cartesian3.fromDegrees(vertices[0].lng, vertices[0].lat, vertices[0].alt);
+      const v1 = Cesium.Cartesian3.fromDegrees(vertices[1].lng, vertices[1].lat, vertices[1].alt);
+      const v3 = Cesium.Cartesian3.fromDegrees(vertices[3].lng, vertices[3].lat, vertices[3].alt);
+      const v4 = Cesium.Cartesian3.fromDegrees(vertices[4].lng, vertices[4].lat, vertices[4].alt);
+      
+      cellSizeX = Cesium.Cartesian3.distance(v0, v1);
+      cellSizeY = Cesium.Cartesian3.distance(v0, v3);
+      baseCellSizeZ = Cesium.Cartesian3.distance(v0, v4);
+    } else {
+      // Uniform grid mode: use x/y/z indices (legacy)
+      // 一様グリッドモード: x/y/zインデックスを使用（レガシー）
+      const { x, y, z } = info;
+      
+      centerLon = bounds.minLon + (x + 0.5) * (bounds.maxLon - bounds.minLon) / grid.numVoxelsX;
+      centerLat = bounds.minLat + (y + 0.5) * (bounds.maxLat - bounds.minLat) / grid.numVoxelsY;
+      centerAlt = bounds.minAlt + (z + 0.5) * (bounds.maxAlt - bounds.minAlt) / grid.numVoxelsZ;
+      
+      // Calculate dimensions from grid (legacy)
+      // グリッドから寸法を計算（レガシー）
+      cellSizeX = grid.cellSizeX || (grid.lonRangeMeters ? (grid.lonRangeMeters / grid.numVoxelsX) : grid.voxelSizeMeters);
+      cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
+      baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
+    }
     
     // Normalized density
     const normalizedDensity = statistics.maxCount > statistics.minCount ? 
@@ -1068,15 +1165,40 @@ export class VoxelRenderer {
     // Color and opacity
     const { color, opacity } = this._calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx);
     
-    // Dimensions
-    const { cellSizeX, cellSizeY, boxHeight } = this._calculateDimensions(grid, normalizedDensity);
+    // Dimensions (v0.1.17: use pre-calculated dimensions for spatial ID mode)
+    let finalCellSizeX, finalCellSizeY, boxHeight;
+    if (info.bounds) {
+      // Spatial ID mode: use pre-calculated dimensions, apply voxel gap
+      // 空間IDモード: 事前計算された寸法を使用、voxelGapを適用
+      finalCellSizeX = cellSizeX;
+      finalCellSizeY = cellSizeY;
+      let finalBaseCellSizeZ = baseCellSizeZ;
+      
+      if (this.options.voxelGap > 0) {
+        finalCellSizeX = Math.max(cellSizeX - this.options.voxelGap, cellSizeX * 0.1);
+        finalCellSizeY = Math.max(cellSizeY - this.options.voxelGap, cellSizeY * 0.1);
+        finalBaseCellSizeZ = Math.max(baseCellSizeZ - this.options.voxelGap, baseCellSizeZ * 0.1);
+      }
+      
+      boxHeight = finalBaseCellSizeZ;
+      if (this.options.heightBased) {
+        boxHeight = finalBaseCellSizeZ * (0.1 + normalizedDensity * 0.9);
+      }
+    } else {
+      // Uniform grid mode: calculate dimensions from grid
+      // 一様グリッドモード: グリッドから寸法を計算
+      const dimensions = this._calculateDimensions(grid, normalizedDensity);
+      finalCellSizeX = dimensions.cellSizeX;
+      finalCellSizeY = dimensions.cellSizeY;
+      boxHeight = dimensions.boxHeight;
+    }
     
     // Outline properties
     const outlineProps = this._calculateOutlineProperties(info, isTopN, normalizedDensity, adaptiveParams, statistics, color, reusableVoxelCtx, reusableWidthResolverParams);
     
     return {
       centerLon, centerLat, centerAlt,
-      cellSizeX, cellSizeY, boxHeight,
+      cellSizeX: finalCellSizeX, cellSizeY: finalCellSizeY, boxHeight,
       color, opacity,
       ...outlineProps,
       voxelInfo: info,

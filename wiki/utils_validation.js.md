@@ -583,6 +583,88 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.performanceOverlay = overlay;
   }
   
+  // v0.1.17: Spatial ID validation (ADR-0013)
+  if (mergedOptions.spatialId !== undefined) {
+    const spatialId = typeof mergedOptions.spatialId === 'object' && mergedOptions.spatialId !== null
+      ? { ...mergedOptions.spatialId }
+      : {};
+    
+    // enabled
+    spatialId.enabled = coerceBoolean(spatialId.enabled, false);
+    
+    // mode (v0.1.17: tile-grid only)
+    if (spatialId.mode !== undefined) {
+      if (spatialId.mode !== 'tile-grid') {
+        Logger.warn(`Invalid spatialId.mode: ${spatialId.mode}. Using 'tile-grid'.`);
+        spatialId.mode = 'tile-grid';
+      }
+    } else {
+      spatialId.mode = 'tile-grid';
+    }
+    
+    // provider
+    if (spatialId.provider !== undefined) {
+      if (spatialId.provider !== 'ouranos-gex') {
+        Logger.warn(`Unknown spatialId.provider: ${spatialId.provider}. Using 'ouranos-gex'.`);
+        spatialId.provider = 'ouranos-gex';
+      }
+    } else {
+      spatialId.provider = 'ouranos-gex';
+    }
+    
+    // zoom (number or 'auto')
+    if (spatialId.zoom !== undefined) {
+      if (spatialId.zoom === 'auto') {
+        spatialId.zoom = 'auto';
+      } else {
+        const zoomNum = parseInt(spatialId.zoom, 10);
+        if (Number.isNaN(zoomNum) || zoomNum < 0 || zoomNum > 35) {
+          Logger.warn(`Invalid spatialId.zoom: ${spatialId.zoom}. Using 25.`);
+          spatialId.zoom = 25;
+        } else {
+          spatialId.zoom = zoomNum;
+        }
+      }
+    } else {
+      spatialId.zoom = 25;
+    }
+    
+    // zoomControl
+    if (spatialId.zoomControl !== undefined) {
+      if (!['auto', 'manual'].includes(spatialId.zoomControl)) {
+        Logger.warn(`Invalid spatialId.zoomControl: ${spatialId.zoomControl}. Using 'auto'.`);
+        spatialId.zoomControl = 'auto';
+      }
+    } else {
+      spatialId.zoomControl = 'auto';
+    }
+    
+    // zoomTolerancePct
+    if (spatialId.zoomTolerancePct !== undefined) {
+      const tolerance = parseFloat(spatialId.zoomTolerancePct);
+      if (!Number.isFinite(tolerance) || tolerance <= 0 || tolerance > 100) {
+        Logger.warn(`Invalid spatialId.zoomTolerancePct: ${spatialId.zoomTolerancePct}. Using 10.`);
+        spatialId.zoomTolerancePct = 10;
+      } else {
+        spatialId.zoomTolerancePct = tolerance;
+      }
+    } else {
+      spatialId.zoomTolerancePct = 10;
+    }
+    
+    normalized.spatialId = spatialId;
+  } else {
+    // Use defaults from constants
+    normalized.spatialId = { ...DEFAULT_OPTIONS.spatialId };
+  }
+  
+  // v0.1.18: Aggregation options validation (ADR-0014)
+  if (normalized.aggregation !== undefined) {
+    normalized.aggregation = validateAggregationOptions(normalized.aggregation);
+  } else {
+    normalized.aggregation = { ...DEFAULT_OPTIONS.aggregation };
+  }
+  
   return normalized;
 }
 
@@ -777,6 +859,68 @@ export function calculateDataRange(bounds) {
     // フォールバック値
     return { x: 1000, y: 1000, z: 100 };
   }
+}
+
+/**
+ * Validate and normalize aggregation options (v0.1.18 ADR-0014).
+ * 集約オプションの検証と正規化（v0.1.18 ADR-0014）
+ * @param {Object} aggregation - Aggregation options / 集約オプション
+ * @returns {Object} Normalized aggregation options / 正規化された集約オプション
+ */
+export function validateAggregationOptions(aggregation) {
+  const normalized = { ...DEFAULT_OPTIONS.aggregation };
+  
+  if (!aggregation || typeof aggregation !== 'object') {
+    return normalized;
+  }
+  
+  // enabled
+  if (aggregation.enabled !== undefined) {
+    normalized.enabled = coerceBoolean(aggregation.enabled, false);
+  }
+  
+  // byProperty
+  if (aggregation.byProperty !== undefined && aggregation.byProperty !== null) {
+    if (typeof aggregation.byProperty === 'string' && aggregation.byProperty.trim() !== '') {
+      normalized.byProperty = aggregation.byProperty.trim();
+    } else {
+      Logger.warn('[aggregation] byProperty must be a non-empty string, ignoring');
+      normalized.byProperty = null;
+    }
+  }
+  
+  // keyResolver
+  if (aggregation.keyResolver !== undefined && aggregation.keyResolver !== null) {
+    if (typeof aggregation.keyResolver === 'function') {
+      normalized.keyResolver = aggregation.keyResolver;
+    } else {
+      Logger.warn('[aggregation] keyResolver must be a function, ignoring');
+      normalized.keyResolver = null;
+    }
+  }
+  
+  // showInDescription
+  if (aggregation.showInDescription !== undefined) {
+    normalized.showInDescription = coerceBoolean(aggregation.showInDescription, true);
+  }
+  
+  // topN
+  if (aggregation.topN !== undefined) {
+    const topNValue = Number(aggregation.topN);
+    if (Number.isInteger(topNValue) && topNValue > 0 && topNValue <= 100) {
+      normalized.topN = topNValue;
+    } else {
+      Logger.warn('[aggregation] topN must be a positive integer <= 100, using default (10)');
+      normalized.topN = DEFAULT_OPTIONS.aggregation.topN;
+    }
+  }
+  
+  // Validation: if enabled but neither byProperty nor keyResolver is set, warn
+  if (normalized.enabled && !normalized.byProperty && !normalized.keyResolver) {
+    Logger.warn('[aggregation] enabled=true but neither byProperty nor keyResolver is set. Will use default key "default".');
+  }
+  
+  return normalized;
 }
 
 ```
@@ -1362,6 +1506,88 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.performanceOverlay = overlay;
   }
   
+  // v0.1.17: Spatial ID validation (ADR-0013)
+  if (mergedOptions.spatialId !== undefined) {
+    const spatialId = typeof mergedOptions.spatialId === 'object' && mergedOptions.spatialId !== null
+      ? { ...mergedOptions.spatialId }
+      : {};
+    
+    // enabled
+    spatialId.enabled = coerceBoolean(spatialId.enabled, false);
+    
+    // mode (v0.1.17: tile-grid only)
+    if (spatialId.mode !== undefined) {
+      if (spatialId.mode !== 'tile-grid') {
+        Logger.warn(`Invalid spatialId.mode: ${spatialId.mode}. Using 'tile-grid'.`);
+        spatialId.mode = 'tile-grid';
+      }
+    } else {
+      spatialId.mode = 'tile-grid';
+    }
+    
+    // provider
+    if (spatialId.provider !== undefined) {
+      if (spatialId.provider !== 'ouranos-gex') {
+        Logger.warn(`Unknown spatialId.provider: ${spatialId.provider}. Using 'ouranos-gex'.`);
+        spatialId.provider = 'ouranos-gex';
+      }
+    } else {
+      spatialId.provider = 'ouranos-gex';
+    }
+    
+    // zoom (number or 'auto')
+    if (spatialId.zoom !== undefined) {
+      if (spatialId.zoom === 'auto') {
+        spatialId.zoom = 'auto';
+      } else {
+        const zoomNum = parseInt(spatialId.zoom, 10);
+        if (Number.isNaN(zoomNum) || zoomNum < 0 || zoomNum > 35) {
+          Logger.warn(`Invalid spatialId.zoom: ${spatialId.zoom}. Using 25.`);
+          spatialId.zoom = 25;
+        } else {
+          spatialId.zoom = zoomNum;
+        }
+      }
+    } else {
+      spatialId.zoom = 25;
+    }
+    
+    // zoomControl
+    if (spatialId.zoomControl !== undefined) {
+      if (!['auto', 'manual'].includes(spatialId.zoomControl)) {
+        Logger.warn(`Invalid spatialId.zoomControl: ${spatialId.zoomControl}. Using 'auto'.`);
+        spatialId.zoomControl = 'auto';
+      }
+    } else {
+      spatialId.zoomControl = 'auto';
+    }
+    
+    // zoomTolerancePct
+    if (spatialId.zoomTolerancePct !== undefined) {
+      const tolerance = parseFloat(spatialId.zoomTolerancePct);
+      if (!Number.isFinite(tolerance) || tolerance <= 0 || tolerance > 100) {
+        Logger.warn(`Invalid spatialId.zoomTolerancePct: ${spatialId.zoomTolerancePct}. Using 10.`);
+        spatialId.zoomTolerancePct = 10;
+      } else {
+        spatialId.zoomTolerancePct = tolerance;
+      }
+    } else {
+      spatialId.zoomTolerancePct = 10;
+    }
+    
+    normalized.spatialId = spatialId;
+  } else {
+    // Use defaults from constants
+    normalized.spatialId = { ...DEFAULT_OPTIONS.spatialId };
+  }
+  
+  // v0.1.18: Aggregation options validation (ADR-0014)
+  if (normalized.aggregation !== undefined) {
+    normalized.aggregation = validateAggregationOptions(normalized.aggregation);
+  } else {
+    normalized.aggregation = { ...DEFAULT_OPTIONS.aggregation };
+  }
+  
   return normalized;
 }
 
@@ -1556,6 +1782,68 @@ export function calculateDataRange(bounds) {
     // フォールバック値
     return { x: 1000, y: 1000, z: 100 };
   }
+}
+
+/**
+ * Validate and normalize aggregation options (v0.1.18 ADR-0014).
+ * 集約オプションの検証と正規化（v0.1.18 ADR-0014）
+ * @param {Object} aggregation - Aggregation options / 集約オプション
+ * @returns {Object} Normalized aggregation options / 正規化された集約オプション
+ */
+export function validateAggregationOptions(aggregation) {
+  const normalized = { ...DEFAULT_OPTIONS.aggregation };
+  
+  if (!aggregation || typeof aggregation !== 'object') {
+    return normalized;
+  }
+  
+  // enabled
+  if (aggregation.enabled !== undefined) {
+    normalized.enabled = coerceBoolean(aggregation.enabled, false);
+  }
+  
+  // byProperty
+  if (aggregation.byProperty !== undefined && aggregation.byProperty !== null) {
+    if (typeof aggregation.byProperty === 'string' && aggregation.byProperty.trim() !== '') {
+      normalized.byProperty = aggregation.byProperty.trim();
+    } else {
+      Logger.warn('[aggregation] byProperty must be a non-empty string, ignoring');
+      normalized.byProperty = null;
+    }
+  }
+  
+  // keyResolver
+  if (aggregation.keyResolver !== undefined && aggregation.keyResolver !== null) {
+    if (typeof aggregation.keyResolver === 'function') {
+      normalized.keyResolver = aggregation.keyResolver;
+    } else {
+      Logger.warn('[aggregation] keyResolver must be a function, ignoring');
+      normalized.keyResolver = null;
+    }
+  }
+  
+  // showInDescription
+  if (aggregation.showInDescription !== undefined) {
+    normalized.showInDescription = coerceBoolean(aggregation.showInDescription, true);
+  }
+  
+  // topN
+  if (aggregation.topN !== undefined) {
+    const topNValue = Number(aggregation.topN);
+    if (Number.isInteger(topNValue) && topNValue > 0 && topNValue <= 100) {
+      normalized.topN = topNValue;
+    } else {
+      Logger.warn('[aggregation] topN must be a positive integer <= 100, using default (10)');
+      normalized.topN = DEFAULT_OPTIONS.aggregation.topN;
+    }
+  }
+  
+  // Validation: if enabled but neither byProperty nor keyResolver is set, warn
+  if (normalized.enabled && !normalized.byProperty && !normalized.keyResolver) {
+    Logger.warn('[aggregation] enabled=true but neither byProperty nor keyResolver is set. Will use default key "default".');
+  }
+  
+  return normalized;
 }
 
 ```
