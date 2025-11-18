@@ -249,38 +249,48 @@ heatbox.setPerformanceOverlayEnabled(true, { position: 'bottom-left' });
 heatbox.togglePerformanceOverlay();
 ```
 
-## 分類エンジン / Classification Engine (v1.0.0)
+## 分類エンジン / Classification Engine (v1.1.0)
 
 ### 日本語
 
-`classification` オプションで線形/対数/等間隔/量子化/しきい値ベースの色分類を宣言的に制御できます。v1.0.0では色のみがターゲットで、`colorResolver` が存在する場合はそちらが最優先になります。
+`classification` オプションで linear/log/equal-interval/quantize/threshold に加え quantile/jenks を使った分類を宣言的に制御できます。`classificationTargets` で color / opacity / width を個別に有効化し、`adaptiveParams.*Range` で不透明度や線幅を補間します。`colorResolver` が存在する場合は従来どおり resolver が優先されます。
 
 ```javascript
 const heatbox = new Heatbox(viewer, {
   voxelSize: 30,
   classification: {
     enabled: true,
-    scheme: 'equal-interval',    // 'linear' | 'log' | 'quantize' | 'threshold'
-    classes: 6,
+    scheme: 'quantile',    // 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold' | 'quantile' | 'jenks'
+    classes: 5,
     colorMap: ['#0f172a', '#1d4ed8', '#22d3ee', '#f97316', '#facc15'],
-    // threshold の場合: thresholds: [30, 45, 60]
-    // 任意: domain: [10, 120]
-    classificationTargets: { color: true } // v1.0.0ではcolorのみ有効
+    classificationTargets: { color: true, opacity: true, width: true }
+  },
+  adaptiveParams: {
+    boxOpacityRange: [0.35, 0.95],
+    outlineOpacityRange: [0.4, 1.0],
+    outlineWidthRange: [1, 5]
   }
 });
 
 await heatbox.createFromEntities(viewer.entities.values);
 
 const classificationStats = heatbox.getStatistics().classification;
-console.log(classificationStats.breaks);     // 自動計算された区切り
-console.log(classificationStats.quantiles);  // Q1/Q2/Q3
-console.log(classificationStats.histogram);  // { bins, counts }（最大10ビン）
+console.log(classificationStats.breaks);        // 自動計算された区切り
+console.log(classificationStats.quantiles);     // [Q1, Q2, Q3, Q4]
+console.log(classificationStats.jenksBreaks);   // jenks 時: 上限境界
+console.log(classificationStats.ckmeansClusters); // jenks 時: クラスタ配列
+console.log(classificationStats.histogram);     // { bins, counts }（最大10ビン）```
+
+// UI で凡例を生成
+const legendEl = heatbox.createLegend();
+// ... 後でオプションを更新した場合
+heatbox.updateLegend();
 ```
 
-- `threshold` スキームのみ `thresholds` 配列が必須です。その他のスキームは `classes` で設定。
+- `threshold` スキームのみ `thresholds` 配列が必須です。quantile/jenks はデータ値を必須とし、`classes` でクラス数を指定します。
 - `classification.colorMap` は単色の配列、または `{ position, color }` 形式のストップ配列を指定できます。
-- 統計情報（`HeatboxStatistics.classification`）には `domain` / `quantiles` / `histogram` / `breaks` が含まれ、ビューワー側で凡例や注釈を生成できます。
-- 実際のワークフローは `examples/advanced/classification-demo.html` のデモ（5スキーム切替 UI）をご参照ください。
+- 統計情報（`HeatboxStatistics.classification`）には `domain` / `quantiles` / `jenksBreaks` / `ckmeansClusters` / `histogram` / `breaks` が含まれ、凡例（`createLegend`）やデバッグに利用できます。
+- 拡張デモ: `examples/advanced/classification-extension-demo.html`（color/opacity/width 併用 + quantile/jenks）、エミュレーション時のアウトライン反映は `examples/advanced/emulation-opacity-demo.html` を参照してください。
 
 ### English
 
