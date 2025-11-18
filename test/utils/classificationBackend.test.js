@@ -1,4 +1,4 @@
-import { getClassificationBackend, setClassificationBackend } from '../../src/utils/classificationBackend.js';
+import { getBackend, setClassificationBackend } from '../../src/utils/classificationBackend.js';
 
 describe('classificationBackend', () => {
   afterEach(() => {
@@ -6,7 +6,7 @@ describe('classificationBackend', () => {
   });
 
   test('quantile returns expected basic quantiles', () => {
-    const backend = getClassificationBackend();
+    const backend = getBackend();
     const values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
     expect(backend.quantile(values, 0.5)).toBeCloseTo(5.5, 1);
@@ -15,7 +15,7 @@ describe('classificationBackend', () => {
   });
 
   test('summary returns basic stats', () => {
-    const backend = getClassificationBackend();
+    const backend = getBackend();
     const values = [1, 2, 3, 4, 5];
     const stats = backend.summary(values);
 
@@ -31,10 +31,9 @@ describe('classificationBackend', () => {
     };
 
     setClassificationBackend(mockBackend);
-    const backend = getClassificationBackend();
+    const backend = getBackend();
 
     expect(backend.quantile([1, 2, 3], 0.5)).toBe(42);
     expect(mockBackend.quantile).toHaveBeenCalled();
   });
 });
-

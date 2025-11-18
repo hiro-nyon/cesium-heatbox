@@ -1,5 +1,5 @@
 import { interpolateColorMap } from '../../src/utils/colorMap.js';
-import { Cesium } from '../../src/Heatbox.js';
+import * as Cesium from 'cesium';
 
 describe('colorMap', () => {
   test('returns white for empty stops', () => {
@@ -25,4 +25,3 @@ describe('colorMap', () => {
     expect(color.blue).toBeCloseTo(mid.blue, 2);
   });
 });
-

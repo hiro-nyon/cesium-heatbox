@@ -1,4 +1,4 @@
-import { Cesium } from '../Heatbox.js';
+import * as Cesium from 'cesium';
 
 function parseColor (input) {
   if (input instanceof Cesium.Color) {
@@ -49,4 +49,3 @@ export function interpolateColorMap (stops, t) {
 }
 
 export { parseColor };
-

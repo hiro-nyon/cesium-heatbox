@@ -41,7 +41,7 @@ export function setClassificationBackend (nextBackend) {
   backend = { ...backend, ...(nextBackend || {}) };
 }
 
-export function getClassificationBackend () {
+export function getBackend () {
   return backend;
 }
 
