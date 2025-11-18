@@ -117,6 +117,43 @@ describe('Spatial ID Integration Tests', () => {
       expect(stats.spatialId).toBeDefined();
       expect(stats.spatialId.enabled).toBe(true);
       expect(stats.spatialId.zoom).toBe(25);
+      // Phase 2: edgeCaseMetrics should exist (null by default)
+      expect(stats.spatialId).toHaveProperty('edgeCaseMetrics');
+      expect(stats.spatialId.edgeCaseMetrics).toBeNull();
+    });
+
+    it('should propagate internal edge case metrics to statistics', async () => {
+      const heatbox = new Heatbox(mockViewer, {
+        spatialId: {
+          enabled: true,
+          zoom: 25
+        }
+      });
+
+      await heatbox.createFromEntities(mockEntities);
+
+      // Simulate QA metrics collected elsewhere (e.g., SpatialIdAdapter)
+      // Jest から内部フィールドに直接設定し、getStatistics() 経由で取得できることを確認する
+      heatbox._spatialIdEdgeCaseMetrics = {
+        datelineNeighborsChecked: 10,
+        datelineNeighborsMismatched: 1,
+        polarTilesChecked: 5,
+        polarMaxRelativeErrorXY: 0.08,
+        hemisphereBoundsChecked: 3,
+        hemisphereBoundsMismatched: 0
+      };
+
+      const statsWithMetrics = heatbox.getStatistics();
+      expect(statsWithMetrics).toBeDefined();
+      expect(statsWithMetrics.spatialId).toBeDefined();
+      expect(statsWithMetrics.spatialId.edgeCaseMetrics).toEqual({
+        datelineNeighborsChecked: 10,
+        datelineNeighborsMismatched: 1,
+        polarTilesChecked: 5,
+        polarMaxRelativeErrorXY: 0.08,
+        hemisphereBoundsChecked: 3,
+        hemisphereBoundsMismatched: 0
+      });
     });
 
     it('should handle emptyVoxels correctly for spatial ID mode', async () => {
