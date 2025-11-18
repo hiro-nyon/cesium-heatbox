@@ -131,6 +131,11 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {number} [autoMaxRenderVoxels] - Auto-assigned maxRenderVoxels / 自動設定された maxRenderVoxels
  * @property {number|null} [occupancyRatio] - Ratio of rendered voxels to limit / 描画ボクセルと上限の比率
  * @property {HeatboxLayerStat[]} [layers] - Top-N layer aggregation (v0.1.18 ADR-0014) / 上位N個のレイヤ集約
+ * @property {Object} [spatialId] - Spatial ID statistics (v0.1.19 ADR-0015) / 空間ID関連の統計情報
+ * @property {boolean} [spatialId.enabled] - Whether Spatial ID mode is enabled / 空間IDモードが有効か
+ * @property {string|null} [spatialId.provider] - Spatial ID provider identifier ('ouranos-gex' or null) / 空間IDプロバイダー識別子
+ * @property {number|null} [spatialId.zoom] - Resolved zoom level / 解決済みズームレベル
+ * @property {('auto'|'manual'|null)} [spatialId.zoomControl] - Zoom control mode / ズーム制御モード
  */
 
 /**
@@ -800,6 +805,16 @@ export class Heatbox {
     } else {
       stats.occupancyRatio = null;
     }
+
+    // v0.1.19: Spatial ID statistics sub-object (ADR-0015 Phase 1)
+    const spatialIdOptions = this.options && this.options.spatialId ? this.options.spatialId : {};
+    const spatialIdEnabled = Boolean(stats.spatialIdEnabled);
+    stats.spatialId = {
+      enabled: spatialIdEnabled,
+      provider: spatialIdEnabled ? (stats.spatialIdProvider ?? null) : null,
+      zoom: spatialIdEnabled ? (stats.spatialIdZoom ?? null) : null,
+      zoomControl: stats.zoomControl ?? spatialIdOptions.zoomControl ?? null
+    };
 
     // v0.1.18: Layer aggregation statistics (ADR-0014)
     if (this.options.aggregation?.enabled && this._voxelData) {

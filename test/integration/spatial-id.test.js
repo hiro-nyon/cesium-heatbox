@@ -41,6 +41,10 @@ describe('Spatial ID Integration Tests', () => {
       expect(stats).toBeDefined();
       expect(stats.spatialIdEnabled).toBe(true);
       expect(stats.spatialIdZoom).toBe(25);
+      expect(stats.spatialId).toBeDefined();
+      expect(stats.spatialId.enabled).toBe(true);
+      expect(stats.spatialId.zoom).toBe(25);
+      expect(stats.spatialId.zoomControl).toBe('manual');
       expect(stats.nonEmptyVoxels).toBeGreaterThan(0);
       expect(mockViewer.entities.add).toHaveBeenCalled();
     });
@@ -62,6 +66,11 @@ describe('Spatial ID Integration Tests', () => {
       expect(stats.zoomControl).toBe('auto');
       expect(stats.spatialIdZoom).toBeGreaterThanOrEqual(15);
       expect(stats.spatialIdZoom).toBeLessThanOrEqual(30);
+      expect(stats.spatialId).toBeDefined();
+      expect(stats.spatialId.enabled).toBe(true);
+      expect(stats.spatialId.zoomControl).toBe('auto');
+      expect(stats.spatialId.zoom).toBeGreaterThanOrEqual(15);
+      expect(stats.spatialId.zoom).toBeLessThanOrEqual(30);
     });
 
     it('should fallback gracefully when ouranos-gex unavailable', async () => {
@@ -79,6 +88,11 @@ describe('Spatial ID Integration Tests', () => {
       expect(stats.spatialIdEnabled).toBe(true);
       // Provider may be null if fallback is used
       expect(stats.spatialIdProvider === null || stats.spatialIdProvider === 'ouranos-gex').toBe(true);
+      if (stats.spatialId) {
+        expect(
+          stats.spatialId.provider === null || stats.spatialId.provider === 'ouranos-gex'
+        ).toBe(true);
+      }
       expect(stats.nonEmptyVoxels).toBeGreaterThan(0);
     });
   });
@@ -99,6 +113,10 @@ describe('Spatial ID Integration Tests', () => {
       expect(stats).toHaveProperty('spatialIdProvider');
       expect(stats).toHaveProperty('spatialIdZoom');
       expect(stats).toHaveProperty('zoomControl');
+      expect(stats).toHaveProperty('spatialId');
+      expect(stats.spatialId).toBeDefined();
+      expect(stats.spatialId.enabled).toBe(true);
+      expect(stats.spatialId.zoom).toBe(25);
     });
 
     it('should handle emptyVoxels correctly for spatial ID mode', async () => {
@@ -189,6 +207,10 @@ describe('Spatial ID Integration Tests', () => {
       // Spatial ID mode should be enabled for second heatbox
       expect(uniformStats.spatialIdEnabled).toBe(false);
       expect(spatialStats.spatialIdEnabled).toBe(true);
+      expect(uniformStats.spatialId).toBeDefined();
+      expect(uniformStats.spatialId.enabled).toBe(false);
+      expect(spatialStats.spatialId).toBeDefined();
+      expect(spatialStats.spatialId.enabled).toBe(true);
     });
   });
 
@@ -207,6 +229,9 @@ describe('Spatial ID Integration Tests', () => {
       
       expect(stats.spatialIdEnabled).toBe(true);
       expect(stats.spatialIdZoom).toBe(25); // Default fallback
+      expect(stats.spatialId).toBeDefined();
+      expect(stats.spatialId.enabled).toBe(true);
+      expect(stats.spatialId.zoom).toBe(25);
     });
 
     it('should handle invalid zoom range', async () => {
@@ -222,6 +247,9 @@ describe('Spatial ID Integration Tests', () => {
       
       expect(stats.spatialIdEnabled).toBe(true);
       expect(stats.spatialIdZoom).toBe(25); // Default fallback
+      expect(stats.spatialId).toBeDefined();
+      expect(stats.spatialId.enabled).toBe(true);
+      expect(stats.spatialId.zoom).toBe(25);
     });
 
     it('should handle empty entity array', async () => {
@@ -326,4 +354,3 @@ describe('Spatial ID Integration Tests', () => {
     });
   });
 });
-
