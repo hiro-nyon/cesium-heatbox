@@ -3,6 +3,7 @@
  * グローバル端ケース向け Spatial ID 統合テスト
  */
 import { SpatialIdAdapter } from '../../src/core/spatial/SpatialIdAdapter.js';
+import { computeSpatialIdEdgeCaseMetrics } from '../../src/core/spatial/SpatialIdQaMetrics.js';
 import { Heatbox } from '../../src/Heatbox.js';
 import { createMockViewer, generateMockEntities } from '../helpers/testHelpers.js';
 
@@ -169,6 +170,58 @@ describe('Global Spatial ID QA (ADR-0015)', () => {
       if (stats.spatialId) {
         expect(stats.spatialId.enabled).toBe(true);
       }
+    });
+  });
+
+  describe('Edge case metrics helper (Phase2/4/5)', () => {
+    it('computes and exposes SpatialIdEdgeCaseMetrics via statistics', async () => {
+      const viewer = createMockViewer();
+      const entities = generateMockEntities(50, {
+        minLon: 170,
+        maxLon: 190,
+        minLat: 35,
+        maxLat: 40,
+        minAlt: 0,
+        maxAlt: 500
+      });
+
+      const heatbox = new Heatbox(viewer, {
+        spatialId: {
+          enabled: true,
+          mode: 'tile-grid',
+          zoomControl: 'auto'
+        },
+        voxelSize: 30
+      });
+
+      const adapter = new SpatialIdAdapter();
+      await adapter.loadProvider();
+      const metrics = computeSpatialIdEdgeCaseMetrics(adapter);
+
+      // Phase2: metrics object should have all expected fields
+      expect(metrics.datelineNeighborsChecked).toBeGreaterThan(0);
+      expect(metrics.datelineNeighborsMismatched).toBeGreaterThanOrEqual(0);
+      expect(metrics.polarTilesChecked).toBeGreaterThan(0);
+      expect(metrics.polarMaxRelativeErrorXY).toBeGreaterThanOrEqual(0);
+      expect(metrics.hemisphereBoundsChecked).toBeGreaterThan(0);
+      expect(metrics.hemisphereBoundsMismatched).toBeGreaterThanOrEqual(0);
+
+      // Phase4: polar error should be within acceptable threshold for fallback
+      expect(metrics.polarMaxRelativeErrorXY).toBeLessThanOrEqual(0.1);
+
+      // Phase5: hemisphere metrics should indicate no hard mismatch in this basic check
+      expect(metrics.hemisphereBoundsMismatched).toBeLessThanOrEqual(1);
+
+      // Attach metrics to Heatbox instance and verify exposure via getStatistics()
+      const statsBefore = await heatbox.createFromEntities(entities);
+      expect(statsBefore.spatialIdEnabled).toBe(true);
+
+      heatbox._spatialIdEdgeCaseMetrics = metrics;
+
+      const statsAfter = heatbox.getStatistics();
+      expect(statsAfter).toBeDefined();
+      expect(statsAfter.spatialId).toBeDefined();
+      expect(statsAfter.spatialId.edgeCaseMetrics).toEqual(metrics);
     });
   });
 });
