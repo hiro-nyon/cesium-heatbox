@@ -934,6 +934,8 @@ function normalizeClassificationOptions(classification) {
   const normalized = { ...defaults };
   let input = classification;
   
+  const allowedClassificationTargets = ['color', 'opacity', 'width'];
+
   if (typeof classification === 'string') {
     input = {
       scheme: classification,
@@ -987,14 +989,30 @@ function normalizeClassificationOptions(classification) {
       normalized.domain = null;
     }
     
-    if (input.classificationTargets !== undefined && typeof input.classificationTargets === 'object') {
-      normalized.classificationTargets = {
-        ...defaults.classificationTargets,
-        ...Object.fromEntries(
-          Object.entries(input.classificationTargets).map(([key, value]) => [key, coerceBoolean(value, defaults.classificationTargets[key] ?? false)])
-        )
-      };
-    }
+    const resolvedClassificationTargets = { ...defaults.classificationTargets };
+    const applyClassificationTargets = (source, sourceName) => {
+      if (source === undefined || source === null) {
+        return;
+      }
+      if (typeof source !== 'object' || Array.isArray(source)) {
+        Logger.warn(`[classification] ${sourceName} should be an object with boolean flags. Ignoring provided value.`);
+        return;
+      }
+
+      for (const key of allowedClassificationTargets) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          resolvedClassificationTargets[key] = coerceBoolean(
+            source[key],
+            defaults.classificationTargets[key]
+          );
+        }
+      }
+    };
+
+    // `classification.targets` は後方互換用エイリアス
+    applyClassificationTargets(input.targets, 'targets');
+    applyClassificationTargets(input.classificationTargets, 'classificationTargets');
+    normalized.classificationTargets = resolvedClassificationTargets;
   } else {
     Logger.warn('[classification] Unsupported configuration type. Expected string or object.');
     normalized.enabled = false;

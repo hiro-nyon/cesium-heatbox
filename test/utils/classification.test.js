@@ -1,7 +1,21 @@
+jest.mock('../../src/utils/logger.js', () => ({
+  Logger: {
+    warn: jest.fn(),
+    debug: jest.fn(),
+    error: jest.fn()
+  }
+}));
+
 import { createClassifier } from '../../src/utils/classification.js';
+import { validateAndNormalizeOptions } from '../../src/utils/validation.js';
+import { Logger } from '../../src/utils/logger.js';
 import * as Cesium from 'cesium';
 
 describe('classification', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('linear scheme', () => {
     test('should normalize values linearly', () => {
       const classifier = createClassifier({
@@ -188,6 +202,71 @@ describe('classification', () => {
       expect(classifier.getColorForClass(0).equals(Cesium.Color.fromCssColorString('#0f172a'))).toBe(true);
       expect(classifier.getColorForClass(2).equals(Cesium.Color.fromCssColorString('#f97316'))).toBe(true);
       expect(classifier.getColorForClass(3).equals(Cesium.Color.fromCssColorString('#facc15'))).toBe(true);
+    });
+  });
+
+  describe('classificationTargets normalization', () => {
+    test('defaults to color only with opacity/width disabled', () => {
+      const normalized = validateAndNormalizeOptions({});
+      expect(normalized.classification.classificationTargets).toEqual({
+        color: true,
+        opacity: false,
+        width: false
+      });
+    });
+
+    test('accepts opacity and width flags on classificationTargets', () => {
+      const normalized = validateAndNormalizeOptions({
+        classification: {
+          enabled: true,
+          classificationTargets: {
+            opacity: true,
+            width: true
+          }
+        }
+      });
+
+      expect(normalized.classification.classificationTargets).toEqual({
+        color: true,
+        opacity: true,
+        width: true
+      });
+    });
+
+    test('merges legacy classification.targets alias', () => {
+      const normalized = validateAndNormalizeOptions({
+        classification: {
+          enabled: true,
+          targets: {
+            color: false,
+            opacity: true
+          }
+        }
+      });
+
+      expect(normalized.classification.classificationTargets).toEqual({
+        color: false,
+        opacity: true,
+        width: false
+      });
+    });
+
+    test('ignores invalid target configuration with warning', () => {
+      const normalized = validateAndNormalizeOptions({
+        classification: {
+          enabled: true,
+          targets: 'invalid'
+        }
+      });
+
+      expect(Logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('targets')
+      );
+      expect(normalized.classification.classificationTargets).toEqual({
+        color: true,
+        opacity: false,
+        width: false
+      });
     });
   });
 });

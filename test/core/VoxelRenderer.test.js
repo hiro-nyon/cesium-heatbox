@@ -3,6 +3,7 @@
  */
 
 import { VoxelRenderer } from '../../src/core/VoxelRenderer.js';
+import { ColorCalculator } from '../../src/core/color/ColorCalculator.js';
 
 describe('VoxelRenderer', () => {
   // v0.1.6: 色補間テスト追加
@@ -118,6 +119,33 @@ describe('VoxelRenderer', () => {
       expect(highCall).toBeDefined();
       expect(lowCall[0].box.material.red).toBeCloseTo(0, 2);
       expect(highCall[0].box.material.red).toBeCloseTo(1, 2);
+    });
+
+    test('falls back to legacy color when color target is disabled', () => {
+      const viewer = testUtils.createMockViewer();
+      const renderer = new VoxelRenderer(viewer, {
+        classification: {
+          enabled: true,
+          scheme: 'linear',
+          colorMap: ['#000000', '#ffffff'],
+          classificationTargets: { color: false }
+        }
+      });
+
+      const colorSpy = jest.spyOn(ColorCalculator, 'calculateColor');
+
+      const voxelData = new Map();
+      voxelData.set('0,0,0', { x: 0, y: 0, z: 0, count: 5 });
+
+      const bounds = { minLon: 0, maxLon: 1, minLat: 0, maxLat: 1, minAlt: 0, maxAlt: 1 };
+      const grid = { numVoxelsX: 1, numVoxelsY: 1, numVoxelsZ: 1, voxelSizeMeters: 5 };
+      const statistics = { minCount: 5, maxCount: 5 };
+
+      renderer.render(voxelData, bounds, grid, statistics);
+
+      expect(colorSpy).toHaveBeenCalled();
+
+      colorSpy.mockRestore();
     });
   });
   

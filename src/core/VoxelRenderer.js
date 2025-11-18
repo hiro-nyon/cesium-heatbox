@@ -451,7 +451,9 @@ export class VoxelRenderer {
       color = Cesium.Color.LIGHTGRAY;
       opacity = this.options.emptyOpacity;
     } else {
-      if (this._classifier) {
+      const classificationTargets = this.options.classification?.classificationTargets || {};
+      const shouldApplyClassificationColor = this._classifier && classificationTargets.color !== false;
+      if (shouldApplyClassificationColor) {
         try {
           const classIndex = this._classifier.classify(info.count ?? 0);
           color = this._classifier.getColorForClass(classIndex);
@@ -695,12 +697,6 @@ export class VoxelRenderer {
   _prepareClassifier(statistics) {
     const classificationOptions = this.options.classification;
     if (!classificationOptions || !classificationOptions.enabled) {
-      this._classifier = null;
-      return;
-    }
-
-    const targets = classificationOptions.classificationTargets || {};
-    if (targets.color === false) {
       this._classifier = null;
       return;
     }
