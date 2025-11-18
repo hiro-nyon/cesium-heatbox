@@ -128,7 +128,7 @@ export function createClassifier (options = {}) {
   }
 
   const normalizedStops = normalizeColorStops(colorMap);
-  const getColor = normalizedStops
+  const getColorFromPalette = normalizedStops
     ? (t) => interpolateColorMap(normalizedStops, Math.max(0, Math.min(1, t)))
     : (t) => Cesium.Color.lerp(
         Cesium.Color.BLUE || new Cesium.Color(0, 0, 1, 1),
@@ -136,6 +136,21 @@ export function createClassifier (options = {}) {
         Math.max(0, Math.min(1, t)),
         new Cesium.Color()
       );
+
+  const classCount = scheme === 'threshold'
+    ? Math.max(1, (breaks.length > 1 ? breaks.length - 1 : classes))
+    : Math.max(1, classes);
+
+  const getColorForClass = (classIndex) => {
+    const safeIndex = Number.isFinite(classIndex) ? Math.max(0, Math.min(classCount - 1, Math.round(classIndex))) : 0;
+    if (classCount === 1) {
+      return getColorFromPalette(0);
+    }
+    const ratio = safeIndex / (classCount - 1);
+    return getColorFromPalette(ratio);
+  };
+
+  const getColor = (t) => getColorFromPalette(Math.max(0, Math.min(1, t)));
 
   let classify;
 
@@ -161,6 +176,7 @@ export function createClassifier (options = {}) {
     breaks,
     classes: scheme === 'threshold' ? (breaks.length > 1 ? breaks.length - 1 : classes) : classes,
     normalize,
+    getColorForClass,
     getColor,
     classify
   };

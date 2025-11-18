@@ -453,8 +453,8 @@ export class VoxelRenderer {
     } else {
       if (this._classifier) {
         try {
-          const normalizedValue = this._classifier.normalize(info.count ?? 0);
-          color = this._classifier.getColor(Number.isFinite(normalizedValue) ? normalizedValue : 0);
+          const classIndex = this._classifier.classify(info.count ?? 0);
+          color = this._classifier.getColorForClass(classIndex);
         } catch (error) {
           Logger.warn('Classification color calculation failed, falling back to legacy color:', error);
           color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);

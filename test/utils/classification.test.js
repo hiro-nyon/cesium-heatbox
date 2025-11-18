@@ -136,5 +136,35 @@ describe('classification', () => {
       const color = classifier.getColor(0.0);
       expect(color.equals(Cesium.Color.fromCssColorString('#000000'))).toBe(true);
     });
+
+    test('should provide discrete colors per class index', () => {
+      const classifier = createClassifier({
+        scheme: 'equal-interval',
+        domain: [0, 100],
+        classes: 4,
+        colorMap: ['#0000ff', '#00ff00', '#ffff00', '#ff0000']
+      });
+
+      const first = classifier.getColorForClass(0);
+      const second = classifier.getColorForClass(1);
+      const last = classifier.getColorForClass(3);
+
+      expect(first.equals(Cesium.Color.fromCssColorString('#0000ff'))).toBe(true);
+      expect(second.equals(Cesium.Color.fromCssColorString('#00ff00'))).toBe(true);
+      expect(last.equals(Cesium.Color.fromCssColorString('#ff0000'))).toBe(true);
+    });
+
+    test('should respect threshold class count when mapping colors', () => {
+      const classifier = createClassifier({
+        scheme: 'threshold',
+        domain: [0, 100],
+        thresholds: [25, 50, 75],
+        colorMap: ['#0f172a', '#2563eb', '#f97316', '#facc15']
+      });
+
+      expect(classifier.getColorForClass(0).equals(Cesium.Color.fromCssColorString('#0f172a'))).toBe(true);
+      expect(classifier.getColorForClass(2).equals(Cesium.Color.fromCssColorString('#f97316'))).toBe(true);
+      expect(classifier.getColorForClass(3).equals(Cesium.Color.fromCssColorString('#facc15'))).toBe(true);
+    });
   });
 });
