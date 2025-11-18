@@ -649,6 +649,9 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.spatialId = { ...DEFAULT_OPTIONS.spatialId };
   }
   
+  // v1.0.0: Classification options validation
+  normalized.classification = normalizeClassificationOptions(normalized.classification);
+  
   // v0.1.18: Aggregation options validation (ADR-0014)
   if (normalized.aggregation !== undefined) {
     normalized.aggregation = validateAggregationOptions(normalized.aggregation);
@@ -912,4 +915,121 @@ export function validateAggregationOptions(aggregation) {
   }
   
   return normalized;
+}
+
+function normalizeClassificationOptions(classification) {
+  const defaults = {
+    ...DEFAULT_OPTIONS.classification,
+    classificationTargets: { ...DEFAULT_OPTIONS.classification.classificationTargets }
+  };
+  
+  if (classification === undefined) {
+    return { ...defaults };
+  }
+  
+  if (classification === null || classification === false) {
+    return { ...defaults, enabled: false };
+  }
+  
+  const normalized = { ...defaults };
+  let input = classification;
+  
+  if (typeof classification === 'string') {
+    input = {
+      scheme: classification,
+      enabled: classification !== 'none'
+    };
+  }
+  
+  if (typeof input === 'object') {
+    if (input.enabled !== undefined) {
+      normalized.enabled = coerceBoolean(input.enabled, defaults.enabled);
+    } else {
+      normalized.enabled = true;
+    }
+    
+    if (input.scheme !== undefined) {
+      normalized.scheme = sanitizeClassificationScheme(input.scheme);
+    }
+    
+    if (input.classes !== undefined) {
+      const classesValue = Number(input.classes);
+      normalized.classes = Number.isInteger(classesValue)
+        ? Math.max(2, Math.min(20, classesValue))
+        : defaults.classes;
+    }
+    
+    if (Array.isArray(input.thresholds)) {
+      const validThresholds = input.thresholds
+        .map(value => Number(value))
+        .filter(value => Number.isFinite(value))
+        .sort((a, b) => a - b);
+      normalized.thresholds = validThresholds.length > 0 ? validThresholds : null;
+    } else if (input.thresholds === null) {
+      normalized.thresholds = null;
+    }
+    
+    if (Array.isArray(input.colorMap)) {
+      normalized.colorMap = input.colorMap.slice();
+    } else if (input.colorMap === null) {
+      normalized.colorMap = null;
+    } else if (input.colorMap !== undefined) {
+      Logger.warn('[classification] colorMap should be an array of colors or stop objects. Ignoring provided value.');
+      normalized.colorMap = null;
+    }
+    
+    if (Array.isArray(input.domain) && input.domain.length === 2) {
+      const [minValue, maxValue] = input.domain.map(value => Number(value));
+      if (Number.isFinite(minValue) && Number.isFinite(maxValue)) {
+        normalized.domain = [minValue, maxValue];
+      }
+    } else if (input.domain === null) {
+      normalized.domain = null;
+    }
+    
+    if (input.classificationTargets !== undefined && typeof input.classificationTargets === 'object') {
+      normalized.classificationTargets = {
+        ...defaults.classificationTargets,
+        ...Object.fromEntries(
+          Object.entries(input.classificationTargets).map(([key, value]) => [key, coerceBoolean(value, defaults.classificationTargets[key] ?? false)])
+        )
+      };
+    }
+  } else {
+    Logger.warn('[classification] Unsupported configuration type. Expected string or object.');
+    normalized.enabled = false;
+  }
+  
+  if (!normalized.enabled) {
+    return { ...defaults, enabled: false };
+  }
+  
+  if (normalized.scheme === 'threshold' && !Array.isArray(normalized.thresholds)) {
+    Logger.warn('[classification] threshold scheme requires a thresholds array. Disabling classification.');
+    return { ...defaults, enabled: false };
+  }
+  
+  return normalized;
+}
+
+function sanitizeClassificationScheme(scheme) {
+  if (!scheme || typeof scheme !== 'string') {
+    return 'linear';
+  }
+  
+  const normalizedScheme = scheme.trim().toLowerCase();
+  const supportedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold'];
+  const plannedSchemes = ['quantile', 'jenks'];
+  
+  if (supportedSchemes.includes(normalizedScheme)) {
+    return normalizedScheme;
+  }
+  
+  if (plannedSchemes.includes(normalizedScheme)) {
+    Logger.warn(`[classification] scheme '${scheme}' is planned for a future release. Falling back to 'linear'.`);
+    return 'linear';
+  }
+  
+  Logger.warn(`[classification] Unknown scheme '${scheme}', falling back to 'linear'.`);
+  return 'linear';
 }
