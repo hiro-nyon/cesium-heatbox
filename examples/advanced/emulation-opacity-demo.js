@@ -3,6 +3,7 @@
   'use strict';
 
   const Heatbox = window.CesiumHeatbox || window.Heatbox;
+  const CameraHelper = window.HeatboxDemoCamera || null;
   if (!Heatbox) {
     console.error('Heatbox UMD build is not loaded.');
     return;
@@ -18,10 +19,11 @@
     rangeText: document.getElementById('rangeText')
   };
 
-  const CENTER = { lon: 139.71, lat: 35.67, height: 2600 };
+  const CENTER = { lon: 139.6917, lat: 35.6895, height: 2600 };
   let viewer;
   let heatbox;
   let entities = [];
+  let dataBounds = null;
 
   init();
 
@@ -39,7 +41,7 @@
     });
 
     const imageryProvider = new Cesium.UrlTemplateImageryProvider({
-      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
       subdomains: 'abcd',
       maximumLevel: 19,
       credit: '© OpenStreetMap contributors © CARTO'
@@ -87,7 +89,11 @@
     apply();
   }
 
-  function focusCamera() {
+  function focusCamera(bounds = null) {
+    if (CameraHelper?.focus) {
+      CameraHelper.focus(viewer, { bounds: bounds || dataBounds, useDefaultBounds: true });
+      return;
+    }
     if (!viewer?.camera) return;
     viewer.camera.setView({
       destination: Cesium.Cartesian3.fromDegrees(
@@ -106,8 +112,16 @@
   function generateEntities() {
     viewer.entities.removeAll();
     entities = [];
-    const lon0 = 139.71;
-    const lat0 = 35.67;
+    const lon0 = CENTER.lon;
+    const lat0 = CENTER.lat;
+    const bounds = {
+      minLon: Infinity,
+      maxLon: -Infinity,
+      minLat: Infinity,
+      maxLat: -Infinity,
+      minAlt: Infinity,
+      maxAlt: -Infinity
+    };
 
     for (let i = 0; i < 240; i++) {
       const lon = lon0 + (Math.random() - 0.5) * 0.05;
@@ -119,7 +133,17 @@
         properties: { value }
       });
       entities.push(entity);
+
+      bounds.minLon = Math.min(bounds.minLon, lon);
+      bounds.maxLon = Math.max(bounds.maxLon, lon);
+      bounds.minLat = Math.min(bounds.minLat, lat);
+      bounds.maxLat = Math.max(bounds.maxLat, lat);
+      bounds.minAlt = Math.min(bounds.minAlt, alt);
+      bounds.maxAlt = Math.max(bounds.maxAlt, alt);
     }
+
+    dataBounds = bounds;
+    focusCamera(bounds);
   }
 
   function apply() {

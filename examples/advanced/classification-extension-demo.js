@@ -3,6 +3,7 @@
   'use strict';
 
   const Heatbox = window.CesiumHeatbox || window.Heatbox;
+  const CameraHelper = window.HeatboxDemoCamera || null;
   if (!Heatbox) {
     console.error('Heatbox UMD build is not loaded.');
     return;
@@ -24,16 +25,17 @@
     legend: document.getElementById('legendContainer')
   };
 
-  const CENTER = { lon: 139.77, lat: 35.68, height: 2500 };
+  const CENTER = { lon: 139.6917, lat: 35.6895, height: 2600 };
   let viewer;
   let heatbox;
   let entities = [];
+  let dataBounds = null;
 
   init();
 
   function init() {
     const imageryProvider = new Cesium.UrlTemplateImageryProvider({
-      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
       subdomains: 'abcd',
       maximumLevel: 19,
       credit: '© OpenStreetMap contributors © CARTO'
@@ -89,7 +91,11 @@
     applyClassification();
   }
 
-  function focusCamera() {
+  function focusCamera(bounds = null) {
+    if (CameraHelper?.focus) {
+      CameraHelper.focus(viewer, { bounds: bounds || dataBounds, useDefaultBounds: true });
+      return;
+    }
     if (!viewer?.camera) return;
     viewer.camera.setView({
       destination: Cesium.Cartesian3.fromDegrees(
@@ -108,14 +114,22 @@
   function generateEntities() {
     viewer.entities.removeAll();
     entities = [];
-    const baseLon = 139.771;
-    const baseLat = 35.674;
+    const baseLon = CENTER.lon;
+    const baseLat = CENTER.lat;
+    const bounds = {
+      minLon: Infinity,
+      maxLon: -Infinity,
+      minLat: Infinity,
+      maxLat: -Infinity,
+      minAlt: Infinity,
+      maxAlt: -Infinity
+    };
 
     // 3 クラスタ + ばらつき
     const clusters = [
-      { center: [baseLon, baseLat, 20], spread: 0.01, base: 5 },
-      { center: [baseLon + 0.02, baseLat + 0.015, 35], spread: 0.006, base: 25 },
-      { center: [baseLon - 0.018, baseLat + 0.02, 50], spread: 0.012, base: 60 }
+      { center: [baseLon, baseLat, 20], spread: 0.008, base: 5 },
+      { center: [baseLon + 0.01, baseLat + 0.01, 35], spread: 0.006, base: 25 },
+      { center: [baseLon - 0.012, baseLat + 0.012, 50], spread: 0.01, base: 60 }
     ];
 
     clusters.forEach((cluster) => {
@@ -132,8 +146,17 @@
           }
         });
         entities.push(entity);
+        bounds.minLon = Math.min(bounds.minLon, lon);
+        bounds.maxLon = Math.max(bounds.maxLon, lon);
+        bounds.minLat = Math.min(bounds.minLat, lat);
+        bounds.maxLat = Math.max(bounds.maxLat, lat);
+        bounds.minAlt = Math.min(bounds.minAlt, alt);
+        bounds.maxAlt = Math.max(bounds.maxAlt, alt);
       }
     });
+
+    dataBounds = bounds;
+    focusCamera(bounds);
   }
 
   function applyClassification() {
