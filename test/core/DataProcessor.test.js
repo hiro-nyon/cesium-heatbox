@@ -49,8 +49,8 @@ describe('DataProcessor utils', () => {
     expect(stats.classification.enabled).toBe(true);
     expect(stats.classification.scheme).toBe('equal-interval');
     expect(stats.classification.domain).toEqual([1, 9]);
-    expect(stats.classification.breaks.length).toBe(4);
-    expect(stats.classification.quantiles.length).toBe(3);
+    expect(stats.classification.breaks).toHaveLength(4);
+    expect(stats.classification.quantiles).toHaveLength(3);
     const histTotal = stats.classification.histogram.counts.reduce((sum, val) => sum + val, 0);
     expect(histTotal).toBe(vd.size);
   });
