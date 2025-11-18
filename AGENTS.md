@@ -68,6 +68,107 @@
 - Commit messages and PR titles must be in English (even though assistant responses are in Japanese).
 - If a PR is required, use the GitHub CLI (`gh pr create --base main --head <branch>`) to open it once the branch is ready.
 
+## Architecture Decision Records (ADR)
+
+ADRs are stored in `docs/adr/` and document significant design decisions. Follow this structure (see ADR-0014, ADR-0015, ADR-0016 as reference):
+
+### Required Sections
+
+1. **Header (YAML-style metadata)**
+   - `**Status**`: `Proposed` | `Accepted` | `Superseded` | `Deprecated`
+   - `**Date**`: YYYY-MM-DD
+   - `**Author**`: author name
+   - `**Target Version**`: e.g., `v1.0.0`, `v0.1.18`
+   - `**Related**`: links to ROADMAP sections, other ADRs, issues
+
+2. **Context / 背景**
+   - **Problem Statement / 問題提起**: Describe the problem in detail (aim for 200+ lines)
+     - Include 3–5 concrete use cases with code examples
+     - Explain current limitations and pain points
+     - Reference existing behavior and compatibility requirements
+   - **Goals / Non-Goals**: Clearly separate what is in-scope vs out-of-scope
+
+3. **Decision / 決定事項**
+   - State the chosen solution (3–5 key decisions)
+   - Provide API design examples with full code snippets
+   - Explain the rationale for each decision
+
+4. **Architecture / アーキテクチャ**
+   - **Component Structure**: File/module layout with directory tree
+   - **Data Flow**: Sequence or flow diagram (text-based is fine)
+   - **Integration Points**: How the feature integrates with existing code
+
+5. **Detailed Design / 詳細設計**
+   - Provide complete implementation code examples (100–500 lines total)
+   - Include function signatures, class structures, and key algorithms
+   - Show edge case handling and error handling
+
+6. **Implementation Plan / 実装計画**
+   - Break down into phases (e.g., Phase 1-7)
+   - Estimate duration (e.g., Days 1-2, Days 3-5)
+   - List concrete tasks with checkboxes `[ ]`
+
+7. **Testing Strategy / テスト戦略**
+   - **Unit Tests**: Provide test code examples (~50–100 lines)
+   - **Integration Tests**: E2E workflow tests
+   - **Performance Tests**: Benchmarks and acceptance criteria (e.g., ≤ +10% overhead)
+
+8. **Alternatives Considered / 検討した代替案**
+   - List 2–4 alternative approaches
+   - For each: explain pros, cons, and why it was rejected
+
+9. **Consequences / 影響**
+   - **Positive**: Benefits (5+ items)
+   - **Negative**: Trade-offs and drawbacks (3+ items)
+   - **Risks & Mitigations**: Identify risks and concrete mitigation strategies
+
+10. **Acceptance Criteria / 受け入れ基準**
+    - Functional: Feature correctness
+    - Non-functional: Performance, memory, bundle size targets
+    - Documentation: README, API.md, examples
+    - Testing: Coverage and test cases
+
+11. **Migration Guide / 移行ガイド** (for breaking changes)
+    - Code examples showing before/after
+    - Step-by-step migration instructions
+
+12. **Future Work / 今後の作業** (optional)
+    - Planned extensions in future versions
+
+13. **References / 参照**
+    - Links to ROADMAP, related ADRs, external docs
+
+### Quality Standards
+
+- **Length**: Aim for 1,000–1,600 lines for major features (10x initial draft)
+- **Code Examples**: Include 15–25 code snippets throughout the document
+- **Bilingual**: Technical terms in English, explanations in Japanese
+- **Specificity**: Avoid vague statements; provide concrete metrics (e.g., "≤ +10% memory overhead")
+- **Consistency**: Match the detail level of ADR-0014/0015/0016
+
+### Naming Convention
+
+- Format: `ADR-NNNN-<version>-<feature-name>.md`
+- Examples:
+  - `ADR-0014-v0.1.18-voxel-layer-aggregation.md`
+  - `ADR-0016-v1.0.0-classification-engine.md`
+
+### When to Write an ADR
+
+Write an ADR for:
+- New major features (e.g., classification engine, spatial ID support)
+- Significant refactoring (e.g., module reorganization)
+- API design changes affecting users
+- Performance-critical implementations
+- Dependency additions or replacements
+- Breaking changes requiring migration
+
+Do NOT write an ADR for:
+- Minor bug fixes
+- Documentation-only changes
+- Internal refactoring with no API impact
+- Trivial feature additions
+
 ## Pre-Push Checklist
 - Run locally (silenced for agents):
   - `npm run -s lint && npm run -s type-check && npm test --silent -- --reporters=summary`.
