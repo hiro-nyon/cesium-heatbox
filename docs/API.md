@@ -1,4 +1,4 @@
-# API Reference (APIリファレンス) - v0.1.9
+# API Reference (APIリファレンス) - v1.0.0
 
 [English](#english) | [日本語](#日本語)
 
@@ -16,7 +16,7 @@ Creates a new Heatbox instance.
 - `viewer` (Cesium.Viewer) - CesiumJS Viewer instance
 - `options` (Object, optional) - Configuration options
 
-**Options (v0.1.9 compatible):**
+**Options (v1.0.0 compatible):**
 - `voxelSize` (number, default: 20) - Target voxel size (meters). Actual rendering dimensions use real cell sizes `cellSizeX/Y/Z` based on grid division, which may be smaller than `voxelSize` (to prevent overlaps).
 - `opacity` (number, default: 0.8) - Data voxel opacity (0.0-1.0)
 - `emptyOpacity` (number, default: 0.03) - Empty voxel opacity (0.0-1.0)
@@ -43,6 +43,7 @@ Creates a new Heatbox instance.
   - `heading` (number, default: 0) - Camera heading (degrees)
   - `pitch` (number, default: -30) - Camera pitch (degrees)
   - `paddingPercent` (number, default: 0.1) - Padding ratio around data bounds
+- **`classification` (string | ClassificationOptions | false) - v1.0.0: Declarative classification engine for color ramp (`linear`/`log`/`equal-interval`/`quantize`/`threshold`). When `false`, the legacy min/max interpolation is used. See [ClassificationOptions](#classificationoptions-v100).**
 
 For brevity, see the Japanese section below for complete option details and examples.
 
