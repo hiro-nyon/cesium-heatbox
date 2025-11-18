@@ -84,17 +84,40 @@ describe('classification', () => {
     });
   });
 
-  describe('unsupported schemes', () => {
-    test('should throw error for quantile in v1.0.0', () => {
-      expect(() => {
-        createClassifier({ scheme: 'quantile' });
-      }).toThrow(/not supported in v1.0.0/);
-    });
+  describe('quantile scheme', () => {
+    test('should compute quantile breaks and classify correctly', () => {
+      const values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      const classifier = createClassifier({
+        scheme: 'quantile',
+        values,
+        classes: 4
+      });
 
-    test('should throw error for jenks in v1.0.0', () => {
-      expect(() => {
-        createClassifier({ scheme: 'jenks' });
-      }).toThrow(/not supported in v1.0.0/);
+      expect(classifier.breaks.length).toBe(5);
+      expect(classifier.breaks[0]).toBe(1);
+      expect(classifier.breaks[classifier.breaks.length - 1]).toBe(10);
+      expect(classifier.classify(2)).toBe(0);
+      expect(classifier.classify(5)).toBe(1);
+      expect(classifier.classify(7)).toBe(2);
+      expect(classifier.classify(9)).toBe(3);
+    });
+  });
+
+  describe('jenks scheme', () => {
+    test('should compute jenks breaks and classify clustered data', () => {
+      const values = [1, 2, 3, 10, 11, 12, 20, 21, 22];
+      const classifier = createClassifier({
+        scheme: 'jenks',
+        values,
+        classes: 3
+      });
+
+      expect(classifier.breaks.length).toBe(4);
+      expect(classifier.breaks[0]).toBe(1);
+      expect(classifier.breaks[classifier.breaks.length - 1]).toBe(22);
+      expect(classifier.classify(2)).toBe(0);
+      expect(classifier.classify(11)).toBe(1);
+      expect(classifier.classify(21)).toBe(2);
     });
   });
 

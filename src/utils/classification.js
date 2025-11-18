@@ -120,9 +120,54 @@ export function createClassifier (options = {}) {
       };
       break;
     }
-    case 'quantile':
-    case 'jenks':
-      throw new Error(`scheme '${scheme}' is not supported in v1.0.0 (planned for v1.1.0)`);
+    case 'quantile': {
+      if (!Array.isArray(values) || values.length === 0) {
+        throw new Error('quantile scheme requires values array');
+      }
+      const backend = getBackend();
+      breaks = [min];
+      const classesCount = Math.max(2, classes);
+      for (let i = 1; i < classesCount; i++) {
+        breaks.push(backend.quantile(values, i / classesCount));
+      }
+      breaks.push(max);
+
+      normalize = (value) => {
+        for (let i = 0; i < breaks.length - 1; i++) {
+          if (value <= breaks[i + 1]) {
+            return (breaks.length > 2) ? (i / (breaks.length - 2)) : 0;
+          }
+        }
+        return 1;
+      };
+      break;
+    }
+    case 'jenks': {
+      if (!Array.isArray(values) || values.length === 0) {
+        throw new Error('jenks scheme requires values array');
+      }
+      const backend = getBackend();
+      const jenksBreaks = backend.jenksBreaks(values, classes);
+      breaks = [min];
+      if (Array.isArray(jenksBreaks)) {
+        for (const b of jenksBreaks) {
+          if (Number.isFinite(b) && b > min && b < max) {
+            breaks.push(b);
+          }
+        }
+      }
+      breaks.push(max);
+
+      normalize = (value) => {
+        for (let i = 0; i < breaks.length - 1; i++) {
+          if (value <= breaks[i + 1]) {
+            return (breaks.length > 2) ? (i / (breaks.length - 2)) : 0;
+          }
+        }
+        return 1;
+      };
+      break;
+    }
     default:
       throw new Error(`unknown classification scheme: ${scheme}`);
   }

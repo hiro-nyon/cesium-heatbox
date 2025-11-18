@@ -705,7 +705,7 @@ export class VoxelRenderer {
       return;
     }
 
-    const allowedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold'];
+    const allowedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold', 'quantile', 'jenks'];
     const scheme = (classificationOptions.scheme || 'linear').toLowerCase();
     if (!allowedSchemes.includes(scheme)) {
       Logger.warn(`Classification scheme '${scheme}' is not supported in v1.0.0. Disabling classification.`);

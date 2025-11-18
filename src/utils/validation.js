@@ -1018,16 +1018,10 @@ function sanitizeClassificationScheme(scheme) {
   }
   
   const normalizedScheme = scheme.trim().toLowerCase();
-  const supportedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold'];
-  const plannedSchemes = ['quantile', 'jenks'];
+  const supportedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold', 'quantile', 'jenks'];
   
   if (supportedSchemes.includes(normalizedScheme)) {
     return normalizedScheme;
-  }
-  
-  if (plannedSchemes.includes(normalizedScheme)) {
-    Logger.warn(`[classification] scheme '${scheme}' is planned for a future release. Falling back to 'linear'.`);
-    return 'linear';
   }
   
   Logger.warn(`[classification] Unknown scheme '${scheme}', falling back to 'linear'.`);
