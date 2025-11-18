@@ -114,33 +114,34 @@ describe('Layer Aggregation Performance (ADR-0014 Phase 5)', () => {
     it('should scale reasonably with entity count', async () => {
       const layerTypes = ['residential', 'commercial', 'industrial'];
       const counts = [500, 1000, 2000];
-      const times = [];
-      
+      const measurements = [];
+
       for (const count of counts) {
         const entities = generateEntities(count, layerTypes);
-        
-        const heatbox = new Heatbox(viewer, {
-          voxelSize: 30,
-          aggregation: {
-            enabled: true,
-            byProperty: 'type'
-          }
-        });
-        
-        const start = performance.now();
-        await heatbox.createFromEntities(entities);
-        const elapsed = performance.now() - start;
-        
-        times.push(elapsed);
-        heatbox.clear();
-        
-        console.log(`${count} entities: ${elapsed.toFixed(2)}ms`);
+        const result = await measureMedianProcessingTime(
+          entities,
+          {
+            voxelSize: 30,
+            aggregation: {
+              enabled: true,
+              byProperty: 'type'
+            }
+          },
+          3
+        );
+        measurements.push(result);
+        console.log(`${count} entities (median): ${result.median.toFixed(2)}ms`);
       }
-      
-      // Verify roughly linear scaling (not exponential)
-      // time(2000) / time(1000) should be roughly 2x, not 4x
-      const ratio = times[2] / times[1];
-      expect(ratio).toBeLessThan(3); // Allow some overhead, but not exponential
+
+      const ratios = [
+        measurements[1].median / Math.max(measurements[0].median, 1),
+        measurements[2].median / Math.max(measurements[1].median, 1)
+      ];
+
+      ratios.forEach((ratio, index) => {
+        console.log(`Scaling ratio ${index + 1}: ${ratio.toFixed(2)}x`);
+        expect(ratio).toBeLessThan(3);
+      });
     }, 60000); // 60s timeout
   });
 

@@ -9,6 +9,7 @@ See also: [Class: GeometryRenderer](GeometryRenderer)
 ```javascript
 import * as Cesium from 'cesium';
 import { Logger } from '../../utils/logger.js';
+import { escapeHtml } from '../../utils/escapeHtml.js';
 
 /**
  * GeometryRenderer - Creates Cesium entities consumed by VoxelRenderer.
@@ -120,9 +121,29 @@ export class GeometryRenderer {
       },
       description: this.createVoxelDescription(voxelInfo, voxelKey)
     };
+    
+    // v0.1.17: Add spatial ID to properties if available / 空間IDがあればプロパティに追加
+    if (voxelInfo.spatialId) {
+      entityConfig.properties.spatialId = voxelInfo.spatialId;
+    }
+    
+    // v0.1.18: Add layer aggregation info to properties (ADR-0014)
+    if (voxelInfo.layerTop) {
+      entityConfig.properties.layerTop = voxelInfo.layerTop;
+    }
+    if (voxelInfo.layerStats) {
+      // Convert Map to plain object for Cesium properties
+      // MapをCesiumプロパティ用のプレーンオブジェクトに変換
+      const layerStatsObj = {};
+      for (const [key, count] of voxelInfo.layerStats) {
+        layerStatsObj[key] = count;
+      }
+      entityConfig.properties.layerStats = layerStatsObj;
+    }
 
-    // Material configuration based on wireframe mode
-    if (this.options.wireframeOnly) {
+    // Material configuration based on wireframe mode and render mode
+    const hideBox = this.options.wireframeOnly || this.options.outlineRenderMode === 'emulation-only';
+    if (hideBox) {
       entityConfig.box.material = Cesium.Color.TRANSPARENT;
       entityConfig.box.fill = false;
     } else {
@@ -545,16 +566,52 @@ export class GeometryRenderer {
    * @returns {string} HTML description / HTML形式の説明文
    */
   createVoxelDescription(voxelInfo, voxelKey) {
+    // v0.1.17: Include spatial ID in description if available / 空間IDがあればdescriptionに含める
+    const spatialIdInfo = voxelInfo.spatialId ? `
+          <tr><td><b>空間ID:</b></td><td>${escapeHtml(voxelInfo.spatialId.id)}</td></tr>
+          <tr><td><b>ズームレベル:</b></td><td>Z=${escapeHtml(String(voxelInfo.spatialId.z))}, F=${escapeHtml(String(voxelInfo.spatialId.f))}</td></tr>
+          <tr><td><b>タイル座標:</b></td><td>X=${escapeHtml(String(voxelInfo.spatialId.x))}, Y=${escapeHtml(String(voxelInfo.spatialId.y))}</td></tr>
+    ` : '';
+    
+    // v0.1.18: Include layer breakdown if aggregation enabled and showInDescription is true (ADR-0014)
+    let layerInfo = '';
+    const showLayerInfo = this.options.aggregation?.enabled && 
+                          this.options.aggregation?.showInDescription !== false &&
+                          voxelInfo.layerStats && 
+                          voxelInfo.layerStats.size > 0;
+    
+    if (showLayerInfo) {
+      // Escape layer keys to prevent XSS / XSS防止のためレイヤキーをエスケープ
+      const layerRows = Array.from(voxelInfo.layerStats.entries())
+        .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
+        .map(([key, count]) => {
+          const pct = voxelInfo.count > 0 ? ((count / voxelInfo.count) * 100).toFixed(1) : '0.0';
+          return `
+          <tr><td style="padding-left: 10px;">${escapeHtml(key)}</td><td>${count} (${pct}%)</td></tr>
+        `;
+        }).join('');
+      
+      const topLayerInfo = voxelInfo.layerTop ? `
+          <tr><td><b>支配的レイヤ:</b></td><td>${escapeHtml(voxelInfo.layerTop)}</td></tr>
+      ` : '';
+      
+      layerInfo = `
+          ${topLayerInfo}
+          <tr><td colspan="2"><b>レイヤ内訳:</b></td></tr>
+          ${layerRows}
+      `;
+    }
+    
     return `
       <div style="padding: 10px; font-family: Arial, sans-serif;">
         <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
         <table style="width: 100%;">
           <tr><td><b>エンティティ数:</b></td><td>${voxelInfo.count}</td></tr>
-          <tr><td><b>ボクセルキー:</b></td><td>${voxelKey}</td></tr>
-          <tr><td><b>座標:</b></td><td>X=${voxelInfo.x}, Y=${voxelInfo.y}, Z=${voxelInfo.z}</td></tr>
+          <tr><td><b>ボクセルキー:</b></td><td>${escapeHtml(voxelKey)}</td></tr>
+          <tr><td><b>座標:</b></td><td>X=${voxelInfo.x}, Y=${voxelInfo.y}, Z=${voxelInfo.z}</td></tr>${spatialIdInfo}${layerInfo}
         </table>
         <p style="margin-bottom: 0;">
-          <small>v0.1.11 GeometryRenderer</small>
+          <small>v0.1.18 GeometryRenderer (Layer aggregation support)</small>
         </p>
       </div>
     `;
@@ -690,6 +747,7 @@ export class GeometryRenderer {
 ```javascript
 import * as Cesium from 'cesium';
 import { Logger } from '../../utils/logger.js';
+import { escapeHtml } from '../../utils/escapeHtml.js';
 
 /**
  * GeometryRenderer - Creates Cesium entities consumed by VoxelRenderer.
@@ -801,9 +859,29 @@ export class GeometryRenderer {
       },
       description: this.createVoxelDescription(voxelInfo, voxelKey)
     };
+    
+    // v0.1.17: Add spatial ID to properties if available / 空間IDがあればプロパティに追加
+    if (voxelInfo.spatialId) {
+      entityConfig.properties.spatialId = voxelInfo.spatialId;
+    }
+    
+    // v0.1.18: Add layer aggregation info to properties (ADR-0014)
+    if (voxelInfo.layerTop) {
+      entityConfig.properties.layerTop = voxelInfo.layerTop;
+    }
+    if (voxelInfo.layerStats) {
+      // Convert Map to plain object for Cesium properties
+      // MapをCesiumプロパティ用のプレーンオブジェクトに変換
+      const layerStatsObj = {};
+      for (const [key, count] of voxelInfo.layerStats) {
+        layerStatsObj[key] = count;
+      }
+      entityConfig.properties.layerStats = layerStatsObj;
+    }
 
-    // Material configuration based on wireframe mode
-    if (this.options.wireframeOnly) {
+    // Material configuration based on wireframe mode and render mode
+    const hideBox = this.options.wireframeOnly || this.options.outlineRenderMode === 'emulation-only';
+    if (hideBox) {
       entityConfig.box.material = Cesium.Color.TRANSPARENT;
       entityConfig.box.fill = false;
     } else {
@@ -1226,16 +1304,52 @@ export class GeometryRenderer {
    * @returns {string} HTML description / HTML形式の説明文
    */
   createVoxelDescription(voxelInfo, voxelKey) {
+    // v0.1.17: Include spatial ID in description if available / 空間IDがあればdescriptionに含める
+    const spatialIdInfo = voxelInfo.spatialId ? `
+          <tr><td><b>空間ID:</b></td><td>${escapeHtml(voxelInfo.spatialId.id)}</td></tr>
+          <tr><td><b>ズームレベル:</b></td><td>Z=${escapeHtml(String(voxelInfo.spatialId.z))}, F=${escapeHtml(String(voxelInfo.spatialId.f))}</td></tr>
+          <tr><td><b>タイル座標:</b></td><td>X=${escapeHtml(String(voxelInfo.spatialId.x))}, Y=${escapeHtml(String(voxelInfo.spatialId.y))}</td></tr>
+    ` : '';
+    
+    // v0.1.18: Include layer breakdown if aggregation enabled and showInDescription is true (ADR-0014)
+    let layerInfo = '';
+    const showLayerInfo = this.options.aggregation?.enabled && 
+                          this.options.aggregation?.showInDescription !== false &&
+                          voxelInfo.layerStats && 
+                          voxelInfo.layerStats.size > 0;
+    
+    if (showLayerInfo) {
+      // Escape layer keys to prevent XSS / XSS防止のためレイヤキーをエスケープ
+      const layerRows = Array.from(voxelInfo.layerStats.entries())
+        .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
+        .map(([key, count]) => {
+          const pct = voxelInfo.count > 0 ? ((count / voxelInfo.count) * 100).toFixed(1) : '0.0';
+          return `
+          <tr><td style="padding-left: 10px;">${escapeHtml(key)}</td><td>${count} (${pct}%)</td></tr>
+        `;
+        }).join('');
+      
+      const topLayerInfo = voxelInfo.layerTop ? `
+          <tr><td><b>支配的レイヤ:</b></td><td>${escapeHtml(voxelInfo.layerTop)}</td></tr>
+      ` : '';
+      
+      layerInfo = `
+          ${topLayerInfo}
+          <tr><td colspan="2"><b>レイヤ内訳:</b></td></tr>
+          ${layerRows}
+      `;
+    }
+    
     return `
       <div style="padding: 10px; font-family: Arial, sans-serif;">
         <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
         <table style="width: 100%;">
           <tr><td><b>エンティティ数:</b></td><td>${voxelInfo.count}</td></tr>
-          <tr><td><b>ボクセルキー:</b></td><td>${voxelKey}</td></tr>
-          <tr><td><b>座標:</b></td><td>X=${voxelInfo.x}, Y=${voxelInfo.y}, Z=${voxelInfo.z}</td></tr>
+          <tr><td><b>ボクセルキー:</b></td><td>${escapeHtml(voxelKey)}</td></tr>
+          <tr><td><b>座標:</b></td><td>X=${voxelInfo.x}, Y=${voxelInfo.y}, Z=${voxelInfo.z}</td></tr>${spatialIdInfo}${layerInfo}
         </table>
         <p style="margin-bottom: 0;">
-          <small>v0.1.11 GeometryRenderer</small>
+          <small>v0.1.18 GeometryRenderer (Layer aggregation support)</small>
         </p>
       </div>
     `;

@@ -111,6 +111,12 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  */
 
 /**
+ * @typedef {Object} HeatboxLayerStat
+ * @property {string} key - Layer key / レイヤキー
+ * @property {number} total - Total entity count for this layer / このレイヤの総エンティティ数
+ */
+
+/**
  * @typedef {Object} HeatboxStatistics
  * @property {number} totalVoxels - Total voxels generated / 生成された総ボクセル数
  * @property {number} renderedVoxels - Voxels actually rendered / 実際に描画されたボクセル数
@@ -131,6 +137,7 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {string} [renderBudgetTier] - Auto render budget tier label / 自動レンダーバジェットの区分
  * @property {number} [autoMaxRenderVoxels] - Auto-assigned maxRenderVoxels / 自動設定された maxRenderVoxels
  * @property {number|null} [occupancyRatio] - Ratio of rendered voxels to limit / 描画ボクセルと上限の比率
+ * @property {HeatboxLayerStat[]} [layers] - Top-N layer aggregation (v0.1.18 ADR-0014) / 上位N個のレイヤ集約
  */
 
 /**
@@ -221,6 +228,18 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {PerformanceOverlayConfig|null} [performanceOverlay=null] - Performance overlay config / パフォーマンスオーバーレイ設定
  * @property {('manual'|'auto')} [renderBudgetMode='manual'] - Render budget mode / レンダーバジェット制御モード
  * @property {(boolean|Object)} [debug=false] - Debug options (`true` enables verbose logging, object can contain `showBounds`) / デバッグ設定（trueで詳細ログ、オブジェクトの場合は`showBounds`などを指定）
+ * @property {Object} [spatialId] - Spatial ID configuration (v0.1.17+) / 空間ID設定（v0.1.17+）
+ * @property {boolean} [spatialId.enabled=false] - Enable spatial ID mode / 空間IDモードを有効化
+ * @property {('tile-grid'|'voxel-grid')} [spatialId.mode='tile-grid'] - Spatial ID mode / 空間IDモード
+ * @property {(number|'auto')} [spatialId.zoom='auto'] - Zoom level or auto / ズームレベルまたは自動
+ * @property {('auto'|'manual')} [spatialId.zoomControl='auto'] - Zoom control mode / ズーム制御モード
+ * @property {number} [spatialId.zoomTolerancePct=10] - Zoom tolerance percentage / ズーム許容誤差（%）
+ * @property {Object} [aggregation] - Layer aggregation configuration (v0.1.18+) / レイヤ別集約設定（v0.1.18+）
+ * @property {boolean} [aggregation.enabled=false] - Enable layer aggregation / レイヤ別集約を有効化
+ * @property {string|null} [aggregation.byProperty=null] - Entity property key to use as layer key / レイヤキーとして使用するエンティティプロパティ
+ * @property {?function(entity):string} [aggregation.keyResolver=null] - Custom layer key resolver function (takes precedence over byProperty) / カスタムレイヤキー解決関数（byPropertyより優先）
+ * @property {boolean} [aggregation.showInDescription=true] - Show layer breakdown in voxel description / ボクセル説明文にレイヤ内訳を表示
+ * @property {number} [aggregation.topN=10] - Number of top layers to include in statistics / 統計情報に含める上位レイヤ数
  */
 
 /**
@@ -551,9 +570,11 @@ export class Heatbox {
       this._grid = VoxelGrid.createGrid(this._bounds, finalVoxelSize);
       Logger.debug('グリッド生成完了:', this._grid);
       
-      // 3. エンティティ分類
+      // 3. エンティティ分類（v0.1.17: 空間IDサポート）
       Logger.debug('Step 3: エンティティ分類');
-      this._voxelData = DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid);
+      // Pass options with voxelSize for spatial ID auto zoom calculation
+      const classificationOptions = { ...this.options, voxelSize: finalVoxelSize };
+      this._voxelData = await DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid, classificationOptions);
       Logger.debug('エンティティ分類完了:', this._voxelData.size, '個のボクセル');
       
       // 4. 統計計算
@@ -567,6 +588,17 @@ export class Heatbox {
         this._statistics.originalVoxelSize = autoAdjustmentInfo.originalSize;
         this._statistics.finalVoxelSize = autoAdjustmentInfo.finalSize;
         this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
+      }
+      
+      // v0.1.17: 空間ID情報を統計に追加
+      if (classificationOptions.spatialId?.enabled) {
+        this._statistics.spatialIdEnabled = true;
+        this._statistics.spatialIdMode = classificationOptions.spatialId.mode;
+        this._statistics.spatialIdProvider = classificationOptions._spatialIdProvider || null;
+        this._statistics.spatialIdZoom = classificationOptions._resolvedZoom || null;
+        this._statistics.zoomControl = classificationOptions.spatialId.zoomControl;
+      } else {
+        this._statistics.spatialIdEnabled = false;
       }
       
       // 5. 描画（レンダリング時間の計測）
@@ -774,6 +806,33 @@ export class Heatbox {
       stats.occupancyRatio = Math.min(1, Math.max(0, (stats.renderedVoxels || 0) / this.options.maxRenderVoxels));
     } else {
       stats.occupancyRatio = null;
+    }
+
+    // v0.1.18: Layer aggregation statistics (ADR-0014)
+    if (this.options.aggregation?.enabled && this._voxelData) {
+      const globalLayerCounts = new Map();
+      
+      // Aggregate across all voxels / 全ボクセルを集約
+      for (const voxelInfo of this._voxelData.values()) {
+        if (voxelInfo.layerStats) {
+          for (const [layerKey, count] of voxelInfo.layerStats) {
+            globalLayerCounts.set(
+              layerKey,
+              (globalLayerCounts.get(layerKey) || 0) + count
+            );
+          }
+        }
+      }
+      
+      // Top N layers (configurable via options.aggregation.topN) / 上位N個のレイヤ（options.aggregation.topNで設定可能）
+      const topN = this.options.aggregation?.topN ?? 10;
+      const sorted = Array.from(globalLayerCounts.entries())
+        .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
+        .slice(0, topN);
+      
+      stats.layers = sorted.map(([key, total]) => ({ key, total }));
+      
+      Logger.debug(`[aggregation] Aggregated ${globalLayerCounts.size} unique layers, returning top ${stats.layers.length}`);
     }
 
     return stats;
@@ -1284,6 +1343,12 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  */
 
 /**
+ * @typedef {Object} HeatboxLayerStat
+ * @property {string} key - Layer key / レイヤキー
+ * @property {number} total - Total entity count for this layer / このレイヤの総エンティティ数
+ */
+
+/**
  * @typedef {Object} HeatboxStatistics
  * @property {number} totalVoxels - Total voxels generated / 生成された総ボクセル数
  * @property {number} renderedVoxels - Voxels actually rendered / 実際に描画されたボクセル数
@@ -1304,6 +1369,7 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {string} [renderBudgetTier] - Auto render budget tier label / 自動レンダーバジェットの区分
  * @property {number} [autoMaxRenderVoxels] - Auto-assigned maxRenderVoxels / 自動設定された maxRenderVoxels
  * @property {number|null} [occupancyRatio] - Ratio of rendered voxels to limit / 描画ボクセルと上限の比率
+ * @property {HeatboxLayerStat[]} [layers] - Top-N layer aggregation (v0.1.18 ADR-0014) / 上位N個のレイヤ集約
  */
 
 /**
@@ -1394,6 +1460,18 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {PerformanceOverlayConfig|null} [performanceOverlay=null] - Performance overlay config / パフォーマンスオーバーレイ設定
  * @property {('manual'|'auto')} [renderBudgetMode='manual'] - Render budget mode / レンダーバジェット制御モード
  * @property {(boolean|Object)} [debug=false] - Debug options (`true` enables verbose logging, object can contain `showBounds`) / デバッグ設定（trueで詳細ログ、オブジェクトの場合は`showBounds`などを指定）
+ * @property {Object} [spatialId] - Spatial ID configuration (v0.1.17+) / 空間ID設定（v0.1.17+）
+ * @property {boolean} [spatialId.enabled=false] - Enable spatial ID mode / 空間IDモードを有効化
+ * @property {('tile-grid'|'voxel-grid')} [spatialId.mode='tile-grid'] - Spatial ID mode / 空間IDモード
+ * @property {(number|'auto')} [spatialId.zoom='auto'] - Zoom level or auto / ズームレベルまたは自動
+ * @property {('auto'|'manual')} [spatialId.zoomControl='auto'] - Zoom control mode / ズーム制御モード
+ * @property {number} [spatialId.zoomTolerancePct=10] - Zoom tolerance percentage / ズーム許容誤差（%）
+ * @property {Object} [aggregation] - Layer aggregation configuration (v0.1.18+) / レイヤ別集約設定（v0.1.18+）
+ * @property {boolean} [aggregation.enabled=false] - Enable layer aggregation / レイヤ別集約を有効化
+ * @property {string|null} [aggregation.byProperty=null] - Entity property key to use as layer key / レイヤキーとして使用するエンティティプロパティ
+ * @property {?function(entity):string} [aggregation.keyResolver=null] - Custom layer key resolver function (takes precedence over byProperty) / カスタムレイヤキー解決関数（byPropertyより優先）
+ * @property {boolean} [aggregation.showInDescription=true] - Show layer breakdown in voxel description / ボクセル説明文にレイヤ内訳を表示
+ * @property {number} [aggregation.topN=10] - Number of top layers to include in statistics / 統計情報に含める上位レイヤ数
  */
 
 /**
@@ -1724,9 +1802,11 @@ export class Heatbox {
       this._grid = VoxelGrid.createGrid(this._bounds, finalVoxelSize);
       Logger.debug('グリッド生成完了:', this._grid);
       
-      // 3. エンティティ分類
+      // 3. エンティティ分類（v0.1.17: 空間IDサポート）
       Logger.debug('Step 3: エンティティ分類');
-      this._voxelData = DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid);
+      // Pass options with voxelSize for spatial ID auto zoom calculation
+      const classificationOptions = { ...this.options, voxelSize: finalVoxelSize };
+      this._voxelData = await DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid, classificationOptions);
       Logger.debug('エンティティ分類完了:', this._voxelData.size, '個のボクセル');
       
       // 4. 統計計算
@@ -1740,6 +1820,17 @@ export class Heatbox {
         this._statistics.originalVoxelSize = autoAdjustmentInfo.originalSize;
         this._statistics.finalVoxelSize = autoAdjustmentInfo.finalSize;
         this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
+      }
+      
+      // v0.1.17: 空間ID情報を統計に追加
+      if (classificationOptions.spatialId?.enabled) {
+        this._statistics.spatialIdEnabled = true;
+        this._statistics.spatialIdMode = classificationOptions.spatialId.mode;
+        this._statistics.spatialIdProvider = classificationOptions._spatialIdProvider || null;
+        this._statistics.spatialIdZoom = classificationOptions._resolvedZoom || null;
+        this._statistics.zoomControl = classificationOptions.spatialId.zoomControl;
+      } else {
+        this._statistics.spatialIdEnabled = false;
       }
       
       // 5. 描画（レンダリング時間の計測）
@@ -1947,6 +2038,33 @@ export class Heatbox {
       stats.occupancyRatio = Math.min(1, Math.max(0, (stats.renderedVoxels || 0) / this.options.maxRenderVoxels));
     } else {
       stats.occupancyRatio = null;
+    }
+
+    // v0.1.18: Layer aggregation statistics (ADR-0014)
+    if (this.options.aggregation?.enabled && this._voxelData) {
+      const globalLayerCounts = new Map();
+      
+      // Aggregate across all voxels / 全ボクセルを集約
+      for (const voxelInfo of this._voxelData.values()) {
+        if (voxelInfo.layerStats) {
+          for (const [layerKey, count] of voxelInfo.layerStats) {
+            globalLayerCounts.set(
+              layerKey,
+              (globalLayerCounts.get(layerKey) || 0) + count
+            );
+          }
+        }
+      }
+      
+      // Top N layers (configurable via options.aggregation.topN) / 上位N個のレイヤ（options.aggregation.topNで設定可能）
+      const topN = this.options.aggregation?.topN ?? 10;
+      const sorted = Array.from(globalLayerCounts.entries())
+        .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
+        .slice(0, topN);
+      
+      stats.layers = sorted.map(([key, total]) => ({ key, total }));
+      
+      Logger.debug(`[aggregation] Aggregated ${globalLayerCounts.size} unique layers, returning top ${stats.layers.length}`);
     }
 
     return stats;

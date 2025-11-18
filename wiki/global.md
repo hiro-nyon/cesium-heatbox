@@ -115,6 +115,14 @@ Create an axis-aligned bounding box from a centre point and edge length.
 
 Detect device tier and return appropriate maxRenderVoxels
 
+#### escapeHtml(value) → {string}
+
+Escape special HTML characters.
+
+| Name | Type | Description |
+|---|---|---|
+| value | string | 対象文字列 |
+
 #### estimateInitialVoxelSize(bounds, entityCount, options) → {number}
 
 Estimate initial voxel size based on data range.
@@ -290,6 +298,23 @@ Check whether the voxel size is valid.
 |---|---|---|
 | voxelSize | number | Voxel size / ボクセルサイズ |
 
+#### resolvePropertyValue(property, timeopt) → {*}
+
+Resolve Cesium Property or raw value to plain data.
+
+| Name | Type | Attributes | Description |
+|---|---|---|---|
+| property | * |  | Cesium Property / raw value |
+| time | Cesium.JulianDate | <optional> | Evaluation time / 評価時刻 |
+
+#### validateAggregationOptions(aggregation) → {Object}
+
+Validate and normalize aggregation options (v0.1.18 ADR-0014).
+
+| Name | Type | Description |
+|---|---|---|
+| aggregation | Object | Aggregation options / 集約オプション |
+
 #### validateAndNormalizeOptions(options) → {Object}
 
 Validate and normalize options.
@@ -331,6 +356,8 @@ Warn once about deprecated feature
 #### HeatboxGridInfo
 
 #### HeatboxHighlightStyle
+
+#### HeatboxLayerStat
 
 #### HeatboxOpacityResolverContext
 
@@ -463,6 +490,14 @@ Auto Render Budgetをオプションに適用
 #### detectDeviceTier() → {Object}
 
 端末ティアを検出し、適切なmaxRenderVoxelsを返す
+
+#### escapeHtml(value) → {string}
+
+HTMLの特殊文字をエスケープします。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| value | string | 対象文字列 |
 
 #### estimateInitialVoxelSize(bounds, entityCount, options) → {number}
 
@@ -640,6 +675,23 @@ CesiumJS Viewerが有効かチェックします。
 |---|---|---|
 | voxelSize | number | Voxel size / ボクセルサイズ |
 
+#### resolvePropertyValue(property, timeopt) → {*}
+
+CesiumのPropertyまたは生値をプレーンな値に解決します。
+
+| 名前 | 型 | 属性 | 説明 |
+|---|---|---|---|
+| property | * |  | Cesium Property / raw value |
+| time | Cesium.JulianDate | <optional> | Evaluation time / 評価時刻 |
+
+#### validateAggregationOptions(aggregation) → {Object}
+
+集約オプションの検証と正規化（v0.1.18 ADR-0014）
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| aggregation | Object | Aggregation options / 集約オプション |
+
 #### validateAndNormalizeOptions(options) → {Object}
 
 オプションを検証して正規化します。
@@ -682,6 +734,8 @@ v0.1.5: batchMode 非推奨化と新機能バリデーションを追加。
 #### HeatboxGridInfo
 
 #### HeatboxHighlightStyle
+
+#### HeatboxLayerStat
 
 #### HeatboxOpacityResolverContext
 

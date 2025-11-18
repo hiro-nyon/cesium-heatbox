@@ -102,6 +102,25 @@ export const DEFAULT_OPTIONS = {
     pitchDegrees: -30, // ピッチ角度（度）- v0.1.12: unified naming
     headingDegrees: 0, // ヘディング角度（度）- v0.1.12: unified naming
     altitudeStrategy: 'auto' // 'auto' | 'manual' 高度計算戦略
+  },
+  
+  // v0.1.17: 空間ID対応（ADR-0013）
+  spatialId: {
+    enabled: false, // 空間IDモード有効化（デフォルト: 従来の一様グリッド）
+    mode: 'tile-grid', // 'tile-grid' - v0.1.17では tile-grid のみサポート
+    provider: 'ouranos-gex', // 'ouranos-gex' - 空間IDプロバイダー
+    zoom: 25, // ズームレベル（0-35）または 'auto'
+    zoomControl: 'auto', // 'auto' | 'manual' - ズーム制御モード
+    zoomTolerancePct: 10 // 自動ズーム選択時の許容誤差パーセンテージ
+  },
+  
+  // v0.1.18: レイヤ別集約（ADR-0014）
+  aggregation: {
+    enabled: false, // レイヤ別集約を有効化（デフォルト: 無効）
+    byProperty: null, // エンティティプロパティキーをレイヤキーとして使用（例: 'buildingType'）
+    keyResolver: null, // カスタム関数 (entity) => layerKey（byPropertyより優先）
+    showInDescription: true, // ボクセル説明文にレイヤ内訳を表示
+    topN: 10 // 統計情報で返す上位レイヤ数（デフォルト: 10）
   }
 };
 
@@ -124,6 +143,7 @@ export const PERFORMANCE_LIMITS = {
  */
 export const COORDINATE_CONSTANTS = {
   EARTH_RADIUS: 6378137,
+  EARTH_CIRCUMFERENCE_EQUATOR: 40075016.68557849,
   DEGREES_TO_METERS_LAT: 111000,
   DEGREES_TO_RADIANS: Math.PI / 180
 };
@@ -272,6 +292,25 @@ export const DEFAULT_OPTIONS = {
     pitchDegrees: -30, // ピッチ角度（度）- v0.1.12: unified naming
     headingDegrees: 0, // ヘディング角度（度）- v0.1.12: unified naming
     altitudeStrategy: 'auto' // 'auto' | 'manual' 高度計算戦略
+  },
+  
+  // v0.1.17: 空間ID対応（ADR-0013）
+  spatialId: {
+    enabled: false, // 空間IDモード有効化（デフォルト: 従来の一様グリッド）
+    mode: 'tile-grid', // 'tile-grid' - v0.1.17では tile-grid のみサポート
+    provider: 'ouranos-gex', // 'ouranos-gex' - 空間IDプロバイダー
+    zoom: 25, // ズームレベル（0-35）または 'auto'
+    zoomControl: 'auto', // 'auto' | 'manual' - ズーム制御モード
+    zoomTolerancePct: 10 // 自動ズーム選択時の許容誤差パーセンテージ
+  },
+  
+  // v0.1.18: レイヤ別集約（ADR-0014）
+  aggregation: {
+    enabled: false, // レイヤ別集約を有効化（デフォルト: 無効）
+    byProperty: null, // エンティティプロパティキーをレイヤキーとして使用（例: 'buildingType'）
+    keyResolver: null, // カスタム関数 (entity) => layerKey（byPropertyより優先）
+    showInDescription: true, // ボクセル説明文にレイヤ内訳を表示
+    topN: 10 // 統計情報で返す上位レイヤ数（デフォルト: 10）
   }
 };
 
@@ -294,6 +333,7 @@ export const PERFORMANCE_LIMITS = {
  */
 export const COORDINATE_CONSTANTS = {
   EARTH_RADIUS: 6378137,
+  EARTH_CIRCUMFERENCE_EQUATOR: 40075016.68557849,
   DEGREES_TO_METERS_LAT: 111000,
   DEGREES_TO_RADIANS: Math.PI / 180
 };
