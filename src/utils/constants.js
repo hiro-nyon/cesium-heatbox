@@ -112,6 +112,19 @@ export const DEFAULT_OPTIONS = {
     keyResolver: null, // カスタム関数 (entity) => layerKey（byPropertyより優先）
     showInDescription: true, // ボクセル説明文にレイヤ内訳を表示
     topN: 10 // 統計情報で返す上位レイヤ数（デフォルト: 10）
+  },
+
+  // v1.0.0: Classification engine (color only for initial release)
+  classification: {
+    enabled: false,
+    scheme: 'linear',
+    classes: 5,
+    thresholds: null,
+    colorMap: null,
+    domain: null,
+    classificationTargets: {
+      color: true
+    }
   }
 };
 

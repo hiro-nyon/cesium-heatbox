@@ -106,6 +106,19 @@
 
 （将来拡張予定）エンティティのフィルタリングやデータ変換のユーティリティ例です。
 
+### 🧪 Advanced / Classification (`advanced/`)
+
+**対象**: v1.0.0 で追加された分類エンジンの UI/挙動を確認したい方
+
+`classification-demo.html` では 5 種類の `classification.scheme`（linear/log/equal-interval/quantize/threshold）と 4 つのパレットを切り替えながら、`HeatboxStatistics.classification` のドメイン/クォンタイル/ブレークをリアルタイムに閲覧できます。
+
+**操作フロー**:
+1. **Generate Sample Data** – 新宿周辺へクラスタ/グラデーションのテストエンティティを生成。Viewer 上の旧ヒートマップはクリアされます。
+2. **Apply Classification** – 現在の Scheme・Classes・Color Map を適用してヒートマップを描画。Apply 後に stats パネルへメタデータが反映されるので、Jenks/quantile 追加予定の v1.1.0 への布石として利用可能です。
+3. Scheme ボタンまたはセレクトを切り替えると Apply ボタンが再度有効化されるため、必要に応じて再描画してください。
+
+※ `examples/data/README.md` で紹介している `EntityFilters` を併用すれば、任意のデータ前処理 → 分類デモへの投入ルートを作れます。
+
 ## 共通ファイル / Common Utilities
 
 `common/` ディレクトリには、各サンプルで共有する共通ユーティリティが含まれています。
@@ -136,6 +149,15 @@
 - `.control-group` - 各コントロール要素のグループ
 
 ## 使い方 / How to Use
+
+### 0. 事前準備 / Prerequisites
+
+```bash
+npm install
+npm run build        # dist/cesium-heatbox.* を生成（UMDベースのHTML例で必要）
+```
+
+`npm run dev` を実行すると webpack-dev-server が立ち上がり、ESM 版を import する例もそのまま動かせます。UMD ベースの HTML を直接ブラウザで開く場合は上記 build 済みであることを確認してください。
 
 ### 1. ローカルサーバーの起動
 

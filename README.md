@@ -26,6 +26,7 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **自動範囲設定**: エンティティ分布から最適な直方体（AABB）範囲を自動計算
 - **最小ボクセル数**: 指定された範囲を内包する最小限のボクセル数で効率的に処理
 - **相対的色分け**: データ内の最小値・最大値に基づく動的色分け
+- **分類エンジン (v1.0.0)**: `classification.scheme`（linear/log/equal-interval/quantize/threshold）で色分布を宣言的に指定。`colorResolver` よりも後順位で、安全に既存コードと共存します
 - **パフォーマンス最適化**: バッチ描画によるスムーズな3D表示
 
 ### English
@@ -33,6 +34,7 @@ A 3D voxel-based heatmap visualization library for existing entities in CesiumJS
 - **Automatic Range Setting**: Automatically calculates optimal axis-aligned box ranges from entity distribution
 - **Minimal Voxel Count**: Efficient processing with minimum voxel count covering specified ranges
 - **Relative Color Mapping**: Dynamic color mapping based on min/max values within data
+- **Classification Engine (v1.0.0)**: Declare linear/log/equal-interval/quantize/threshold schemes via `classification.scheme`. The classifier complements existing `colorResolver` logic without breaking priority
 - **Performance Optimization**: Smooth 3D display through batch rendering
 
 ## 既存手法との比較 / Comparison with Existing Approaches
@@ -246,6 +248,68 @@ const details = Heatbox.getProfileDetails('mobile-fast');
 heatbox.setPerformanceOverlayEnabled(true, { position: 'bottom-left' });
 heatbox.togglePerformanceOverlay();
 ```
+
+## 分類エンジン / Classification Engine (v1.0.0)
+
+### 日本語
+
+`classification` オプションで線形/対数/等間隔/量子化/しきい値ベースの色分類を宣言的に制御できます。v1.0.0では色のみがターゲットで、`colorResolver` が存在する場合はそちらが最優先になります。
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 30,
+  classification: {
+    enabled: true,
+    scheme: 'equal-interval',    // 'linear' | 'log' | 'quantize' | 'threshold'
+    classes: 6,
+    colorMap: ['#0f172a', '#1d4ed8', '#22d3ee', '#f97316', '#facc15'],
+    // threshold の場合: thresholds: [30, 45, 60]
+    // 任意: domain: [10, 120]
+    classificationTargets: { color: true } // v1.0.0ではcolorのみ有効
+  }
+});
+
+await heatbox.createFromEntities(viewer.entities.values);
+
+const classificationStats = heatbox.getStatistics().classification;
+console.log(classificationStats.breaks);     // 自動計算された区切り
+console.log(classificationStats.quantiles);  // Q1/Q2/Q3
+console.log(classificationStats.histogram);  // { bins, counts }（最大10ビン）
+```
+
+- `threshold` スキームのみ `thresholds` 配列が必須です。その他のスキームは `classes` で設定。
+- `classification.colorMap` は単色の配列、または `{ position, color }` 形式のストップ配列を指定できます。
+- 統計情報（`HeatboxStatistics.classification`）には `domain` / `quantiles` / `histogram` / `breaks` が含まれ、ビューワー側で凡例や注釈を生成できます。
+- 実際のワークフローは `examples/advanced/classification-demo.html` のデモ（5スキーム切替 UI）をご参照ください。
+
+### English
+
+The new `classification` option exposes declarative color schemes (linear/log/equal-interval/quantize/threshold). In v1.0.0 it only drives colors and still yields to a user-provided `colorResolver`.
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  classification: {
+    enabled: true,
+    scheme: 'quantize',
+    classes: 5,
+    colorMap: ['#0f172a', '#1d4ed8', '#22d3ee', '#f97316', '#facc15']
+  }
+});
+
+await heatbox.createFromEntities(viewer.entities.values);
+
+const classificationStats = heatbox.getStatistics().classification;
+console.table({
+  scheme: classificationStats.scheme,
+  domain: classificationStats.domain,
+  breaks: classificationStats.breaks
+});
+```
+
+- `threshold` requires the explicit `thresholds` array; other schemes derive class breaks automatically from data and the requested `classes` count.
+- `classification.colorMap` accepts either color strings or stop objects with `{ position, color }`.
+- `HeatboxStatistics.classification` now bundles `domain`, `quantiles`, histogram bins, and the computed breaks so you can render custom legends or debugging output.
+- See `examples/advanced/classification-demo.html` for an interactive UI that switches between the five schemes with live palette previews.
 
 ## 空間ID対応 / Spatial ID Support
 
@@ -728,10 +792,10 @@ const heatbox = new Heatbox(viewer, options);
 ## サンプル / Examples
 
 ### 日本語
-基本的な使用例は `examples/` フォルダを参照してください。
+基本的な使用例は `examples/` フォルダを参照してください。特に `examples/advanced/classification-demo.html` では `classification.scheme` の五つの方式を切り替えながらカラーマップや統計メタデータを確認できます。
 
 ### English
-Please refer to the `examples/` folder for basic usage examples.
+Please refer to the `examples/` folder for basic usage examples. The `examples/advanced/classification-demo.html` page demonstrates the five classification schemes with live palette previews and statistics readouts.
 
 ## ドキュメント / Documentation
 

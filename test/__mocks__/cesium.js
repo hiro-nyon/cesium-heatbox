@@ -2,15 +2,17 @@
 // 各テストファイルで必要に応じて拡張されることを想定
 
 const Cartesian3 = class {
-  constructor(x = 0, y = 0, z = 0) {
+  constructor (x = 0, y = 0, z = 0) {
     this.x = x;
     this.y = y;
     this.z = z;
   }
-  static fromDegrees(lon, lat, alt = 0) {
+
+  static fromDegrees (lon, lat, alt = 0) {
     return new Cartesian3(lon, lat, alt);
   }
-  static distance(p1, p2) {
+
+  static distance (p1, p2) {
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
     const dz = p2.z - p1.z;
@@ -18,24 +20,71 @@ const Cartesian3 = class {
   }
 };
 
-const mockColor = (r, g, b, a = 1.0) => {
-  const color = {
-    red: r,
-    green: g,
-    blue: b,
-    alpha: a,
-    withAlpha: (newAlpha) => mockColor(r, g, b, newAlpha)
-  };
-  return color;
-};
+class Color {
+  constructor (r = 1, g = 1, b = 1, a = 1) {
+    this.red = r;
+    this.green = g;
+    this.blue = b;
+    this.alpha = a;
+  }
 
-const Color = {
-  fromBytes: (r, g, b, a = 255) => mockColor(r / 255, g / 255, b / 255, a / 255),
-  YELLOW: mockColor(1.0, 1.0, 0.0, 1.0),
-  GRAY: mockColor(0.5, 0.5, 0.5, 1.0),
-  LIGHTGRAY: mockColor(211 / 255, 211 / 255, 211 / 255, 1.0),
-  TRANSPARENT: mockColor(0.0, 0.0, 0.0, 0.0)
-};
+  withAlpha (newAlpha) {
+    return new Color(this.red, this.green, this.blue, newAlpha);
+  }
+
+  clone () {
+    return new Color(this.red, this.green, this.blue, this.alpha);
+  }
+
+  equals (other) {
+    if (!other) return false;
+    const eps = 1e-6;
+    return Math.abs(this.red - other.red) < eps &&
+      Math.abs(this.green - other.green) < eps &&
+      Math.abs(this.blue - other.blue) < eps &&
+      Math.abs(this.alpha - other.alpha) < eps;
+  }
+
+  static fromBytes (r, g, b, a = 255) {
+    return new Color(r / 255, g / 255, b / 255, a / 255);
+  }
+
+  static fromCssColorString (str) {
+    if (!str || typeof str !== 'string') {
+      return new Color(1, 1, 1, 1);
+    }
+    const hex = str.trim().toLowerCase();
+    if (hex === '#000' || hex === '#000000') {
+      return new Color(0, 0, 0, 1);
+    }
+    if (hex === '#fff' || hex === '#ffffff') {
+      return new Color(1, 1, 1, 1);
+    }
+    if (hex === '#ff0000') {
+      return new Color(1, 0, 0, 1);
+    }
+    // 簡易実装: 未対応色は白
+    return new Color(1, 1, 1, 1);
+  }
+
+  static lerp (left, right, t, result = new Color()) {
+    const clampedT = Math.max(0, Math.min(1, t));
+    result.red = left.red + (right.red - left.red) * clampedT;
+    result.green = left.green + (right.green - left.green) * clampedT;
+    result.blue = left.blue + (right.blue - left.blue) * clampedT;
+    result.alpha = left.alpha + (right.alpha - left.alpha) * clampedT;
+    return result;
+  }
+}
+
+Color.WHITE = new Color(1, 1, 1, 1);
+Color.BLACK = new Color(0, 0, 0, 1);
+Color.YELLOW = new Color(1, 1, 0, 1);
+Color.RED = new Color(1, 0, 0, 1);
+Color.BLUE = new Color(0, 0, 1, 1);
+Color.GRAY = new Color(0.5, 0.5, 0.5, 1);
+Color.LIGHTGRAY = new Color(211 / 255, 211 / 255, 211 / 255, 1);
+Color.TRANSPARENT = new Color(0, 0, 0, 0);
 
 const ScreenSpaceEventHandler = jest.fn().mockImplementation(() => ({
   setInputAction: jest.fn(),

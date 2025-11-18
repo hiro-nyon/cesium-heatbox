@@ -88,6 +88,38 @@ describe('VoxelRenderer', () => {
       expect(viewer.entities.add).toHaveBeenCalledTimes(3);
     });
   });
+
+  describe('classification color integration', () => {
+    test('uses classification palette for voxel colors when enabled', () => {
+      const viewer = testUtils.createMockViewer();
+      const renderer = new VoxelRenderer(viewer, {
+        classification: {
+          enabled: true,
+          scheme: 'linear',
+          colorMap: ['#000000', '#ffffff'],
+          classificationTargets: { color: true }
+        }
+      });
+
+      const voxelData = new Map();
+      voxelData.set('0,0,0', { x: 0, y: 0, z: 0, count: 1 });
+      voxelData.set('1,0,0', { x: 1, y: 0, z: 0, count: 10 });
+
+      const bounds = { minLon: 0, maxLon: 2, minLat: 0, maxLat: 1, minAlt: 0, maxAlt: 1 };
+      const grid = { numVoxelsX: 2, numVoxelsY: 1, numVoxelsZ: 1, voxelSizeMeters: 5 };
+      const statistics = { minCount: 1, maxCount: 10 };
+
+      renderer.render(voxelData, bounds, grid, statistics);
+
+      const lowCall = viewer.entities.add.mock.calls.find(call => call[0].properties.key === '0,0,0');
+      const highCall = viewer.entities.add.mock.calls.find(call => call[0].properties.key === '1,0,0');
+
+      expect(lowCall).toBeDefined();
+      expect(highCall).toBeDefined();
+      expect(lowCall[0].box.material.red).toBeCloseTo(0, 2);
+      expect(highCall[0].box.material.red).toBeCloseTo(1, 2);
+    });
+  });
   
   test('maxRenderVoxels により描画数が制限される', () => {
     const viewer = testUtils.createMockViewer();

@@ -22,7 +22,7 @@ export function computeSpatialIdEdgeCaseMetrics(adapter) {
   const neighborsLeft = adapter.neighbors(tileLeft);
   const neighborsRight = adapter.neighbors(tileRight);
 
-  let datelineNeighborsChecked = neighborsLeft.length + neighborsRight.length;
+  const datelineNeighborsChecked = neighborsLeft.length + neighborsRight.length;
   let datelineNeighborsMismatched = 0;
 
   const hasTile = (list, target) =>
