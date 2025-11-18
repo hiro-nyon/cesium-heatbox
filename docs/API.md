@@ -171,23 +171,6 @@ interface HeatboxStatistics {
   renderBudgetTier?: 'low'|'mid'|'high';
   autoMaxRenderVoxels?: number; // Auto budget decided maxRenderVoxels
   occupancyRatio?: number | null; // renderedVoxels / maxRenderVoxels (if numeric)
-  // v0.1.19 spatial ID meta + QA metrics
-  spatialId?: {
-    enabled: boolean;
-    provider: string | null;
-    zoom: number | null;
-    zoomControl: 'auto' | 'manual' | null;
-    edgeCaseMetrics?: SpatialIdEdgeCaseMetrics | null;
-  };
-}
-
-interface SpatialIdEdgeCaseMetrics {
-  datelineNeighborsChecked: number;
-  datelineNeighborsMismatched: number;
-  polarTilesChecked: number;
-  polarMaxRelativeErrorXY: number;
-  hemisphereBoundsChecked: number;
-  hemisphereBoundsMismatched: number;
 }
 ```
 
@@ -511,30 +494,6 @@ interface HeatboxStatistics {
   originalVoxelSize?: number | null;
   finalVoxelSize?: number | null;
   adjustmentReason?: string | null;
-  // v0.1.9 選択戦略 + レンダーバジェットメタ
-  selectionStrategy?: 'density'|'coverage'|'hybrid';
-  clippedNonEmpty?: number;
-  coverageRatio?: number;
-  renderBudgetTier?: 'low'|'mid'|'high';
-  autoMaxRenderVoxels?: number;
-  occupancyRatio?: number | null;
-  // v0.1.19 空間IDメタ + グローバルQAメトリクス
-  spatialId?: {
-    enabled: boolean;
-    provider: string | null;
-    zoom: number | null;
-    zoomControl: 'auto' | 'manual' | null;
-    edgeCaseMetrics?: SpatialIdEdgeCaseMetrics | null;
-  };
-}
-
-interface SpatialIdEdgeCaseMetrics {
-  datelineNeighborsChecked: number;       // 日付変更線近傍で検証したneighbors数
-  datelineNeighborsMismatched: number;    // 日付変更線近傍neighborsの不一致数
-  polarTilesChecked: number;              // 高緯度タイルの検証数
-  polarMaxRelativeErrorXY: number;        // 高緯度におけるXY相対誤差の最大値
-  hemisphereBoundsChecked: number;        // 半球跨ぎboundsの検証数
-  hemisphereBoundsMismatched: number;     // 半球跨ぎboundsで不一致となったケース数
 }
 ```
 
