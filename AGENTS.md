@@ -68,6 +68,11 @@
 - Commit messages and PR titles must be in English (even though assistant responses are in Japanese).
 - If a PR is required, use the GitHub CLI (`gh pr create --base main --head <branch>`) to open it once the branch is ready.
 
+## Docs / Wiki Generation Rules
+- `docs/api/*.html` は JSDoc から生成される成果物です（`npm run docs`）。
+- GitHub Actions のワークフローが `docs/api` をもとに `wiki/*.md` を自動生成・同期します。
+- エージェントは `wiki/*.md` を**直接編集しないこと**（必要な変更は `src/**` や `docs/**` に反映し、`npm run docs` とワークフローで反映させる前提）。
+
 ## Pre-Push Checklist
 - Run locally (silenced for agents):
   - `npm run -s lint && npm run -s type-check && npm test --silent -- --reporters=summary`.

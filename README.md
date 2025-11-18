@@ -513,11 +513,11 @@ const heatbox = new Heatbox(viewer, {
 | 25   | ~1.2 m              | Buildings/details |
 | 30   | ~3.7 cm             | Ultra-precision |
 
-#### Limitations (v0.1.17)
+#### Limitations & Global QA (v0.1.19)
 
-- **High Latitude**: Operates normally within ±85.0511° (Web Mercator limit)
-- **Antimeridian**: Planned for next version (v0.1.19)
-- **Global QA**: High-latitude, polar, and antimeridian-crossing cases will be validated in v0.1.19
+- **High Latitude**: Operates within ±85.0511° (Web Mercator limit). v0.1.19 adds global QA tests and metrics; the built-in fallback converter targets ≤ ~10% relative XY error near poles, while ouranos-gex aims for stricter accuracy.
+- **Antimeridian**: v0.1.19 validates neighbor continuity across the ±180° dateline (tile-grid neighbors/children/parent). For sensitive workflows, consider `zoomControl:'manual'` with a stable zoom level.
+- **Global QA**: High-latitude, polar, and antimeridian-crossing scenarios are covered by automated tests (see `test/integration/spatial-global-qa.test.js`). QA metrics are exposed via `getStatistics().spatialId.edgeCaseMetrics` for diagnostics.
 
 See [Spatial ID Examples](examples/spatial-id/) for details.
 
