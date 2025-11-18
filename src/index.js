@@ -6,12 +6,14 @@
 import { Heatbox } from './Heatbox.js';
 import { Logger } from './utils/logger.js';
 import { getAllEntities, generateTestEntities } from './utils/sampleData.js';
+import { Legend } from './ui/Legend.js';
 
 // デフォルトエクスポート
 export default Heatbox;
 
 // 名前付きエクスポート
 export { Heatbox };
+export { Legend };
 export { getAllEntities, generateTestEntities };
 
 // 互換性のための追加エクスポート

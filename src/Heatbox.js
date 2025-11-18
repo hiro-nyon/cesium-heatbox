@@ -20,6 +20,7 @@ import { DataProcessor } from './core/DataProcessor.js';
 import { VoxelRenderer } from './core/VoxelRenderer.js';
 import { getProfileNames, getProfile, applyProfile } from './utils/profiles.js';
 import { PerformanceOverlay } from './utils/performanceOverlay.js';
+import { Legend } from './ui/Legend.js';
 
 /**
  * @typedef {('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data')} ProfileName
@@ -303,6 +304,7 @@ export class Heatbox {
     this._overlayLastUpdate = 0;
     this._postRenderListener = null;
     this._prevFrameTimestamp = null;
+    this._legend = null;
 
     this._initializeEventListeners();
     
@@ -1238,6 +1240,41 @@ export class Heatbox {
     } catch (error) {
       Logger.error('Camera movement execution failed:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Create a classification legend (Phase 5).
+   * 分類用の凡例UIを生成します。
+   * @param {HTMLElement} [container] - 追加先コンテナ（省略時はbodyに追加）
+   * @returns {HTMLElement|null} legend element / 凡例DOM要素
+   */
+  createLegend(container = null) {
+    if (!this._legend) {
+      this._legend = new Legend({ container });
+    }
+    this._legend.render(this.renderer?._classifier || null, this.options.classification || {});
+    return this._legend.container || null;
+  }
+
+  /**
+   * Update legend contents using latest classifier.
+   * 最新の分類状態で凡例を更新します。
+   */
+  updateLegend() {
+    if (this._legend) {
+      this._legend.update(this.renderer?._classifier || null, this.options.classification || {});
+    }
+  }
+
+  /**
+   * Destroy legend UI.
+   * 凡例UIを破棄します。
+   */
+  destroyLegend() {
+    if (this._legend) {
+      this._legend.destroy();
+      this._legend = null;
     }
   }
 
