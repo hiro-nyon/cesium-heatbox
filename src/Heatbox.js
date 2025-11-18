@@ -709,6 +709,10 @@ export class Heatbox {
       try { this._performanceOverlay.destroy(); } catch (_) { Logger.debug('overlay destroy failed (non-fatal)'); }
       this._performanceOverlay = null;
     }
+    if (this._legend) {
+      try { this._legend.destroy(); } catch (_) { Logger.debug('legend destroy failed (non-fatal)'); }
+      this._legend = null;
+    }
     this._eventHandler = null;
   }
 
