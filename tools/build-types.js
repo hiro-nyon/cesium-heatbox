@@ -51,15 +51,6 @@ export interface HeatboxResolverVoxelInfo {
   count: number;
 }
 
-export interface SpatialIdEdgeCaseMetrics {
-  datelineNeighborsChecked: number;
-  datelineNeighborsMismatched: number;
-  polarTilesChecked: number;
-  polarMaxRelativeErrorXY: number;
-  hemisphereBoundsChecked: number;
-  hemisphereBoundsMismatched: number;
-}
-
 export interface HeatboxStatistics {
   totalVoxels: number;
   renderedVoxels: number;
@@ -80,13 +71,6 @@ export interface HeatboxStatistics {
   renderBudgetTier?: string;
   autoMaxRenderVoxels?: number;
   occupancyRatio?: number | null;
-  spatialId?: {
-    enabled: boolean;
-    provider: string | null;
-    zoom: number | null;
-    zoomControl: 'auto' | 'manual' | null;
-    edgeCaseMetrics: SpatialIdEdgeCaseMetrics | null;
-  };
 }
 
 export interface HeatboxOutlineWidthResolverParams {

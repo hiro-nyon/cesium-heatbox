@@ -44,7 +44,6 @@ Accepted / Deprecated / Superseded by ADR-YYYY
 | [ADR-0012](ADR-0012-v0.1.16-examples-organization.md) | v0.1.16 Examples 体系化・整理 | Proposed | 2025-11-01 |
 | [ADR-0013](ADR-0013-v0.1.17-spatial-id-support.md) | v0.1.17 空間ID対応（tile-gridモード統合） | Proposed | 2025-11-02 |
 | [ADR-0014](ADR-0014-v0.1.18-voxel-layer-aggregation.md) | v0.1.18 ボクセル内情報のレイヤ別集約 | Proposed | 2025-11-02 |
-| [ADR-0015](ADR-0015-v0.1.19-global-spatialid-qa.md) | v0.1.19 グローバル空間ID QA（端ケース検証） | Proposed | 2025-11-18 |
 
 ## 参考資料
 
