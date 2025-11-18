@@ -21,6 +21,7 @@
   };
 
   const paletteMap = {
+    viridis: ['#440154', '#3b528b', '#21918c', '#5ec962', '#fde725'],
     sunset: ['#0f172a', '#1e1b4b', '#7c2d12', '#f97316', '#fde047'],
     aurora: ['#042f2e', '#0f766e', '#06b6d4', '#7dd3fc'],
     heatmap: ['#00429d', '#73a2c6', '#f4777f', '#93003a'],
@@ -227,7 +228,11 @@
     setBusyState(true);
     ui.generateStatus.textContent = 'Generating entities...';
     viewer.entities.removeAll();
+    if (heatbox) {
+      heatbox.clear();
+    }
     currentEntities = [];
+    updateStats(null);
 
     if (ui.datasetPreset.value === 'gradient') {
       currentEntities = generateGradientEntities(viewer);
@@ -237,9 +242,7 @@
 
     focusCamera();
     ui.generateStatus.textContent = `${currentEntities.length} entities generated`;
-
-    await heatbox.createFromEntities(currentEntities);
-    await applyClassification(false);
+    ui.applyStatus.textContent = 'Click "Apply Classification" to render';
     setBusyState(false);
   }
 
@@ -247,10 +250,11 @@
     const classificationOptions = buildClassificationOptions();
     setBusyState(true, { forApply: true });
     heatbox.updateOptions({ classification: classificationOptions });
+    let latestStats = null;
     if (currentEntities.length) {
-      await heatbox.createFromEntities(currentEntities);
+      latestStats = await heatbox.createFromEntities(currentEntities);
     }
-    updateStats();
+    updateStats(latestStats);
     if (showMessage) {
       ui.applyStatus.textContent = `Applied scheme "${classificationOptions.scheme}"`;
     }
@@ -338,8 +342,8 @@
     });
   }
 
-  function updateStats() {
-    const stats = heatbox?.getStatistics();
+  function updateStats(latestStats = null) {
+    const stats = latestStats ?? heatbox?.getStatistics();
     if (!stats || !stats.classification) {
       ui.statsList.querySelectorAll('dd').forEach((node) => {
         node.textContent = '-';
@@ -400,6 +404,6 @@
     const isThreshold = scheme === 'threshold';
     ui.classesGroup.style.display = isThreshold ? 'none' : 'block';
     ui.thresholdGroup.style.display = isThreshold ? 'block' : 'none';
-    ui.applyBtn.disabled = !currentEntities.length;
+    ui.applyBtn.disabled = isBusy || !currentEntities.length;
   }
 })();
