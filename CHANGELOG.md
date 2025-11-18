@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0-alpha.1] - 2025-11-??
+## [1.0.0] - 2025-11-18
+
+初回安定版。`1.0.0-alpha.1` と同じ機能セットを正式リリースし、ドキュメント/QA を再確認しました。
+
+### Added
+- **Classification engine (ADR-0016)**: `classification.scheme` で `linear`/`log`/`equal-interval`/`quantize`/`threshold` を宣言的に切替できる新しい分類システムをコアに統合。`classification.colorMap` や `classificationTargets.color` を通じて `VoxelRenderer` の色判定に優先される（`colorResolver` が無い場合）。
+- **simple-statistics backend**: `src/utils/classificationBackend.js` で quantile/summary を `simple-statistics` に委譲し、`DataProcessor` の統計 (`HeatboxStatistics.classification`) に分位点・ヒストグラム・breaks を収集。
+- **Advanced example**: `examples/advanced/classification-demo.html` に5スキーム比較UIを追加し、Viridis を既定パレットとしてスキーム切替・stats表示がブラウザのみで再現可能。
+- **Performance QA**: `test/performance/classification-performance.test.js` を追加し、分類オン/オフの処理時間上昇 ≤15％・メモリ増 ≤20％ とスケーリング（500→2000件で<3.5x）を自動検証。
+
+### Changed
+- `Heatbox.createFromEntities` と `VoxelRenderer` が分類オプションを尊重し、`_getVoxelColor` の優先順位を `colorResolver > classification > legacy` と定義。
+- `validation.js` に `classification` 正規化を追加し、しきい値スキームや `classificationTargets` を検証。`DEFAULT_OPTIONS` に `classification` を追加。
+- `docs/API.md`/`README.md`/`MIGRATION.md`/`examples/README.md` で v1.0.0 の分類機能・使い方・移行ノートを記述。
+
+### Fixed
+- `examples/advanced/classification-demo` が設定反映・統計表示・Viridis 初期化を確実に行うよう修正し、UI操作と描画の同期を改善。
+
+## [1.0.0-alpha.1] - 2025-11-18
 
 ### Added
 - **Classification engine (ADR-0016)**: `classification.scheme` で `linear`/`log`/`equal-interval`/`quantize`/`threshold` を宣言的に切替できる新しい分類システムをコアに統合。`classification.colorMap` や `classificationTargets.color` を通じて `VoxelRenderer` の色判定に優先される（`colorResolver` が無い場合）。
