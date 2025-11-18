@@ -1,6 +1,6 @@
 {
   "name": "cesium-heatbox",
-  "version": "0.1.19",
+  "version": "1.0.0",
   "description": "3D voxel-based heatmap visualization library for CesiumJS",
   "main": "dist/cesium-heatbox.umd.min.js",
   "module": "dist/cesium-heatbox.min.js",
@@ -105,5 +105,8 @@
   },
   "optionalDependencies": {
     "ouranos-gex-lib-for-javascript": "github:ouranos-gex/ouranos-gex-lib-for-JavaScript"
+  },
+  "dependencies": {
+    "simple-statistics": "^7.8.8"
   }
 }

@@ -589,7 +589,7 @@ export class Heatbox {
       
       // 4. 統計計算
       Logger.debug('Step 4: 統計計算');
-      this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid);
+      this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid, this.options);
       Logger.debug('統計情報:', this._statistics);
       
       // 統計情報に自動調整情報を追加

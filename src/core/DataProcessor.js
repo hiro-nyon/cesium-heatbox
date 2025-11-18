@@ -6,6 +6,8 @@ import { VoxelGrid } from './VoxelGrid.js';
 import { Logger } from '../utils/logger.js';
 import { SpatialIdAdapter } from './spatial/SpatialIdAdapter.js';
 import { resolvePropertyValue } from '../utils/cesiumProperty.js';
+import { getBackend } from '../utils/classificationBackend.js';
+import { createClassifier } from '../utils/classification.js';
 
 /**
  * Class responsible for processing entity data.
@@ -223,9 +225,9 @@ export class DataProcessor {
    * @param {Object} grid - Grid info / グリッド情報
    * @returns {Object} Statistics / 統計情報
    */
-  static calculateStatistics(voxelData, grid) {
+  static calculateStatistics(voxelData, grid, options = {}) {
     if (voxelData.size === 0) {
-      return {
+      const emptyStats = {
         totalVoxels: grid.totalVoxels,
         renderedVoxels: 0,
         nonEmptyVoxels: 0,
@@ -240,6 +242,8 @@ export class DataProcessor {
         finalVoxelSize: null,
         adjustmentReason: null
       };
+      emptyStats.classification = DataProcessor._buildClassificationStats([], options.classification, 0, 0);
+      return emptyStats;
     }
     
     const counts = Array.from(voxelData.values()).map(voxel => voxel.count);
@@ -264,6 +268,13 @@ export class DataProcessor {
       finalVoxelSize: null,
       adjustmentReason: null
     };
+    
+    stats.classification = DataProcessor._buildClassificationStats(
+      counts,
+      options.classification,
+      stats.minCount,
+      stats.maxCount
+    );
     
     Logger.debug('統計情報計算完了:', stats);
     return stats;
@@ -561,5 +572,125 @@ export class DataProcessor {
     
     Logger.info(`Spatial ID: ${processedCount} entities classified into ${voxelMap.size} voxels (${skippedCount} skipped)`);
     return voxelMap;
+  }
+
+  static _buildClassificationStats(counts, classificationOptions = {}, fallbackMin, fallbackMax) {
+    const normalizedOptions = classificationOptions && typeof classificationOptions === 'object'
+      ? classificationOptions
+      : {};
+    const enabled = Boolean(normalizedOptions.enabled);
+    const scheme = (normalizedOptions.scheme || 'linear').toLowerCase();
+    let domain = null;
+    if (Array.isArray(normalizedOptions.domain) && normalizedOptions.domain.length === 2) {
+      const [minDomain, maxDomain] = normalizedOptions.domain;
+      if (Number.isFinite(minDomain) && Number.isFinite(maxDomain)) {
+        domain = [minDomain, maxDomain];
+      }
+    }
+    if (!domain) {
+      const safeMin = Number.isFinite(fallbackMin) ? fallbackMin : 0;
+      const safeMax = Number.isFinite(fallbackMax) ? fallbackMax : safeMin;
+      domain = [safeMin, safeMax];
+    }
+
+    const stats = {
+      enabled,
+      scheme,
+      domain,
+      classes: normalizedOptions.classes ?? null,
+      thresholds: normalizedOptions.thresholds ?? null,
+      sampleSize: counts.length,
+      quantiles: null,
+      histogram: null,
+      breaks: null
+    };
+
+    if (!Array.isArray(counts) || counts.length === 0) {
+      return stats;
+    }
+
+    const sortedValues = [...counts].filter(value => Number.isFinite(value)).sort((a, b) => a - b);
+    if (sortedValues.length === 0) {
+      return stats;
+    }
+
+    try {
+      const backend = getBackend();
+      stats.quantiles = [
+        backend.quantile(sortedValues, 0.25),
+        backend.quantile(sortedValues, 0.5),
+        backend.quantile(sortedValues, 0.75)
+      ];
+    } catch (error) {
+      Logger.warn('Failed to compute quantiles for classification statistics:', error);
+      stats.quantiles = null;
+    }
+
+    stats.histogram = DataProcessor._createHistogramFromSorted(sortedValues);
+
+    if (enabled) {
+      try {
+        const classifier = createClassifier({
+          scheme,
+          classes: normalizedOptions.classes,
+          thresholds: normalizedOptions.thresholds,
+          colorMap: normalizedOptions.colorMap,
+          domain,
+          values: sortedValues
+        });
+        stats.breaks = classifier.breaks || null;
+      } catch (error) {
+        Logger.warn('Failed to build classifier for statistics:', error);
+        stats.breaks = null;
+      }
+    }
+
+    return stats;
+  }
+
+  static _createHistogramFromSorted(sortedValues, maxBins = 10) {
+    if (!Array.isArray(sortedValues) || sortedValues.length === 0) {
+      return null;
+    }
+
+    const minValue = sortedValues[0];
+    const maxValue = sortedValues[sortedValues.length - 1];
+
+    if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) {
+      return null;
+    }
+
+    if (minValue === maxValue) {
+      return {
+        bins: [{ start: minValue, end: maxValue }],
+        counts: [sortedValues.length]
+      };
+    }
+
+    const binCount = Math.max(1, Math.min(maxBins, sortedValues.length));
+    const binWidth = (maxValue - minValue) / binCount || 1;
+    const bins = [];
+    const counts = new Array(binCount).fill(0);
+
+    for (let i = 0; i < binCount; i++) {
+      const start = minValue + binWidth * i;
+      const end = i === binCount - 1 ? maxValue : start + binWidth;
+      bins.push({ start, end });
+    }
+
+    for (const value of sortedValues) {
+      if (!Number.isFinite(value)) {
+        continue;
+      }
+      let binIndex = Math.floor((value - minValue) / binWidth);
+      if (binIndex < 0) {
+        binIndex = 0;
+      } else if (binIndex >= binCount) {
+        binIndex = binCount - 1;
+      }
+      counts[binIndex]++;
+    }
+
+    return { bins, counts };
   }
 }

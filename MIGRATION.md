@@ -279,6 +279,65 @@ function migrateConditionalEmulation(oldOptions) {
 }
 ```
 
+### v1.0.0 Classification Upgrade
+
+#### When to enable `classification`
+- Need discrete palettes beyond `minColor`/`maxColor`
+- Want log/equal-interval/quantize classes without maintaining custom math
+- Need reproducible class breaks (also exposed via `getStatistics().classification.breaks`)
+
+Declarative configuration:
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  classification: {
+    enabled: true,
+    scheme: 'quantize',          // 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold'
+    classes: 6,
+    colorMap: ['#0f172a', '#1d4ed8', '#22d3ee', '#f97316', '#facc15']
+  }
+});
+```
+
+#### Migrating from `colorResolver`
+
+If the legacy resolver only handled deterministic ramps (e.g., logarithmic, thresholds), swap it with `classification` and remove the resolver so the classifier takes effect.
+
+```javascript
+// Before
+const heatbox = new Heatbox(viewer, {
+  colorResolver: (voxel) => {
+    const t = Math.log(voxel.count + 1) / Math.log(101);
+    return Cesium.Color.fromHsl(0.66 - 0.66 * t, 0.9, 0.45);
+  }
+});
+
+// After
+const heatbox = new Heatbox(viewer, {
+  classification: {
+    enabled: true,
+    scheme: 'log',
+    classes: 7,
+    colorMap: ['#0f172a', '#1d4ed8', '#22d3ee', '#f97316', '#facc15'],
+    classificationTargets: { color: true }
+  }
+  // Remove colorResolver so classification drives the ramp
+});
+```
+
+If you still need conditional overrides, keep the resolver—it wins over the classifier by design. You can also read the computed breaks and reuse them manually:
+
+```javascript
+const stats = heatbox.getStatistics().classification;
+console.log('Domain', stats.domain);
+console.log('Breaks', stats.breaks);
+console.log('Histogram bins', stats.histogram);
+```
+
+#### Documented example
+
+See `examples/advanced/classification-demo.html` for a browser-only demo covering the five schemes, palette presets, and statistics readout.
+
 ### Troubleshooting (English)
 
 #### Q: I see deprecation warnings
@@ -680,6 +739,64 @@ function migrateConditionalEmulation(oldOptions) {
   };
 }
 ```
+
+### v1.0.0 分類エンジンへの移行
+
+#### `classification` を有効化すべきケース
+- `minColor`/`maxColor` でカバーできない離散パレットを使用したい
+- 対数・等間隔・量子化・しきい値といったクラス分けを数式なしで再利用したい
+- `getStatistics().classification.breaks` を活用して凡例・注釈を生成したい
+
+宣言的な設定例:
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  classification: {
+    enabled: true,
+    scheme: 'quantize',      // 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold'
+    classes: 6,
+    colorMap: ['#0f172a', '#1d4ed8', '#22d3ee', '#f97316', '#facc15']
+  }
+});
+```
+
+#### `colorResolver` からの移行
+
+従来の resolver が決定的なランプ（例: 対数変換や固定しきい値）だけを担っている場合は `classification` に置き換え、resolver を削除します。resolver を残すと分類エンジンはバイパスされます。
+
+```javascript
+// 旧: logスケール色分け
+const heatbox = new Heatbox(viewer, {
+  colorResolver: (voxel) => {
+    const t = Math.log(voxel.count + 1) / Math.log(101);
+    return Cesium.Color.fromHsl(0.66 - 0.66 * t, 0.9, 0.45);
+  }
+});
+
+// 新: logスキーム＋パレット
+const heatbox = new Heatbox(viewer, {
+  classification: {
+    enabled: true,
+    scheme: 'log',
+    classes: 7,
+    colorMap: ['#0f172a', '#1d4ed8', '#22d3ee', '#f97316', '#facc15'],
+    classificationTargets: { color: true } // v1.0.0ではcolorのみ
+  }
+});
+```
+
+条件分岐や例外処理を続けたい場合は resolver を残しつつ、`heatbox.getStatistics().classification` から生データを取得して利用できます。
+
+```javascript
+const stats = heatbox.getStatistics().classification;
+console.log('ドメイン', stats.domain);
+console.log('クォンタイル', stats.quantiles);
+console.log('ブレークポイント', stats.breaks);
+```
+
+#### 参考デモ
+
+ブラウザだけで動作する `examples/advanced/classification-demo.html` で、5つのスキームとパレット切替、統計メタデータをまとめて確認できます。
 
 ### トラブルシューティング
 

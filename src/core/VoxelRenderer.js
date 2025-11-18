@@ -24,6 +24,7 @@ import { ColorCalculator } from './color/ColorCalculator.js';
 import { VoxelSelector } from './selection/VoxelSelector.js';
 import { AdaptiveController } from './adaptive/AdaptiveController.js';
 import { GeometryRenderer } from './geometry/GeometryRenderer.js';
+import { createClassifier } from '../utils/classification.js';
 
 // v0.1.11: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
 // v0.1.11: VoxelSelector added (ADR-0009 Phase 2)
@@ -88,6 +89,9 @@ export class VoxelRenderer {
       outlineWidthPreset: 'medium', // v0.1.12: updated default
       ...options
     };
+    if (!this.options.classification || typeof this.options.classification !== 'object') {
+      this.options.classification = { enabled: false };
+    }
     
     // v0.1.11-alpha: VoxelSelector instantiation (ADR-0009 Phase 2)
     this.voxelSelector = new VoxelSelector(this.options);
@@ -107,6 +111,7 @@ export class VoxelRenderer {
     });
 
     this._currentVoxelData = null;
+    this._classifier = null;
 
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
@@ -180,6 +185,7 @@ export class VoxelRenderer {
     });
 
     this._currentVoxelData = voxelData;
+    this._prepareClassifier(statistics);
 
     // バウンディングボックスのデバッグ表示制御（v0.1.5: debug.showBounds対応）
     const shouldShowBounds = this._shouldShowBounds();
@@ -445,7 +451,17 @@ export class VoxelRenderer {
       color = Cesium.Color.LIGHTGRAY;
       opacity = this.options.emptyOpacity;
     } else {
-      color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
+      if (this._classifier) {
+        try {
+          const classIndex = this._classifier.classify(info.count ?? 0);
+          color = this._classifier.getColorForClass(classIndex);
+        } catch (error) {
+          Logger.warn('Classification color calculation failed, falling back to legacy color:', error);
+          color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
+        }
+      } else {
+        color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
+      }
       
       // Opacity calculation with resolver support
       if (this.options.boxOpacityResolver && typeof this.options.boxOpacityResolver === 'function') {
@@ -674,6 +690,59 @@ export class VoxelRenderer {
   interpolateColor(normalizedDensity, rawValue = null) {
     // v0.1.11: 新しいColorCalculatorに委譲
     return ColorCalculator.calculateColor(normalizedDensity, rawValue, this.options);
+  }
+
+  _prepareClassifier(statistics) {
+    const classificationOptions = this.options.classification;
+    if (!classificationOptions || !classificationOptions.enabled) {
+      this._classifier = null;
+      return;
+    }
+
+    const targets = classificationOptions.classificationTargets || {};
+    if (targets.color === false) {
+      this._classifier = null;
+      return;
+    }
+
+    const allowedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold'];
+    const scheme = (classificationOptions.scheme || 'linear').toLowerCase();
+    if (!allowedSchemes.includes(scheme)) {
+      Logger.warn(`Classification scheme '${scheme}' is not supported in v1.0.0. Disabling classification.`);
+      this._classifier = null;
+      return;
+    }
+
+    const domain = Array.isArray(classificationOptions.domain) && classificationOptions.domain.length === 2
+      ? classificationOptions.domain
+      : [statistics?.minCount ?? 0, statistics?.maxCount ?? 0];
+
+    let values = null;
+    if (this._currentVoxelData && this._currentVoxelData.size > 0) {
+      values = [];
+      for (const voxelInfo of this._currentVoxelData.values()) {
+        if (voxelInfo && Number.isFinite(voxelInfo.count)) {
+          values.push(voxelInfo.count);
+        }
+      }
+      if (values.length === 0) {
+        values = null;
+      }
+    }
+
+    try {
+      this._classifier = createClassifier({
+        scheme,
+        classes: classificationOptions.classes,
+        thresholds: classificationOptions.thresholds,
+        colorMap: classificationOptions.colorMap,
+        domain,
+        values
+      });
+    } catch (error) {
+      Logger.warn('Failed to initialize classifier:', error);
+      this._classifier = null;
+    }
   }
   
   // v0.1.11: _interpolateFromColorMap and _interpolateDivergingColor methods 
