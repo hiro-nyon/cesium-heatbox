@@ -110,6 +110,16 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  */
 
 /**
+ * @typedef {Object} SpatialIdEdgeCaseMetrics
+ * @property {number} datelineNeighborsChecked - Number of neighbor checks near dateline / 日付変更線近傍で検証した近傍セル数
+ * @property {number} datelineNeighborsMismatched - Number of neighbor mismatches near dateline / 日付変更線近傍で不一致となった近傍セル数
+ * @property {number} polarTilesChecked - Number of polar tiles evaluated / 極域タイルの検証数
+ * @property {number} polarMaxRelativeErrorXY - Maximum relative XY error near poles / 極域近傍でのXY相対誤差の最大値
+ * @property {number} hemisphereBoundsChecked - Number of hemisphere-crossing bounds evaluated / 半球跨ぎboundsの検証数
+ * @property {number} hemisphereBoundsMismatched - Number of hemisphere-crossing mismatches / 半球跨ぎで不一致となったケース数
+ */
+
+/**
  * @typedef {Object} HeatboxStatistics
  * @property {number} totalVoxels - Total voxels generated / 生成された総ボクセル数
  * @property {number} renderedVoxels - Voxels actually rendered / 実際に描画されたボクセル数
@@ -131,6 +141,12 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {number} [autoMaxRenderVoxels] - Auto-assigned maxRenderVoxels / 自動設定された maxRenderVoxels
  * @property {number|null} [occupancyRatio] - Ratio of rendered voxels to limit / 描画ボクセルと上限の比率
  * @property {HeatboxLayerStat[]} [layers] - Top-N layer aggregation (v0.1.18 ADR-0014) / 上位N個のレイヤ集約
+ * @property {Object} [spatialId] - Spatial ID statistics (v0.1.19 ADR-0015) / 空間ID関連の統計情報
+ * @property {boolean} [spatialId.enabled] - Whether Spatial ID mode is enabled / 空間IDモードが有効か
+ * @property {string|null} [spatialId.provider] - Spatial ID provider identifier ('ouranos-gex' or null) / 空間IDプロバイダー識別子
+ * @property {number|null} [spatialId.zoom] - Resolved zoom level / 解決済みズームレベル
+ * @property {('auto'|'manual'|null)} [spatialId.zoomControl] - Zoom control mode / ズーム制御モード
+ * @property {SpatialIdEdgeCaseMetrics|null} [spatialId.edgeCaseMetrics] - QA metrics for global edge cases / グローバル端ケースQA用メトリクス
  */
 
 /**
@@ -280,6 +296,7 @@ export class Heatbox {
     this._grid = null;
     this._voxelData = null;
     this._statistics = null;
+    this._spatialIdEdgeCaseMetrics = null;
     this._eventHandler = null;
     this._performanceOverlay = null;
     this._lastRenderTime = null;
@@ -800,6 +817,18 @@ export class Heatbox {
     } else {
       stats.occupancyRatio = null;
     }
+
+    // v0.1.19: Spatial ID statistics sub-object (ADR-0015)
+    const spatialIdOptions = this.options && this.options.spatialId ? this.options.spatialId : {};
+    const spatialIdEnabled = Boolean(stats.spatialIdEnabled);
+    const edgeCaseMetrics = this._spatialIdEdgeCaseMetrics ?? null;
+    stats.spatialId = {
+      enabled: spatialIdEnabled,
+      provider: spatialIdEnabled ? (stats.spatialIdProvider ?? null) : null,
+      zoom: spatialIdEnabled ? (stats.spatialIdZoom ?? null) : null,
+      zoomControl: stats.zoomControl ?? spatialIdOptions.zoomControl ?? null,
+      edgeCaseMetrics
+    };
 
     // v0.1.18: Layer aggregation statistics (ADR-0014)
     if (this.options.aggregation?.enabled && this._voxelData) {
