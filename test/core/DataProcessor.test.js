@@ -27,6 +27,32 @@ describe('DataProcessor utils', () => {
     expect(stats.minCount).toBe(1);
     expect(stats.maxCount).toBe(3);
     expect(stats.averageCount).toBeCloseTo(2);
+    expect(stats.classification).toBeDefined();
+    expect(stats.classification.enabled).toBe(false);
+  });
+
+  test('classification statistics are populated when enabled', () => {
+    const grid = { totalVoxels: 50 };
+    const vd = makeVoxelData([
+      { x: 0, y: 0, z: 0, count: 1 },
+      { x: 1, y: 1, z: 1, count: 5 },
+      { x: 2, y: 2, z: 2, count: 9 }
+    ]);
+    const stats = DataProcessor.calculateStatistics(vd, grid, {
+      classification: {
+        enabled: true,
+        scheme: 'equal-interval',
+        classes: 3,
+        colorMap: ['#000000', '#ffffff']
+      }
+    });
+    expect(stats.classification.enabled).toBe(true);
+    expect(stats.classification.scheme).toBe('equal-interval');
+    expect(stats.classification.domain).toEqual([1, 9]);
+    expect(stats.classification.breaks.length).toBe(4);
+    expect(stats.classification.quantiles.length).toBe(3);
+    const histTotal = stats.classification.histogram.counts.reduce((sum, val) => sum + val, 0);
+    expect(histTotal).toBe(vd.size);
   });
 
   
@@ -43,4 +69,3 @@ describe('DataProcessor utils', () => {
 
   
 });
-
