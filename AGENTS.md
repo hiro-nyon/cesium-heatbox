@@ -66,6 +66,7 @@
 - PRs include summary, rationale, screenshots/logs, linked issues. Ensure `npm run lint && npm test` pass.
 - Update docs and examples when changing public APIs; regenerate API docs with `npm run docs`.
 - Commit messages and PR titles must be in English (even though assistant responses are in Japanese).
+- Git 操作（特に `git add` や `git commit`）は Codex システムの仕様でユーザー承認が必須。実行前に承認依頼を行い、許可なくコマンドを発行しないこと。
 - If a PR is required, use the GitHub CLI (`gh pr create --base main --head <branch>`) to open it once the branch is ready.
 
 ## Architecture Decision Records (ADR)

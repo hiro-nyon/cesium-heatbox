@@ -35,7 +35,8 @@ export class TimeController {
 
         // Global scope: calculate stats once
         if (this._options.classificationScope === 'global') {
-            const valueProperty = this._heatbox._options.valueProperty || 'weight';
+            const heatboxOptions = this._heatbox.options || {};
+            const valueProperty = heatboxOptions.valueProperty || 'weight';
             const globalStats = this._slicer.calculateGlobalStats(valueProperty);
             this._heatbox._globalStats = globalStats;
         }
