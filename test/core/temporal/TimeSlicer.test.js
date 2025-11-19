@@ -95,4 +95,43 @@ describe('TimeSlicer', () => {
             expect(entry.data[0].id).toBe(1);
         });
     });
+
+    describe('overlapResolution handling', () => {
+        const overlappingData = [
+            {
+                start: '2025-01-01T00:00:00Z',
+                stop: '2025-01-01T01:00:00Z',
+                data: [{ id: 'early' }]
+            },
+            {
+                start: '2025-01-01T00:30:00Z',
+                stop: '2025-01-01T01:30:00Z',
+                data: [{ id: 'late' }]
+            }
+        ];
+
+        test('prefer-earlier (default) keeps first entry until it ends', () => {
+            const slicer = new TimeSlicer(overlappingData);
+            const withinFirst = slicer.getEntry(createTime(15 * 60)); // 00:15
+            expect(withinFirst.data[0].id).toBe('early');
+
+            const afterOverlap = slicer.getEntry(createTime(75 * 60)); // 01:15
+            expect(afterOverlap.data[0].id).toBe('late');
+        });
+
+        test('prefer-later prioritizes later entry inside overlap', () => {
+            const slicer = new TimeSlicer(overlappingData, { overlapResolution: 'prefer-later' });
+
+            const beforeOverlap = slicer.getEntry(createTime(10 * 60));
+            expect(beforeOverlap.data[0].id).toBe('early');
+
+            const insideOverlap = slicer.getEntry(createTime(45 * 60));
+            expect(insideOverlap.data[0].id).toBe('late');
+        });
+
+        test('skip mode throws on overlapping data', () => {
+            expect(() => new TimeSlicer(overlappingData, { overlapResolution: 'skip' }))
+                .toThrow(/overlap/);
+        });
+    });
 });

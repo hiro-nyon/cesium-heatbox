@@ -62,9 +62,17 @@ export class TimeSlicer {
         // Sort
         normalized.sort((a, b) => Cesium.JulianDate.compare(a.start, b.start));
 
-        // Overlap validation
-        if (this._options.overlapResolution === 'skip') {
+        // Overlap handling
+        const resolution = this._options.overlapResolution || 'prefer-earlier';
+        if (resolution === 'skip') {
             this._validateNoOverlap(normalized);
+            return normalized;
+        }
+        if (resolution === 'prefer-earlier') {
+            return this._resolvePreferEarlier(normalized);
+        }
+        if (resolution === 'prefer-later') {
+            return this._resolvePreferLater(normalized);
         }
 
         return normalized;
@@ -109,6 +117,82 @@ export class TimeSlicer {
                 );
             }
         }
+    }
+
+    /**
+     * Resolve overlaps by keeping the earlier entry and trimming later entries.
+     * 早いエントリーを優先し、後続エントリーをトリミングまたは破棄します。
+     * @param {Array} entries 
+     * @returns {Array}
+     * @private
+     */
+    _resolvePreferEarlier(entries) {
+        const resolved = [];
+
+        for (const entry of entries) {
+            const previous = resolved[resolved.length - 1];
+            if (!previous) {
+                resolved.push(entry);
+                continue;
+            }
+
+            if (Cesium.JulianDate.greaterThan(previous.stop, entry.start)) {
+                if (Cesium.JulianDate.greaterThanOrEquals(previous.stop, entry.stop)) {
+                    // Entry is fully overlapped by previous, drop it
+                    continue;
+                }
+                // Trim start to previous stop
+                entry.start = Cesium.JulianDate.clone(previous.stop);
+                if (!Cesium.JulianDate.lessThan(entry.start, entry.stop)) {
+                    continue;
+                }
+            }
+
+            resolved.push(entry);
+        }
+
+        return resolved;
+    }
+
+    /**
+     * Resolve overlaps by prioritizing later entries.
+     * 遅いエントリーを優先し、手前のエントリー終端を調整します。
+     * @param {Array} entries 
+     * @returns {Array}
+     * @private
+     */
+    _resolvePreferLater(entries) {
+        const resolved = [];
+
+        for (const entry of entries) {
+            while (resolved.length > 0) {
+                const previous = resolved[resolved.length - 1];
+                if (!Cesium.JulianDate.greaterThan(previous.stop, entry.start)) {
+                    break;
+                }
+
+                if (
+                    Cesium.JulianDate.lessThan(entry.start, previous.start) ||
+                    Cesium.JulianDate.equals(entry.start, previous.start)
+                ) {
+                    // Later entry fully replaces previous
+                    resolved.pop();
+                    continue;
+                }
+
+                previous.stop = Cesium.JulianDate.clone(entry.start);
+                if (!Cesium.JulianDate.lessThan(previous.start, previous.stop)) {
+                    resolved.pop();
+                    continue;
+                }
+
+                break;
+            }
+
+            resolved.push(entry);
+        }
+
+        return resolved;
     }
 
     /**

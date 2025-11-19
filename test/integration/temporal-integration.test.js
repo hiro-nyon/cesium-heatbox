@@ -90,4 +90,32 @@ describe('Temporal Integration', () => {
         // Stats should not be passed to setData
         expect(heatbox.options._externalStats).toBeUndefined();
     });
+
+    test('Global Scope uses heatbox valueProperty when computing stats', () => {
+        heatbox.options.valueProperty = 'intensity';
+
+        const options = {
+            data: [
+                {
+                    start: '2025-01-01T00:00:00Z',
+                    stop: '2025-01-01T01:00:00Z',
+                    data: [{ weight: 5, intensity: 100 }]
+                },
+                {
+                    start: '2025-01-01T01:00:00Z',
+                    stop: '2025-01-01T02:00:00Z',
+                    data: [{ weight: 10, intensity: 300 }]
+                }
+            ],
+            classificationScope: 'global'
+        };
+
+        controller = new TimeController(viewer, heatbox, options);
+        controller.activate();
+
+        expect(heatbox._globalStats).toBeDefined();
+        expect(heatbox._globalStats.min).toBe(100);
+        expect(heatbox._globalStats.max).toBe(300);
+        expect(heatbox.options._externalStats).toBe(heatbox._globalStats);
+    });
 });
