@@ -84,6 +84,24 @@ import { TimeController } from './core/temporal/TimeController.js';
  */
 
 /**
+ * @typedef {Object} TemporalDataEntry
+ * @property {Cesium.JulianDate|string|Date|number} start - Interval start time / インターバル開始時刻
+ * @property {Cesium.JulianDate|string|Date|number} stop - Interval end time / インターバル終了時刻
+ * @property {Array<Cesium.Entity|Object>} data - Entities rendered during the interval / その期間に描画するエンティティ配列
+ */
+
+/**
+ * @typedef {Object} TemporalOptions
+ * @property {boolean} [enabled=false] - Enable temporal mode / 時間依存モードを有効化
+ * @property {TemporalDataEntry[]} [data=[]] - Ordered temporal slices / ソート済みの時系列スライス
+ * @property {('global'|'per-time')} [classificationScope='global'] - Classification scope / 分類スコープ
+ * @property {('frame'|number)} [updateInterval=100] - Update interval (`frame` or milliseconds) / 更新間隔
+ * @property {('clear'|'hold')} [outOfRangeBehavior='hold'] - Behaviour when clock is outside data range / データ範囲外時の挙動
+ * @property {('skip'|'prefer-earlier'|'prefer-later')} [overlapResolution='prefer-earlier'] - Overlap resolution strategy / 重複時の解決方法
+ * @property {boolean} [interpolate=false] - Reserved flag for interpolation (future) / 将来の補間フラグ（現状は未使用）
+ */
+
+/**
  * @typedef {Object} HeatboxBounds
  * @property {number} minLon - Minimum longitude / 最小経度
  * @property {number} maxLon - Maximum longitude / 最大経度
@@ -251,6 +269,7 @@ import { TimeController } from './core/temporal/TimeController.js';
  * @property {?function(entity):string} [aggregation.keyResolver=null] - Custom layer key resolver function (takes precedence over byProperty) / カスタムレイヤキー解決関数（byPropertyより優先）
  * @property {boolean} [aggregation.showInDescription=true] - Show layer breakdown in voxel description / ボクセル説明文にレイヤ内訳を表示
  * @property {number} [aggregation.topN=10] - Number of top layers to include in statistics / 統計情報に含める上位レイヤ数
+ * @property {TemporalOptions|null} [temporal=null] - Temporal playback configuration / 時系列再生の設定
  */
 
 /**

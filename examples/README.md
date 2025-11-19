@@ -106,6 +106,16 @@
 
 （将来拡張予定）エンティティのフィルタリングやデータ変換のユーティリティ例です。
 
+### ⏱ Temporal / 時系列 (`temporal/`)
+
+**対象**: v1.2.0 の `temporal` オプションを試したい方
+
+- `basic-temporal.html` – Cesium タイムラインと同期する最小構成。Per-Time スコープで各時間帯のコントラストを最大化。
+- `global-vs-per-time.html` – Global/Per-Time をラジオで切り替え、ドメインとクォンタイルの差を観察。
+- `simulation.html` – 平日ラッシュ/イベント/週末のシナリオを動的に切り替え、`updateInterval` や `outOfRangeBehavior` を調整。
+
+いずれも `dist/cesium-heatbox.umd.min.js` を読み込み、`heatbox.updateOptions({ temporal: { ... } })` で TimeController を再初期化するフローを確認できます。
+
 ### 🧪 Advanced / Classification (`advanced/`)
 
 **対象**: v1.0.0 で追加された分類エンジンの UI/挙動を確認したい方
