@@ -22,7 +22,7 @@ import * as Cesium from 'cesium';
 
 describe('Heatbox Temporal Integration', () => {
     let viewer;
-    let mockTimeControllerInstance;
+    let controllerInstances;
 
     beforeEach(() => {
         const mockCanvas = document.createElement('canvas');
@@ -56,11 +56,15 @@ describe('Heatbox Temporal Integration', () => {
 
         // Reset mocks
         TimeController.mockClear();
-        mockTimeControllerInstance = {
-            activate: jest.fn(),
-            deactivate: jest.fn()
-        };
-        TimeController.mockImplementation(() => mockTimeControllerInstance);
+        controllerInstances = [];
+        TimeController.mockImplementation(() => {
+            const instance = {
+                activate: jest.fn(),
+                deactivate: jest.fn()
+            };
+            controllerInstances.push(instance);
+            return instance;
+        });
     });
 
     test('should initialize TimeController when temporal option is enabled', () => {
@@ -75,7 +79,7 @@ describe('Heatbox Temporal Integration', () => {
 
         expect(TimeController).toHaveBeenCalledTimes(1);
         expect(TimeController).toHaveBeenCalledWith(viewer, heatbox, options.temporal);
-        expect(mockTimeControllerInstance.activate).toHaveBeenCalledTimes(1);
+        expect(controllerInstances[0].activate).toHaveBeenCalledTimes(1);
     });
 
     test('should NOT initialize TimeController when temporal option is disabled', () => {
@@ -109,6 +113,68 @@ describe('Heatbox Temporal Integration', () => {
         const heatbox = new Heatbox(viewer, options);
         heatbox.destroy();
 
-        expect(mockTimeControllerInstance.deactivate).toHaveBeenCalledTimes(1);
+        expect(controllerInstances[0].deactivate).toHaveBeenCalledTimes(1);
+    });
+
+    test('should enable TimeController when temporal option is toggled on via updateOptions', () => {
+        const heatbox = new Heatbox(viewer, {
+            temporal: {
+                enabled: false
+            }
+        });
+
+        heatbox.updateOptions({
+            temporal: {
+                enabled: true,
+                data: [{ time: Cesium.JulianDate.now(), data: [] }]
+            }
+        });
+
+        expect(TimeController).toHaveBeenCalledTimes(1);
+        expect(controllerInstances[0].activate).toHaveBeenCalledTimes(1);
+    });
+
+    test('should deactivate TimeController when temporal option is toggled off via updateOptions', () => {
+        const heatbox = new Heatbox(viewer, {
+            temporal: {
+                enabled: true,
+                data: []
+            }
+        });
+
+        expect(controllerInstances[0].activate).toHaveBeenCalledTimes(1);
+
+        heatbox.updateOptions({
+            temporal: {
+                enabled: false
+            }
+        });
+
+        expect(controllerInstances[0].deactivate).toHaveBeenCalledTimes(1);
+        expect(TimeController).toHaveBeenCalledTimes(1);
+    });
+
+    test('should reinitialize TimeController when enabled temporal config changes via updateOptions', () => {
+        const heatbox = new Heatbox(viewer, {
+            temporal: {
+                enabled: true,
+                data: [{ time: Cesium.JulianDate.now(), data: [{ position: [0, 0, 0], weight: 1 }] }]
+            }
+        });
+
+        expect(controllerInstances[0].activate).toHaveBeenCalledTimes(1);
+
+        heatbox.updateOptions({
+            temporal: {
+                enabled: true,
+                updateInterval: 100,
+                data: [{ time: Cesium.JulianDate.addSeconds(Cesium.JulianDate.now(), 30, new Cesium.JulianDate()), data: [] }]
+            }
+        });
+
+        expect(controllerInstances[0].deactivate).toHaveBeenCalledTimes(1);
+        expect(TimeController).toHaveBeenCalledTimes(2);
+        expect(controllerInstances[1]).toBeDefined();
+        expect(controllerInstances[1].activate).toHaveBeenCalledTimes(1);
     });
 });

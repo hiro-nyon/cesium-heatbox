@@ -309,6 +309,7 @@ export class Heatbox {
     this._prevFrameTimestamp = null;
     this._legend = null;
     this._timeController = null;
+    this._timeControllerSignature = null;
 
     this._initializeEventListeners();
 
@@ -407,9 +408,88 @@ export class Heatbox {
     try {
       this._timeController = new TimeController(this.viewer, this, this.options.temporal);
       this._timeController.activate();
+      this._timeControllerSignature = this._serializeTemporalOptions(this.options.temporal);
       Logger.info('TimeController initialized and activated');
     } catch (error) {
+      this._timeController = null;
+      this._timeControllerSignature = null;
       Logger.error('Failed to initialize TimeController:', error);
+    }
+  }
+
+  /**
+   * Deactivate and dispose TimeController instance safely.
+   * TimeController を安全に停止・破棄します。
+   * @private
+   */
+  _teardownTimeController() {
+    if (!this._timeController) {
+      return;
+    }
+
+    try {
+      this._timeController.deactivate();
+    } catch (error) {
+      Logger.debug('timeController deactivate failed (non-fatal)', error);
+    }
+
+    this._timeController = null;
+    this._timeControllerSignature = null;
+  }
+
+  /**
+   * Synchronize TimeController when temporal options change.
+   * temporalオプション変更時にTimeControllerを同期します。
+   * @param {Object|null|undefined} previousTemporal
+   * @param {Object|null|undefined} nextTemporal
+   * @param {boolean} wasTemporalUpdated
+   * @private
+   */
+  _syncTimeController(previousTemporal, nextTemporal, wasTemporalUpdated) {
+    const prevEnabled = !!(previousTemporal && previousTemporal.enabled);
+    const nextEnabled = !!(nextTemporal && nextTemporal.enabled);
+
+    if (!prevEnabled && nextEnabled) {
+      this._initializeTimeController();
+      return;
+    }
+
+    if (prevEnabled && !nextEnabled) {
+      this._teardownTimeController();
+      return;
+    }
+
+    if (nextEnabled && wasTemporalUpdated) {
+      const nextSignature = this._serializeTemporalOptions(nextTemporal);
+      if (this._timeControllerSignature !== nextSignature) {
+        this._teardownTimeController();
+        this._initializeTimeController();
+      }
+    }
+  }
+
+  /**
+   * Create a stable signature for temporal options to detect config changes.
+   * temporalオプションの変更検知用シグネチャを生成します。
+   * @param {Object|null|undefined} temporalOptions
+   * @returns {string|null}
+   * @private
+   */
+  _serializeTemporalOptions(temporalOptions) {
+    if (!temporalOptions) {
+      return null;
+    }
+
+    try {
+      return JSON.stringify(temporalOptions, (key, value) => {
+        if (typeof value === 'function') {
+          return `[Function:${value.name || 'anonymous'}]`;
+        }
+        return value;
+      });
+    } catch (error) {
+      Logger.debug('Failed to serialize temporal options for comparison', error);
+      return null;
     }
   }
 
@@ -738,10 +818,7 @@ export class Heatbox {
       try { this._legend.destroy(); } catch (_) { Logger.debug('legend destroy failed (non-fatal)'); }
       this._legend = null;
     }
-    if (this._timeController) {
-      try { this._timeController.deactivate(); } catch (_) { Logger.debug('timeController deactivate failed (non-fatal)'); }
-      this._timeController = null;
-    }
+    this._teardownTimeController();
     this._eventHandler = null;
   }
 
@@ -768,6 +845,9 @@ export class Heatbox {
    * @param {HeatboxOptions} newOptions - New options (partial allowed) / 新しいオプション（部分指定可）
    */
   updateOptions(newOptions) {
+    const previousTemporal = this.options ? this.options.temporal : undefined;
+    const temporalUpdated = newOptions ? Object.prototype.hasOwnProperty.call(newOptions, 'temporal') : false;
+
     this.options = validateAndNormalizeOptions({ ...this.options, ...newOptions });
     this.renderer.options = this.options;
 
@@ -784,6 +864,8 @@ export class Heatbox {
       // 統計情報を更新
       this._statistics.renderedVoxels = renderedVoxelCount;
     }
+
+    this._syncTimeController(previousTemporal, this.options.temporal, temporalUpdated);
   }
 
   /**
