@@ -107,4 +107,15 @@ describe('TimeController', () => {
 
         expect(heatbox.clearCalled).toBe(true);
     });
+
+    test('should clear immediately when activated out of range', () => {
+        options.outOfRangeBehavior = 'clear';
+        controller = new TimeController(viewer, heatbox, options);
+
+        // Set clock outside data range before activation
+        viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2025-01-01T05:00:00Z');
+
+        controller.activate(); // Initial tick should clear immediately
+        expect(heatbox.clearCalled).toBe(true);
+    });
 });

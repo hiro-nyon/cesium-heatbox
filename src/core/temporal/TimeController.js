@@ -72,7 +72,10 @@ export class TimeController {
         const entry = this._slicer.getEntry(now);
 
         // Change detection
-        if (entry === this._lastEntry) return;
+        // Allow null entries to propagate so outOfRangeBehavior can run
+        if (entry !== null && entry === this._lastEntry) {
+            return;
+        }
 
         this._lastEntry = entry;
         this._updateHeatbox(entry);
