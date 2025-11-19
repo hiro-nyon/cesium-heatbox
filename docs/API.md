@@ -44,6 +44,7 @@ Creates a new Heatbox instance.
   - `pitch` (number, default: -30) - Camera pitch (degrees)
   - `paddingPercent` (number, default: 0.1) - Padding ratio around data bounds
 - **`classification` (string | ClassificationOptions | false) - v1.1.0: Declarative classification engine (`linear`/`log`/`equal-interval`/`quantize`/`threshold`/`quantile`/`jenks`) with multi-target control (color / opacity / width). When `false`, the legacy min/max interpolation is used. See [ClassificationOptions](#classificationoptions-v110).**
+- **`temporal` (TemporalOptions|null) - v1.2.0: Built-in Cesium clock synchronisation. Provide ordered `data` slices and Heatbox will update automatically as the clock moves. Supports `classificationScope` (global/per-time), throttling via `updateInterval`, overlap policies, and `outOfRangeBehavior` (clear/hold).**
 
 For brevity, see the Japanese section below for complete option details and examples.
 
@@ -172,6 +173,30 @@ interface HeatboxStatistics {
   renderBudgetTier?: 'low'|'mid'|'high';
   autoMaxRenderVoxels?: number; // Auto budget decided maxRenderVoxels
   occupancyRatio?: number | null; // renderedVoxels / maxRenderVoxels (if numeric)
+}
+```
+
+#### TemporalDataEntry (v1.2.0)
+
+```typescript
+interface TemporalDataEntry {
+  start: Cesium.JulianDate | string | Date | number;
+  stop: Cesium.JulianDate | string | Date | number;
+  data: Array<Cesium.Entity | { id?: string; position: Cesium.Cartesian3; properties?: any }>;
+}
+```
+
+#### TemporalOptions (v1.2.0)
+
+```typescript
+interface TemporalOptions {
+  enabled?: boolean;                // Enable temporal controller (default false)
+  data: TemporalDataEntry[];        // Ordered slices
+  classificationScope?: 'global'|'per-time';
+  updateInterval?: 'frame' | number; // 'frame' or milliseconds
+  outOfRangeBehavior?: 'clear'|'hold';
+  overlapResolution?: 'skip'|'prefer-earlier'|'prefer-later';
+  interpolate?: boolean;            // Reserved for future use
 }
 ```
 
@@ -308,6 +333,18 @@ const heatbox = new Heatbox(viewer, {
 - `outlineOpacity` は枠線色のアルファ値に適用され、重なり時の視覚ノイズを低減。
 - `voxelGap` はボクセル寸法を縮め、隣接枠線の重なり自体を軽減。
 
+#### 時系列オプション (`temporal`, v1.2.0)
+
+`temporal` オプションを指定すると、Heatbox が `viewer.clock` と自動同期し、時間帯ごとに用意したエンティティ配列を順次描画します。
+
+- `enabled`: true で時間依存モードを有効化（省略時は従来どおり静的表示）。
+- `data`: `{ start, stop, data }` の配列。`data` には通常の `setData()` と同じエンティティ配列を渡します。
+- `classificationScope`: `'global'` は全期間の統計量を共有、`'per-time'` は時点ごとに再計算。
+- `updateInterval`: `'frame'` またはミリ秒指定。値が大きいほど更新頻度を抑制。
+- `outOfRangeBehavior`: `'hold'`（既定）か `'clear'`。Clock が範囲外にいる際の表示制御。
+- `overlapResolution`: `'prefer-earlier'`（既定）/`'prefer-later'`/`'skip'`。時間帯が重複するデータをどう扱うかを指定。
+
+Cesium の `timeline` をそのまま利用できるため、既存アプリで `clock.onTick` を自前実装していた場合も `updateOptions({ temporal: ... })` でオン/オフを切り替えられます。
 
 ### メソッド
 
@@ -532,6 +569,7 @@ interface HeatboxOptions {
   maxRenderVoxels?: number; // レンダリング上限（非空ボクセルが上限超過時は高密度トップNのみ描画）
   batchMode?: 'auto' | 'primitive' | 'entity';
   classification?: ClassificationOptions | 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold' | 'quantile' | 'jenks' | false;
+  temporal?: TemporalOptions | null; // v1.2.0: 時系列データ再生
 }
 ```
 
@@ -554,6 +592,30 @@ interface ClassificationOptions {
 ```
 
 `classification` に文字列（例: `'log'`）を渡すと `scheme` を略記できます。`false`/`null` は明示的に無効化します。`colorResolver` が存在する場合は従来どおり resolver が優先され、分類エンジンはスキップされます。`classificationTargets` で color/opacity/width の適用可否を切り替え、`adaptiveParams.*Range` と組み合わせて不透明度や線幅を補間します。
+
+### TemporalDataEntry (v1.2.0)
+
+```typescript
+interface TemporalDataEntry {
+  start: Cesium.JulianDate | string | Date | number;
+  stop: Cesium.JulianDate | string | Date | number;
+  data: Array<Cesium.Entity | { id?: string; position: Cesium.Cartesian3; properties?: any }>;
+}
+```
+
+### TemporalOptions (v1.2.0)
+
+```typescript
+interface TemporalOptions {
+  enabled?: boolean;
+  data: TemporalDataEntry[];
+  classificationScope?: 'global' | 'per-time';
+  updateInterval?: 'frame' | number;
+  outOfRangeBehavior?: 'clear' | 'hold';
+  overlapResolution?: 'skip' | 'prefer-earlier' | 'prefer-later';
+  interpolate?: boolean;
+}
+```
 
 ## ユーティリティ関数
 

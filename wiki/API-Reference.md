@@ -32,6 +32,11 @@ This documentation is auto-generated from JSDoc comments in the source code.
 - [Home](Home)
 - [Getting Started](Getting-Started)
 - [Examples](Examples)
+- [Temporal Data](Temporal-Data)
+
+### Temporal Data (v1.2.0)
+
+Use the new `temporal` option to feed ordered `{ start, stop, data }` slices and let Heatbox synchronize with `viewer.clock`. See [Temporal Data](Temporal-Data) for option details, overlap policies, and migration tips from manual `clock.onTick` handlers.
 
 ## 日本語
 
@@ -63,3 +68,8 @@ This documentation is auto-generated from JSDoc comments in the source code.
 - [Home](Home) - ホーム
 - [Getting Started](Getting-Started) - はじめに
 - [Examples](Examples) - サンプル
+- [Temporal Data](Temporal-Data) - 時系列データガイド
+
+### 時系列データ (v1.2.0)
+
+`temporal` オプションに時間帯ごとのエンティティ配列を渡すと、Heatbox が `viewer.clock` と同期して自動で `setData()` を切り替えます。`classificationScope` や `updateInterval`、`overlapResolution` の詳細は [Temporal Data](Temporal-Data) を参照してください。

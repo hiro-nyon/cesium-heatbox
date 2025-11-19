@@ -91,9 +91,72 @@ const ScreenSpaceEventHandler = jest.fn().mockImplementation(() => ({
   destroy: jest.fn()
 }));
 
-const JulianDate = {
-  now: jest.fn(() => 'mock-julian-date')
-};
+class JulianDate {
+  constructor (date = new Date()) {
+    this._value = date instanceof Date ? date : new Date(date);
+  }
+
+  static fromIso8601 (isoString) {
+    return new JulianDate(new Date(isoString));
+  }
+
+  static fromDate (date) {
+    return new JulianDate(new Date(date.getTime()));
+  }
+
+  static addSeconds (julianDate, seconds, result = new JulianDate()) {
+    const baseMillis = JulianDate._getTime(julianDate);
+    const newValue = new Date(baseMillis + seconds * 1000);
+    if (result instanceof JulianDate) {
+      result._value = newValue;
+      return result;
+    }
+    return new JulianDate(newValue);
+  }
+
+  static compare (left, right) {
+    return JulianDate._getTime(left) - JulianDate._getTime(right);
+  }
+
+  static greaterThan (left, right) {
+    return JulianDate.compare(left, right) > 0;
+  }
+
+  static greaterThanOrEquals (left, right) {
+    return JulianDate.compare(left, right) >= 0;
+  }
+
+  static lessThan (left, right) {
+    return JulianDate.compare(left, right) < 0;
+  }
+
+  static equals (left, right) {
+    return JulianDate.compare(left, right) === 0;
+  }
+
+  static clone (source, result = new JulianDate()) {
+    const cloneValue = new Date(JulianDate._getTime(source));
+    if (result instanceof JulianDate) {
+      result._value = cloneValue;
+      return result;
+    }
+    return new JulianDate(cloneValue);
+  }
+
+  static now () {
+    return new JulianDate(new Date());
+  }
+
+  static _getTime (value) {
+    if (value instanceof JulianDate) {
+      return value._value.getTime();
+    }
+    if (value instanceof Date) {
+      return value.getTime();
+    }
+    return new Date(value).getTime();
+  }
+}
 
 const ScreenSpaceEventType = {
   LEFT_CLICK: 'mock-left-click'

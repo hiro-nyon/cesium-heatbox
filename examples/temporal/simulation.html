@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Temporal Scenario Simulation</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css">
+  <link rel="stylesheet" href="../common/demo.css">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../common/camera.js"></script>
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
+  <script src="./temporal-data.js"></script>
+</head>
+<body>
+  <div class="hb-layout">
+    <div id="cesiumContainer" class="hb-canvas"></div>
+    <section class="hb-panel">
+      <h1>Temporal Simulation</h1>
+      <p>
+        シナリオを切り替えて `heatbox.updateOptions` で時系列データが差し替わることを確認できます。
+        下のスライダーで `updateInterval` や `outOfRangeBehavior` を調整しながら、タイムラインで再生してください。
+      </p>
+
+      <div class="control-group">
+        <label>Scenario</label>
+        <button class="hb-btn-primary" data-scenario="commute">Weekday Commute</button>
+        <button class="hb-btn-secondary" data-scenario="event">Event Night</button>
+        <button class="hb-btn-secondary" data-scenario="weekend">Weekend Flow</button>
+        <div id="scenarioLabel" class="hb-badge">--</div>
+      </div>
+      <div class="control-group">
+        <label>Time Scrubber (CZML: <span id="datasetRange">--</span>)</label>
+        <input type="range" id="timeSlider" min="0" max="23" step="1" value="0">
+        <div class="hb-badge">Hour: <span id="timeSliderValue">00:00</span></div>
+      </div>
+
+      <div class="control-group">
+        <label>Clock Speed (multiplier)</label>
+        <input type="range" id="speedSlider" min="60" max="1200" step="60" value="600">
+        <span id="speedValue">600x</span>
+      </div>
+
+      <div class="control-group">
+        <label>Temporal Settings</label>
+        <div>
+          <span>Update Interval: <span id="intervalValue">150ms</span></span>
+          <input type="range" id="intervalSlider" min="50" max="500" step="25" value="150">
+        </div>
+        <label>
+          <input type="checkbox" id="clearOutOfRange" checked>
+          outOfRangeBehavior = 'clear'
+        </label>
+      </div>
+
+      <div class="control-group">
+        <label>Diagnostics</label>
+        <div class="hb-badge">Slice Count: <span id="sliceCount">--</span></div>
+        <div class="hb-badge">Latest Domain: <span id="simDomain">--</span></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function createImageryProvider() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        subdomains: 'abcd',
+        maximumLevel: 19,
+        credit: '© OpenStreetMap contributors © CARTO'
+      });
+    }
+
+    function createTerrainProvider() {
+      try {
+        if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+          return Cesium.createWorldTerrain();
+        }
+      } catch (error) {
+        console.warn('World Terrain unavailable, falling back to EllipsoidTerrainProvider.', error);
+      }
+      return new Cesium.EllipsoidTerrainProvider();
+    }
+
+    function initializeViewer() {
+      const imageryProvider = createImageryProvider();
+      const viewerInstance = new Cesium.Viewer('cesiumContainer', {
+        baseLayerPicker: false,
+        animation: true,
+        timeline: true,
+        sceneModePicker: false,
+        geocoder: false,
+        homeButton: false,
+        navigationHelpButton: false,
+        imageryProvider,
+        terrainProvider: createTerrainProvider()
+      });
+      viewerInstance.imageryLayers.removeAll();
+      viewerInstance.imageryLayers.addImageryProvider(imageryProvider);
+      viewerInstance.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
+      viewerInstance.scene.backgroundColor = Cesium.Color.fromCssColorString('#020617');
+      return viewerInstance;
+    }
+
+    const Heatbox = window.CesiumHeatbox || window.Heatbox;
+    const CameraHelper = window.HeatboxDemoCamera || null;
+
+    const viewer = initializeViewer();
+
+    let currentScenarioKey = 'commute';
+    let heatbox = null;
+    let timelineStart = null;
+    let timelineStop = null;
+    let sliderInteracting = false;
+
+    TemporalHeatboxDemo.loadScenario(viewer, currentScenarioKey).then((payload) => {
+      applyScenario(payload);
+      focusCamera();
+      wireControls();
+      viewer.clock.onTick.addEventListener((clock) => {
+        updateDiagnostics();
+        syncSliderWithCurrentTime(clock);
+      });
+    });
+
+    function applyScenario(payload) {
+      const updateInterval = Number(document.getElementById('intervalSlider').value);
+      const outOfRangeBehavior = document.getElementById('clearOutOfRange').checked ? 'clear' : 'hold';
+      const classificationScope = heatbox?.options.temporal?.classificationScope || payload.defaultScope || 'global';
+
+      const temporalOptions = {
+        enabled: true,
+        data: payload.slices,
+        classificationScope,
+        updateInterval,
+        outOfRangeBehavior
+      };
+
+      configureClock(payload.start, payload.stop);
+
+      if (!heatbox) {
+        heatbox = new Heatbox(viewer, {
+          voxelSize: 40,
+          temporal: temporalOptions
+        });
+      } else {
+        heatbox.updateOptions({ temporal: temporalOptions });
+      }
+
+      document.getElementById('scenarioLabel').textContent = payload.label;
+      document.getElementById('datasetRange').textContent = `${payload.start} 〜 ${payload.stop}`;
+      updateDiagnostics(true);
+    }
+
+    function configureClock(startIso, stopIso) {
+      timelineStart = Cesium.JulianDate.fromIso8601(startIso);
+      timelineStop = Cesium.JulianDate.fromIso8601(stopIso);
+      const start = Cesium.JulianDate.clone(timelineStart);
+      const stop = Cesium.JulianDate.clone(timelineStop);
+      viewer.clock.startTime = Cesium.JulianDate.clone(start);
+      viewer.clock.stopTime = Cesium.JulianDate.clone(stop);
+      viewer.clock.currentTime = Cesium.JulianDate.clone(start);
+      viewer.clock.clockRange = Cesium.ClockRange.CLAMPED;
+      viewer.clock.multiplier = Number(document.getElementById('speedSlider').value);
+      viewer.clock.shouldAnimate = true;
+      viewer.timeline.zoomTo(start, stop);
+      initializeTimeSlider();
+    }
+
+    function focusCamera() {
+      const bounds = CameraHelper?.DEFAULT_BOUNDS || {
+        minLon: 139.69,
+        maxLon: 139.71,
+        minLat: 35.68,
+        maxLat: 35.70,
+        minAlt: 0,
+        maxAlt: 220
+      };
+      const focusConfig = {
+        bounds,
+        useDefaultBounds: true,
+        pitchDegrees: -48,
+        altitude: 3200
+      };
+      if (CameraHelper?.focus) {
+        CameraHelper.focus(viewer, focusConfig);
+        return;
+      }
+      if (CameraHelper?.applyDefaultView) {
+        CameraHelper.applyDefaultView(viewer, focusConfig);
+        return;
+      }
+      const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+      const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat - 0.018, 3200),
+        orientation: {
+          heading: Cesium.Math.toRadians(-6),
+          pitch: Cesium.Math.toRadians(-47),
+          roll: 0
+        }
+      });
+    }
+
+    function wireControls() {
+      document.querySelectorAll('[data-scenario]').forEach((button) => {
+        button.addEventListener('click', () => {
+          currentScenarioKey = button.dataset.scenario;
+          TemporalHeatboxDemo.loadScenario(viewer, currentScenarioKey).then(applyScenario);
+        });
+      });
+
+      const speedSlider = document.getElementById('speedSlider');
+      speedSlider.addEventListener('input', () => {
+        viewer.clock.multiplier = Number(speedSlider.value);
+        document.getElementById('speedValue').textContent = `${speedSlider.value}x`;
+      });
+
+      const intervalSlider = document.getElementById('intervalSlider');
+      intervalSlider.addEventListener('input', () => {
+        const value = Number(intervalSlider.value);
+        document.getElementById('intervalValue').textContent = `${value}ms`;
+        if (heatbox) {
+          heatbox.updateOptions({
+            temporal: {
+              ...heatbox.options.temporal,
+              updateInterval: value
+            }
+          });
+        }
+      });
+
+      document.getElementById('clearOutOfRange').addEventListener('change', (event) => {
+        if (heatbox) {
+          heatbox.updateOptions({
+            temporal: {
+              ...heatbox.options.temporal,
+              outOfRangeBehavior: event.target.checked ? 'clear' : 'hold'
+            }
+          });
+        }
+      });
+
+      const timeSlider = document.getElementById('timeSlider');
+      timeSlider.addEventListener('input', (event) => {
+        sliderInteracting = true;
+        jumpToHour(Number(event.target.value));
+      });
+      timeSlider.addEventListener('change', () => {
+        sliderInteracting = false;
+      });
+    }
+
+    function updateDiagnostics(force = false) {
+      if (!heatbox) return;
+      if (!force && document.hidden) return;
+      const stats = heatbox.getStatistics();
+      if (!stats || !stats.classification) return;
+      document.getElementById('sliceCount').textContent = heatbox.options.temporal?.data?.length ?? '-';
+      const domain = stats.classification.domain;
+      document.getElementById('simDomain').textContent = domain
+        ? `[${domain[0].toFixed(0)}, ${domain[1].toFixed(0)}]`
+        : '--';
+    }
+
+    function initializeTimeSlider() {
+      const slider = document.getElementById('timeSlider');
+      const totalSeconds = Cesium.JulianDate.secondsDifference(timelineStop, timelineStart);
+      const totalHours = Math.max(1, Math.floor(totalSeconds / 3600));
+      slider.min = 0;
+      slider.max = Math.max(0, totalHours - 1);
+      slider.step = 1;
+      slider.value = 0;
+      updateSliderLabel(0);
+    }
+
+    function jumpToHour(hourOffset) {
+      if (!timelineStart) return;
+      const target = Cesium.JulianDate.addHours(timelineStart, hourOffset, new Cesium.JulianDate());
+      viewer.clock.currentTime = target;
+      viewer.clock.shouldAnimate = false;
+      updateSliderLabel(hourOffset);
+      updateDiagnostics(true);
+    }
+
+    function syncSliderWithCurrentTime(clock) {
+      if (!timelineStart || sliderInteracting) return;
+      const slider = document.getElementById('timeSlider');
+      const seconds = Cesium.JulianDate.secondsDifference(clock.currentTime, timelineStart);
+      const hourIndex = Math.max(0, Math.min(Number(slider.max), Math.floor(seconds / 3600)));
+      if (Number(slider.value) !== hourIndex) {
+        slider.value = hourIndex;
+        updateSliderLabel(hourIndex);
+      }
+    }
+
+    function updateSliderLabel(hourOffset) {
+      const label = document.getElementById('timeSliderValue');
+      const normalized = Math.max(0, Number(hourOffset) || 0);
+      if (timelineStart) {
+        const target = Cesium.JulianDate.addHours(timelineStart, normalized, new Cesium.JulianDate());
+        label.textContent = Cesium.JulianDate.toIso8601(target).replace('T', ' ').replace('Z', 'Z');
+      } else {
+        label.textContent = `${String(normalized).padStart(2, '0')}:00`;
+      }
+    }
+  </script>
+</body>
+</html>
