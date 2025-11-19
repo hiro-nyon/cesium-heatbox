@@ -7,10 +7,10 @@ class MockHeatbox {
         this.data = null;
         this.options = {};
         this.clearCalled = false;
-    }
-    setData(data, options) {
-        this.data = data;
-        this.options = options;
+        this.setData = jest.fn((data, options) => {
+            this.data = data;
+            this.options = options;
+        });
     }
     clear() {
         this.clearCalled = true;
@@ -21,8 +21,14 @@ class MockHeatbox {
 class MockClock {
     constructor() {
         this.currentTime = Cesium.JulianDate.now();
+        this._listener = null;
         this.onTick = {
-            addEventListener: jest.fn(() => jest.fn())
+            addEventListener: jest.fn((listener) => {
+                this._listener = listener;
+                return () => {
+                    this._listener = null;
+                };
+            })
         };
     }
     tick(seconds) {
@@ -117,5 +123,74 @@ describe('TimeController', () => {
 
         controller.activate(); // Initial tick should clear immediately
         expect(heatbox.clearCalled).toBe(true);
+    });
+
+    test('should throttle updates when updateInterval is numeric', () => {
+        options.updateInterval = 200;
+        options.data = [
+            {
+                start: '2025-01-01T00:00:00Z',
+                stop: '2025-01-01T01:00:00Z',
+                data: [{ id: 'early' }]
+            },
+            {
+                start: '2025-01-01T01:00:00Z',
+                stop: '2025-01-01T02:00:00Z',
+                data: [{ id: 'late' }]
+            }
+        ];
+        const nowSpy = jest.spyOn(Date, 'now');
+        nowSpy.mockReturnValue(0);
+
+        controller = new TimeController(viewer, heatbox, options);
+        controller.activate();
+        heatbox.setData.mockClear();
+
+        nowSpy.mockReturnValue(50);
+        controller._onTick(viewer.clock);
+        expect(heatbox.setData).not.toHaveBeenCalled();
+
+        viewer.clock.currentTime = Cesium.JulianDate.addSeconds(
+            viewer.clock.currentTime,
+            3700,
+            new Cesium.JulianDate()
+        );
+        nowSpy.mockReturnValue(250);
+        controller._onTick(viewer.clock);
+        expect(heatbox.setData).toHaveBeenCalledTimes(1);
+
+        nowSpy.mockRestore();
+    });
+
+    test('should update when clock moves backwards (reverse playback)', () => {
+        options.data = [
+            {
+                start: '2025-01-01T00:00:00Z',
+                stop: '2025-01-01T01:00:00Z',
+                data: [{ id: 'early' }]
+            },
+            {
+                start: '2025-01-01T01:00:00Z',
+                stop: '2025-01-01T02:00:00Z',
+                data: [{ id: 'late' }]
+            }
+        ];
+        controller = new TimeController(viewer, heatbox, options);
+        controller.activate();
+        heatbox.setData.mockClear();
+
+        viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2025-01-01T01:30:00Z');
+        controller._onTick(viewer.clock);
+        expect(heatbox.setData).toHaveBeenLastCalledWith(
+            [{ id: 'late' }],
+            expect.objectContaining({})
+        );
+
+        viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2025-01-01T00:15:00Z');
+        controller._onTick(viewer.clock);
+        expect(heatbox.setData).toHaveBeenLastCalledWith(
+            [{ id: 'early' }],
+            expect.objectContaining({})
+        );
     });
 });

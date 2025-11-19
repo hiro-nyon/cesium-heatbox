@@ -162,17 +162,16 @@
         CameraHelper.applyDefaultView(viewer, focusConfig);
         return;
       }
-        const centerLon = (bounds.minLon + bounds.maxLon) / 2;
-        const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-        viewer.camera.setView({
-          destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat - 0.018, 3500),
-          orientation: {
-            heading: Cesium.Math.toRadians(0),
-            pitch: Cesium.Math.toRadians(-48),
-            roll: 0
-          }
-        });
-      }
+      const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+      const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat - 0.018, 3500),
+        orientation: {
+          heading: Cesium.Math.toRadians(0),
+          pitch: Cesium.Math.toRadians(-48),
+          roll: 0
+        }
+      });
     }
 
     function setupUI() {

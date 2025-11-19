@@ -62,6 +62,16 @@ describe('TimeSlicer', () => {
             expect(() => new TimeSlicer(overlapping, { overlapResolution: 'skip' }))
                 .toThrow(/overlap/);
         });
+
+        test('should extend zero-length slices by one second', () => {
+            const zeroLength = [
+                { start: '2025-01-01T00:00:00Z', stop: '2025-01-01T00:00:00Z', data: [] }
+            ];
+
+            const slicer = new TimeSlicer(zeroLength);
+            const range = slicer.getTimeRange();
+            expect(Cesium.JulianDate.lessThan(range.start, range.stop)).toBe(true);
+        });
     });
 
     describe('getEntry', () => {
@@ -93,6 +103,30 @@ describe('TimeSlicer', () => {
             const time = createTime(3600 - 0.001); // Just before 01:00:00
             const entry = slicer.getEntry(time);
             expect(entry.data[0].id).toBe(1);
+        });
+
+        test('should recover when time moves backwards (reverse playback)', () => {
+            const slicer = new TimeSlicer(mockData);
+
+            const forwardTime = createTime(2 * 3600 + 10);
+            const forwardEntry = slicer.getEntry(forwardTime);
+            expect(forwardEntry.data[0].id).toBe(3);
+
+            const backwardTime = createTime(10);
+            const backwardEntry = slicer.getEntry(backwardTime);
+            expect(backwardEntry.data[0].id).toBe(1);
+        });
+
+        test('should report cache hit rate when repeatedly sampling same entry', () => {
+            const slicer = new TimeSlicer(mockData);
+            const time = createTime(120); // Inside first entry
+
+            slicer.getEntry(time); // warm up, cache miss
+            slicer.getEntry(time); // cache hit
+            slicer.getEntry(time); // cache hit
+
+            expect(slicer.getCacheHitRate()).toBeGreaterThan(0);
+            expect(slicer.getCacheHitRate()).toBeLessThanOrEqual(1);
         });
     });
 
@@ -132,6 +166,64 @@ describe('TimeSlicer', () => {
         test('skip mode throws on overlapping data', () => {
             expect(() => new TimeSlicer(overlappingData, { overlapResolution: 'skip' }))
                 .toThrow(/overlap/);
+        });
+    });
+
+    describe('calculateGlobalStats', () => {
+        test('uses provided valueProperty and caches results', () => {
+            const data = [
+                {
+                    start: '2025-01-01T00:00:00Z',
+                    stop: '2025-01-01T01:00:00Z',
+                    data: [{ weight: 5, intensity: 100 }]
+                },
+                {
+                    start: '2025-01-01T01:00:00Z',
+                    stop: '2025-01-01T02:00:00Z',
+                    data: [{ weight: 1, intensity: 50 }]
+                }
+            ];
+
+            const slicer = new TimeSlicer(data);
+            const stats = slicer.calculateGlobalStats('intensity');
+            expect(stats).not.toBeNull();
+            expect(stats.min).toBe(50);
+            expect(stats.max).toBe(100);
+            expect(stats.domain).toEqual([50, 100]);
+
+            const cached = slicer.calculateGlobalStats('intensity');
+            expect(cached).toBe(stats);
+        });
+
+        test('defaults to 1 when value property is missing', () => {
+            const data = [
+                {
+                    start: '2025-01-01T00:00:00Z',
+                    stop: '2025-01-01T01:00:00Z',
+                    data: [{ id: 'a' }, { id: 'b' }]
+                }
+            ];
+
+            const slicer = new TimeSlicer(data);
+            const stats = slicer.calculateGlobalStats();
+            expect(stats).not.toBeNull();
+            expect(stats.min).toBe(1);
+            expect(stats.max).toBe(1);
+            expect(stats.count).toBe(2);
+        });
+
+        test('returns null when entries have no numeric values', () => {
+            const data = [
+                {
+                    start: '2025-01-01T00:00:00Z',
+                    stop: '2025-01-01T01:00:00Z',
+                    data: [{ id: 'x', weight: 'invalid' }]
+                }
+            ];
+
+            const slicer = new TimeSlicer(data);
+            const stats = slicer.calculateGlobalStats('weight');
+            expect(stats).toBeNull();
         });
     });
 });
