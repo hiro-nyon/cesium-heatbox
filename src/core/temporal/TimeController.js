@@ -33,6 +33,13 @@ export class TimeController {
         if (this._isActive) return;
         this._isActive = true;
 
+        // Global scope: calculate stats once
+        if (this._options.classificationScope === 'global') {
+            const valueProperty = this._heatbox._options.valueProperty || 'weight';
+            const globalStats = this._slicer.calculateGlobalStats(valueProperty);
+            this._heatbox._globalStats = globalStats;
+        }
+
         // Register clock listener
         this._removeListener = this._viewer.clock.onTick.addEventListener(
             this._onTick.bind(this)
@@ -127,9 +134,9 @@ export class TimeController {
         const updateOptions = { _skipRebuild: false };
 
         // Global scope handling (Phase 3)
-        // if (this._options.classificationScope === 'global') {
-        //   updateOptions._externalStats = this._heatbox._globalStats;
-        // }
+        if (this._options.classificationScope === 'global' && this._heatbox._globalStats) {
+            updateOptions._externalStats = this._heatbox._globalStats;
+        }
 
         this._heatbox.setData(entry.data, updateOptions);
     }

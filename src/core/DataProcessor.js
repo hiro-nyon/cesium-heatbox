@@ -28,7 +28,7 @@ export class DataProcessor {
     if (options.spatialId?.enabled) {
       return await DataProcessor._classifyBySpatialId(entities, bounds, grid, options);
     }
-    
+
     // Uniform grid mode (default) / 一様グリッドモード（デフォルト）
     const voxelData = new Map();
     let processedCount = 0;
@@ -90,7 +90,7 @@ export class DataProcessor {
     }
 
     Logger.debug(`Processing ${entities.length} entities for classification`);
-    
+
     entities.forEach((entity, index) => {
       try {
         // エンティティの位置を取得（シンプルなアプローチ）
@@ -102,12 +102,12 @@ export class DataProcessor {
             position = entity.position;
           }
         }
-        
+
         if (!position) {
           skippedCount++;
           return; // 位置がない場合はスキップ
         }
-        
+
         // Cartesian3からCartographicに変換（テスト環境向けフォールバックあり）
         let lon, lat, alt;
         const looksLikeDegrees = typeof position?.x === 'number' && typeof position?.y === 'number' &&
@@ -137,24 +137,24 @@ export class DataProcessor {
           lat = position.y;
           alt = typeof position.z === 'number' ? position.z : 0;
         }
-        
+
         // 範囲外チェック（少しマージンを持たせる）
         if (lon < bounds.minLon - 0.001 || lon > bounds.maxLon + 0.001 ||
-            lat < bounds.minLat - 0.001 || lat > bounds.maxLat + 0.001 ||
-            alt < bounds.minAlt - 1 || alt > bounds.maxAlt + 1) {
+          lat < bounds.minLat - 0.001 || lat > bounds.maxLat + 0.001 ||
+          alt < bounds.minAlt - 1 || alt > bounds.maxAlt + 1) {
           skippedCount++;
           return;
         }
-        
+
         const { x: voxelX, y: voxelY, z: voxelZ } = DataProcessor._normalizeGridIndices(lon, lat, alt, bounds, grid);
-        
+
         // インデックスが有効範囲内かチェック
         if (voxelX >= 0 && voxelX < grid.numVoxelsX &&
-            voxelY >= 0 && voxelY < grid.numVoxelsY &&
-            voxelZ >= 0 && voxelZ < grid.numVoxelsZ) {
-            
+          voxelY >= 0 && voxelY < grid.numVoxelsY &&
+          voxelZ >= 0 && voxelZ < grid.numVoxelsZ) {
+
           const voxelKey = VoxelGrid.getVoxelKey(voxelX, voxelY, voxelZ);
-          
+
           if (!voxelData.has(voxelKey)) {
             const newVoxelInfo = {
               x: voxelX,
@@ -163,26 +163,26 @@ export class DataProcessor {
               entities: [],
               count: 0
             };
-            
+
             // v0.1.18: Initialize layerStats if aggregation enabled (ADR-0014)
             if (aggregationEnabled) {
               newVoxelInfo.layerStats = new Map();
             }
-            
+
             voxelData.set(voxelKey, newVoxelInfo);
           }
-          
+
           const voxelInfo = voxelData.get(voxelKey);
           voxelInfo.entities.push(entity);
           voxelInfo.count++;
-          
+
           // v0.1.18: Aggregate by layer (ADR-0014)
           if (aggregationEnabled && resolveLayerKey) {
             const layerKey = resolveLayerKey(entity, index) || 'unknown';
             const currentCount = voxelInfo.layerStats.get(layerKey) || 0;
             voxelInfo.layerStats.set(layerKey, currentCount + 1);
           }
-          
+
           processedCount++;
         } else {
           skippedCount++;
@@ -192,32 +192,32 @@ export class DataProcessor {
         skippedCount++;
       }
     });
-    
+
     // v0.1.18: Calculate layerTop (most common layer per voxel) (ADR-0014)
     if (aggregationEnabled) {
       for (const voxelInfo of voxelData.values()) {
         if (voxelInfo.layerStats && voxelInfo.layerStats.size > 0) {
           let maxCount = 0;
           let topLayer = null;
-          
+
           for (const [layerKey, count] of voxelInfo.layerStats) {
             if (count > maxCount) {
               maxCount = count;
               topLayer = layerKey;
             }
           }
-          
+
           voxelInfo.layerTop = topLayer;
         }
       }
-      
+
       Logger.debug(`[aggregation] Calculated layerTop for ${voxelData.size} voxels`);
     }
-    
+
     Logger.info(`${processedCount}個のエンティティを${voxelData.size}個のボクセルに分類（${skippedCount}個はスキップ）`);
     return voxelData;
   }
-  
+
   /**
    * Calculate statistics from voxel data.
    * ボクセルデータから統計情報を計算します。
@@ -226,6 +226,46 @@ export class DataProcessor {
    * @returns {Object} Statistics / 統計情報
    */
   static calculateStatistics(voxelData, grid, options = {}) {
+    // v1.2.0: Accept external statistics (e.g. from TimeSlicer global stats)
+    if (options._externalStats) {
+      Logger.debug('Using external statistics:', options._externalStats);
+      const stats = {
+        ...options._externalStats,
+        // Keep dynamic counts that depend on current data
+        totalVoxels: grid.totalVoxels,
+        renderedVoxels: 0,
+        nonEmptyVoxels: voxelData.size,
+        emptyVoxels: Math.max(0, grid.totalVoxels - voxelData.size),
+        totalEntities: 0 // Will be calculated below
+      };
+
+      // Recalculate totalEntities for current frame
+      let totalEntities = 0;
+      for (const voxel of voxelData.values()) {
+        totalEntities += voxel.count;
+      }
+      stats.totalEntities = totalEntities;
+      stats.averageCount = voxelData.size > 0 ? totalEntities / voxelData.size : 0;
+
+      // Rebuild classification stats with external domain/breaks if needed
+      // For now, we assume _externalStats contains everything needed for coloring
+      // But we might need to regenerate classification object if it depends on specific format
+      if (!stats.classification) {
+        stats.classification = DataProcessor._buildClassificationStats(
+          [], // No need to re-scan counts if we trust external stats
+          options.classification,
+          stats.min,
+          stats.max
+        );
+        // Override domain with global domain
+        if (stats.domain) {
+          stats.classification.domain = stats.domain;
+        }
+      }
+
+      return stats;
+    }
+
     if (voxelData.size === 0) {
       const emptyStats = {
         totalVoxels: grid.totalVoxels,
@@ -245,14 +285,14 @@ export class DataProcessor {
       emptyStats.classification = DataProcessor._buildClassificationStats([], options.classification, 0, 0);
       return emptyStats;
     }
-    
+
     const counts = Array.from(voxelData.values()).map(voxel => voxel.count);
     const totalEntities = counts.reduce((sum, count) => sum + count, 0);
-    
+
     // v0.1.17: Spatial ID mode can exceed grid.totalVoxels, clamp emptyVoxels to non-negative
     // 空間IDモードではgrid.totalVoxelsを超える可能性があるため、emptyVoxelsを非負にクランプ
     const emptyVoxels = Math.max(0, grid.totalVoxels - voxelData.size);
-    
+
     const stats = {
       totalVoxels: grid.totalVoxels,
       renderedVoxels: 0, // 実際の描画後にVoxelRendererから設定される
@@ -268,18 +308,18 @@ export class DataProcessor {
       finalVoxelSize: null,
       adjustmentReason: null
     };
-    
+
     stats.classification = DataProcessor._buildClassificationStats(
       counts,
       options.classification,
       stats.minCount,
       stats.maxCount
     );
-    
+
     Logger.debug('統計情報計算完了:', stats);
     return stats;
   }
-  
+
   /**
    * Normalize geographic coordinates into grid indices with zero-span guards.
    * ゼロスパン対策付きで地理座標をグリッドインデックスに正規化
@@ -330,15 +370,15 @@ export class DataProcessor {
     if (voxelData.size === 0 || topN <= 0) {
       return [];
     }
-    
+
     // ボクセルを密度でソート
     const sortedVoxels = Array.from(voxelData.values())
       .sort((a, b) => b.count - a.count);
-    
+
     // 上位N個を返す
     return sortedVoxels.slice(0, Math.min(topN, sortedVoxels.length));
   }
-  
+
   /**
    * Classify entities using Spatial ID (tile-grid mode).
    * 空間IDを使用してエンティティを分類（tile-gridモード）。
@@ -351,18 +391,18 @@ export class DataProcessor {
    */
   static async _classifyBySpatialId(entities, bounds, grid, options) {
     Logger.debug(`Spatial ID mode enabled: ${options.spatialId.mode}`);
-    
+
     // Initialize SpatialIdAdapter / SpatialIdAdapterを初期化
     const adapter = new SpatialIdAdapter({
       provider: options.spatialId.provider || 'ouranos-gex'
     });
-    
+
     await adapter.loadProvider();
-    
+
     // Determine zoom level (auto or manual) / ズームレベルを決定（auto/manual）
     let zoom;
     const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-    
+
     if (options.spatialId.zoomControl === 'auto') {
       const targetSize = options.voxelSize || 30;
       const tolerance = options.spatialId.zoomTolerancePct || 10;
@@ -382,11 +422,11 @@ export class DataProcessor {
       }
       Logger.info(`Using manual zoom level ${zoom}`);
     }
-    
+
     // Store zoom level and provider info for statistics / 統計情報用にズームレベルとプロバイダー情報を保存
     options._resolvedZoom = zoom;
     options._spatialIdProvider = adapter.fallbackMode ? null : options.spatialId.provider;
-    
+
     // v0.1.18: Layer aggregation setup (ADR-0014)
     const aggregationOptions = options.aggregation || {};
     const aggregationEnabled = Boolean(aggregationOptions.enabled);
@@ -441,12 +481,12 @@ export class DataProcessor {
         resolveLayerKey = () => 'default';
       }
     }
-    
+
     // Process entities and aggregate by spatial ID / エンティティを処理して空間IDで集約
     const voxelMap = new Map();
     let processedCount = 0;
     let skippedCount = 0;
-    
+
     let entityIndex = 0;
     for (const entity of entities) {
       try {
@@ -459,17 +499,17 @@ export class DataProcessor {
             position = entity.position;
           }
         }
-        
+
         if (!position) {
           skippedCount++;
           continue;
         }
-        
+
         // Convert to lng/lat/alt / lng/lat/altに変換
         let lng, lat, alt;
         const looksLikeDegrees = typeof position?.x === 'number' && typeof position?.y === 'number' &&
           Math.abs(position.x) <= 360 && Math.abs(position.y) <= 90;
-        
+
         if (looksLikeDegrees) {
           lng = position.x;
           lat = position.y;
@@ -492,10 +532,10 @@ export class DataProcessor {
           lat = position.y;
           alt = typeof position.z === 'number' ? position.z : 0;
         }
-        
+
         // Get voxel bounds from spatial ID / 空間IDからボクセル境界を取得
         const { zfxy, zfxyStr, vertices } = adapter.getVoxelBounds(lng, lat, alt, zoom);
-        
+
         // Aggregate by zfxyStr (public key format) / zfxyStr（公開キー形式）で集約
         if (!voxelMap.has(zfxyStr)) {
           // Calculate normalized indices for VoxelSelector compatibility
@@ -519,19 +559,19 @@ export class DataProcessor {
             entities: [],
             count: 0
           };
-          
+
           // v0.1.18: Initialize layerStats if aggregation enabled (ADR-0014)
           if (aggregationEnabled) {
             newVoxelInfo.layerStats = new Map();
           }
-          
+
           voxelMap.set(zfxyStr, newVoxelInfo);
         }
-        
+
         const voxelInfo = voxelMap.get(zfxyStr);
         voxelInfo.entities.push(entity);
         voxelInfo.count++;
-        
+
         // v0.1.18: Aggregate by layer (ADR-0014)
         if (aggregationEnabled && resolveLayerKey) {
           const layerKey = resolveLayerKey(entity, entityIndex) || 'unknown';
@@ -548,28 +588,28 @@ export class DataProcessor {
 
       entityIndex++;
     }
-    
+
     // v0.1.18: Calculate layerTop (most common layer per voxel) (ADR-0014)
     if (aggregationEnabled) {
       for (const voxelInfo of voxelMap.values()) {
         if (voxelInfo.layerStats && voxelInfo.layerStats.size > 0) {
           let maxCount = 0;
           let topLayer = null;
-          
+
           for (const [layerKey, count] of voxelInfo.layerStats) {
             if (count > maxCount) {
               maxCount = count;
               topLayer = layerKey;
             }
           }
-          
+
           voxelInfo.layerTop = topLayer;
         }
       }
-      
+
       Logger.debug(`[aggregation] Calculated layerTop for ${voxelMap.size} voxels (Spatial ID mode)`);
     }
-    
+
     Logger.info(`Spatial ID: ${processedCount} entities classified into ${voxelMap.size} voxels (${skippedCount} skipped)`);
     return voxelMap;
   }

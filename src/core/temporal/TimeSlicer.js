@@ -207,6 +207,81 @@ export class TimeSlicer {
     }
 
     /**
+   * Calculate global statistics across all time entries.
+   * 全時間のエントリーにまたがる統計量を計算します。
+   * @param {string} valueProperty - Property name to use for value (default: 'weight')
+   * @returns {Object} Global statistics
+   */
+    calculateGlobalStats(valueProperty = 'weight') {
+        const cacheKey = valueProperty;
+
+        if (this._globalStatsCache[cacheKey]) {
+            return this._globalStatsCache[cacheKey];
+        }
+
+        let min = Infinity;
+        let max = -Infinity;
+        let sum = 0;
+        let count = 0;
+        const allValues = [];
+
+        for (const entry of this._entries) {
+            if (!Array.isArray(entry.data)) continue;
+
+            for (const point of entry.data) {
+                const value = point[valueProperty] ?? 1; // Default to 1 if property missing
+                if (typeof value !== 'number') continue;
+
+                min = Math.min(min, value);
+                max = Math.max(max, value);
+                sum += value;
+                count++;
+                allValues.push(value);
+            }
+        }
+
+        if (count === 0) {
+            return null;
+        }
+
+        // Mean & Median
+        const mean = sum / count;
+        allValues.sort((a, b) => a - b);
+        const median = this._calculateMedian(allValues);
+
+        // Quantiles
+        const quantiles = this._calculateQuantiles(allValues, [0.25, 0.5, 0.75]);
+
+        this._globalStatsCache[cacheKey] = {
+            min,
+            max,
+            mean,
+            median,
+            quantiles,
+            domain: [min, max],
+            count
+        };
+
+        return this._globalStatsCache[cacheKey];
+    }
+
+    _calculateMedian(sortedValues) {
+        if (sortedValues.length === 0) return 0;
+        const mid = Math.floor(sortedValues.length / 2);
+        if (sortedValues.length % 2 === 0) {
+            return (sortedValues[mid - 1] + sortedValues[mid]) / 2;
+        }
+        return sortedValues[mid];
+    }
+
+    _calculateQuantiles(sortedValues, quantiles) {
+        return quantiles.map(q => {
+            const index = Math.floor(sortedValues.length * q);
+            return sortedValues[Math.min(index, sortedValues.length - 1)];
+        });
+    }
+
+    /**
      * Get cache hit rate.
      * キャッシュヒット率を取得します。
      * @returns {number}
