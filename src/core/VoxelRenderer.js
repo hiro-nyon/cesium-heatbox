@@ -124,12 +124,20 @@ export class VoxelRenderer {
    * @param {boolean} isTopN - Whether it is TopN / TopNボクセルかどうか
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @param {Object} statistics - Statistics / 統計情報
-   * @returns {Object} Adaptive params / 適応的パラメータ
-   * @private
-   */
+  * @returns {Object} Adaptive params / 適応的パラメータ
+  * @private
+  */
   _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, grid) {
     // v0.1.11: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
-    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options, grid);
+    return this.adaptiveController.calculateAdaptiveParams(
+      voxelInfo,
+      isTopN,
+      voxelData,
+      statistics,
+      this.options,
+      grid,
+      this._classifier
+    );
   }
 
   /**
@@ -451,7 +459,9 @@ export class VoxelRenderer {
       color = Cesium.Color.LIGHTGRAY;
       opacity = this.options.emptyOpacity;
     } else {
-      if (this._classifier) {
+      const classificationTargets = this.options.classification?.classificationTargets || {};
+      const shouldApplyClassificationColor = this._classifier && classificationTargets.color !== false;
+      if (shouldApplyClassificationColor) {
         try {
           const classIndex = this._classifier.classify(info.count ?? 0);
           color = this._classifier.getColorForClass(classIndex);
@@ -474,10 +484,10 @@ export class VoxelRenderer {
           opacity = isNaN(resolverOpacity) ? this.options.opacity : Math.max(0, Math.min(1, resolverOpacity));
         } catch (e) {
           Logger.warn('boxOpacityResolver error, using fallback:', e);
-          opacity = adaptiveParams.boxOpacity || this.options.opacity;
+          opacity = (adaptiveParams.boxOpacity ?? this.options.opacity);
         }
       } else {
-        opacity = adaptiveParams.boxOpacity || this.options.opacity;
+        opacity = (adaptiveParams.boxOpacity ?? this.options.opacity);
       }
       
       // TopN highlight adjustment 
@@ -550,7 +560,7 @@ export class VoxelRenderer {
         finalOutlineWidth = adaptiveParams.outlineWidth || this.options.outlineWidth;
       }
     } else {
-      if (this.options.adaptiveOutlines && adaptiveParams.outlineWidth !== null) {
+      if (adaptiveParams.outlineWidth !== null && adaptiveParams.outlineWidth !== undefined) {
         finalOutlineWidth = adaptiveParams.outlineWidth;
       } else {
         finalOutlineWidth = isTopN && this.options.highlightTopN ? 
@@ -560,7 +570,7 @@ export class VoxelRenderer {
     }
 
     // Outline opacity
-    const finalOutlineOpacity = adaptiveParams.outlineOpacity || (this.options.outlineOpacity ?? 1.0);
+    const finalOutlineOpacity = adaptiveParams.outlineOpacity ?? (this.options.outlineOpacity ?? 1.0);
     const outlineColorWithOpacity = color.withAlpha(finalOutlineOpacity);
 
     // Render mode configuration
@@ -666,11 +676,13 @@ export class VoxelRenderer {
       (this.options.emulationScope && this.options.emulationScope !== 'off');
     if (allowEmulationEdges && params.emulateThick) {
       try {
+        const adaptiveOutlineOpacity = params.adaptiveParams?.outlineOpacity ?? params.outlineColor?.alpha ?? null;
         this.geometryRenderer.createEdgePolylines({
           centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
           cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
           outlineColor: params.outlineColor,
           outlineWidth: Math.max(params.outlineWidth, 1),
+          outlineOpacity: adaptiveOutlineOpacity,
           voxelKey: key
         });
       } catch (e) {
@@ -699,13 +711,7 @@ export class VoxelRenderer {
       return;
     }
 
-    const targets = classificationOptions.classificationTargets || {};
-    if (targets.color === false) {
-      this._classifier = null;
-      return;
-    }
-
-    const allowedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold'];
+    const allowedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold', 'quantile', 'jenks'];
     const scheme = (classificationOptions.scheme || 'linear').toLowerCase();
     if (!allowedSchemes.includes(scheme)) {
       Logger.warn(`Classification scheme '${scheme}' is not supported in v1.0.0. Disabling classification.`);

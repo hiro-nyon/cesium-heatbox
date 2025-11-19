@@ -9,12 +9,33 @@ const defaultBackend = {
     return ss.quantileSorted(sorted, p);
   },
 
+  ckmeans (values, k) {
+    if (!Array.isArray(values) || values.length === 0 || !k || k < 2) {
+      return [];
+    }
+    try {
+      return ss.ckmeans(values, k);
+    } catch (_error) {
+      return [];
+    }
+  },
+
   jenksBreaks (values, k) {
     if (!Array.isArray(values) || values.length === 0 || !k || k < 2) {
       return [];
     }
-    const clusters = ss.ckmeans(values, k);
-    return clusters.map(cluster => cluster[0]);
+    const clusters = typeof this?.ckmeans === 'function'
+      ? this.ckmeans(values, k)
+      : [];
+    const breaks = [];
+    // 各クラスタの上限値（最後の値）を境界として返す（最終クラスタは除外）
+    for (let i = 0; i < clusters.length - 1; i++) {
+      const cluster = clusters[i];
+      if (Array.isArray(cluster) && cluster.length > 0) {
+        breaks.push(cluster[cluster.length - 1]);
+      }
+    }
+    return breaks;
   },
 
   summary (values) {
@@ -44,4 +65,3 @@ export function setClassificationBackend (nextBackend) {
 export function getBackend () {
   return backend;
 }
-

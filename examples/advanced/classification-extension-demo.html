@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>CesiumJS Heatbox - Classification Extension (v1.1.0)</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link href="../common/demo.css" rel="stylesheet">
+  <style>
+    html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; }
+    .panel { max-width: 420px; max-height: calc(100vh - 32px); overflow-y: auto; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .legend-box { background: rgba(0,0,0,0.55); padding: 8px; border-radius: 6px; margin-top: 8px; }
+    .stats { font-size: 12px; line-height: 1.5; }
+  </style>
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../common/camera.js"></script>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="hb-panel panel">
+    <h3>Classification Extension (color + opacity + width)</h3>
+    <p style="margin-top:-6px; font-size: 13px; color: #cbd5f5;">
+      quantile / jenks を中心に、color / opacity / width の同時分類と凡例生成を体験できます。
+    </p>
+    <div class="grid">
+      <div class="control-group">
+        <label for="scheme">Scheme</label>
+        <select id="scheme">
+          <option value="quantile">quantile (推奨)</option>
+          <option value="jenks">jenks</option>
+          <option value="equal-interval">equal-interval</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="classes">Classes: <span id="classesValue">5</span></label>
+        <input type="range" id="classes" min="3" max="8" value="5">
+      </div>
+    </div>
+    <div class="grid">
+      <label><input type="checkbox" id="targetColor" checked> target: color</label>
+      <label><input type="checkbox" id="targetOpacity" checked> target: opacity</label>
+      <label><input type="checkbox" id="targetWidth" checked> target: width</label>
+    </div>
+    <div class="control-group">
+      <button id="regen" class="hb-btn hb-btn-secondary">データ再生成</button>
+      <button id="apply" class="hb-btn hb-btn-primary">分類を適用</button>
+    </div>
+    <div class="legend-box">
+      <div id="legendContainer"></div>
+    </div>
+    <div class="stats">
+      <div><strong>Domain:</strong> <span id="domain">-</span></div>
+      <div><strong>Breaks:</strong> <span id="breaks">-</span></div>
+      <div><strong>Targets:</strong> <span id="targets">-</span></div>
+    </div>
+  </div>
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
+  <script src="./classification-extension-demo.js"></script>
+</body>
+</html>

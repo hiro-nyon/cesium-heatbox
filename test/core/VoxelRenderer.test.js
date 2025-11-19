@@ -3,6 +3,7 @@
  */
 
 import { VoxelRenderer } from '../../src/core/VoxelRenderer.js';
+import { ColorCalculator } from '../../src/core/color/ColorCalculator.js';
 
 describe('VoxelRenderer', () => {
   // v0.1.6: 色補間テスト追加
@@ -118,6 +119,68 @@ describe('VoxelRenderer', () => {
       expect(highCall).toBeDefined();
       expect(lowCall[0].box.material.red).toBeCloseTo(0, 2);
       expect(highCall[0].box.material.red).toBeCloseTo(1, 2);
+    });
+
+    test('falls back to legacy color when color target is disabled', () => {
+      const viewer = testUtils.createMockViewer();
+      const renderer = new VoxelRenderer(viewer, {
+        classification: {
+          enabled: true,
+          scheme: 'linear',
+          colorMap: ['#000000', '#ffffff'],
+          classificationTargets: { color: false }
+        }
+      });
+
+      const colorSpy = jest.spyOn(ColorCalculator, 'calculateColor');
+
+      const voxelData = new Map();
+      voxelData.set('0,0,0', { x: 0, y: 0, z: 0, count: 5 });
+
+      const bounds = { minLon: 0, maxLon: 1, minLat: 0, maxLat: 1, minAlt: 0, maxAlt: 1 };
+      const grid = { numVoxelsX: 1, numVoxelsY: 1, numVoxelsZ: 1, voxelSizeMeters: 5 };
+      const statistics = { minCount: 5, maxCount: 5 };
+
+      renderer.render(voxelData, bounds, grid, statistics);
+
+      expect(colorSpy).toHaveBeenCalled();
+
+      colorSpy.mockRestore();
+    });
+  });
+
+  describe('emulation edge rendering', () => {
+    test('passes adaptive outline opacity to edge polylines', () => {
+      const viewer = testUtils.createMockViewer();
+      const renderer = new VoxelRenderer(viewer, {
+        outlineRenderMode: 'emulation-only',
+        emulationScope: 'all'
+      });
+
+      // Stub geometry renderer methods to avoid Cesium dependencies during this test
+      renderer.geometryRenderer.createVoxelBox = jest.fn();
+      renderer.geometryRenderer.createInsetOutline = jest.fn();
+      renderer.geometryRenderer.shouldApplyInsetOutline = jest.fn(() => false);
+      renderer.geometryRenderer.createEdgePolylines = jest.fn();
+
+      const params = {
+        centerLon: 0, centerLat: 0, centerAlt: 0,
+        cellSizeX: 10, cellSizeY: 10, boxHeight: 10,
+        color: {}, opacity: 1,
+        shouldShowOutline: true,
+        outlineColor: { withAlpha: jest.fn(alpha => ({ alpha })), alpha: 0.6 },
+        outlineWidth: 3,
+        voxelInfo: { x: 0, y: 0, z: 0, count: 1 },
+        emulateThick: true,
+        isTopN: false,
+        adaptiveParams: { outlineOpacity: 0.4 }
+      };
+
+      renderer._delegateVoxelRendering('edge-key', params);
+
+      expect(renderer.geometryRenderer.createEdgePolylines).toHaveBeenCalledWith(expect.objectContaining({
+        outlineOpacity: 0.4
+      }));
     });
   });
   

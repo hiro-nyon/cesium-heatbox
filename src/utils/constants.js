@@ -123,7 +123,9 @@ export const DEFAULT_OPTIONS = {
     colorMap: null,
     domain: null,
     classificationTargets: {
-      color: true
+      color: true,
+      opacity: false,
+      width: false
     }
   }
 };

@@ -307,7 +307,7 @@ export class AdaptiveController {
    * @param {Object} [grid] - Grid information (optional, for Z-scale compensation) / グリッド情報（オプション、Z軸補正用）
    * @returns {Object} Adaptive parameters / 適応的パラメータ
    */
-  calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, renderOptions, grid = null) {
+  calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, renderOptions, grid = null, classifier = null) {
     // 引数の安全性チェック
     if (!voxelInfo || !statistics || !renderOptions) {
       return {
@@ -318,8 +318,14 @@ export class AdaptiveController {
       };
     }
     
-    // v0.1.11-alpha: 適応制御が無効な場合は早期リターン (ADR-0009 Phase 3)
-    if (!renderOptions.adaptiveOutlines) {
+    const classificationOptions = renderOptions.classification || {};
+    const classificationTargets = classificationOptions.classificationTargets || DEFAULT_OPTIONS.classification.classificationTargets || {};
+    const classificationEnabled = Boolean(classificationOptions.enabled && classifier);
+    const hasClassificationTarget =
+      (classificationTargets.opacity || classificationTargets.width) && classificationEnabled;
+
+    // v0.1.11-alpha: 適応制御が無効かつ分類ターゲットもない場合は早期リターン
+    if (!renderOptions.adaptiveOutlines && !hasClassificationTarget) {
       return {
         outlineWidth: null,
         boxOpacity: null,
@@ -331,6 +337,20 @@ export class AdaptiveController {
     const { count } = voxelInfo;
     const normalizedDensity = statistics.maxCount > statistics.minCount ? 
       (count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
+
+    let classificationNormalized = null;
+    let classificationIndex = null;
+    if (classificationEnabled) {
+      try {
+        classificationNormalized = Math.max(0, Math.min(1, classifier.normalize(count ?? 0)));
+        classificationIndex = classifier.classify(count ?? 0);
+      } catch (error) {
+        Logger.warn('AdaptiveController classification normalize failed, fallback to density:', error);
+        classificationNormalized = null;
+      }
+    }
+
+    const baseNormalized = classificationNormalized !== null ? classificationNormalized : normalizedDensity;
     
     // 近傍密度を計算
     const neighborhoodResult = this.calculateNeighborhoodDensity(voxelInfo, voxelData, null, renderOptions);
@@ -365,12 +385,41 @@ export class AdaptiveController {
       renderOptions
     );
 
-    // v0.1.15 Phase 1: Z軸補正を含めた最終調整（ADR-0011）
-    const finalWidth = presetResult.adaptiveWidth * cameraFactor * zScaleFactor;
-    const finalOutlineOpacity = Math.max(0.2, presetResult.adaptiveOutlineOpacity * (1 - overlapRisk));
-
     // Range & clamp adjustments (v0.1.15 Phase 0/1)
     const rangeConfig = (renderOptions && renderOptions.adaptiveParams) || controllerAdaptiveParams || {};
+
+    const interpolateRange = (range, normalizedValue, fallback = null) => {
+      if (Array.isArray(range) && range.length === 2) {
+        const [minRange, maxRange] = range;
+        const span = (maxRange ?? 0) - (minRange ?? 0);
+        const minVal = minRange ?? 0;
+        return minVal + Math.max(0, Math.min(1, normalizedValue)) * span;
+      }
+      return fallback;
+    };
+
+    // v0.1.15 Phase 1: Z軸補正を含めた最終調整（ADR-0011）
+    let finalWidth = presetResult.adaptiveWidth * cameraFactor * zScaleFactor;
+    let finalOutlineOpacity = Math.max(0.2, presetResult.adaptiveOutlineOpacity * (1 - overlapRisk));
+
+    if (classificationTargets.width && classificationEnabled) {
+      const interpolatedWidth = interpolateRange(rangeConfig.outlineWidthRange, baseNormalized, finalWidth);
+      if (interpolatedWidth !== null && interpolatedWidth !== undefined) {
+        const topNBoost = isTopN && renderOptions.highlightTopN ? (renderOptions.highlightTopNWidthBoost || 0) : 0;
+        finalWidth = interpolatedWidth + topNBoost;
+      }
+    }
+
+    if (classificationTargets.opacity && classificationEnabled) {
+      const interpolatedBoxOpacity = interpolateRange(rangeConfig.boxOpacityRange, baseNormalized, presetResult.adaptiveBoxOpacity);
+      const interpolatedOutlineOpacity = interpolateRange(rangeConfig.outlineOpacityRange, baseNormalized, finalOutlineOpacity);
+      if (interpolatedBoxOpacity !== null && interpolatedBoxOpacity !== undefined) {
+        presetResult.adaptiveBoxOpacity = interpolatedBoxOpacity;
+      }
+      if (interpolatedOutlineOpacity !== null && interpolatedOutlineOpacity !== undefined) {
+        finalOutlineOpacity = interpolatedOutlineOpacity;
+      }
+    }
 
     const clampWithRange = (value, range, hardMin, hardMax) => {
       let clamped = value;
@@ -419,6 +468,8 @@ export class AdaptiveController {
       // Debug info for testing / テスト用デバッグ情報
       _debug: {
         normalizedDensity,
+        classificationNormalized,
+        classificationIndex,
         neighborhoodResult,
         cameraFactor,
         overlapRisk,

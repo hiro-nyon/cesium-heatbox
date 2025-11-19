@@ -156,6 +156,13 @@ const stats = heatbox.getStatistics();
 console.log(stats.renderTimeMs);  // newly added
 ```
 
+### v1.1.0 (classification/legend upgrade - preview)
+
+- `classificationTargets` で `opacity` / `width` を有効化し、`adaptiveParams.boxOpacityRange` / `outlineOpacityRange` / `outlineWidthRange` で補間値を指定します（resolver は互換目的で存続）。
+- 新スキーム `quantile` / `jenks` を追加。DataProcessor が値配列を収集し、`getStatistics().classification` に `quantiles`（Q1–Q4）/`jenksBreaks`/`ckmeansClusters` を返します。
+- `createLegend()` / `updateLegend()` / `destroyLegend()` を追加。分類状態に応じた凡例 DOM を自動生成します。
+- 既存アプリは `classificationTargets.color: true` のみで従来互換。opacity/width を使う場合は `adaptiveParams` のレンジ指定を忘れないでください。
+
 ### Quick Migration Steps
 
 1. **Replace deprecated option names**:
