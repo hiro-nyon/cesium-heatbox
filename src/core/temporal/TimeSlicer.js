@@ -112,11 +112,11 @@ export class TimeSlicer {
     }
 
     /**
-     * Get entry for the current time.
-     * 現在時刻に対応するエントリーを取得します。
-     * @param {Cesium.JulianDate} currentTime 
-     * @returns {Object|null} Entry or null if not found
-     */
+   * Get entry for the current time.
+   * 現在時刻に対応するエントリーを取得します。
+   * @param {Cesium.JulianDate} currentTime 
+   * @returns {Object|null} Entry or null if not found
+   */
     getEntry(currentTime) {
         this._searchCount++;
 
@@ -131,15 +131,30 @@ export class TimeSlicer {
             }
         }
 
-        // Linear search (Phase 1 implementation)
-        // Phase 2 will implement binary search and optimization
-        for (let i = 0; i < this._entries.length; i++) {
-            const entry = this._entries[i];
-            if (this._isInRange(currentTime, entry)) {
-                this._currentIndex = i;
-                this._currentEntry = entry;
-                return entry;
+        // Nearby search (Phase 2)
+        const nearbyIndices = [
+            this._currentIndex,
+            this._currentIndex + 1,
+            this._currentIndex - 1
+        ];
+
+        for (const idx of nearbyIndices) {
+            if (idx >= 0 && idx < this._entries.length) {
+                const entry = this._entries[idx];
+                if (this._isInRange(currentTime, entry)) {
+                    this._currentIndex = idx;
+                    this._currentEntry = entry;
+                    return entry;
+                }
             }
+        }
+
+        // Binary search (Phase 2)
+        const index = this._binarySearch(currentTime);
+        if (index >= 0) {
+            this._currentIndex = index;
+            this._currentEntry = this._entries[index];
+            return this._currentEntry;
         }
 
         // Not found
@@ -160,6 +175,46 @@ export class TimeSlicer {
             Cesium.JulianDate.greaterThanOrEquals(time, entry.start) &&
             Cesium.JulianDate.lessThan(time, entry.stop)
         );
+    }
+
+    /**
+     * Binary search for the entry containing the time.
+     * 二分探索で時刻を含むエントリーを探します。
+     * @param {Cesium.JulianDate} time 
+     * @returns {number} Index or -1 if not found
+     * @private
+     */
+    _binarySearch(time) {
+        let left = 0;
+        let right = this._entries.length - 1;
+
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            const entry = this._entries[mid];
+
+            if (this._isInRange(time, entry)) {
+                return mid;
+            }
+
+            if (Cesium.JulianDate.lessThan(time, entry.start)) {
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Get cache hit rate.
+     * キャッシュヒット率を取得します。
+     * @returns {number}
+     */
+    getCacheHitRate() {
+        return this._searchCount > 0
+            ? this._cacheHits / this._searchCount
+            : 0;
     }
 
     /**
