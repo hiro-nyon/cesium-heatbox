@@ -1,4 +1,3 @@
-import * as Cesium from 'cesium';
 import { TimeSlicer } from './TimeSlicer.js';
 
 /**
@@ -96,7 +95,7 @@ export class TimeController {
      * @returns {boolean}
      * @private
      */
-    _shouldUpdate(now) {
+    _shouldUpdate(_now) {
         const interval = this._options.updateInterval;
 
         if (interval === 'frame' || !interval) {
