@@ -345,6 +345,36 @@ console.log('Histogram bins', stats.histogram);
 
 See `examples/advanced/classification-demo.html` for a browser-only demo covering the five schemes, palette presets, and statistics readout.
 
+### Temporal playback (v1.2.0)
+
+Older apps often wired `viewer.clock` manually:
+
+```javascript
+viewer.clock.onTick.addEventListener(clock => {
+  const currentSlice = pickSlice(clock.currentTime);
+  heatbox.setData(currentSlice);
+});
+```
+
+In v1.2.0 you can move this responsibility into Heatbox by supplying `temporal` options:
+
+```javascript
+const slices = buildSlices(); // [{ start, stop, data }]
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 40,
+  temporal: {
+    enabled: true,
+    data: slices,
+    classificationScope: 'per-time',
+    updateInterval: 200,
+    outOfRangeBehavior: 'clear',
+    overlapResolution: 'prefer-earlier'
+  }
+});
+```
+
+The internal `TimeController` listens to `viewer.clock.onTick`, throttles updates, and keeps classification stats in sync. Toggle the feature at runtime via `heatbox.updateOptions({ temporal: { ... } })` instead of destroying/recreating your Heatbox instance.
+
 ### Troubleshooting (English)
 
 #### Q: I see deprecation warnings
@@ -804,6 +834,36 @@ console.log('ブレークポイント', stats.breaks);
 #### 参考デモ
 
 ブラウザだけで動作する `examples/advanced/classification-demo.html` で、5つのスキームとパレット切替、統計メタデータをまとめて確認できます。
+
+### 時系列モード (v1.2.0)
+
+従来は `viewer.clock.onTick` を自前で購読し、該当時間のエンティティ配列を手動で `setData()` していたケースが一般的でした:
+
+```javascript
+viewer.clock.onTick.addEventListener(clock => {
+  const slice = pickEntities(clock.currentTime);
+  heatbox.setData(slice); // 毎フレームグリッド再構築
+});
+```
+
+v1.2.0 では `temporal` オプションに時間帯別データを渡すだけで、内部の TimeController が Clock と同期して `setData()` を発火します:
+
+```javascript
+const slices = buildTemporalSlices(); // [{ start, stop, data }]
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 35,
+  temporal: {
+    enabled: true,
+    data: slices,
+    classificationScope: 'global',
+    updateInterval: 250,
+    outOfRangeBehavior: 'clear',
+    overlapResolution: 'prefer-later'
+  }
+});
+```
+
+`heatbox.updateOptions({ temporal: { ... } })` で実行時にオン/オフしたり、`classificationScope` を切り替えることも可能です。`viewer.timeline` をそのまま UI として利用できるため、移行後は Clock リスナーを自前で管理する必要がなくなります。
 
 ### トラブルシューティング
 
