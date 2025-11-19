@@ -41,6 +41,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-11-19
+
+### Changed
+- 1.1.0-alpha.1 の分類拡張（quantile/jenks、multi-target、Legend UI）を安定化し、テスト/ドキュメントを確認した上で正式リリース。
+- DataProcessor の統計出力と分類ターゲットまわりのQAを再確認し、回帰が無いことを確認。
+
+### Fixed
+- 1.1.0-alpha.1 時点の分類拡張の微細なドキュメント差異を修正。
+
 ## [1.1.0-alpha.1] - 2024-11-19
 
 ### Added
