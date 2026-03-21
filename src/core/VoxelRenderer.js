@@ -706,6 +706,7 @@ export class VoxelRenderer {
 
   _prepareClassifier(statistics) {
     const classificationOptions = this.options.classification;
+    const classificationStats = statistics?.classification || null;
     if (!classificationOptions || !classificationOptions.enabled) {
       this._classifier = null;
       return;
@@ -721,10 +722,18 @@ export class VoxelRenderer {
 
     const domain = Array.isArray(classificationOptions.domain) && classificationOptions.domain.length === 2
       ? classificationOptions.domain
-      : [statistics?.minCount ?? 0, statistics?.maxCount ?? 0];
+      : (
+          Array.isArray(classificationStats?.domain) && classificationStats.domain.length === 2
+            ? classificationStats.domain
+            : [
+                statistics?.minCount ?? statistics?.min ?? 0,
+                statistics?.maxCount ?? statistics?.max ?? 0
+              ]
+        );
 
     let values = null;
-    if (this._currentVoxelData && this._currentVoxelData.size > 0) {
+    const hasExplicitBreaks = Array.isArray(classificationStats?.breaks) && classificationStats.breaks.length >= 2;
+    if (!hasExplicitBreaks && this._currentVoxelData && this._currentVoxelData.size > 0) {
       values = [];
       for (const voxelInfo of this._currentVoxelData.values()) {
         if (voxelInfo && Number.isFinite(voxelInfo.count)) {
@@ -743,6 +752,7 @@ export class VoxelRenderer {
         thresholds: classificationOptions.thresholds,
         colorMap: classificationOptions.colorMap,
         domain,
+        breaks: hasExplicitBreaks ? classificationStats.breaks : null,
         values
       });
     } catch (error) {
