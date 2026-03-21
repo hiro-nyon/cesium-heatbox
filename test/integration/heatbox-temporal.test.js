@@ -1,3 +1,8 @@
+/**
+ * @jest-environment jsdom
+ */
+/* global document */
+
 import { Heatbox } from '../../src/Heatbox.js';
 
 // Mock dependencies
@@ -89,7 +94,7 @@ describe('Heatbox Temporal Integration', () => {
             }
         };
 
-        const heatbox = new Heatbox(viewer, options);
+        new Heatbox(viewer, options);
 
         expect(TimeController).not.toHaveBeenCalled();
     });
@@ -97,7 +102,7 @@ describe('Heatbox Temporal Integration', () => {
     test('should NOT initialize TimeController when temporal option is missing', () => {
         const options = {};
 
-        const heatbox = new Heatbox(viewer, options);
+        new Heatbox(viewer, options);
 
         expect(TimeController).not.toHaveBeenCalled();
     });

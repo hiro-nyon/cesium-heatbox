@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+import { DataProcessor } from '../DataProcessor.js';
 
 /**
  * TimeSlicer class for managing and retrieving time-series data.
@@ -296,8 +297,11 @@ export class TimeSlicer {
    * @param {string} valueProperty - Property name to use for value (default: 'weight')
    * @returns {Object} Global statistics
    */
-    calculateGlobalStats(valueProperty = 'weight') {
-        const cacheKey = valueProperty;
+    calculateGlobalStats(valueProperty = 'weight', classificationOptions = null) {
+        const cacheKey = JSON.stringify({
+            valueProperty,
+            classification: classificationOptions || null
+        });
 
         if (this._globalStatsCache[cacheKey]) {
             return this._globalStatsCache[cacheKey];
@@ -336,9 +340,11 @@ export class TimeSlicer {
         // Quantiles
         const quantiles = this._calculateQuantiles(allValues, [0.25, 0.5, 0.75]);
 
-        this._globalStatsCache[cacheKey] = {
+        const stats = {
             min,
             max,
+            minCount: min,
+            maxCount: max,
             mean,
             median,
             quantiles,
@@ -346,7 +352,17 @@ export class TimeSlicer {
             count
         };
 
-        return this._globalStatsCache[cacheKey];
+        if (classificationOptions && classificationOptions.enabled) {
+            stats.classification = DataProcessor._buildClassificationStats(
+                allValues,
+                classificationOptions,
+                min,
+                max
+            );
+        }
+
+        this._globalStatsCache[cacheKey] = stats;
+        return stats;
     }
 
     _calculateMedian(sortedValues) {

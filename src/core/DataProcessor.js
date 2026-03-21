@@ -229,8 +229,18 @@ export class DataProcessor {
     // v1.2.0: Accept external statistics (e.g. from TimeSlicer global stats)
     if (options._externalStats) {
       Logger.debug('Using external statistics:', options._externalStats);
+      const externalMin = Number.isFinite(options._externalStats.minCount)
+        ? options._externalStats.minCount
+        : (Number.isFinite(options._externalStats.min) ? options._externalStats.min : 0);
+      const externalMax = Number.isFinite(options._externalStats.maxCount)
+        ? options._externalStats.maxCount
+        : (Number.isFinite(options._externalStats.max) ? options._externalStats.max : externalMin);
       const stats = {
         ...options._externalStats,
+        min: externalMin,
+        max: externalMax,
+        minCount: externalMin,
+        maxCount: externalMax,
         // Keep dynamic counts that depend on current data
         totalVoxels: grid.totalVoxels,
         renderedVoxels: 0,
@@ -254,8 +264,8 @@ export class DataProcessor {
         stats.classification = DataProcessor._buildClassificationStats(
           [], // No need to re-scan counts if we trust external stats
           options.classification,
-          stats.min,
-          stats.max
+          stats.minCount,
+          stats.maxCount
         );
         // Override domain with global domain
         if (stats.domain) {

@@ -24,6 +24,7 @@ export function createClassifier (options = {}) {
     scheme = 'linear',
     values = null,
     domain = null,
+    breaks: explicitBreaks = null,
     classes: rawClasses = 5,
     thresholds = null,
     colorMap = null
@@ -73,9 +74,13 @@ export function createClassifier (options = {}) {
       break;
     }
     case 'equal-interval': {
-      breaks = [];
-      for (let i = 0; i <= classes; i++) {
-        breaks.push(min + (max - min) * (i / classes));
+      if (Array.isArray(explicitBreaks) && explicitBreaks.length >= 2) {
+        breaks = [...explicitBreaks];
+      } else {
+        breaks = [];
+        for (let i = 0; i <= classes; i++) {
+          breaks.push(min + (max - min) * (i / classes));
+        }
       }
       normalize = (value) => {
         for (let i = 0; i < breaks.length - 1; i++) {
@@ -91,9 +96,13 @@ export function createClassifier (options = {}) {
       break;
     }
     case 'quantize': {
-      breaks = [];
-      for (let i = 0; i <= classes; i++) {
-        breaks.push(min + (max - min) * (i / classes));
+      if (Array.isArray(explicitBreaks) && explicitBreaks.length >= 2) {
+        breaks = [...explicitBreaks];
+      } else {
+        breaks = [];
+        for (let i = 0; i <= classes; i++) {
+          breaks.push(min + (max - min) * (i / classes));
+        }
       }
       normalize = (value) => {
         for (let i = 0; i < breaks.length - 1; i++) {
@@ -106,10 +115,13 @@ export function createClassifier (options = {}) {
       break;
     }
     case 'threshold': {
-      if (!Array.isArray(thresholds) || thresholds.length === 0) {
+      if (Array.isArray(explicitBreaks) && explicitBreaks.length >= 2) {
+        breaks = [...explicitBreaks];
+      } else if (!Array.isArray(thresholds) || thresholds.length === 0) {
         throw new Error('threshold scheme requires thresholds array');
+      } else {
+        breaks = [min, ...thresholds, max];
       }
-      breaks = [min, ...thresholds, max];
       normalize = (value) => {
         for (let i = 0; i < breaks.length - 1; i++) {
           if (value <= breaks[i + 1]) {
@@ -121,16 +133,19 @@ export function createClassifier (options = {}) {
       break;
     }
     case 'quantile': {
-      if (!Array.isArray(values) || values.length === 0) {
+      if (Array.isArray(explicitBreaks) && explicitBreaks.length >= 2) {
+        breaks = [...explicitBreaks];
+      } else if (!Array.isArray(values) || values.length === 0) {
         throw new Error('quantile scheme requires values array');
+      } else {
+        const backend = getBackend();
+        breaks = [min];
+        const classesCount = Math.max(2, classes);
+        for (let i = 1; i < classesCount; i++) {
+          breaks.push(backend.quantile(values, i / classesCount));
+        }
+        breaks.push(max);
       }
-      const backend = getBackend();
-      breaks = [min];
-      const classesCount = Math.max(2, classes);
-      for (let i = 1; i < classesCount; i++) {
-        breaks.push(backend.quantile(values, i / classesCount));
-      }
-      breaks.push(max);
 
       normalize = (value) => {
         for (let i = 0; i < breaks.length - 1; i++) {
@@ -143,20 +158,23 @@ export function createClassifier (options = {}) {
       break;
     }
     case 'jenks': {
-      if (!Array.isArray(values) || values.length === 0) {
+      if (Array.isArray(explicitBreaks) && explicitBreaks.length >= 2) {
+        breaks = [...explicitBreaks];
+      } else if (!Array.isArray(values) || values.length === 0) {
         throw new Error('jenks scheme requires values array');
-      }
-      const backend = getBackend();
-      const jenksBreaks = backend.jenksBreaks(values, classes);
-      breaks = [min];
-      if (Array.isArray(jenksBreaks)) {
-        for (const b of jenksBreaks) {
-          if (Number.isFinite(b) && b > min && b < max) {
-            breaks.push(b);
+      } else {
+        const backend = getBackend();
+        const jenksBreaks = backend.jenksBreaks(values, classes);
+        breaks = [min];
+        if (Array.isArray(jenksBreaks)) {
+          for (const b of jenksBreaks) {
+            if (Number.isFinite(b) && b > min && b < max) {
+              breaks.push(b);
+            }
           }
         }
+        breaks.push(max);
       }
-      breaks.push(max);
 
       normalize = (value) => {
         for (let i = 0; i < breaks.length - 1; i++) {
