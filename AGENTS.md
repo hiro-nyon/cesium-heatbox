@@ -195,6 +195,12 @@ Do NOT write an ADR for:
      - `git tag -a v1.0.0-alpha.5 -m "release: 1.0.0-alpha.5"`
      - `git push origin v1.0.0-alpha.5`
   4. GitHub Actions publishes to npm once the tag is pushed and CI is green.
+- Preferred stable release flow when `next` must stay aligned with `main`:
+  1. Update the release version on `next` first and push `next`.
+  2. Open or keep a PR from `next` to `main` for review, but do not rely on a merge commit if branch parity matters.
+  3. Before tagging, make sure `main` and `next` point to the same commit. If GitHub already merged the PR, merge `origin/main` back into `next`, then fast-forward `main` to `next`.
+  4. Create and push the release tag from `main` only after both branches are on the same commit.
+  5. After any post-release documentation change, fast-forward the other branch as well so `next` and `main` stay in sync.
 
 ## Deprecations & Future Feature Policy（重要）
 - 別ブランチ/将来リリースで実装予定の機能がある場合、代替が完成するまで既存APIを削除しないでください。
