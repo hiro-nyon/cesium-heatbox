@@ -115,6 +115,21 @@ describe('classification', () => {
       expect(classifier.classify(7)).toBe(2);
       expect(classifier.classify(9)).toBe(3);
     });
+
+    test('should respect explicit breaks for global temporal classification', () => {
+      const classifier = createClassifier({
+        scheme: 'quantile',
+        domain: [1, 100],
+        breaks: [1, 25, 50, 75, 100],
+        classes: 4
+      });
+
+      expect(classifier.breaks).toEqual([1, 25, 50, 75, 100]);
+      expect(classifier.classify(10)).toBe(0);
+      expect(classifier.classify(40)).toBe(1);
+      expect(classifier.classify(60)).toBe(2);
+      expect(classifier.classify(90)).toBe(3);
+    });
   });
 
   describe('jenks scheme', () => {

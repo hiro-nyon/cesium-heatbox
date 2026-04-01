@@ -93,6 +93,11 @@ describe('Temporal Integration', () => {
 
     test('Global Scope uses heatbox valueProperty when computing stats', () => {
         heatbox.options.valueProperty = 'intensity';
+        heatbox.options.classification = {
+            enabled: true,
+            scheme: 'quantile',
+            classes: 2
+        };
 
         const options = {
             data: [
@@ -116,6 +121,9 @@ describe('Temporal Integration', () => {
         expect(heatbox._globalStats).toBeDefined();
         expect(heatbox._globalStats.min).toBe(100);
         expect(heatbox._globalStats.max).toBe(300);
+        expect(heatbox._globalStats.minCount).toBe(100);
+        expect(heatbox._globalStats.maxCount).toBe(300);
+        expect(heatbox._globalStats.classification.breaks).toEqual([100, 200, 300]);
         expect(heatbox.options._externalStats).toBe(heatbox._globalStats);
     });
 });

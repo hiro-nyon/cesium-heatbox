@@ -1,6 +1,8 @@
 /**
  * Legend UI tests
+ * @jest-environment jsdom
  */
+/* global document */
 
 import { Legend } from '../../src/ui/Legend.js';
 

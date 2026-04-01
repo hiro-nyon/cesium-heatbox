@@ -85,6 +85,37 @@ describe('DataProcessor utils', () => {
     expect(stats.classification.ckmeansClusters?.[0]).toEqual([1, 2, 3]);
   });
 
+  test('external stats are normalized for renderer-facing count fields', () => {
+    const grid = { totalVoxels: 20 };
+    const vd = makeVoxelData([
+      { x: 0, y: 0, z: 0, count: 2 },
+      { x: 1, y: 1, z: 1, count: 5 }
+    ]);
+    const stats = DataProcessor.calculateStatistics(vd, grid, {
+      classification: {
+        enabled: true,
+        scheme: 'equal-interval',
+        classes: 3
+      },
+      _externalStats: {
+        min: 1,
+        max: 100,
+        domain: [1, 100],
+        classification: {
+          enabled: true,
+          scheme: 'equal-interval',
+          domain: [1, 100],
+          breaks: [1, 34, 67, 100]
+        }
+      }
+    });
+
+    expect(stats.minCount).toBe(1);
+    expect(stats.maxCount).toBe(100);
+    expect(stats.classification.domain).toEqual([1, 100]);
+    expect(stats.classification.breaks).toEqual([1, 34, 67, 100]);
+  });
+
   test('getTopNVoxels が上位Nを返す', () => {
     const vd = makeVoxelData([
       { x: 0, y: 0, z: 0, count: 1 },
