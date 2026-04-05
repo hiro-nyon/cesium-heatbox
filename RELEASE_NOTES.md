@@ -1,23 +1,53 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 1.3.3（2026-04-06）
+
+**Temporal example refresh / release metadata sync**
+
+### ハイライト
+- **Advanced temporal example**: `examples/temporal/advanced-temporal.html` を追加し、`interpolate` / `dataSource` / `useWorker` をブラウザ上で同時に確認できるようにしました。
+- **Version sync**: `package.json` と `src/index.js` を `1.3.3` に更新し、examples/API ドキュメントの版表記も揃えました。
+
+### 主な変更
+- Temporal examples の README と Examples overview を更新し、v1.3.x の時系列機能セットに合わせて説明を整理しました。
+- 新しいサンプルでは 2 時間刻みのアンカースライスと奇数時間帯のギャップを使い、補間と lazy loading の効き方を可視化します。
+
+## バージョン 1.3.2（2026-04-06）
+
+**Temporal interpolation / lazy loading / worker offload**
+
+### ハイライト
+- **Gap interpolation**: `temporal.interpolate` により、隣接スライス間の数値プロパティを補間できます。
+- **Lazy loading**: `temporal.dataSource` から必要な時点のスライスを遅延供給できます。
+- **Worker preprocessing**: `temporal.useWorker` で補間と時系列統計の前処理を worker へオフロードできます。
+
+### 主な変更
+- `TimeSlicer` が同期/非同期の両方の時系列参照経路を持ち、worker 非対応環境では自動でメインスレッドへフォールバックします。
+- `TimeController` は dataSource/useWorker が有効な場合に非同期経路を使い、時系列再生中の更新を維持します。
+
+## バージョン 1.3.1（2026-04-06）
+
+**Lightweight update API**
+
+### ハイライト
+- **`Heatbox.updateValues()`**: 同じ bounds/grid を維持できる更新では、フル再構築を避けて軽量更新を行います。
+
+### 主な変更
+- `TimeController` は `updateValues()` が利用可能な場合にそれを優先し、時系列同期時の再構築を削減します。
+
 ## バージョン 1.3.0（2026-04-06）
 
-**Performance foundation / lightweight updates / temporal entrypoints**
+**Performance foundation / render planning / compatibility**
 
 ### ハイライト
 - **差分更新レンダリング**: `GeometryRenderer` がボクセルキー単位の render record を保持し、全削除・全再生成ではなく add/update/remove を使うようになりました。
-- **軽量更新 API**: `Heatbox.updateValues()` を追加し、同じ bounds/grid を再利用できる更新を高速化しました。
 - **描画計画の分離**: `RenderPlanner` を追加し、重要ボクセル優先、簡易 LoD、ビューポートカリングをレンダ本体から切り離しました。
-- **Temporal の 1.3.x 基盤**: `temporal.interpolate` と `temporal.dataSource` の入口を追加し、時系列ギャップ補間と lazy loading の足場を整えました。
 - **Cesium compatibility**: minimum supported を `^1.120.0` とし、CI で `cesium@^1.120.0` / `cesium@latest` の dual smoke test を実行します。
 
 ### 主な変更
 - `DataProcessor` の voxel record は `count`、位置/境界、Spatial ID、aggregation 情報を中心とした compact 表現へ移行しました。
-- `TimeController` は `updateValues()` が利用可能な場合に軽量更新を優先し、時系列同期の再構築コストを削減します。
-- README / API / MIGRATION / ROADMAP を `1.3.0` と `1.3.x` の区切りに合わせて更新しました。
-
-### 既知の補足
-- `temporal.useWorker` は補間と時系列統計の前処理を worker にオフロードし、worker 非対応環境では従来どおりメインスレッドへフォールバックします。
+- `GeometryRenderer` と `VoxelRenderer` の責務を整理し、描画候補生成と差分更新の分離を進めました。
+- README / API / ROADMAP を `1.3.0` の性能基盤スコープに合わせて更新しました。
 
 ## バージョン 0.1.15-alpha.4（2025-10-10）
 
