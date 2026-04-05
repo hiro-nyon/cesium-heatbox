@@ -41,6 +41,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-04-06
+
+### Added
+- `updateValues(entities, runtimeOptions?)` を追加し、既存 bounds/grid を再利用できる更新を軽量化。
+- `RenderPlanner` を追加し、描画優先度制御、簡易LoD、ビューポートカリングを分離。
+- Temporal 補間と `dataSource` 入口を追加し、数値プロパティ補間と lazy loading の基盤を導入。
+- CI に `cesium@^1.120.0` / `cesium@latest` の dual smoke test を追加。
+
+### Changed
+- `DataProcessor` の voxel record から `entities` 配列保持を削除し、compact な内部表現へ変更。
+- `GeometryRenderer` を差分更新型に変更し、ボクセルキー単位の add/update/remove を実装。
+- `TimeController` は `updateValues()` を優先利用し、時系列更新時の再構築を抑制。
+- 互換性ポリシーを整理し、minimum supported Cesium を `^1.120.0` と明記。
+
+### Fixed
+- レンダ/クリア反復時の不要なエンティティ再生成を抑制し、ヒープ増分の回帰を起こしにくい構成へ修正。
+
 ## [1.1.0] - 2025-11-19
 
 ### Changed

@@ -160,7 +160,6 @@ export class DataProcessor {
               x: voxelX,
               y: voxelY,
               z: voxelZ,
-              entities: [],
               count: 0
             };
 
@@ -173,7 +172,6 @@ export class DataProcessor {
           }
 
           const voxelInfo = voxelData.get(voxelKey);
-          voxelInfo.entities.push(entity);
           voxelInfo.count++;
 
           // v0.1.18: Aggregate by layer (ADR-0014)
@@ -566,7 +564,6 @@ export class DataProcessor {
             z: safeZ,
             bounds: vertices,  // 8 vertices from ouranos-gex or fallback / ouranos-gexまたはフォールバックからの8頂点
             spatialId: { ...zfxy, id: zfxyStr },
-            entities: [],
             count: 0
           };
 
@@ -579,7 +576,6 @@ export class DataProcessor {
         }
 
         const voxelInfo = voxelMap.get(zfxyStr);
-        voxelInfo.entities.push(entity);
         voxelInfo.count++;
 
         // v0.1.18: Aggregate by layer (ADR-0014)

@@ -394,6 +394,95 @@ describe('GeometryRenderer', () => {
       // Should not throw
       expect(() => geometryRenderer.clear()).not.toThrow();
     });
+
+    test('Should diff-update voxel records without recreating unchanged box entity', () => {
+      let entityId = 0;
+      mockViewer.entities.add.mockImplementation(config => ({
+        id: `entity-${entityId++}`,
+        ...config,
+        isDestroyed: jest.fn(() => false)
+      }));
+
+      geometryRenderer.beginFrame();
+      geometryRenderer.syncVoxel({
+        centerLon: 139.7,
+        centerLat: 35.6,
+        centerAlt: 100,
+        cellSizeX: 10,
+        cellSizeY: 10,
+        boxHeight: 10,
+        color: { withAlpha: jest.fn(alpha => ({ alpha })) },
+        opacity: 0.5,
+        shouldShowOutline: true,
+        outlineColor: { withAlpha: jest.fn(alpha => ({ alpha })) },
+        outlineWidth: 2,
+        voxelInfo: { x: 0, y: 0, z: 0, count: 1 },
+        voxelKey: '0,0,0',
+        emulateThick: false,
+        shouldShowInsetOutline: false,
+        adaptiveParams: {}
+      });
+      geometryRenderer.endFrame();
+
+      const firstEntity = geometryRenderer.entities[0];
+      expect(mockViewer.entities.add).toHaveBeenCalledTimes(1);
+
+      geometryRenderer.beginFrame();
+      geometryRenderer.syncVoxel({
+        centerLon: 139.7,
+        centerLat: 35.6,
+        centerAlt: 100,
+        cellSizeX: 12,
+        cellSizeY: 12,
+        boxHeight: 15,
+        color: { withAlpha: jest.fn(alpha => ({ alpha })) },
+        opacity: 0.8,
+        shouldShowOutline: true,
+        outlineColor: { withAlpha: jest.fn(alpha => ({ alpha })) },
+        outlineWidth: 3,
+        voxelInfo: { x: 0, y: 0, z: 0, count: 5 },
+        voxelKey: '0,0,0',
+        emulateThick: false,
+        shouldShowInsetOutline: false,
+        adaptiveParams: {}
+      });
+      geometryRenderer.endFrame();
+
+      expect(mockViewer.entities.add).toHaveBeenCalledTimes(1);
+      expect(geometryRenderer.entities[0]).toBe(firstEntity);
+      expect(geometryRenderer.entities[0].properties.count).toBe(5);
+    });
+
+    test('Should remove stale voxel records on frame end', () => {
+      geometryRenderer.beginFrame();
+      geometryRenderer.syncVoxel({
+        centerLon: 139.7,
+        centerLat: 35.6,
+        centerAlt: 100,
+        cellSizeX: 10,
+        cellSizeY: 10,
+        boxHeight: 10,
+        color: { withAlpha: jest.fn(alpha => ({ alpha })) },
+        opacity: 0.5,
+        shouldShowOutline: true,
+        outlineColor: { withAlpha: jest.fn(alpha => ({ alpha })) },
+        outlineWidth: 2,
+        voxelInfo: { x: 0, y: 0, z: 0, count: 1 },
+        voxelKey: '0,0,0',
+        emulateThick: false,
+        shouldShowInsetOutline: false,
+        adaptiveParams: {}
+      });
+      geometryRenderer.endFrame();
+
+      expect(geometryRenderer.entities).toHaveLength(1);
+
+      geometryRenderer.beginFrame();
+      geometryRenderer.endFrame();
+
+      expect(mockViewer.entities.remove).toHaveBeenCalled();
+      expect(geometryRenderer.entities).toHaveLength(0);
+    });
   });
 
   describe('Configuration Management', () => {

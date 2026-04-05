@@ -1,5 +1,24 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 1.3.0（2026-04-06）
+
+**Performance foundation / lightweight updates / temporal entrypoints**
+
+### ハイライト
+- **差分更新レンダリング**: `GeometryRenderer` がボクセルキー単位の render record を保持し、全削除・全再生成ではなく add/update/remove を使うようになりました。
+- **軽量更新 API**: `Heatbox.updateValues()` を追加し、同じ bounds/grid を再利用できる更新を高速化しました。
+- **描画計画の分離**: `RenderPlanner` を追加し、重要ボクセル優先、簡易 LoD、ビューポートカリングをレンダ本体から切り離しました。
+- **Temporal の 1.3.x 基盤**: `temporal.interpolate` と `temporal.dataSource` の入口を追加し、時系列ギャップ補間と lazy loading の足場を整えました。
+- **Cesium compatibility**: minimum supported を `^1.120.0` とし、CI で `cesium@^1.120.0` / `cesium@latest` の dual smoke test を実行します。
+
+### 主な変更
+- `DataProcessor` の voxel record は `count`、位置/境界、Spatial ID、aggregation 情報を中心とした compact 表現へ移行しました。
+- `TimeController` は `updateValues()` が利用可能な場合に軽量更新を優先し、時系列同期の再構築コストを削減します。
+- README / API / MIGRATION / ROADMAP を `1.3.0` と `1.3.x` の区切りに合わせて更新しました。
+
+### 既知の補足
+- `temporal.useWorker` は補間と時系列統計の前処理を worker にオフロードし、worker 非対応環境では従来どおりメインスレッドへフォールバックします。
+
 ## バージョン 0.1.15-alpha.4（2025-10-10）
 
 **Phase 4 ドキュメント & 品質保証アップデート（プレリリース）**
