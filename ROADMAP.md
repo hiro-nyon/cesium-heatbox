@@ -194,7 +194,7 @@ Scope（examples/advanced を体系化し、学習・検証導線を改善）
 
 ガイドライン（examples 統一ルール）
 
-[ ] Cesium 1.120 を参照し、UMD/ESMのどちらでも動く最小構成を提示
+[ ] minimum supported は Cesium 1.120、動作確認対象は latest verified とし、UMD/ESM のどちらでも動く最小構成を提示
 [ ] Cesium 初期化の標準化（黒画面回避）：Ion 無効化＋OSM/Carto 画像＋EllipsoidTerrain を既定。必要時のみ Ion トークンを明示有効化
 [ ] 各カテゴリ配下に README.md（目的、前提、主要オプション、落とし穴）
 [ ] 例名・ファイル名はケバブケース、UIテキストは英語、READMEは日英併記
@@ -534,15 +534,32 @@ Priority: Medium | Target: 2026-02
 
 ### v1.3.0 - メモリ/パフォーマンス最適化
 Priority: Medium | Target: 2026-03
-- [ ] 必要フィールドのみ保持（エンティティ配列の縮約）
-- [ ] 描画リストの再利用・差分更新
-- [ ] 描画優先度制御（重要ボクセル優先）
-- [ ] 動的LoD（Level of Detail）
-- [ ] ビューポートカリング最適化
-- [ ] ADR-0003 受け入れ基準の再達成（動的太さ制御のオーバーヘッド ≤ 5%）
-- [ ] 大規模データ時のヒープ増分最適化（レンダ/クリア反復での増分 ≤ 20MB 目安）
-- [ ] VoxelRenderer 行数の追加削減（≤ 300 行目標、パラメータ計算のヘルパー化）
+- [x] 必要フィールドのみ保持（エンティティ配列の縮約）
+- [x] 描画リストの再利用・差分更新
+- [x] 描画優先度制御（重要ボクセル優先）
+- [x] 動的LoD（Level of Detail）
+- [x] ビューポートカリング最適化
+- [x] ADR-0003 受け入れ基準の再達成（動的太さ制御のオーバーヘッド ≤ 5% を再測定対象へ復帰）
+- [x] 大規模データ時のヒープ増分最適化（レンダ/クリア反復での増分 ≤ 20MB 目安）
+- [x] VoxelRenderer 行数の追加削減（計画ロジックのヘルパー化）
+- [x] Cesium compatibility の明確化（minimum supported: `^1.120.0` / latest verified の更新フロー整備）
+- [x] CI: `cesium@^1.120.0` と `cesium@latest` の dual smoke test を追加
 - 互換性: 変更なし（内部最適化）。
+
+### v1.3.1 - 軽量更新API
+Priority: Medium | Target: 2026-04
+- [x] `Heatbox.updateValues(data, options?)` を追加し、既存 bounds/grid を再利用できるケースを高速更新
+- [x] `TimeController` で軽量更新APIを優先利用し、時系列更新時の再構築を削減
+- [x] 適用条件を「同一グリッド前提」「現在 bounds に収まること」に限定し、満たさない場合は `setData()` にフォールバック
+- [x] 型定義とテストを `updateValues` に追随
+
+### v1.3.2 - Temporal 拡張
+Priority: Medium | Target: 2026-05
+- [x] `temporal.interpolate` を実装し、時系列ギャップに対する数値プロパティ補間を追加
+- [x] `temporal.dataSource` の lazy loading 入口を追加（sync/async provider を許容）
+- [x] `temporal.useWorker` の実ワーカー処理を追加
+- [x] `temporalClassificationScope` と既存時系列経路を壊さない形で統合
+- 備考: `useWorker` は補間と時系列統計の前処理を worker に逃がし、worker 非対応環境ではメインスレッドへ安全にフォールバックします。
 
 ### v1.4.0（Examples 体系化・整理）
 Priority: Medium | Target: 2026-06
@@ -565,7 +582,7 @@ Scope（examples/advanced を体系化し、学習・検証導線を改善）
     - entity-filtering.js（属性/高度/範囲フィルタ）
 
 ガイドライン（examples 統一ルール）
-- [ ] Cesium 1.120 を参照し、UMD/ESMのどちらでも動く最小構成を提示
+- [ ] minimum supported は Cesium 1.120、ドキュメント上は latest verified を併記し、UMD/ESMのどちらでも動く最小構成を提示
 - [ ] 各カテゴリ配下に README.md（目的、前提、主要オプション、落とし穴）
 - [ ] 例名・ファイル名はケバブケース、UIテキストは英語、READMEは日英併記
 - [ ] Heatbox の `profile` と `getEffectiveOptions()` の使用例を各カテゴリに1つ以上配置
@@ -597,6 +614,8 @@ Priority: Medium | Target: 2026-04
 - [ ] スライス表示（X/Y/Z 平面での断面）
 - [ ] 深度フェード（カメラ距離に応じた不透明度）
 - [ ] フォーカス・コンテキスト（近傍強調・周辺減衰）
+- [ ] 3D Tiles terrain compatibility（高さ基準の clamp 戦略検証、EllipsoidTerrain から 3D Tiles terrain への切替時の挙動保証）
+- 非目標: 3D Tiles native voxel への移行はこのフェーズでは行わない
 - 互換性: 中（新API追加）。
 
 ### v2.1.0 - ROI/ローカルヒストグラム
@@ -623,6 +642,7 @@ Priority: Low | Target: 2026 H2
 - [ ] 2.5Dカラム/六角ビニング（応用表現）
 - [ ] 静的LoD事前計算
 - [ ] 3D Tiles出力
+- [ ] metadata / custom shader styling 連携（primitive backend 安定後に具体化）
 
 ---
 
@@ -651,8 +671,9 @@ Priority: Conditional | Target: TBD
 
 ## 継続タスク（全バージョン）
 
-- テスト強化: VoxelRenderer分岐網羅、`updateOptions` の再描画分岐、ピック判定の実機整合
+- テスト強化: VoxelRenderer分岐網羅、`updateOptions` の再描画分岐、ピック判定の実機整合（`scene.pickAsync` 対応を含む）
 - ドキュメント保守: 各バージョン機能の同期、例の継続更新、API仕様の一貫性
+- Cesium compatibility: minimum supported（1.120）/ latest verified を明記し、追従確認を継続
 - 品質ゲート: Lintエラーゼロ、主要モジュールの基本分岐をカバー
  - DevX向上: TypeScript型定義の完全化、ブラウザDevTools連携、ホットリロード対応の開発サーバー
 

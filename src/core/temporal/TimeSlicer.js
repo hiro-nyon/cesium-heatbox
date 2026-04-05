@@ -1,5 +1,8 @@
 import * as Cesium from 'cesium';
 import { DataProcessor } from '../DataProcessor.js';
+import { Logger } from '../../utils/logger.js';
+import { TemporalWorkerBridge } from './TemporalWorkerBridge.js';
+import { calculateTemporalStats, interpolateTemporalData } from './temporalWorkerTasks.js';
 
 /**
  * TimeSlicer class for managing and retrieving time-series data.
@@ -12,10 +15,13 @@ export class TimeSlicer {
      */
     constructor(rawData, options = {}) {
         this._options = options;
+        this._dataSource = typeof options.dataSource === 'function' ? options.dataSource : null;
         this._entries = this._normalizeAndSort(rawData);
         this._currentIndex = 0;
         this._currentEntry = null;
         this._globalStatsCache = {};
+        this._pendingLoad = null;
+        this._workerBridge = new TemporalWorkerBridge(options);
 
         // Performance metrics
         this._searchCount = 0;
@@ -30,8 +36,12 @@ export class TimeSlicer {
      * @private
      */
     _normalizeAndSort(rawData) {
-        if (!Array.isArray(rawData) || rawData.length === 0) {
+        if ((!Array.isArray(rawData) || rawData.length === 0) && !this._dataSource) {
             throw new Error('Temporal data must be a non-empty array');
+        }
+
+        if (!Array.isArray(rawData) || rawData.length === 0) {
+            return [];
         }
 
         // Normalize
@@ -205,6 +215,65 @@ export class TimeSlicer {
     getEntry(currentTime) {
         this._searchCount++;
 
+        const entry = this._getDirectEntry(currentTime);
+        if (entry) {
+            return entry;
+        }
+
+        // Not found
+        this._currentEntry = null;
+        if (this._options.interpolate) {
+            const interpolated = this._interpolateBetweenEntries(currentTime);
+            this._currentEntry = interpolated;
+            return interpolated;
+        }
+        return null;
+    }
+
+    async getEntryAsync(currentTime) {
+        this._searchCount++;
+
+        const existing = this._getDirectEntry(currentTime);
+        if (existing) {
+            return existing;
+        }
+
+        if (this._dataSource && !this._pendingLoad) {
+            this._pendingLoad = Promise.resolve(
+                this._dataSource(currentTime, {
+                    loadedEntries: this._entries.length,
+                    timeRange: this.getTimeRange()
+                })
+            )
+                .then(result => {
+                    this._pendingLoad = null;
+                    this._mergeLoadedEntries(result);
+                })
+                .catch(error => {
+                    this._pendingLoad = null;
+                    Logger.warn('Temporal dataSource failed to provide data:', error);
+                });
+        }
+
+        if (this._pendingLoad) {
+            await this._pendingLoad;
+            const loaded = this._getDirectEntry(currentTime);
+            if (loaded) {
+                return loaded;
+            }
+        }
+
+        if (this._options.interpolate) {
+            const interpolated = await this._interpolateBetweenEntriesAsync(currentTime);
+            this._currentEntry = interpolated;
+            return interpolated;
+        }
+
+        this._currentEntry = null;
+        return null;
+    }
+
+    _getDirectEntry(currentTime) {
         // Cache check
         if (this._currentEntry) {
             if (
@@ -242,7 +311,6 @@ export class TimeSlicer {
             return this._currentEntry;
         }
 
-        // Not found
         this._currentEntry = null;
         return null;
     }
@@ -291,6 +359,137 @@ export class TimeSlicer {
         return -1;
     }
 
+    _interpolateBetweenEntries(currentTime) {
+        if (this._entries.length < 2) {
+            return null;
+        }
+
+        for (let index = 0; index < this._entries.length - 1; index++) {
+            const previous = this._entries[index];
+            const next = this._entries[index + 1];
+            const secondsFromPreviousStop = this._getSecondsDifference(currentTime, previous.stop);
+            const secondsToNextStart = this._getSecondsDifference(next.start, currentTime);
+
+            if (!Number.isFinite(secondsFromPreviousStop) || !Number.isFinite(secondsToNextStart)) {
+                continue;
+            }
+
+            if (secondsFromPreviousStop < 0 || secondsToNextStart < 0) {
+                continue;
+            }
+
+            const gapSeconds = this._getSecondsDifference(next.start, previous.stop);
+            if (!Number.isFinite(gapSeconds) || gapSeconds <= 0) {
+                continue;
+            }
+
+            const ratio = Math.max(0, Math.min(1, secondsFromPreviousStop / gapSeconds));
+            const interpolatedData = interpolateTemporalData(previous.data, next.data, ratio);
+            const stop = Cesium.JulianDate.addSeconds(currentTime, 1, new Cesium.JulianDate());
+
+            return {
+                start: currentTime,
+                stop,
+                data: interpolatedData,
+                interpolated: true
+            };
+        }
+
+        return null;
+    }
+
+    async _interpolateBetweenEntriesAsync(currentTime) {
+        if (!this._workerBridge.isEnabled()) {
+            return this._interpolateBetweenEntries(currentTime);
+        }
+
+        if (this._entries.length < 2) {
+            return null;
+        }
+
+        for (let index = 0; index < this._entries.length - 1; index++) {
+            const previous = this._entries[index];
+            const next = this._entries[index + 1];
+            const secondsFromPreviousStop = this._getSecondsDifference(currentTime, previous.stop);
+            const secondsToNextStart = this._getSecondsDifference(next.start, currentTime);
+
+            if (!Number.isFinite(secondsFromPreviousStop) || !Number.isFinite(secondsToNextStart)) {
+                continue;
+            }
+
+            if (secondsFromPreviousStop < 0 || secondsToNextStart < 0) {
+                continue;
+            }
+
+            const gapSeconds = this._getSecondsDifference(next.start, previous.stop);
+            if (!Number.isFinite(gapSeconds) || gapSeconds <= 0) {
+                continue;
+            }
+
+            const ratio = Math.max(0, Math.min(1, secondsFromPreviousStop / gapSeconds));
+            let interpolatedData = null;
+
+            try {
+                interpolatedData = await this._workerBridge.run('interpolate', {
+                    previousData: previous.data,
+                    nextData: next.data,
+                    ratio
+                });
+            } catch (error) {
+                Logger.warn('Temporal interpolation worker failed, falling back to main thread:', error);
+            }
+
+            if (!Array.isArray(interpolatedData)) {
+                interpolatedData = interpolateTemporalData(previous.data, next.data, ratio);
+            }
+
+            const stop = Cesium.JulianDate.addSeconds(currentTime, 1, new Cesium.JulianDate());
+            return {
+                start: currentTime,
+                stop,
+                data: interpolatedData,
+                interpolated: true
+            };
+        }
+
+        return null;
+    }
+
+    _mergeLoadedEntries(loadedEntries) {
+        if (!loadedEntries) {
+            return;
+        }
+
+        const normalized = Array.isArray(loadedEntries) ? loadedEntries : [loadedEntries];
+        if (normalized.length === 0) {
+            return;
+        }
+
+        const merged = [...this._entries, ...normalized];
+        this._entries = this._normalizeAndSort(merged);
+    }
+
+    _getSecondsDifference(left, right) {
+        if (typeof Cesium.JulianDate.secondsDifference === 'function') {
+            return Cesium.JulianDate.secondsDifference(left, right);
+        }
+
+        if (typeof Cesium.JulianDate.toDate === 'function') {
+            return (Cesium.JulianDate.toDate(left).getTime() - Cesium.JulianDate.toDate(right).getTime()) / 1000;
+        }
+
+        if (left?._value instanceof Date && right?._value instanceof Date) {
+            return (left._value.getTime() - right._value.getTime()) / 1000;
+        }
+
+        if (Number.isFinite(left?.dayNumber) && Number.isFinite(right?.dayNumber) &&
+            Number.isFinite(left?.secondsOfDay) && Number.isFinite(right?.secondsOfDay)) {
+            return ((left.dayNumber - right.dayNumber) * 86400) + (left.secondsOfDay - right.secondsOfDay);
+        }
+
+        return NaN;
+    }
+
     /**
    * Calculate global statistics across all time entries.
    * 全時間のエントリーにまたがる統計量を計算します。
@@ -307,57 +506,28 @@ export class TimeSlicer {
             return this._globalStatsCache[cacheKey];
         }
 
-        let min = Infinity;
-        let max = -Infinity;
-        let sum = 0;
-        let count = 0;
-        const allValues = [];
-
-        for (const entry of this._entries) {
-            if (!Array.isArray(entry.data)) continue;
-
-            for (const point of entry.data) {
-                const value = point[valueProperty] ?? 1; // Default to 1 if property missing
-                if (typeof value !== 'number') continue;
-
-                min = Math.min(min, value);
-                max = Math.max(max, value);
-                sum += value;
-                count++;
-                allValues.push(value);
-            }
-        }
-
-        if (count === 0) {
+        const stats = calculateTemporalStats(this._entries, valueProperty);
+        if (!stats) {
             return null;
         }
 
-        // Mean & Median
-        const mean = sum / count;
-        allValues.sort((a, b) => a - b);
-        const median = this._calculateMedian(allValues);
-
-        // Quantiles
-        const quantiles = this._calculateQuantiles(allValues, [0.25, 0.5, 0.75]);
-
-        const stats = {
-            min,
-            max,
-            minCount: min,
-            maxCount: max,
-            mean,
-            median,
-            quantiles,
-            domain: [min, max],
-            count
-        };
-
         if (classificationOptions && classificationOptions.enabled) {
+            const allValues = [];
+            for (const entry of this._entries) {
+                if (!Array.isArray(entry.data)) continue;
+                for (const point of entry.data) {
+                    const value = point[valueProperty] ?? 1;
+                    if (typeof value === 'number') {
+                        allValues.push(value);
+                    }
+                }
+            }
+
             stats.classification = DataProcessor._buildClassificationStats(
                 allValues,
                 classificationOptions,
-                min,
-                max
+                stats.min,
+                stats.max
             );
         }
 
@@ -365,20 +535,35 @@ export class TimeSlicer {
         return stats;
     }
 
-    _calculateMedian(sortedValues) {
-        if (sortedValues.length === 0) return 0;
-        const mid = Math.floor(sortedValues.length / 2);
-        if (sortedValues.length % 2 === 0) {
-            return (sortedValues[mid - 1] + sortedValues[mid]) / 2;
-        }
-        return sortedValues[mid];
-    }
-
-    _calculateQuantiles(sortedValues, quantiles) {
-        return quantiles.map(q => {
-            const index = Math.floor(sortedValues.length * q);
-            return sortedValues[Math.min(index, sortedValues.length - 1)];
+    async calculateGlobalStatsAsync(valueProperty = 'weight', classificationOptions = null) {
+        const cacheKey = JSON.stringify({
+            valueProperty,
+            classification: classificationOptions || null
         });
+
+        if (this._globalStatsCache[cacheKey]) {
+            return this._globalStatsCache[cacheKey];
+        }
+
+        if (!this._workerBridge.isEnabled() || (classificationOptions && classificationOptions.enabled)) {
+            return this.calculateGlobalStats(valueProperty, classificationOptions);
+        }
+
+        try {
+            const stats = await this._workerBridge.run('stats', {
+                entries: this._entries.map(entry => ({ data: entry.data })),
+                valueProperty
+            });
+
+            if (stats) {
+                this._globalStatsCache[cacheKey] = stats;
+                return stats;
+            }
+        } catch (error) {
+            Logger.warn('Temporal stats worker failed, falling back to main thread:', error);
+        }
+
+        return this.calculateGlobalStats(valueProperty, classificationOptions);
     }
 
     /**
@@ -405,5 +590,9 @@ export class TimeSlicer {
             start: this._entries[0].start,
             stop: this._entries[this._entries.length - 1].stop
         };
+    }
+
+    destroy() {
+        this._workerBridge.destroy();
     }
 }

@@ -193,4 +193,18 @@ describe('TimeController', () => {
             expect.objectContaining({})
         );
     });
+
+    test('should prefer updateValues when Heatbox provides lightweight update API', () => {
+        heatbox.updateValues = jest.fn();
+        controller = new TimeController(viewer, heatbox, options);
+        controller.activate();
+
+        controller._onTick(viewer.clock);
+
+        expect(heatbox.updateValues).toHaveBeenCalledWith(
+            [{ id: 1 }],
+            expect.objectContaining({ _skipAutoView: true })
+        );
+        expect(heatbox.setData).not.toHaveBeenCalled();
+    });
 });

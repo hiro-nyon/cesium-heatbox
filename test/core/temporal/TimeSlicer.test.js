@@ -1,4 +1,5 @@
 import { TimeSlicer } from '../../../src/core/temporal/TimeSlicer.js';
+import { calculateTemporalStats, interpolateTemporalData } from '../../../src/core/temporal/temporalWorkerTasks.js';
 import * as Cesium from 'cesium';
 
 describe('TimeSlicer', () => {
@@ -6,6 +7,49 @@ describe('TimeSlicer', () => {
 
     const createTime = (offsetSeconds) => {
         return Cesium.JulianDate.addSeconds(baseTime, offsetSeconds, new Cesium.JulianDate());
+    };
+
+    const createWorkerFactory = () => {
+        return () => ({
+            onmessage: null,
+            onerror: null,
+            terminate: jest.fn(),
+            postMessage(message) {
+                queueMicrotask(() => {
+                    try {
+                        let result = null;
+                        if (message.task === 'interpolate') {
+                            result = interpolateTemporalData(
+                                message.payload.previousData,
+                                message.payload.nextData,
+                                message.payload.ratio
+                            );
+                        } else if (message.task === 'stats') {
+                            result = calculateTemporalStats(
+                                message.payload.entries,
+                                message.payload.valueProperty
+                            );
+                        } else {
+                            throw new Error(`Unknown task: ${message.task}`);
+                        }
+
+                        this.onmessage?.({
+                            data: {
+                                id: message.id,
+                                result
+                            }
+                        });
+                    } catch (error) {
+                        this.onmessage?.({
+                            data: {
+                                id: message.id,
+                                error: error.message
+                            }
+                        });
+                    }
+                });
+            }
+        });
     };
 
     const mockData = [
@@ -128,6 +172,28 @@ describe('TimeSlicer', () => {
             expect(slicer.getCacheHitRate()).toBeGreaterThan(0);
             expect(slicer.getCacheHitRate()).toBeLessThanOrEqual(1);
         });
+
+        test('should interpolate values across gaps when interpolate is enabled', () => {
+            const slicer = new TimeSlicer([
+                {
+                    start: '2025-01-01T00:00:00Z',
+                    stop: '2025-01-01T00:10:00Z',
+                    data: [{ id: 'a', value: 0, properties: { intensity: 10 } }]
+                },
+                {
+                    start: '2025-01-01T00:20:00Z',
+                    stop: '2025-01-01T00:30:00Z',
+                    data: [{ id: 'a', value: 10, properties: { intensity: 20 } }]
+                }
+            ], { interpolate: true });
+
+            const entry = slicer.getEntry(createTime(15 * 60)); // midpoint in the gap
+
+            expect(entry).not.toBeNull();
+            expect(entry.interpolated).toBe(true);
+            expect(entry.data[0].value).toBeCloseTo(5);
+            expect(entry.data[0].properties.intensity).toBeCloseTo(15);
+        });
     });
 
     describe('overlapResolution handling', () => {
@@ -224,6 +290,83 @@ describe('TimeSlicer', () => {
             const slicer = new TimeSlicer(data);
             const stats = slicer.calculateGlobalStats('weight');
             expect(stats).toBeNull();
+        });
+    });
+
+    describe('async data source', () => {
+        test('loads entries on demand via dataSource', async () => {
+            const dataSource = jest.fn(async () => ([
+                {
+                    start: '2025-01-01T03:00:00Z',
+                    stop: '2025-01-01T04:00:00Z',
+                    data: [{ id: 4, value: 40 }]
+                }
+            ]));
+
+            const slicer = new TimeSlicer([], { dataSource });
+            const entry = await slicer.getEntryAsync(createTime(3 * 3600 + 10));
+
+            expect(dataSource).toHaveBeenCalled();
+            expect(entry).not.toBeNull();
+            expect(entry.data[0].id).toBe(4);
+        });
+    });
+
+    describe('worker processing', () => {
+        test('uses worker path for interpolation when enabled', async () => {
+            const slicer = new TimeSlicer([
+                {
+                    start: '2025-01-01T00:00:00Z',
+                    stop: '2025-01-01T00:10:00Z',
+                    data: [{ id: 'a', value: 0, properties: { intensity: 10 } }]
+                },
+                {
+                    start: '2025-01-01T00:20:00Z',
+                    stop: '2025-01-01T00:30:00Z',
+                    data: [{ id: 'a', value: 10, properties: { intensity: 20 } }]
+                }
+            ], {
+                interpolate: true,
+                useWorker: true,
+                _workerFactory: createWorkerFactory()
+            });
+
+            const entry = await slicer.getEntryAsync(createTime(15 * 60));
+
+            expect(entry).not.toBeNull();
+            expect(entry.interpolated).toBe(true);
+            expect(entry.data[0].value).toBeCloseTo(5);
+            expect(entry.data[0].properties.intensity).toBeCloseTo(15);
+
+            slicer.destroy();
+        });
+
+        test('uses worker path for global stats when enabled', async () => {
+            const slicer = new TimeSlicer([
+                {
+                    start: '2025-01-01T00:00:00Z',
+                    stop: '2025-01-01T01:00:00Z',
+                    data: [{ intensity: 10 }, { intensity: 30 }]
+                },
+                {
+                    start: '2025-01-01T01:00:00Z',
+                    stop: '2025-01-01T02:00:00Z',
+                    data: [{ intensity: 20 }]
+                }
+            ], {
+                useWorker: true,
+                _workerFactory: createWorkerFactory()
+            });
+
+            const stats = await slicer.calculateGlobalStatsAsync('intensity');
+
+            expect(stats).not.toBeNull();
+            expect(stats.min).toBe(10);
+            expect(stats.max).toBe(30);
+            expect(stats.count).toBe(3);
+            expect(stats.quantiles).toEqual([10, 20, 30]);
+
+            slicer.destroy();
         });
     });
 });

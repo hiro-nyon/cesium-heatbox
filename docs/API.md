@@ -1,4 +1,4 @@
-# API Reference (APIリファレンス) - v1.0.0
+# API Reference (APIリファレンス) - v1.3.0
 
 [English](#english) | [日本語](#日本語)
 
@@ -44,7 +44,7 @@ Creates a new Heatbox instance.
   - `pitch` (number, default: -30) - Camera pitch (degrees)
   - `paddingPercent` (number, default: 0.1) - Padding ratio around data bounds
 - **`classification` (string | ClassificationOptions | false) - v1.1.0: Declarative classification engine (`linear`/`log`/`equal-interval`/`quantize`/`threshold`/`quantile`/`jenks`) with multi-target control (color / opacity / width). When `false`, the legacy min/max interpolation is used. See [ClassificationOptions](#classificationoptions-v110).**
-- **`temporal` (TemporalOptions|null) - v1.2.0: Built-in Cesium clock synchronisation. Provide ordered `data` slices and Heatbox will update automatically as the clock moves. Supports `classificationScope` (global/per-time), throttling via `updateInterval`, overlap policies, and `outOfRangeBehavior` (clear/hold).**
+- **`temporal` (TemporalOptions|null) - v1.2.0/v1.3.x: Built-in Cesium clock synchronisation. Supports `classificationScope`, throttling, overlap policies, numeric interpolation across gaps, and optional lazy loading via `dataSource`.**
 
 For brevity, see the Japanese section below for complete option details and examples.
 
@@ -66,6 +66,14 @@ Creates heatmap data from entity array and renders it.
 
 **Parameters:**
 - `entities` (Array<Cesium.Entity>) - Target entity array
+
+##### `updateValues(entities, runtimeOptions?)` (v1.3.x)
+
+Updates voxel data while reusing the current bounds/grid when the new data still fits the existing spatial envelope.
+
+**Parameters:**
+- `entities` (Array<Cesium.Entity>) - Target entity array
+- `runtimeOptions` (Object, optional) - Internal/runtime overrides such as `_externalStats`
 
 ##### `updateOptions(newOptions)`
 
@@ -196,7 +204,9 @@ interface TemporalOptions {
   updateInterval?: 'frame' | number; // 'frame' or milliseconds
   outOfRangeBehavior?: 'clear'|'hold';
   overlapResolution?: 'skip'|'prefer-earlier'|'prefer-later';
-  interpolate?: boolean;            // Reserved for future use
+  interpolate?: boolean;            // Interpolate numeric values across gaps
+  dataSource?: (currentTime, context) => Promise<TemporalDataEntry[]|TemporalDataEntry|null> | TemporalDataEntry[] | TemporalDataEntry | null;
+  useWorker?: boolean;              // Run interpolation/stat preprocessing in a worker when available
 }
 ```
 

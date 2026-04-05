@@ -51,6 +51,12 @@ npm install
 npm run build
 ```
 
+## 互換性
+
+- minimum supported Cesium: `^1.120.0`
+- latest verified Cesium: CI の互換 smoke test を最後に通過した最新版
+- CI では `cesium@^1.120.0` と `cesium@latest` の両方を検証
+
 ## クイックスタート
 
 ```javascript
@@ -128,13 +134,16 @@ const heatbox = new Heatbox(viewer, {
     ],
     classificationScope: 'global',  // または 'per-time'
     updateInterval: 1000,           // ミリ秒スロットル
-    outOfRangeBehavior: 'clear'     // または 'hold'
+    outOfRangeBehavior: 'clear',    // または 'hold'
+    interpolate: true               // スライス間ギャップの数値を補間
   }
 });
 ```
 
 - オーバーラップ解決: `prefer-earlier`、`prefer-later`、`skip`
 - 二分探索+キャッシュによる効率的な時間検索
+- `updateValues()` は既存グリッドに収まる更新を軽量経路で処理
+- `dataSource(currentTime, context)` で lazy loading を追加可能
 - デモ: `examples/temporal/`
 
 詳細は[APIリファレンス — 時系列](docs/API.md)を参照してください。
@@ -266,6 +275,7 @@ aggregation: {
 | `new Heatbox(viewer, options)` | インスタンス作成 |
 | `createFromEntities(entities)` | ヒートマップ作成（非同期、統計情報を返却） |
 | `setData(entities)` | データ設定と描画 |
+| `updateValues(entities, runtimeOptions?)` | 既存グリッドを再利用できる場合の軽量更新 |
 | `updateOptions(newOptions)` | オプション更新と再描画 |
 | `setVisible(show)` | 表示/非表示切り替え |
 | `clear()` | ヒートマップをクリア |

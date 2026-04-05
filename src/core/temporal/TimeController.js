@@ -36,20 +36,52 @@ export class TimeController {
         if (this._options.classificationScope === 'global') {
             const heatboxOptions = this._heatbox.options || {};
             const valueProperty = heatboxOptions.valueProperty || 'weight';
-            const globalStats = this._slicer.calculateGlobalStats(
+            if (this._options.useWorker) {
+                void this._activateWithAsyncStats(valueProperty, heatboxOptions.classification || null);
+                return;
+            }
+
+            this._heatbox._globalStats = this._slicer.calculateGlobalStats(
                 valueProperty,
                 heatboxOptions.classification || null
             );
-            this._heatbox._globalStats = globalStats;
+        }
+
+        this._bindClockListener();
+
+        // Initial update
+        this._onTick(this._viewer.clock);
+    }
+
+    async _activateWithAsyncStats(valueProperty, classificationOptions) {
+        let isCancelled = false;
+
+        try {
+            this._heatbox._globalStats = await this._slicer.calculateGlobalStatsAsync(
+                valueProperty,
+                classificationOptions
+            );
+        } finally {
+            isCancelled = !this._isActive;
+        }
+
+        if (isCancelled) {
+            return;
+        }
+
+        this._bindClockListener();
+        this._onTick(this._viewer.clock);
+    }
+
+    _bindClockListener() {
+        if (this._removeListener) {
+            return;
         }
 
         // Register clock listener
         this._removeListener = this._viewer.clock.onTick.addEventListener(
             this._onTick.bind(this)
         );
-
-        // Initial update
-        this._onTick(this._viewer.clock);
     }
 
     /**
@@ -64,6 +96,8 @@ export class TimeController {
             this._removeListener();
             this._removeListener = null;
         }
+
+        this._slicer.destroy();
     }
 
     /**
@@ -73,6 +107,11 @@ export class TimeController {
      * @private
      */
     _onTick(clock) {
+        if (this._options.dataSource || this._options.useWorker) {
+            void this._handleAsyncTick(clock);
+            return;
+        }
+
         const now = clock.currentTime;
 
         // Throttling check
@@ -83,6 +122,21 @@ export class TimeController {
 
         // Change detection
         // Allow null entries to propagate so outOfRangeBehavior can run
+        if (entry !== null && entry === this._lastEntry) {
+            return;
+        }
+
+        this._lastEntry = entry;
+        this._updateHeatbox(entry);
+    }
+
+    async _handleAsyncTick(clock) {
+        const now = clock.currentTime;
+
+        if (!this._shouldUpdate(now)) return;
+
+        const entry = await this._slicer.getEntryAsync(now);
+
         if (entry !== null && entry === this._lastEntry) {
             return;
         }
@@ -134,11 +188,16 @@ export class TimeController {
         }
 
         // Update options
-        const updateOptions = { _skipRebuild: false };
+        const updateOptions = { _skipRebuild: false, _skipAutoView: true };
 
         // Global scope handling (Phase 3)
         if (this._options.classificationScope === 'global' && this._heatbox._globalStats) {
             updateOptions._externalStats = this._heatbox._globalStats;
+        }
+
+        if (typeof this._heatbox.updateValues === 'function') {
+            this._heatbox.updateValues(entry.data, updateOptions);
+            return;
         }
 
         this._heatbox.setData(entry.data, updateOptions);
