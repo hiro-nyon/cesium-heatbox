@@ -12,6 +12,21 @@
       Cesium.Ion.defaultAccessToken = null;
     }
   </script>
+  <style>
+    .hb-layout {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      min-height: 100vh;
+    }
+
+    .hb-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
   <script src="../common/camera.js"></script>
   <script src="../../dist/cesium-heatbox.umd.min.js"></script>
   <script src="./temporal-data.js"></script>
@@ -135,6 +150,7 @@
     let timelineStop = null;
     let sliderInteracting = false;
     let lazyState = null;
+    let previewEntities = [];
 
     TemporalHeatboxDemo.loadScenario(viewer, currentScenarioKey).then((payload) => {
       currentPayload = payload;
@@ -144,6 +160,7 @@
       wireControls();
       viewer.clock.onTick.addEventListener((clock) => {
         syncSliderWithCurrentTime(clock);
+        updatePreviewPoints(clock.currentTime);
         updateDiagnostics();
       });
     });
@@ -257,7 +274,22 @@
 
       document.getElementById('scenarioLabel').textContent = payload.label;
       document.getElementById('datasetRange').textContent = `${payload.start} 〜 ${payload.stop}`;
+      primeInitialRender(payload);
+      updatePreviewPoints(viewer.clock.currentTime);
       updateDiagnostics(true);
+    }
+
+    function primeInitialRender(payload) {
+      if (!heatbox || !payload?.slices?.length) {
+        return;
+      }
+
+      const initialSlice = payload.slices[0];
+      if (!initialSlice) {
+        return;
+      }
+
+      void heatbox.setData(initialSlice.data, { _skipAutoView: true });
     }
 
     function configureClock(startIso, stopIso) {
@@ -395,6 +427,50 @@
         : '0';
       document.getElementById('sliceMode').textContent = sliceMode;
       document.getElementById('domainLabel').textContent = domain;
+    }
+
+    function clearPreviewPoints() {
+      previewEntities.forEach((entity) => {
+        try {
+          viewer.entities.remove(entity);
+        } catch (_error) {
+          // noop
+        }
+      });
+      previewEntities = [];
+    }
+
+    function updatePreviewPoints(currentTime) {
+      clearPreviewPoints();
+
+      const slice = getPreviewSlice(currentTime);
+      const entities = slice?.data || [];
+      entities.slice(0, 120).forEach((entity, index) => {
+        const position = entity?.position;
+        if (!position) {
+          return;
+        }
+
+        previewEntities.push(viewer.entities.add({
+          id: `advanced-preview-${index}`,
+          position,
+          point: {
+            pixelSize: 4,
+            color: Cesium.Color.fromCssColorString('#f59e0b').withAlpha(0.75),
+            outlineColor: Cesium.Color.fromCssColorString('#111827').withAlpha(0.9),
+            outlineWidth: 1
+          }
+        }));
+      });
+    }
+
+    function getPreviewSlice(currentTime) {
+      if (!currentPayload?.slices?.length || !timelineStart) {
+        return null;
+      }
+
+      const hour = getCurrentHour(currentTime);
+      return currentPayload.slices[Math.max(0, Math.min(currentPayload.slices.length - 1, hour))] || null;
     }
   </script>
 </body>

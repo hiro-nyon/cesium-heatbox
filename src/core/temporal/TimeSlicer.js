@@ -467,6 +467,11 @@ export class TimeSlicer {
 
         const merged = [...this._entries, ...normalized];
         this._entries = this._normalizeAndSort(merged);
+        this._invalidateGlobalStatsCache();
+    }
+
+    _invalidateGlobalStatsCache() {
+        this._globalStatsCache = {};
     }
 
     _getSecondsDifference(left, right) {

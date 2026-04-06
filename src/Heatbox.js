@@ -827,19 +827,9 @@ export class Heatbox {
       return false;
     }
 
-    const currentRange = {
-      lon: Math.max(1e-9, this._bounds.maxLon - this._bounds.minLon),
-      lat: Math.max(1e-9, this._bounds.maxLat - this._bounds.minLat),
-      alt: Math.max(1, this._bounds.maxAlt - this._bounds.minAlt)
-    };
-    const nextRange = {
-      lon: Math.max(1e-9, nextBounds.maxLon - nextBounds.minLon),
-      lat: Math.max(1e-9, nextBounds.maxLat - nextBounds.minLat),
-      alt: Math.max(1, nextBounds.maxAlt - nextBounds.minAlt)
-    };
-    const toleranceLon = currentRange.lon * 0.05;
-    const toleranceLat = currentRange.lat * 0.05;
-    const toleranceAlt = currentRange.alt * 0.1;
+    const toleranceLon = 0.001;
+    const toleranceLat = 0.001;
+    const toleranceAlt = 1;
 
     const fitsCurrentBounds =
       nextBounds.minLon >= (this._bounds.minLon - toleranceLon) &&
@@ -853,12 +843,7 @@ export class Heatbox {
       return false;
     }
 
-    const rangeStable =
-      nextRange.lon <= currentRange.lon * 1.15 &&
-      nextRange.lat <= currentRange.lat * 1.15 &&
-      nextRange.alt <= currentRange.alt * 1.25;
-
-    return rangeStable;
+    return true;
   }
 
   /**

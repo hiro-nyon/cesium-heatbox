@@ -1,5 +1,18 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 1.3.4（2026-04-07）
+
+**Temporal example recovery / camera refresh fix**
+
+### ハイライト
+- **Temporal examples repaired**: `basic-temporal.html`、`global-vs-per-time.html`、`simulation.html`、`advanced-temporal.html` で共通に発生していた「時間は進むが voxel が出ない」症状を解消しました。
+- **Camera refresh**: `TimeController` がカメラ移動を検知して現在の time slice を再描画し、初回カリング後でも表示が回復するようにしました。
+
+### 主な変更
+- `examples/temporal/temporal-data.js` は `document.currentScript` 基準で CZML を解決し、examples の URL 解決ずれを避けるようにしました。
+- `RenderPlanner` の簡易カリングを Cesium の Cartesian 座標ベースへ寄せ、小さな `maxRenderVoxels` でも予算を過剰に持ち上げないように調整しました。
+- `TimeSlicer` は lazy loading 後に統計キャッシュを無効化し、`Heatbox.updateValues()` は bounds 外更新でフル再構築へ戻るよう調整しました。
+
 ## バージョン 1.3.3（2026-04-06）
 
 **Temporal example refresh / release metadata sync**

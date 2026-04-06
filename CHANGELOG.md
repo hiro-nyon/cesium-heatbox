@@ -41,6 +41,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.4] - 2026-04-07
+
+### Fixed
+- temporal examples で初回表示やカメラ移動後に voxel が空のまま残る問題を修正しました。
+- `TimeController` がカメラ変更時に現在の time slice を再描画するようにし、`RenderPlanner` のカリング後でも表示が回復するようにしました。
+- `examples/temporal/temporal-data.js` の CZML パス解決をページ URL 非依存に修正し、examples 配下での読み込み失敗を防止しました。
+- `TimeSlicer` は lazy-loaded entry を統合した際に global stats cache を破棄するようになりました。
+- `Heatbox.updateValues()` の bounds 再利用判定を保守的に見直し、既存グリッドを不正に再利用しないようにしました。
+
 ## [1.3.3] - 2026-04-06
 
 ### Added

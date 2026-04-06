@@ -28,7 +28,7 @@ describe('RenderPlanner', () => {
         positionCartographic: {
           longitude: 139.7 * (Math.PI / 180),
           latitude: 35.6 * (Math.PI / 180),
-          height: 100
+          height: 50
         },
         direction: { x: 1, y: 0, z: 0 },
         frustum: {
@@ -82,6 +82,40 @@ describe('RenderPlanner', () => {
     const result = planner.plan(voxels, bounds, grid, new Set(), 200);
 
     expect(result.budget).toBeLessThan(200);
+    expect(result.voxels).toHaveLength(result.budget);
+  });
+
+  test('never raises budget above a small maxRenderVoxels limit', () => {
+    const viewer = {
+      scene: {
+        canvas: {
+          clientWidth: 800,
+          clientHeight: 600
+        }
+      },
+      camera: {
+        positionCartographic: {
+          longitude: 139.7 * (Math.PI / 180),
+          latitude: 35.6 * (Math.PI / 180),
+          height: 200000
+        },
+        direction: { x: 0, y: 1, z: 0 },
+        frustum: {
+          fov: Math.PI / 3,
+          aspectRatio: 4 / 3
+        }
+      }
+    };
+
+    const planner = new RenderPlanner(viewer, {});
+    const voxels = Array.from({ length: 100 }, (_, index) => ({
+      key: `voxel-${index}`,
+      info: { x: index % 2, y: 0, z: 0, count: index + 1 }
+    }));
+
+    const result = planner.plan(voxels, bounds, grid, new Set(), 10);
+
+    expect(result.budget).toBeLessThanOrEqual(10);
     expect(result.voxels).toHaveLength(result.budget);
   });
 });

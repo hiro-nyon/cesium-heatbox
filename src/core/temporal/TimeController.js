@@ -21,7 +21,10 @@ export class TimeController {
         this._lastUpdateTime = null;      // Last real time update (for throttling)
         this._lastEntry = null;           // Last data entry (for change detection)
         this._removeListener = null;      // Clock listener remover
+        this._removeCameraListener = null;
         this._isActive = false;
+        this._lastCameraRefreshTime = 0;
+        this._asyncTickRequestId = 0;
     }
 
     /**
@@ -48,6 +51,7 @@ export class TimeController {
         }
 
         this._bindClockListener();
+        this._bindCameraListener();
 
         // Initial update
         this._onTick(this._viewer.clock);
@@ -84,6 +88,16 @@ export class TimeController {
         );
     }
 
+    _bindCameraListener() {
+        if (this._removeCameraListener || typeof this._viewer?.camera?.changed?.addEventListener !== 'function') {
+            return;
+        }
+
+        this._removeCameraListener = this._viewer.camera.changed.addEventListener(
+            this._onCameraChanged.bind(this)
+        );
+    }
+
     /**
      * Deactivate the controller.
      * コントローラを無効化します。
@@ -91,10 +105,16 @@ export class TimeController {
     deactivate() {
         if (!this._isActive) return;
         this._isActive = false;
+        this._asyncTickRequestId++;
 
         if (this._removeListener) {
             this._removeListener();
             this._removeListener = null;
+        }
+
+        if (this._removeCameraListener) {
+            this._removeCameraListener();
+            this._removeCameraListener = null;
         }
 
         this._slicer.destroy();
@@ -135,7 +155,12 @@ export class TimeController {
 
         if (!this._shouldUpdate(now)) return;
 
+        const requestId = ++this._asyncTickRequestId;
         const entry = await this._slicer.getEntryAsync(now);
+
+        if (!this._isActive || requestId !== this._asyncTickRequestId) {
+            return;
+        }
 
         if (entry !== null && entry === this._lastEntry) {
             return;
@@ -143,6 +168,20 @@ export class TimeController {
 
         this._lastEntry = entry;
         this._updateHeatbox(entry);
+    }
+
+    _onCameraChanged() {
+        if (!this._isActive || !this._lastEntry) {
+            return;
+        }
+
+        const now = Date.now();
+        if (this._lastCameraRefreshTime && now - this._lastCameraRefreshTime < 50) {
+            return;
+        }
+
+        this._lastCameraRefreshTime = now;
+        this._updateHeatbox(this._lastEntry);
     }
 
     /**

@@ -291,6 +291,31 @@ describe('TimeSlicer', () => {
             const stats = slicer.calculateGlobalStats('weight');
             expect(stats).toBeNull();
         });
+
+        test('invalidates cached global stats after lazy-loaded entries are merged', () => {
+            const slicer = new TimeSlicer([
+                {
+                    start: '2025-01-01T00:00:00Z',
+                    stop: '2025-01-01T01:00:00Z',
+                    data: [{ weight: 5 }]
+                }
+            ]);
+
+            const beforeLoad = slicer.calculateGlobalStats('weight');
+            expect(beforeLoad.max).toBe(5);
+
+            slicer._mergeLoadedEntries([
+                {
+                    start: '2025-01-01T01:00:00Z',
+                    stop: '2025-01-01T02:00:00Z',
+                    data: [{ weight: 20 }]
+                }
+            ]);
+
+            const afterLoad = slicer.calculateGlobalStats('weight');
+            expect(afterLoad.max).toBe(20);
+            expect(afterLoad).not.toBe(beforeLoad);
+        });
     });
 
     describe('async data source', () => {

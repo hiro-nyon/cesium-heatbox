@@ -1,3 +1,5 @@
+import * as Cesium from 'cesium';
+
 /**
  * Lightweight render planner for prioritization, LoD, and viewport culling.
  * 描画優先度、簡易LoD、ビューポートカリングを担当する軽量プランナー。
@@ -113,8 +115,8 @@ export class RenderPlanner {
       ratio = 0.8;
     }
 
-    const resolved = Math.max(50, Math.floor(baseBudget * ratio));
-    return Math.min(resolved, visibleCount);
+    const resolved = Math.max(1, Math.floor(baseBudget * ratio));
+    return Math.min(baseBudget, resolved, visibleCount);
   }
 
   _cullByViewport(voxels, bounds, grid) {
@@ -131,16 +133,17 @@ export class RenderPlanner {
     const cameraLon = this._toDegrees(cameraPosition.longitude);
     const cameraLat = this._toDegrees(cameraPosition.latitude);
     const cameraAlt = Number(cameraPosition.height) || 0;
+    const cameraCartesian = camera.position || Cesium.Cartesian3.fromDegrees(cameraLon, cameraLat, cameraAlt);
     const aspectRatio = Number(camera?.frustum?.aspectRatio) || (canvas.clientWidth / Math.max(canvas.clientHeight || 1, 1));
     const halfFov = Math.max(0.15, fov / 2);
     const horizontalAllowance = Math.atan(Math.tan(halfFov) * Math.max(aspectRatio, 1));
 
     return voxels.filter(voxel => {
       const center = this._estimateCenter(voxel.info, bounds, grid);
-      const lonScale = Math.cos((cameraLat * Math.PI) / 180) * 111320;
-      const dx = (center.lon - cameraLon) * Math.max(1, lonScale);
-      const dy = (center.lat - cameraLat) * 111320;
-      const dz = center.alt - cameraAlt;
+      const voxelCartesian = Cesium.Cartesian3.fromDegrees(center.lon, center.lat, center.alt);
+      const dx = voxelCartesian.x - cameraCartesian.x;
+      const dy = voxelCartesian.y - cameraCartesian.y;
+      const dz = voxelCartesian.z - cameraCartesian.z;
       const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
       if (!Number.isFinite(distance) || distance === 0) {

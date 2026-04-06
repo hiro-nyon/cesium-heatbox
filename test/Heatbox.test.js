@@ -167,6 +167,26 @@ describe('Heatbox', () => {
       expect(heatbox._grid).not.toBe(initialGrid);
       expect(heatbox.getStatistics().totalEntities).toBe(2);
     });
+
+    test('updateValuesは旧boundsを超える更新を軽量経路で再利用しない', async () => {
+      const initialEntities = [
+        testUtils.createMockEntity(139.7000, 35.6000, 50),
+        testUtils.createMockEntity(139.7008, 35.6008, 55)
+      ];
+      await heatbox.setData(initialEntities);
+
+      const initialGrid = heatbox._grid;
+
+      const expandedEntities = [
+        testUtils.createMockEntity(139.6990, 35.5990, 49),
+        testUtils.createMockEntity(139.7025, 35.6025, 58)
+      ];
+
+      await heatbox.updateValues(expandedEntities);
+
+      expect(heatbox._grid).not.toBe(initialGrid);
+      expect(heatbox.getStatistics().totalEntities).toBe(2);
+    });
   });
   
   describe('静的メソッド', () => {
