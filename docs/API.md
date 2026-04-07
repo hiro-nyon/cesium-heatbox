@@ -353,8 +353,11 @@ const heatbox = new Heatbox(viewer, {
 - `updateInterval`: `'frame'` またはミリ秒指定。値が大きいほど更新頻度を抑制。
 - `outOfRangeBehavior`: `'hold'`（既定）か `'clear'`。Clock が範囲外にいる際の表示制御。
 - `overlapResolution`: `'prefer-earlier'`（既定）/`'prefer-later'`/`'skip'`。時間帯が重複するデータをどう扱うかを指定。
+- `interpolate`: true にすると、隣接スライス間ギャップに対して数値プロパティを補間します。
+- `dataSource(currentTime, context)`: 必要な時刻付近のスライスを遅延供給する async/sync provider。
+- `useWorker`: true で補間と時系列統計の前処理を worker にオフロードし、非対応環境では自動でメインスレッドにフォールバック。
 
-Cesium の `timeline` をそのまま利用できるため、既存アプリで `clock.onTick` を自前実装していた場合も `updateOptions({ temporal: ... })` でオン/オフを切り替えられます。
+Cesium の `timeline` をそのまま利用できるため、既存アプリで `clock.onTick` を自前実装していた場合も `updateOptions({ temporal: ... })` でオン/オフを切り替えられます。時系列更新では `Heatbox.updateValues()` が優先利用され、既存グリッドを再利用できるケースでは再構築コストを抑えます。初回描画で候補がカリングされた場合も、カメラ移動時に現在のスライスを再描画して表示を回復します。
 
 ### メソッド
 

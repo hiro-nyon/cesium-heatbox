@@ -144,6 +144,8 @@ const heatbox = new Heatbox(viewer, {
 - 二分探索+キャッシュによる効率的な時間検索
 - `updateValues()` は既存グリッドに収まる更新を軽量経路で処理
 - `dataSource(currentTime, context)` で lazy loading を追加可能
+- `useWorker: true` で補間と時系列統計の前処理を worker に逃がせます
+- デモは baseline 再生、Global/Per-Time 比較、シナリオ切替、補間/lazy loading の拡張フローまで含みます
 - デモ: `examples/temporal/`
 
 詳細は[APIリファレンス — 時系列](docs/API.md)を参照してください。

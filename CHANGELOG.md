@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `examples/temporal/temporal-data.js` の CZML パス解決をページ URL 非依存に修正し、examples 配下での読み込み失敗を防止しました。
 - `TimeSlicer` は lazy-loaded entry を統合した際に global stats cache を破棄するようになりました。
 - `Heatbox.updateValues()` の bounds 再利用判定を保守的に見直し、既存グリッドを不正に再利用しないようにしました。
+- `examples/temporal/advanced-temporal.html` は初期スライス描画、ポイントプレビュー、全高レイアウトを追加し、ロード直後から表示状態を確認しやすくしました。
 
 ## [1.3.3] - 2026-04-06
 
@@ -58,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `package.json`、`package-lock.json`、`src/index.js` の版番号を `1.3.3` に更新しました。
 - `examples/README.md`、`examples/temporal/README.md`、`docs/API.md` を現行の時系列機能セットに合わせて更新しました。
+- `README.md` と `README.ja.md` の temporal セクションに `useWorker` と時系列デモ構成の説明を追記しました。
 
 ## [1.3.2] - 2026-04-06
 

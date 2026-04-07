@@ -144,6 +144,8 @@ const heatbox = new Heatbox(viewer, {
 - Binary search + cache for efficient temporal lookup
 - `updateValues()` reuses the current grid when temporal slices stay within the existing bounds
 - `dataSource(currentTime, context)` can lazily provide additional temporal slices
+- `useWorker: true` offloads interpolation and temporal stats preprocessing when workers are available
+- Demos cover baseline playback, global/per-time comparison, scenario simulation, and advanced interpolation/lazy-loading flows
 - Demos: `examples/temporal/`
 
 See [API Reference — Temporal](docs/API.md) for full details.

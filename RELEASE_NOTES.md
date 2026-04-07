@@ -12,6 +12,7 @@
 - `examples/temporal/temporal-data.js` は `document.currentScript` 基準で CZML を解決し、examples の URL 解決ずれを避けるようにしました。
 - `RenderPlanner` の簡易カリングを Cesium の Cartesian 座標ベースへ寄せ、小さな `maxRenderVoxels` でも予算を過剰に持ち上げないように調整しました。
 - `TimeSlicer` は lazy loading 後に統計キャッシュを無効化し、`Heatbox.updateValues()` は bounds 外更新でフル再構築へ戻るよう調整しました。
+- `advanced-temporal.html` は初期スライスの明示描画、ポイントプレビュー、全高レイアウトを追加し、サンプル単体でも表示状態を追いやすくしました。
 
 ## バージョン 1.3.3（2026-04-06）
 
@@ -24,6 +25,7 @@
 ### 主な変更
 - Temporal examples の README と Examples overview を更新し、v1.3.x の時系列機能セットに合わせて説明を整理しました。
 - 新しいサンプルでは 2 時間刻みのアンカースライスと奇数時間帯のギャップを使い、補間と lazy loading の効き方を可視化します。
+- README / API ドキュメントの temporal セクションに `updateValues()`、`dataSource`、`useWorker` の役割を追記しました。
 
 ## バージョン 1.3.2（2026-04-06）
 
