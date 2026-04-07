@@ -1,5 +1,23 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 1.3.5（2026-04-07）
+
+**Version comparison demos / measured temporal follow-up**
+
+### ハイライト
+- **Measured version comparisons**: CDN 固定版の `1.2.1` / `1.3.4` を同条件で比較する observability / temporal デモを追加し、単一時点と時系列の両方で差分を確認できるようにしました。
+- **Temporal benchmark correction**: temporal 比較ページは `viewer.clock.currentTime` の反映完了を `totalEntities` 一致で待つようにし、`updateInterval=0` で時刻ジャンプ性能をより公平に比較できるようにしました。
+
+### 主な変更
+- `examples/observability/version-compare-demo.html` は `setData()` 完了まで待機するよう修正し、元ポイント表示切替と固定 seed データで `1.2.1` / `1.3.4` の描画比較を行えるようにしました。
+- `examples/temporal/version-compare-demo.html` は CZML + temporal slices を使い、`viewer.clock.currentTime` の時刻ジャンプごとの反映時間を `totalEntities` 一致ベースで比較できるようにしました。
+- `examples/observability/README.md` と `examples/temporal/README.md` に比較デモの入口を追加しました。
+
+### 計測メモ
+- 単一時点の local CDN 比較では、`desktop-balanced` / `voxelSize=80` 条件で定常更新時間が `1.2.1` 比で概ね `10-13%` 改善、`5000-10000 points` の初回 `setData` は概ね `17-19%` 改善でした。
+- temporal 比較では、`commute` シナリオ・`hours=0,12`・`updateInterval=0` の確認用ランで、平均時刻ジャンプ時間が `1566.20ms -> 569.55ms` と改善し、`1.3.4` 側で時間移動時の反映が速くなることを確認しました。
+- 上記は examples 上の実測値であり、環境・カメラ位置・voxelSize・scenario 構成によって変動します。
+
 ## バージョン 1.3.4（2026-04-07）
 
 **Temporal example recovery / camera refresh fix**
