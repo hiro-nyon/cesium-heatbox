@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>CesiumJS Heatbox - Version Performance Compare</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <link href="../../common/demo.css" rel="stylesheet">
+    <script>
+        window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+        if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+            Cesium.Ion.defaultAccessToken = null;
+        }
+    </script>
+    <script src="../../common/camera.js"></script>
+    <style>
+        .hb-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .hb-inline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hb-inline input {
+            flex: 1;
+        }
+
+        .hb-results {
+            margin-top: 14px;
+            font-size: 12px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .hb-results table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        .hb-results th,
+        .hb-results td {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .hb-results th {
+            color: #7dd3fc;
+            font-weight: 600;
+            background: rgba(15, 23, 42, 0.85);
+        }
+
+        .hb-results td {
+            color: #e2e8f0;
+        }
+
+        .hb-results tr:last-child td {
+            border-bottom: none;
+        }
+
+        .hb-winner {
+            color: #86efac;
+            font-weight: 700;
+        }
+
+        .hb-metric {
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+
+    <aside class="hb-panel" id="controlsPanel">
+        <h2>Version Compare</h2>
+        <p>`1.2.1` と `1.3.4` を同一ビューア・同一データで比較します。初回処理と繰り返し更新の差を見ます。</p>
+
+        <div class="hb-group">
+            <label for="profileSelect">Profile</label>
+            <select id="profileSelect">
+                <option value="none">No Profile</option>
+                <option value="mobile-fast">mobile-fast</option>
+                <option value="desktop-balanced" selected>desktop-balanced</option>
+                <option value="dense-data">dense-data</option>
+                <option value="sparse-data">sparse-data</option>
+            </select>
+        </div>
+
+        <div class="hb-grid">
+            <div class="hb-group">
+                <label for="pointCount">Points</label>
+                <input id="pointCount" type="number" min="100" max="10000" step="100" value="2000">
+            </div>
+            <div class="hb-group">
+                <label for="iterations">Iterations</label>
+                <input id="iterations" type="number" min="3" max="50" step="1" value="8">
+            </div>
+        </div>
+
+        <div class="hb-grid">
+            <div class="hb-group">
+                <label for="seedInput">Seed</label>
+                <input id="seedInput" type="number" min="1" step="1" value="20260407">
+            </div>
+            <div class="hb-group">
+                <label for="voxelSizeInput">Voxel Size</label>
+                <input id="voxelSizeInput" type="number" min="10" max="500" step="10" value="80">
+            </div>
+        </div>
+
+        <div class="hb-group">
+            <label class="hb-checkbox-label">
+                <input id="fitViewCheckbox" type="checkbox">
+                fitView を各計測後に実行
+            </label>
+        </div>
+
+        <div class="hb-group">
+            <label class="hb-checkbox-label">
+                <input id="showPointsCheckbox" type="checkbox" checked>
+                元ポイントを表示
+            </label>
+        </div>
+
+        <div class="hb-buttons">
+            <button class="hb-btn hb-btn-secondary" id="prepareBtn">データ生成</button>
+            <button class="hb-btn hb-btn-primary" id="compareBtn">比較実行</button>
+        </div>
+
+        <div class="hb-info-box">
+            <div><strong>CDN Targets</strong></div>
+            <div>`1.2.1`: unpkg 固定 URL</div>
+            <div>`1.3.4`: unpkg 固定 URL</div>
+            <div>同じ Entity 配列を両版へ順番に渡します。</div>
+            <div>このページは temporal / CZML 比較ではなく、単一時点データの比較です。</div>
+        </div>
+
+        <div id="status" class="hb-status">準備待ち。</div>
+        <div id="results" class="hb-results"></div>
+    </aside>
+
+    <script type="module">
+        const CameraHelper = window.HeatboxDemoCamera || null;
+        const SHINJUKU_CENTER = { lon: 139.6917, lat: 35.6895 };
+        const INITIAL_BOUNDS = {
+            minLon: SHINJUKU_CENTER.lon - 0.015,
+            maxLon: SHINJUKU_CENTER.lon + 0.015,
+            minLat: SHINJUKU_CENTER.lat - 0.015,
+            maxLat: SHINJUKU_CENTER.lat + 0.015,
+            minAlt: 0,
+            maxAlt: 300
+        };
+        const VERSION_URLS = {
+            '1.2.1': 'https://unpkg.com/cesium-heatbox@1.2.1/dist/cesium-heatbox.umd.min.js',
+            '1.3.4': 'https://unpkg.com/cesium-heatbox@1.3.4/dist/cesium-heatbox.umd.min.js'
+        };
+        const heatboxCache = new Map();
+
+        const pointCountInput = document.getElementById('pointCount');
+        const iterationsInput = document.getElementById('iterations');
+        const seedInput = document.getElementById('seedInput');
+        const voxelSizeInput = document.getElementById('voxelSizeInput');
+        const profileSelect = document.getElementById('profileSelect');
+        const fitViewCheckbox = document.getElementById('fitViewCheckbox');
+        const showPointsCheckbox = document.getElementById('showPointsCheckbox');
+        const prepareBtn = document.getElementById('prepareBtn');
+        const compareBtn = document.getElementById('compareBtn');
+        const statusEl = document.getElementById('status');
+        const resultsEl = document.getElementById('results');
+
+        function createImageryProvider() {
+            return new Cesium.UrlTemplateImageryProvider({
+                url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                subdomains: 'abcd',
+                maximumLevel: 19,
+                credit: '© OpenStreetMap contributors © CARTO'
+            });
+        }
+
+        function createTerrainProvider() {
+            try {
+                if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+                    return Cesium.createWorldTerrain();
+                }
+            } catch (error) {
+                console.warn('World Terrain unavailable, falling back to EllipsoidTerrainProvider:', error);
+            }
+            return new Cesium.EllipsoidTerrainProvider();
+        }
+
+        const imageryProvider = createImageryProvider();
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            imageryProvider,
+            terrainProvider: createTerrainProvider(),
+            baseLayerPicker: false,
+            timeline: false,
+            animation: false,
+            geocoder: false,
+            navigationHelpButton: false
+        });
+
+        viewer.imageryLayers.removeAll();
+        viewer.imageryLayers.addImageryProvider(imageryProvider);
+        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
+
+        if (CameraHelper?.focus) {
+            CameraHelper.focus(viewer, { bounds: INITIAL_BOUNDS, useDefaultBounds: false });
+        } else {
+            viewer.camera.setView({
+                destination: Cesium.Cartesian3.fromDegrees(SHINJUKU_CENTER.lon, SHINJUKU_CENTER.lat, 14000),
+                orientation: {
+                    heading: 0,
+                    pitch: -Cesium.Math.PI_OVER_FOUR,
+                    roll: 0
+                }
+            });
+        }
+
+        let currentData = [];
+
+        function setStatus(message, isError = false) {
+            statusEl.textContent = message;
+            statusEl.classList.toggle('error', isError);
+        }
+
+        function createSeededRandom(seed) {
+            let state = seed % 2147483647;
+            if (state <= 0) state += 2147483646;
+            return () => {
+                state = state * 16807 % 2147483647;
+                return (state - 1) / 2147483646;
+            };
+        }
+
+        function clearCurrentEntities() {
+            if (currentData.length === 0) return;
+            currentData.forEach((entity) => viewer.entities.remove(entity));
+            currentData = [];
+        }
+
+        function updatePointVisibility() {
+            const showPoints = showPointsCheckbox.checked;
+            currentData.forEach((entity) => {
+                if (entity.point) {
+                    entity.point.show = showPoints;
+                }
+            });
+        }
+
+        function generateTestData(count, seed) {
+            clearCurrentEntities();
+            const random = createSeededRandom(seed);
+            const entities = [];
+
+            while (entities.length < count) {
+                const centerLon = INITIAL_BOUNDS.minLon + random() * (INITIAL_BOUNDS.maxLon - INITIAL_BOUNDS.minLon);
+                const centerLat = INITIAL_BOUNDS.minLat + random() * (INITIAL_BOUNDS.maxLat - INITIAL_BOUNDS.minLat);
+                const clusterSize = random() < 0.35 ? Math.min(6, count - entities.length) : 1;
+
+                for (let i = 0; i < clusterSize; i++) {
+                    const lon = Cesium.Math.clamp(centerLon + (random() - 0.5) * 0.004, INITIAL_BOUNDS.minLon, INITIAL_BOUNDS.maxLon);
+                    const lat = Cesium.Math.clamp(centerLat + (random() - 0.5) * 0.004, INITIAL_BOUNDS.minLat, INITIAL_BOUNDS.maxLat);
+                    const alt = INITIAL_BOUNDS.minAlt + random() * (INITIAL_BOUNDS.maxAlt - INITIAL_BOUNDS.minAlt);
+                    const value = 30 + (random() * 90);
+
+                    entities.push(viewer.entities.add({
+                        position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+                        point: {
+                            pixelSize: 4,
+                            color: Cesium.Color.fromCssColorString('#fbbf24').withAlpha(0.75),
+                            outlineColor: Cesium.Color.fromCssColorString('#0f172a').withAlpha(0.8),
+                            outlineWidth: 1,
+                            show: true
+                        },
+                        properties: { value }
+                    }));
+
+                    if (entities.length >= count) break;
+                }
+            }
+
+            currentData = entities;
+            return currentData;
+        }
+
+        function getHeapMB() {
+            if (performance && performance.memory && typeof performance.memory.usedJSHeapSize === 'number') {
+                return performance.memory.usedJSHeapSize / 1024 / 1024;
+            }
+            return null;
+        }
+
+        function calcStats(values) {
+            const total = values.reduce((sum, value) => sum + value, 0);
+            return {
+                avg: total / values.length,
+                min: Math.min(...values),
+                max: Math.max(...values)
+            };
+        }
+
+        function formatMs(value) {
+            return `${value.toFixed(2)} ms`;
+        }
+
+        function formatMaybeMB(value) {
+            return value == null ? 'n/a' : `${value.toFixed(2)} MB`;
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll('\'', '&#39;');
+        }
+
+        async function loadHeatbox(version) {
+            if (heatboxCache.has(version)) {
+                return heatboxCache.get(version);
+            }
+
+            const url = VERSION_URLS[version];
+            if (!url) {
+                throw new Error(`Unknown version: ${version}`);
+            }
+
+            const HeatboxClass = await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = url;
+                script.async = true;
+                script.onload = () => {
+                    const loaded = window.CesiumHeatbox || window.Heatbox;
+                    if (!loaded) {
+                        reject(new Error(`Heatbox global not found after loading ${url}`));
+                        return;
+                    }
+                    resolve(loaded);
+                };
+                script.onerror = () => reject(new Error(`Failed to load ${url}`));
+                document.head.appendChild(script);
+            });
+
+            heatboxCache.set(version, HeatboxClass);
+            return HeatboxClass;
+        }
+
+        async function benchmarkVersion(version, options) {
+            const HeatboxClass = await loadHeatbox(version);
+            const heapBefore = getHeapMB();
+            const initStart = performance.now();
+            const heatbox = new HeatboxClass(viewer, options);
+            const initMs = performance.now() - initStart;
+
+            const firstSetStart = performance.now();
+            await heatbox.setData(currentData, { _skipAutoView: true });
+            const firstSetMs = performance.now() - firstSetStart;
+
+            if (fitViewCheckbox.checked && typeof heatbox.fitView === 'function') {
+                await heatbox.fitView(null, {
+                    paddingPercent: 0.1,
+                    headingDegrees: 0,
+                    pitchDegrees: -40
+                });
+            }
+
+            const runs = [];
+            const iterations = Number.parseInt(iterationsInput.value, 10);
+            for (let i = 0; i < iterations; i++) {
+                const start = performance.now();
+                await heatbox.setData(currentData, { _skipAutoView: true });
+                runs.push(performance.now() - start);
+            }
+
+            const stats = calcStats(runs);
+            const heatboxStats = typeof heatbox.getStatistics === 'function' ? (heatbox.getStatistics() || {}) : {};
+            heatbox.destroy();
+            await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+            const heapAfter = getHeapMB();
+
+            return {
+                version,
+                initMs,
+                firstSetMs,
+                avgUpdateMs: stats.avg,
+                minUpdateMs: stats.min,
+                maxUpdateMs: stats.max,
+                heapDeltaMB: (heapBefore != null && heapAfter != null) ? (heapAfter - heapBefore) : null,
+                renderedVoxels: heatboxStats.renderedVoxels ?? 'n/a',
+                totalVoxels: heatboxStats.totalVoxels ?? 'n/a'
+            };
+        }
+
+        function fasterVersion(a, b, key) {
+            if (!(key in a) || !(key in b)) return '';
+            if (typeof a[key] !== 'number' || typeof b[key] !== 'number') return '';
+            if (Math.abs(a[key] - b[key]) < 0.01) return 'ほぼ同等';
+            return a[key] < b[key] ? a.version : b.version;
+        }
+
+        function renderResults(results) {
+            const [v121, v134] = results;
+            const rows = [
+                ['初期化', formatMs(v121.initMs), formatMs(v134.initMs), fasterVersion(v121, v134, 'initMs')],
+                ['初回 setData', formatMs(v121.firstSetMs), formatMs(v134.firstSetMs), fasterVersion(v121, v134, 'firstSetMs')],
+                ['平均更新', formatMs(v121.avgUpdateMs), formatMs(v134.avgUpdateMs), fasterVersion(v121, v134, 'avgUpdateMs')],
+                ['最小更新', formatMs(v121.minUpdateMs), formatMs(v134.minUpdateMs), fasterVersion(v121, v134, 'minUpdateMs')],
+                ['最大更新', formatMs(v121.maxUpdateMs), formatMs(v134.maxUpdateMs), fasterVersion(v121, v134, 'maxUpdateMs')],
+                ['Heap 差分', formatMaybeMB(v121.heapDeltaMB), formatMaybeMB(v134.heapDeltaMB), '参考値'],
+                ['Rendered Voxels', escapeHtml(v121.renderedVoxels), escapeHtml(v134.renderedVoxels), ''],
+                ['Total Voxels', escapeHtml(v121.totalVoxels), escapeHtml(v134.totalVoxels), '']
+            ];
+
+            const body = rows.map(([metric, left, right, winner]) => `
+                <tr>
+                    <td class="hb-metric">${metric}</td>
+                    <td>${left}</td>
+                    <td>${right}</td>
+                    <td class="hb-winner">${escapeHtml(winner)}</td>
+                </tr>
+            `).join('');
+
+            resultsEl.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>1.2.1</th>
+                            <th>1.3.4</th>
+                            <th>Winner</th>
+                        </tr>
+                    </thead>
+                    <tbody>${body}</tbody>
+                </table>
+            `;
+        }
+
+        function buildHeatboxOptions() {
+            const profile = profileSelect.value === 'none' ? undefined : profileSelect.value;
+            return {
+                profile,
+                voxelSize: Number.parseInt(voxelSizeInput.value, 10),
+                performanceOverlay: {
+                    enabled: false
+                }
+            };
+        }
+
+        prepareBtn.addEventListener('click', () => {
+            const count = Number.parseInt(pointCountInput.value, 10);
+            const seed = Number.parseInt(seedInput.value, 10);
+            generateTestData(count, seed);
+            updatePointVisibility();
+            setStatus(`データ生成完了: ${count} points / seed=${seed}`);
+        });
+
+        showPointsCheckbox.addEventListener('change', () => {
+            updatePointVisibility();
+        });
+
+        compareBtn.addEventListener('click', async () => {
+            try {
+                compareBtn.disabled = true;
+                resultsEl.innerHTML = '';
+
+                if (currentData.length === 0) {
+                    prepareBtn.click();
+                }
+
+                setStatus('CDN 版をロードして比較中...');
+                const options = buildHeatboxOptions();
+                const first = await benchmarkVersion('1.2.1', options);
+                setStatus('1.2.1 計測完了。1.3.4 を計測中...');
+                const second = await benchmarkVersion('1.3.4', options);
+                renderResults([first, second]);
+
+                setStatus(
+                    `比較完了\n1.2.1 avg=${first.avgUpdateMs.toFixed(2)} ms\n1.3.4 avg=${second.avgUpdateMs.toFixed(2)} ms`
+                );
+            } catch (error) {
+                console.error(error);
+                setStatus(`比較失敗: ${error.message}`, true);
+            } finally {
+                compareBtn.disabled = false;
+            }
+        });
+
+        window.addEventListener('load', () => {
+            prepareBtn.click();
+        });
+    </script>
+</body>
+</html>

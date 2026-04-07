@@ -1,6 +1,6 @@
 # Temporal Samples / 時系列サンプル
 
-このディレクトリは v1.3.4 時点の `temporal` オプションを使った動作例をまとめています。各 HTML は UMD ビルド（`dist/cesium-heatbox.umd.min.js`）を直接読み込み、`viewer.clock` と Heatbox の自動同期を確認できます。
+このディレクトリは v1.3.x 系の `temporal` オプションを使った動作例をまとめています。各 HTML は UMD ビルド（`dist/cesium-heatbox.umd.min.js`）を直接読み込み、`viewer.clock` と Heatbox の自動同期を確認できます。
 
 ## サンプル一覧
 
@@ -11,6 +11,7 @@
 | `global-vs-per-time.html` | ラジオで Global/Per-Time を切り替え、統計の差を比較。 |
 | `simulation.html` | 平日/イベント/週末のシナリオを動的切り替えし、`updateInterval` や `outOfRangeBehavior` を調整。 |
 | `advanced-temporal.html` | `interpolate` / `dataSource` / `useWorker` を同時に試す v1.3.4 向け拡張デモ。 |
+| `version-compare-demo.html` | `1.2.1` と `1.3.4` を temporal/CZML 付きで比較し、時刻ジャンプの反映時間を計測。 |
 
 ## 使い方
 
