@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Temporal Version Compare</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css">
+  <link rel="stylesheet" href="../../common/demo.css">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <script src="../../common/camera.js"></script>
+  <script src="../temporal-data.js"></script>
+  <style>
+    .hb-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .hb-results {
+      margin-top: 14px;
+      font-size: 12px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .hb-results table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .hb-results th,
+    .hb-results td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .hb-results tr:last-child td {
+      border-bottom: none;
+    }
+
+    .hb-muted {
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+
+  <aside class="hb-panel">
+    <h2>Temporal Compare</h2>
+    <p>CZML と temporal slices を使って、時間移動時の反映時間を `1.2.1` と `1.3.4` で比較します。</p>
+
+    <div class="hb-grid">
+      <div class="hb-group">
+        <label for="scenarioSelect">Scenario</label>
+        <select id="scenarioSelect">
+          <option value="commute" selected>commute</option>
+          <option value="event">event</option>
+          <option value="weekend">weekend</option>
+        </select>
+      </div>
+      <div class="hb-group">
+        <label for="voxelSizeInput">Voxel Size</label>
+        <input id="voxelSizeInput" type="number" min="10" max="200" step="5" value="45">
+      </div>
+    </div>
+
+    <div class="hb-grid">
+      <div class="hb-group">
+        <label for="hoursInput">Hours</label>
+        <input id="hoursInput" type="text" value="0,6,8,12,18,21">
+      </div>
+      <div class="hb-group">
+        <label for="updateIntervalInput">Update Interval</label>
+        <input id="updateIntervalInput" type="number" min="0" max="1000" step="25" value="0">
+      </div>
+    </div>
+
+    <div class="hb-group">
+      <label class="hb-checkbox-label">
+        <input id="showCzmlCheckbox" type="checkbox" checked>
+        CZML ポイントを表示
+      </label>
+    </div>
+
+    <div class="hb-buttons">
+      <button class="hb-btn hb-btn-secondary" id="prepareBtn">シナリオ準備</button>
+      <button class="hb-btn hb-btn-primary" id="compareBtn">Temporal 比較</button>
+    </div>
+
+    <div class="hb-info-box">
+      <div><strong>What It Measures</strong></div>
+      <div>初期 temporal 初期化、各時刻ジャンプ時の反映時間、描画 voxel 数を比較します。</div>
+      <div>単一時点の `setData` 比較ではなく、実際に `viewer.clock.currentTime` を動かします。</div>
+      <div>`updateInterval=0` は毎フレーム更新として扱います。</div>
+    </div>
+
+    <div id="status" class="hb-status">準備待ち。</div>
+    <div id="results" class="hb-results"></div>
+  </aside>
+
+  <script type="module">
+    const VERSION_URLS = {
+      '1.2.1': 'https://unpkg.com/cesium-heatbox@1.2.1/dist/cesium-heatbox.umd.min.js',
+      '1.3.4': 'https://unpkg.com/cesium-heatbox@1.3.4/dist/cesium-heatbox.umd.min.js'
+    };
+    const heatboxCache = new Map();
+    const CameraHelper = window.HeatboxDemoCamera || null;
+
+    const scenarioSelect = document.getElementById('scenarioSelect');
+    const voxelSizeInput = document.getElementById('voxelSizeInput');
+    const hoursInput = document.getElementById('hoursInput');
+    const updateIntervalInput = document.getElementById('updateIntervalInput');
+    const showCzmlCheckbox = document.getElementById('showCzmlCheckbox');
+    const prepareBtn = document.getElementById('prepareBtn');
+    const compareBtn = document.getElementById('compareBtn');
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+
+    const viewer = initializeViewer();
+    let currentScenario = null;
+
+    function setStatus(message, isError = false) {
+      statusEl.textContent = message;
+      statusEl.classList.toggle('error', isError);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll('\'', '&#39;');
+    }
+
+    function createImageryProvider() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        subdomains: 'abcd',
+        maximumLevel: 19,
+        credit: '© OpenStreetMap contributors © CARTO'
+      });
+    }
+
+    function createTerrainProvider() {
+      try {
+        if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+          return Cesium.createWorldTerrain();
+        }
+      } catch (error) {
+        console.warn('World Terrain unavailable, falling back to EllipsoidTerrainProvider.', error);
+      }
+      return new Cesium.EllipsoidTerrainProvider();
+    }
+
+    function initializeViewer() {
+      const imageryProvider = createImageryProvider();
+      const viewerInstance = new Cesium.Viewer('cesiumContainer', {
+        baseLayerPicker: false,
+        animation: true,
+        timeline: true,
+        sceneModePicker: false,
+        geocoder: false,
+        homeButton: false,
+        navigationHelpButton: false,
+        imageryProvider,
+        terrainProvider: createTerrainProvider()
+      });
+      viewerInstance.imageryLayers.removeAll();
+      viewerInstance.imageryLayers.addImageryProvider(imageryProvider);
+      viewerInstance.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
+      viewerInstance.scene.backgroundColor = Cesium.Color.fromCssColorString('#020617');
+      return viewerInstance;
+    }
+
+    function focusCamera() {
+      const bounds = CameraHelper?.DEFAULT_BOUNDS || {
+        minLon: 139.688,
+        maxLon: 139.712,
+        minLat: 35.676,
+        maxLat: 35.702,
+        minAlt: 0,
+        maxAlt: 300
+      };
+      const focusConfig = {
+        bounds,
+        useDefaultBounds: true,
+        pitchDegrees: -48,
+        altitude: 3400
+      };
+      if (CameraHelper?.focus) {
+        CameraHelper.focus(viewer, focusConfig);
+        return;
+      }
+      const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+      const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat - 0.018, 3400),
+        orientation: {
+          heading: Cesium.Math.toRadians(-6),
+          pitch: Cesium.Math.toRadians(-47),
+          roll: 0
+        }
+      });
+    }
+
+    function setCzmlVisibility(visible) {
+      if (!viewer.dataSources) return;
+      const list = viewer.dataSources._dataSources || [];
+      list.forEach((ds) => {
+        ds.show = visible;
+      });
+    }
+
+    async function prepareScenario() {
+      currentScenario = await TemporalHeatboxDemo.loadScenario(viewer, scenarioSelect.value);
+      const start = Cesium.JulianDate.fromIso8601(currentScenario.start);
+      const stop = Cesium.JulianDate.fromIso8601(currentScenario.stop);
+      viewer.clock.startTime = Cesium.JulianDate.clone(start);
+      viewer.clock.stopTime = Cesium.JulianDate.clone(stop);
+      viewer.clock.currentTime = Cesium.JulianDate.clone(start);
+      viewer.clock.clockRange = Cesium.ClockRange.CLAMPED;
+      viewer.clock.multiplier = 600;
+      viewer.clock.shouldAnimate = false;
+      viewer.timeline.zoomTo(start, stop);
+      setCzmlVisibility(showCzmlCheckbox.checked);
+      focusCamera();
+      setStatus(`シナリオ準備完了: ${currentScenario.label}`);
+      return currentScenario;
+    }
+
+    async function loadHeatbox(version) {
+      if (heatboxCache.has(version)) {
+        return heatboxCache.get(version);
+      }
+
+      const url = VERSION_URLS[version];
+      const HeatboxClass = await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+        script.onload = () => {
+          const loaded = window.CesiumHeatbox || window.Heatbox;
+          if (!loaded) {
+            reject(new Error(`Heatbox global not found after loading ${url}`));
+            return;
+          }
+          resolve(loaded);
+        };
+        script.onerror = () => reject(new Error(`Failed to load ${url}`));
+        document.head.appendChild(script);
+      });
+
+      heatboxCache.set(version, HeatboxClass);
+      return HeatboxClass;
+    }
+
+    function parseHours() {
+      return hoursInput.value
+        .split(',')
+        .map((value) => Number.parseInt(value.trim(), 10))
+        .filter((value) => Number.isFinite(value) && value >= 0 && value <= 23);
+    }
+
+    function getUpdateInterval() {
+      const value = Number.parseInt(updateIntervalInput.value, 10);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    async function nextFrame() {
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    }
+
+    async function waitForTemporalStats(heatbox, timeoutMs = 3000, expectedEntities = null) {
+      const start = performance.now();
+      let stableCount = 0;
+      let lastSignature = '';
+      while ((performance.now() - start) < timeoutMs) {
+        const stats = typeof heatbox.getStatistics === 'function' ? heatbox.getStatistics() : null;
+        if (stats && Number.isFinite(stats.totalVoxels) && Number.isFinite(stats.renderedVoxels)) {
+          const entityMatch = expectedEntities == null || stats.totalEntities === expectedEntities;
+          const signature = `${stats.totalEntities}:${stats.totalVoxels}:${stats.renderedVoxels}`;
+          if (entityMatch) {
+            stableCount = signature === lastSignature ? stableCount + 1 : 1;
+            lastSignature = signature;
+            if (stableCount >= 2) {
+              return stats;
+            }
+          }
+        }
+        await nextFrame();
+      }
+      return heatbox.getStatistics ? (heatbox.getStatistics() || {}) : {};
+    }
+
+    async function measureTemporalVersion(version, scenario, hours) {
+      const HeatboxClass = await loadHeatbox(version);
+      const options = {
+        voxelSize: Number.parseInt(voxelSizeInput.value, 10),
+        autoView: false,
+        temporal: {
+          enabled: true,
+          data: scenario.slices,
+          classificationScope: scenario.defaultScope || 'global',
+          updateInterval: getUpdateInterval(),
+          outOfRangeBehavior: 'clear'
+        }
+      };
+
+      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601(scenario.start);
+      viewer.clock.shouldAnimate = false;
+      await nextFrame();
+
+      const initStart = performance.now();
+      const heatbox = new HeatboxClass(viewer, options);
+      await waitForTemporalStats(heatbox, 5000, scenario.slices[0]?.data?.length ?? null);
+      const initMs = performance.now() - initStart;
+
+      const transitions = [];
+      for (const hour of hours) {
+        const slice = scenario.slices[hour];
+        const target = Cesium.JulianDate.addHours(
+          Cesium.JulianDate.fromIso8601(scenario.start),
+          hour,
+          new Cesium.JulianDate()
+        );
+        const moveStart = performance.now();
+        viewer.clock.currentTime = target;
+        if (heatbox._timeController && typeof heatbox._timeController._onTick === 'function') {
+          heatbox._timeController._onTick(viewer.clock);
+        }
+        await nextFrame();
+        await new Promise((resolve) => setTimeout(resolve, getUpdateInterval() + 20));
+        const stats = await waitForTemporalStats(heatbox, 4000, slice?.data?.length ?? null);
+        transitions.push({
+          hour,
+          ms: performance.now() - moveStart,
+          totalEntities: stats.totalEntities ?? 'n/a',
+          renderedVoxels: stats.renderedVoxels ?? 'n/a',
+          totalVoxels: stats.totalVoxels ?? 'n/a'
+        });
+      }
+
+      const finalStats = heatbox.getStatistics ? (heatbox.getStatistics() || {}) : {};
+      heatbox.destroy();
+      await nextFrame();
+
+      const times = transitions.map((item) => item.ms);
+      return {
+        version,
+        initMs,
+        avgTransitionMs: times.reduce((sum, value) => sum + value, 0) / times.length,
+        minTransitionMs: Math.min(...times),
+        maxTransitionMs: Math.max(...times),
+        transitions,
+        renderedVoxels: finalStats.renderedVoxels ?? 'n/a',
+        totalVoxels: finalStats.totalVoxels ?? 'n/a'
+      };
+    }
+
+    function renderResults(left, right) {
+      const summary = [
+        ['初期 temporal 初期化', `${left.initMs.toFixed(2)} ms`, `${right.initMs.toFixed(2)} ms`],
+        ['平均時刻ジャンプ', `${left.avgTransitionMs.toFixed(2)} ms`, `${right.avgTransitionMs.toFixed(2)} ms`],
+        ['最小時刻ジャンプ', `${left.minTransitionMs.toFixed(2)} ms`, `${right.minTransitionMs.toFixed(2)} ms`],
+        ['最大時刻ジャンプ', `${left.maxTransitionMs.toFixed(2)} ms`, `${right.maxTransitionMs.toFixed(2)} ms`],
+        ['Rendered Voxels', escapeHtml(left.renderedVoxels), escapeHtml(right.renderedVoxels)],
+        ['Total Voxels', escapeHtml(left.totalVoxels), escapeHtml(right.totalVoxels)]
+      ];
+
+      const summaryRows = summary.map(([name, a, b]) => `
+        <tr>
+          <td>${name}</td>
+          <td>${a}</td>
+          <td>${b}</td>
+        </tr>
+      `).join('');
+
+      const detailRows = left.transitions.map((item, index) => {
+        const other = right.transitions[index];
+        return `
+          <tr>
+            <td class="hb-muted">Hour ${item.hour}</td>
+            <td>${item.ms.toFixed(2)} ms (${escapeHtml(item.totalEntities)}e, ${escapeHtml(item.renderedVoxels)}/${escapeHtml(item.totalVoxels)})</td>
+            <td>${other.ms.toFixed(2)} ms (${escapeHtml(other.totalEntities)}e, ${escapeHtml(other.renderedVoxels)}/${escapeHtml(other.totalVoxels)})</td>
+          </tr>
+        `;
+      }).join('');
+
+      resultsEl.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>1.2.1</th>
+              <th>1.3.4</th>
+            </tr>
+          </thead>
+          <tbody>${summaryRows}${detailRows}</tbody>
+        </table>
+      `;
+    }
+
+    prepareBtn.addEventListener('click', async () => {
+      try {
+        await prepareScenario();
+      } catch (error) {
+        console.error(error);
+        setStatus(`準備失敗: ${error.message}`, true);
+      }
+    });
+
+    compareBtn.addEventListener('click', async () => {
+      try {
+        compareBtn.disabled = true;
+        resultsEl.innerHTML = '';
+        const scenario = currentScenario || await prepareScenario();
+        const hours = parseHours();
+        if (hours.length === 0) {
+          throw new Error('Hours に 0-23 の値をカンマ区切りで指定してください');
+        }
+
+        setStatus('1.2.1 temporal を計測中...');
+        const left = await measureTemporalVersion('1.2.1', scenario, hours);
+        setStatus('1.3.4 temporal を計測中...');
+        const right = await measureTemporalVersion('1.3.4', scenario, hours);
+        renderResults(left, right);
+        setStatus(
+          `temporal 比較完了\n1.2.1 avg=${left.avgTransitionMs.toFixed(2)} ms\n1.3.4 avg=${right.avgTransitionMs.toFixed(2)} ms`
+        );
+      } catch (error) {
+        console.error(error);
+        setStatus(`比較失敗: ${error.message}`, true);
+      } finally {
+        compareBtn.disabled = false;
+      }
+    });
+
+    showCzmlCheckbox.addEventListener('change', () => {
+      setCzmlVisibility(showCzmlCheckbox.checked);
+    });
+
+    window.addEventListener('load', () => {
+      void prepareScenario();
+    });
+  </script>
+</body>
+</html>
