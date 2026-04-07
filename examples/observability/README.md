@@ -8,6 +8,7 @@
 | --- | --- |
 | `performance-overlay-demo.html` | パフォーマンスオーバーレイの表示とベンチマーク実行。プロファイル別の比較が可能。 |
 | `adaptive-phase3-demo.html` | ADR-0011 Phase 3 の適応制御デモ。密度検出・重なり検知・拡張オーバーレイを搭載。 |
+| `version-compare-demo.html` | CDN 上の `1.2.1` と `1.3.4` を同一データで比較する A/B ベンチ。 |
 
 ## Cesium Setup / Cesium 初期化
 
@@ -18,7 +19,7 @@
 ## How to Run / 実行方法
 
 1. `npm install` 済みのリポジトリで `npx http-server examples/observability` を実行するか、任意の静的サーバーで公開します。
-2. ブラウザで `performance-overlay-demo.html` または `adaptive-phase3-demo.html` にアクセスします。
+2. ブラウザで `performance-overlay-demo.html`、`adaptive-phase3-demo.html`、または `version-compare-demo.html` にアクセスします。
 3. UI からプロファイル変更、ボクセル数調整、オーバーレイの表示切替などを行い、ログはブラウザコンソールで確認できます。
 
 ## Notes / 補足
