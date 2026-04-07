@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Temporal Advanced Demo</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css">
+  <link rel="stylesheet" href="../common/demo.css">
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+    if (typeof Cesium !== 'undefined' && Cesium.Ion) {
+      Cesium.Ion.defaultAccessToken = null;
+    }
+  </script>
+  <style>
+    .hb-layout {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      min-height: 100vh;
+    }
+
+    .hb-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <script src="../common/camera.js"></script>
+  <script src="../../dist/cesium-heatbox.umd.min.js"></script>
+  <script src="./temporal-data.js"></script>
+</head>
+<body>
+  <div class="hb-layout">
+    <div id="cesiumContainer" class="hb-canvas"></div>
+    <section class="hb-panel">
+      <h1>Temporal Advanced</h1>
+      <p>
+        奇数時間帯を意図的なギャップにして、`temporal.interpolate`、`temporal.dataSource`、
+        `temporal.useWorker` の効き方を 1 画面で確認する v1.3.3 向けデモです。
+      </p>
+
+      <div class="control-group">
+        <label>Scenario</label>
+        <button class="hb-btn-primary" data-scenario="commute">Weekday Commute</button>
+        <button class="hb-btn-secondary" data-scenario="event">Event Night</button>
+        <button class="hb-btn-secondary" data-scenario="weekend">Weekend Flow</button>
+        <div id="scenarioLabel" class="hb-badge">--</div>
+      </div>
+
+      <div class="control-group">
+        <label>Playback</label>
+        <input type="range" id="timeSlider" min="0" max="23" step="1" value="0">
+        <div class="hb-badge">Current Hour: <span id="timeSliderValue">00:00</span></div>
+        <div>
+          <span>Clock Speed: <span id="speedValue">360x</span></span>
+          <input type="range" id="speedSlider" min="60" max="1440" step="60" value="360">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Temporal Controls</label>
+        <label>
+          <input type="checkbox" id="interpolateToggle" checked>
+          interpolate gaps
+        </label>
+        <label>
+          <input type="checkbox" id="lazyToggle" checked>
+          lazy loading (`dataSource`)
+        </label>
+        <label>
+          <input type="checkbox" id="workerToggle" checked>
+          worker preprocessing
+        </label>
+        <label>
+          classificationScope
+          <select id="scopeSelect">
+            <option value="global">global</option>
+            <option value="per-time">per-time</option>
+          </select>
+        </label>
+        <div>
+          <span>Update Interval: <span id="intervalValue">150ms</span></span>
+          <input type="range" id="intervalSlider" min="50" max="400" step="25" value="150">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Diagnostics</label>
+        <div class="hb-badge">Dataset Range: <span id="datasetRange">--</span></div>
+        <div class="hb-badge">Mode: <span id="modeLabel">--</span></div>
+        <div class="hb-badge">Loaded Anchors: <span id="loadedAnchors">--</span></div>
+        <div class="hb-badge">dataSource Calls: <span id="dataSourceCalls">0</span></div>
+        <div class="hb-badge">Current Slice: <span id="sliceMode">--</span></div>
+        <div class="hb-badge">Current Domain: <span id="domainLabel">--</span></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function createImageryProvider() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        subdomains: 'abcd',
+        maximumLevel: 19,
+        credit: '© OpenStreetMap contributors © CARTO'
+      });
+    }
+
+    function createTerrainProvider() {
+      try {
+        if (Cesium.Ion && Cesium.Ion.defaultAccessToken && Cesium.Ion.defaultAccessToken !== 'null') {
+          return Cesium.createWorldTerrain();
+        }
+      } catch (error) {
+        console.warn('World Terrain unavailable, falling back to EllipsoidTerrainProvider.', error);
+      }
+      return new Cesium.EllipsoidTerrainProvider();
+    }
+
+    function initializeViewer() {
+      const imageryProvider = createImageryProvider();
+      const viewerInstance = new Cesium.Viewer('cesiumContainer', {
+        baseLayerPicker: false,
+        animation: true,
+        timeline: true,
+        sceneModePicker: false,
+        geocoder: false,
+        homeButton: false,
+        navigationHelpButton: false,
+        imageryProvider,
+        terrainProvider: createTerrainProvider()
+      });
+      viewerInstance.imageryLayers.removeAll();
+      viewerInstance.imageryLayers.addImageryProvider(imageryProvider);
+      viewerInstance.scene.globe.baseColor = Cesium.Color.fromCssColorString('#111827');
+      viewerInstance.scene.backgroundColor = Cesium.Color.fromCssColorString('#020617');
+      return viewerInstance;
+    }
+
+    const Heatbox = window.CesiumHeatbox || window.Heatbox;
+    const CameraHelper = window.HeatboxDemoCamera || null;
+    const viewer = initializeViewer();
+
+    let heatbox = null;
+    let currentScenarioKey = 'event';
+    let currentPayload = null;
+    let timelineStart = null;
+    let timelineStop = null;
+    let sliderInteracting = false;
+    let lazyState = null;
+    let previewEntities = [];
+
+    TemporalHeatboxDemo.loadScenario(viewer, currentScenarioKey).then((payload) => {
+      currentPayload = payload;
+      document.getElementById('scopeSelect').value = payload.defaultScope || 'global';
+      applyScenario(payload);
+      focusCamera();
+      wireControls();
+      viewer.clock.onTick.addEventListener((clock) => {
+        syncSliderWithCurrentTime(clock);
+        updatePreviewPoints(clock.currentTime);
+        updateDiagnostics();
+      });
+    });
+
+    function buildAnchorSlices(slices) {
+      return slices.filter((_, index) => index % 2 === 0);
+    }
+
+    function createLazyState(payload) {
+      const allSlices = payload.slices;
+      const anchorSlices = buildAnchorSlices(allSlices);
+      const start = Cesium.JulianDate.fromIso8601(payload.start);
+      const loadedHours = new Set();
+      let callCount = 0;
+
+      const primeHours = [0, 2].filter((hour) => hour < allSlices.length && hour % 2 === 0);
+      const initialSlices = primeHours.map((hour) => {
+        loadedHours.add(hour);
+        return allSlices[hour];
+      });
+
+      async function dataSource(currentTime) {
+        callCount += 1;
+        const elapsedHours = Math.max(
+          0,
+          Math.floor(Cesium.JulianDate.secondsDifference(currentTime, start) / 3600)
+        );
+        const lowerAnchor = Math.max(0, Math.min(allSlices.length - 1, elapsedHours - (elapsedHours % 2)));
+        const maxEvenHour = allSlices.length - (allSlices.length % 2 === 0 ? 2 : 1);
+        const candidateHours = [lowerAnchor - 2, lowerAnchor, lowerAnchor + 2]
+          .filter((hour, index, source) => (
+            hour >= 0 &&
+            hour <= maxEvenHour &&
+            hour % 2 === 0 &&
+            source.indexOf(hour) === index
+          ));
+
+        const newSlices = [];
+        candidateHours.forEach((hour) => {
+          if (!loadedHours.has(hour) && allSlices[hour]) {
+            loadedHours.add(hour);
+            newSlices.push(allSlices[hour]);
+          }
+        });
+
+        if (newSlices.length > 0) {
+          await new Promise((resolve) => window.setTimeout(resolve, 120));
+        }
+
+        return newSlices;
+      }
+
+      return {
+        initialSlices,
+        dataSource,
+        getLoadedHours() {
+          return Array.from(loadedHours).sort((a, b) => a - b);
+        },
+        getCallCount() {
+          return callCount;
+        },
+        getModeLabel() {
+          return 'lazy anchors (2-hour stride)';
+        },
+        reset() {
+          callCount = 0;
+          loadedHours.clear();
+          primeHours.forEach((hour) => loadedHours.add(hour));
+        },
+        eagerAnchorSlices: anchorSlices
+      };
+    }
+
+    function createTemporalOptions(payload) {
+      const interpolate = document.getElementById('interpolateToggle').checked;
+      const lazyLoading = document.getElementById('lazyToggle').checked;
+      const useWorker = document.getElementById('workerToggle').checked;
+      const classificationScope = document.getElementById('scopeSelect').value;
+      const updateInterval = Number(document.getElementById('intervalSlider').value);
+
+      lazyState = createLazyState(payload);
+
+      return {
+        enabled: true,
+        data: lazyLoading ? lazyState.initialSlices : lazyState.eagerAnchorSlices,
+        dataSource: lazyLoading ? lazyState.dataSource : null,
+        interpolate,
+        useWorker,
+        classificationScope,
+        updateInterval,
+        outOfRangeBehavior: 'clear',
+        overlapResolution: 'prefer-earlier'
+      };
+    }
+
+    function applyScenario(payload) {
+      currentPayload = payload;
+      const temporalOptions = createTemporalOptions(payload);
+      configureClock(payload.start, payload.stop);
+
+      if (!heatbox) {
+        heatbox = new Heatbox(viewer, {
+          voxelSize: 42,
+          highlightTopN: 160,
+          autoView: false,
+          temporal: temporalOptions
+        });
+      } else {
+        heatbox.updateOptions({ temporal: temporalOptions });
+      }
+
+      document.getElementById('scenarioLabel').textContent = payload.label;
+      document.getElementById('datasetRange').textContent = `${payload.start} 〜 ${payload.stop}`;
+      primeInitialRender(payload);
+      updatePreviewPoints(viewer.clock.currentTime);
+      updateDiagnostics(true);
+    }
+
+    function primeInitialRender(payload) {
+      if (!heatbox || !payload?.slices?.length) {
+        return;
+      }
+
+      const initialSlice = payload.slices[0];
+      if (!initialSlice) {
+        return;
+      }
+
+      void heatbox.setData(initialSlice.data, { _skipAutoView: true });
+    }
+
+    function configureClock(startIso, stopIso) {
+      timelineStart = Cesium.JulianDate.fromIso8601(startIso);
+      timelineStop = Cesium.JulianDate.fromIso8601(stopIso);
+      const start = Cesium.JulianDate.clone(timelineStart);
+      const stop = Cesium.JulianDate.clone(timelineStop);
+      viewer.clock.startTime = Cesium.JulianDate.clone(start);
+      viewer.clock.stopTime = Cesium.JulianDate.clone(stop);
+      viewer.clock.currentTime = Cesium.JulianDate.clone(start);
+      viewer.clock.clockRange = Cesium.ClockRange.CLAMPED;
+      viewer.clock.multiplier = Number(document.getElementById('speedSlider').value);
+      viewer.clock.shouldAnimate = true;
+      viewer.timeline.zoomTo(start, stop);
+      document.getElementById('timeSlider').value = '0';
+      document.getElementById('timeSliderValue').textContent = '00:00';
+    }
+
+    function focusCamera() {
+      const bounds = CameraHelper?.DEFAULT_BOUNDS || {
+        minLon: 139.688,
+        maxLon: 139.712,
+        minLat: 35.676,
+        maxLat: 35.702,
+        minAlt: 0,
+        maxAlt: 300
+      };
+      const focusConfig = {
+        bounds,
+        useDefaultBounds: true,
+        pitchDegrees: -48,
+        altitude: 3300
+      };
+      if (CameraHelper?.focus) {
+        CameraHelper.focus(viewer, focusConfig);
+        return;
+      }
+      if (CameraHelper?.applyDefaultView) {
+        CameraHelper.applyDefaultView(viewer, focusConfig);
+        return;
+      }
+      const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+      const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat - 0.018, 3300),
+        orientation: {
+          heading: Cesium.Math.toRadians(-4),
+          pitch: Cesium.Math.toRadians(-48),
+          roll: 0
+        }
+      });
+    }
+
+    function wireControls() {
+      document.querySelectorAll('[data-scenario]').forEach((button) => {
+        button.addEventListener('click', () => {
+          currentScenarioKey = button.dataset.scenario;
+          TemporalHeatboxDemo.loadScenario(viewer, currentScenarioKey).then(applyScenario);
+        });
+      });
+
+      document.getElementById('speedSlider').addEventListener('input', (event) => {
+        viewer.clock.multiplier = Number(event.target.value);
+        document.getElementById('speedValue').textContent = `${event.target.value}x`;
+      });
+
+      document.getElementById('intervalSlider').addEventListener('input', (event) => {
+        document.getElementById('intervalValue').textContent = `${event.target.value}ms`;
+        if (currentPayload) {
+          applyScenario(currentPayload);
+        }
+      });
+
+      ['interpolateToggle', 'lazyToggle', 'workerToggle', 'scopeSelect'].forEach((id) => {
+        document.getElementById(id).addEventListener('change', () => {
+          if (currentPayload) {
+            applyScenario(currentPayload);
+          }
+        });
+      });
+
+      const timeSlider = document.getElementById('timeSlider');
+      timeSlider.addEventListener('input', (event) => {
+        sliderInteracting = true;
+        jumpToHour(Number(event.target.value));
+      });
+      timeSlider.addEventListener('change', () => {
+        sliderInteracting = false;
+      });
+    }
+
+    function jumpToHour(hour) {
+      if (!timelineStart) return;
+      const nextTime = Cesium.JulianDate.addHours(timelineStart, hour, new Cesium.JulianDate());
+      viewer.clock.currentTime = Cesium.JulianDate.clone(nextTime);
+      document.getElementById('timeSliderValue').textContent = `${String(hour).padStart(2, '0')}:00`;
+    }
+
+    function syncSliderWithCurrentTime(clock) {
+      if (sliderInteracting || !timelineStart || !timelineStop) return;
+      const hour = getCurrentHour(clock.currentTime);
+      document.getElementById('timeSlider').value = String(hour);
+      document.getElementById('timeSliderValue').textContent = `${String(hour).padStart(2, '0')}:00`;
+    }
+
+    function getCurrentHour(currentTime) {
+      if (!timelineStart) return 0;
+      const diffHours = Cesium.JulianDate.secondsDifference(currentTime, timelineStart) / 3600;
+      return Math.max(0, Math.min(23, Math.floor(diffHours)));
+    }
+
+    function updateDiagnostics(force = false) {
+      if (!heatbox) return;
+      if (!force && document.hidden) return;
+
+      const hour = getCurrentHour(viewer.clock.currentTime);
+      const stats = typeof heatbox.getStatistics === 'function' ? heatbox.getStatistics() : null;
+      const domain = stats
+        ? `${stats.minCount ?? '-'} → ${stats.maxCount ?? '-'}`
+        : '--';
+      const interpolate = document.getElementById('interpolateToggle').checked;
+      const lazyLoading = document.getElementById('lazyToggle').checked;
+      const sliceMode = hour % 2 === 0
+        ? 'anchor slice'
+        : (interpolate ? 'interpolated gap' : 'gap without interpolation');
+
+      document.getElementById('modeLabel').textContent = lazyLoading
+        ? lazyState?.getModeLabel() || 'lazy'
+        : 'eager anchors (2-hour stride)';
+      document.getElementById('loadedAnchors').textContent = lazyLoading && lazyState
+        ? lazyState.getLoadedHours().map((value) => String(value).padStart(2, '0')).join(', ')
+        : buildAnchorSlices(currentPayload?.slices || []).map((_, index) => String(index * 2).padStart(2, '0')).join(', ');
+      document.getElementById('dataSourceCalls').textContent = lazyLoading && lazyState
+        ? String(lazyState.getCallCount())
+        : '0';
+      document.getElementById('sliceMode').textContent = sliceMode;
+      document.getElementById('domainLabel').textContent = domain;
+    }
+
+    function clearPreviewPoints() {
+      previewEntities.forEach((entity) => {
+        try {
+          viewer.entities.remove(entity);
+        } catch (_error) {
+          // noop
+        }
+      });
+      previewEntities = [];
+    }
+
+    function updatePreviewPoints(currentTime) {
+      clearPreviewPoints();
+
+      const slice = getPreviewSlice(currentTime);
+      const entities = slice?.data || [];
+      entities.slice(0, 120).forEach((entity, index) => {
+        const position = entity?.position;
+        if (!position) {
+          return;
+        }
+
+        previewEntities.push(viewer.entities.add({
+          id: `advanced-preview-${index}`,
+          position,
+          point: {
+            pixelSize: 4,
+            color: Cesium.Color.fromCssColorString('#f59e0b').withAlpha(0.75),
+            outlineColor: Cesium.Color.fromCssColorString('#111827').withAlpha(0.9),
+            outlineWidth: 1
+          }
+        }));
+      });
+    }
+
+    function getPreviewSlice(currentTime) {
+      if (!currentPayload?.slices?.length || !timelineStart) {
+        return null;
+      }
+
+      const hour = getCurrentHour(currentTime);
+      return currentPayload.slices[Math.max(0, Math.min(currentPayload.slices.length - 1, hour))] || null;
+    }
+  </script>
+</body>
+</html>

@@ -24,6 +24,7 @@ import { ColorCalculator } from './color/ColorCalculator.js';
 import { VoxelSelector } from './selection/VoxelSelector.js';
 import { AdaptiveController } from './adaptive/AdaptiveController.js';
 import { GeometryRenderer } from './geometry/GeometryRenderer.js';
+import { RenderPlanner } from './render/RenderPlanner.js';
 import { createClassifier } from '../utils/classification.js';
 
 // v0.1.11: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
@@ -102,6 +103,7 @@ export class VoxelRenderer {
     
     // v0.1.11-alpha: GeometryRenderer instantiation (ADR-0009 Phase 4)
     this.geometryRenderer = new GeometryRenderer(this.viewer, this.options);
+    this.renderPlanner = new RenderPlanner(this.viewer, this.options);
     
     // Legacy compatibility: voxelEntities now delegates to GeometryRenderer
     Object.defineProperty(this, 'voxelEntities', {
@@ -183,8 +185,9 @@ export class VoxelRenderer {
    * @returns {number} Number of rendered voxels / 実際に描画されたボクセル数
    */
   render(voxelData, bounds, grid, statistics) {
-    // v0.1.11: GeometryRendererに委譲してエンティティクリア (ADR-0009 Phase 4)
-    this.geometryRenderer.clear();
+    this.geometryRenderer.beginFrame();
+    this.geometryRenderer.clearDebugEntities();
+    this.renderPlanner.updateOptions(this.options);
     Logger.debug('VoxelRenderer.render - Starting render with simplified approach', {
       voxelDataSize: voxelData.size,
       bounds,
@@ -261,6 +264,12 @@ export class VoxelRenderer {
       topN.forEach(voxel => topNVoxels.add(voxel.key));
       Logger.debug(`TopN highlight enabled: ${topNVoxels.size} voxels will be highlighted`);
     }
+
+    const plannedBudget = this.options.maxRenderVoxels
+      ? Math.min(this.options.maxRenderVoxels, displayVoxels.length)
+      : displayVoxels.length;
+    const planningResult = this.renderPlanner.plan(displayVoxels, bounds, grid, topNVoxels, plannedBudget);
+    displayVoxels = planningResult.voxels;
     
     Logger.debug(`Rendering ${displayVoxels.length} voxels`);
     
@@ -282,6 +291,7 @@ export class VoxelRenderer {
     });
 
     Logger.info(`Successfully rendered ${renderedCount} voxels`);
+    this.geometryRenderer.endFrame();
 
     this._currentVoxelData = null;
 
@@ -640,55 +650,27 @@ export class VoxelRenderer {
    * @private
    */
   _delegateVoxelRendering(key, params) {
-    // Main voxel box
-    this.geometryRenderer.createVoxelBox({
-      centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
-      cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
-      color: params.color, opacity: params.opacity,
+    const allowEmulationEdges = (this.options.outlineRenderMode === 'emulation-only') ||
+      (this.options.emulationScope && this.options.emulationScope !== 'off');
+
+    this.geometryRenderer.syncVoxel({
+      centerLon: params.centerLon,
+      centerLat: params.centerLat,
+      centerAlt: params.centerAlt,
+      cellSizeX: params.cellSizeX,
+      cellSizeY: params.cellSizeY,
+      boxHeight: params.boxHeight,
+      color: params.color,
+      opacity: params.opacity,
       shouldShowOutline: params.shouldShowOutline,
       outlineColor: params.outlineColor,
       outlineWidth: params.outlineWidth,
       voxelInfo: params.voxelInfo,
       voxelKey: key,
-      emulateThick: params.emulateThick
+      emulateThick: allowEmulationEdges && params.emulateThick,
+      shouldShowInsetOutline: params.shouldShowInsetOutline && this.geometryRenderer.shouldApplyInsetOutline(params.isTopN),
+      adaptiveParams: params.adaptiveParams
     });
-
-    // Inset outline
-    if (params.shouldShowInsetOutline && this.geometryRenderer.shouldApplyInsetOutline(params.isTopN)) {
-      try {
-        const insetAmount = this.options.outlineInset > 0 ? this.options.outlineInset : 1;
-        this.geometryRenderer.createInsetOutline({
-          centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
-          baseSizeX: params.cellSizeX, baseSizeY: params.cellSizeY, baseSizeZ: params.boxHeight,
-          outlineColor: params.outlineColor,
-          outlineWidth: Math.max(params.outlineWidth, 1),
-          voxelKey: key,
-          insetAmount
-        });
-      } catch (e) {
-        Logger.warn('Failed to create inset outline:', e);
-      }
-    }
-    
-    // Edge polylines for thick emulation
-    // 追加の安全ガード: emulation-only もしくは emulationScope!='off' の場合のみ許可
-    const allowEmulationEdges = (this.options.outlineRenderMode === 'emulation-only') ||
-      (this.options.emulationScope && this.options.emulationScope !== 'off');
-    if (allowEmulationEdges && params.emulateThick) {
-      try {
-        const adaptiveOutlineOpacity = params.adaptiveParams?.outlineOpacity ?? params.outlineColor?.alpha ?? null;
-        this.geometryRenderer.createEdgePolylines({
-          centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
-          cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
-          outlineColor: params.outlineColor,
-          outlineWidth: Math.max(params.outlineWidth, 1),
-          outlineOpacity: adaptiveOutlineOpacity,
-          voxelKey: key
-        });
-      } catch (e) {
-        Logger.warn('Failed to add emulated thick outline polylines:', e);
-      }
-    }
   }
 
   /**

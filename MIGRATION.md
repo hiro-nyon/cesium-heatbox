@@ -865,6 +865,17 @@ const heatbox = new Heatbox(viewer, {
 
 `heatbox.updateOptions({ temporal: { ... } })` で実行時にオン/オフしたり、`classificationScope` を切り替えることも可能です。`viewer.timeline` をそのまま UI として利用できるため、移行後は Clock リスナーを自前で管理する必要がなくなります。
 
+v1.3.x では、同じグリッドを維持できる更新に限って `updateValues()` を使うことで再構築コストを抑えられます:
+
+```javascript
+await heatbox.setData(initialEntities);
+
+// bounds/grid を再利用できる更新は軽量経路へ
+await heatbox.updateValues(nextEntities);
+```
+
+また、`temporal.interpolate` を有効にすると、スライス間ギャップの数値プロパティを補間できます。データを都度まとめて保持したくない場合は `temporal.dataSource(currentTime, context)` で lazy loading も利用できます。
+
 ### トラブルシューティング
 
 #### Q: 警告メッセージが表示される

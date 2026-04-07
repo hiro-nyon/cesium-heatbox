@@ -40,6 +40,24 @@ class MockClock {
     }
 }
 
+class MockCamera {
+    constructor() {
+        this._listener = null;
+        this.changed = {
+            addEventListener: jest.fn((listener) => {
+                this._listener = listener;
+                return () => {
+                    this._listener = null;
+                };
+            })
+        };
+    }
+
+    fireChanged() {
+        this._listener?.();
+    }
+}
+
 describe('TimeController', () => {
     let viewer;
     let heatbox;
@@ -50,7 +68,8 @@ describe('TimeController', () => {
 
     beforeEach(() => {
         viewer = {
-            clock: new MockClock()
+            clock: new MockClock(),
+            camera: new MockCamera()
         };
         viewer.clock.currentTime = baseTime;
 
@@ -191,6 +210,72 @@ describe('TimeController', () => {
         expect(heatbox.setData).toHaveBeenLastCalledWith(
             [{ id: 'early' }],
             expect.objectContaining({})
+        );
+    });
+
+    test('should prefer updateValues when Heatbox provides lightweight update API', () => {
+        heatbox.updateValues = jest.fn();
+        controller = new TimeController(viewer, heatbox, options);
+        controller.activate();
+
+        controller._onTick(viewer.clock);
+
+        expect(heatbox.updateValues).toHaveBeenCalledWith(
+            [{ id: 1 }],
+            expect.objectContaining({ _skipAutoView: true })
+        );
+        expect(heatbox.setData).not.toHaveBeenCalled();
+    });
+
+    test('should refresh current entry when camera changes', () => {
+        controller = new TimeController(viewer, heatbox, options);
+        controller.activate();
+        heatbox.setData.mockClear();
+
+        viewer.camera.fireChanged();
+
+        expect(heatbox.setData).toHaveBeenCalledWith(
+            [{ id: 1 }],
+            expect.objectContaining({ _skipAutoView: true })
+        );
+    });
+
+    test('should ignore stale async tick results that resolve out of order', async () => {
+        options.dataSource = jest.fn();
+        controller = new TimeController(viewer, heatbox, options);
+        controller._isActive = true;
+
+        let resolveFirst;
+        let resolveSecond;
+        const firstPromise = new Promise((resolve) => {
+            resolveFirst = resolve;
+        });
+        const secondPromise = new Promise((resolve) => {
+            resolveSecond = resolve;
+        });
+
+        controller._slicer.getEntryAsync = jest
+            .fn()
+            .mockReturnValueOnce(firstPromise)
+            .mockReturnValueOnce(secondPromise);
+
+        const pendingFirst = controller._handleAsyncTick({
+            currentTime: Cesium.JulianDate.fromIso8601('2025-01-01T00:10:00Z')
+        });
+        const pendingSecond = controller._handleAsyncTick({
+            currentTime: Cesium.JulianDate.fromIso8601('2025-01-01T00:20:00Z')
+        });
+
+        resolveSecond({ data: [{ id: 'new' }] });
+        await pendingSecond;
+
+        resolveFirst({ data: [{ id: 'old' }] });
+        await pendingFirst;
+
+        expect(heatbox.setData).toHaveBeenCalledTimes(1);
+        expect(heatbox.setData).toHaveBeenCalledWith(
+            [{ id: 'new' }],
+            expect.objectContaining({ _skipAutoView: true })
         );
     });
 });

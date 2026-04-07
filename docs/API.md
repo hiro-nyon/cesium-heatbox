@@ -1,4 +1,4 @@
-# API Reference (APIリファレンス) - v1.0.0
+# API Reference (APIリファレンス) - v1.3.4
 
 [English](#english) | [日本語](#日本語)
 
@@ -44,7 +44,7 @@ Creates a new Heatbox instance.
   - `pitch` (number, default: -30) - Camera pitch (degrees)
   - `paddingPercent` (number, default: 0.1) - Padding ratio around data bounds
 - **`classification` (string | ClassificationOptions | false) - v1.1.0: Declarative classification engine (`linear`/`log`/`equal-interval`/`quantize`/`threshold`/`quantile`/`jenks`) with multi-target control (color / opacity / width). When `false`, the legacy min/max interpolation is used. See [ClassificationOptions](#classificationoptions-v110).**
-- **`temporal` (TemporalOptions|null) - v1.2.0: Built-in Cesium clock synchronisation. Provide ordered `data` slices and Heatbox will update automatically as the clock moves. Supports `classificationScope` (global/per-time), throttling via `updateInterval`, overlap policies, and `outOfRangeBehavior` (clear/hold).**
+- **`temporal` (TemporalOptions|null) - v1.2.0/v1.3.x: Built-in Cesium clock synchronisation. Supports `classificationScope`, throttling, overlap policies, numeric interpolation across gaps, and optional lazy loading via `dataSource`.**
 
 For brevity, see the Japanese section below for complete option details and examples.
 
@@ -66,6 +66,14 @@ Creates heatmap data from entity array and renders it.
 
 **Parameters:**
 - `entities` (Array<Cesium.Entity>) - Target entity array
+
+##### `updateValues(entities, runtimeOptions?)` (v1.3.x)
+
+Updates voxel data while reusing the current bounds/grid when the new data still fits the existing spatial envelope.
+
+**Parameters:**
+- `entities` (Array<Cesium.Entity>) - Target entity array
+- `runtimeOptions` (Object, optional) - Internal/runtime overrides such as `_externalStats`
 
 ##### `updateOptions(newOptions)`
 
@@ -196,7 +204,9 @@ interface TemporalOptions {
   updateInterval?: 'frame' | number; // 'frame' or milliseconds
   outOfRangeBehavior?: 'clear'|'hold';
   overlapResolution?: 'skip'|'prefer-earlier'|'prefer-later';
-  interpolate?: boolean;            // Reserved for future use
+  interpolate?: boolean;            // Interpolate numeric values across gaps
+  dataSource?: (currentTime, context) => Promise<TemporalDataEntry[]|TemporalDataEntry|null> | TemporalDataEntry[] | TemporalDataEntry | null;
+  useWorker?: boolean;              // Run interpolation/stat preprocessing in a worker when available
 }
 ```
 
@@ -343,8 +353,11 @@ const heatbox = new Heatbox(viewer, {
 - `updateInterval`: `'frame'` またはミリ秒指定。値が大きいほど更新頻度を抑制。
 - `outOfRangeBehavior`: `'hold'`（既定）か `'clear'`。Clock が範囲外にいる際の表示制御。
 - `overlapResolution`: `'prefer-earlier'`（既定）/`'prefer-later'`/`'skip'`。時間帯が重複するデータをどう扱うかを指定。
+- `interpolate`: true にすると、隣接スライス間ギャップに対して数値プロパティを補間します。
+- `dataSource(currentTime, context)`: 必要な時刻付近のスライスを遅延供給する async/sync provider。
+- `useWorker`: true で補間と時系列統計の前処理を worker にオフロードし、非対応環境では自動でメインスレッドにフォールバック。
 
-Cesium の `timeline` をそのまま利用できるため、既存アプリで `clock.onTick` を自前実装していた場合も `updateOptions({ temporal: ... })` でオン/オフを切り替えられます。
+Cesium の `timeline` をそのまま利用できるため、既存アプリで `clock.onTick` を自前実装していた場合も `updateOptions({ temporal: ... })` でオン/オフを切り替えられます。時系列更新では `Heatbox.updateValues()` が優先利用され、既存グリッドを再利用できるケースでは再構築コストを抑えます。初回描画で候補がカリングされた場合も、カメラ移動時に現在のスライスを再描画して表示を回復します。
 
 ### メソッド
 

@@ -30,3 +30,30 @@ jobs:
       - name: Verify package contents
         run: npm pack --dry-run
 
+  cesium-compat-smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cesium-version: ['^1.120.0', 'latest']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Cesium compatibility target
+        run: npm install --no-save cesium@${{ matrix.cesium-version }}
+
+      - name: Smoke test
+        run: npm test --silent -- --runTestsByPath test/Heatbox.test.js test/core/VoxelRenderer.test.js test/core/geometry/GeometryRenderer.test.js test/integration/sample-code-validation.test.js --bail=1
+
+      - name: Smoke build
+        run: npm run build

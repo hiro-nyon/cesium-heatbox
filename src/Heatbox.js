@@ -98,7 +98,9 @@ import { TimeController } from './core/temporal/TimeController.js';
  * @property {('frame'|number)} [updateInterval=100] - Update interval (`frame` or milliseconds) / 更新間隔
  * @property {('clear'|'hold')} [outOfRangeBehavior='hold'] - Behaviour when clock is outside data range / データ範囲外時の挙動
  * @property {('skip'|'prefer-earlier'|'prefer-later')} [overlapResolution='prefer-earlier'] - Overlap resolution strategy / 重複時の解決方法
- * @property {boolean} [interpolate=false] - Reserved flag for interpolation (future) / 将来の補間フラグ（現状は未使用）
+ * @property {boolean} [interpolate=false] - Interpolate numeric values across temporal gaps / 時系列ギャップで数値を補間
+ * @property {?function(Cesium.JulianDate, Object): (Promise<TemporalDataEntry[]|TemporalDataEntry|null>|TemporalDataEntry[]|TemporalDataEntry|null)} [dataSource=null] - Async/Sync temporal entry provider / 遅延ロード用データ供給関数
+ * @property {boolean} [useWorker=false] - Opt-in worker hint for temporal preprocessing / 時系列前処理の worker 利用ヒント
  */
 
 /**
@@ -625,9 +627,10 @@ export class Heatbox {
    * ヒートマップデータを設定し、境界計算→ボクセル分類→描画の順で処理します。
    *
    * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
+   * @param {Object} [runtimeOptions={}] - Internal runtime options / 内部実行オプション
    * @returns {Promise<void>} Resolves when rendering is completed / 描画完了時に解決
    */
-  async setData(entities) {
+  async setData(entities, runtimeOptions = {}) {
     if (!isValidEntities(entities)) {
       this.clear();
       return;
@@ -709,73 +712,138 @@ export class Heatbox {
       // 3. エンティティ分類（v0.1.17: 空間IDサポート）
       Logger.debug('Step 3: エンティティ分類');
       // Pass options with voxelSize for spatial ID auto zoom calculation
-      const classificationOptions = { ...this.options, voxelSize: finalVoxelSize };
+      const classificationOptions = { ...this.options, ...runtimeOptions, voxelSize: finalVoxelSize };
       this._voxelData = await DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid, classificationOptions);
       Logger.debug('エンティティ分類完了:', this._voxelData.size, '個のボクセル');
-
-      // 4. 統計計算
-      Logger.debug('Step 4: 統計計算');
-      this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid, this.options);
-      Logger.debug('統計情報:', this._statistics);
-
-      // 統計情報に自動調整情報を追加
-      if (autoAdjustmentInfo) {
-        this._statistics.autoAdjusted = autoAdjustmentInfo.adjusted;
-        this._statistics.originalVoxelSize = autoAdjustmentInfo.originalSize;
-        this._statistics.finalVoxelSize = autoAdjustmentInfo.finalSize;
-        this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
-      }
-
-      // v0.1.17: 空間ID情報を統計に追加
-      if (classificationOptions.spatialId?.enabled) {
-        this._statistics.spatialIdEnabled = true;
-        this._statistics.spatialIdMode = classificationOptions.spatialId.mode;
-        this._statistics.spatialIdProvider = classificationOptions._spatialIdProvider || null;
-        this._statistics.spatialIdZoom = classificationOptions._resolvedZoom || null;
-        this._statistics.zoomControl = classificationOptions.spatialId.zoomControl;
-      } else {
-        this._statistics.spatialIdEnabled = false;
-      }
-
-      // 5. 描画（レンダリング時間の計測）
-      Logger.debug('Step 5: 描画');
-      const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-      const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
-      const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-      this._lastRenderTime = Math.max(0, t1 - t0);
-
-      // 統計情報に実際の描画数を反映
-      this._statistics.renderedVoxels = renderedVoxelCount;
-      this._statistics.renderTimeMs = this._lastRenderTime;
-      Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
-
-      // v0.1.9: 自動視点調整
-      if (this.options.autoView) {
-        try {
-          Logger.debug('Auto view adjustment triggered');
-          await this.fitView();
-          Logger.debug('Auto view adjustment completed');
-        } catch (error) {
-          Logger.warn('Auto view adjustment failed:', error);
-          // 自動視点調整の失敗は致命的エラーとしない
-        }
-      }
-
+      await this._finalizeVoxelRender(classificationOptions, autoAdjustmentInfo, runtimeOptions);
       Logger.debug('Heatbox.setData - 処理完了');
-
-      // Update overlay immediately after render if available
-      if (this._performanceOverlay && this._performanceOverlay.isVisible) {
-        const stats = this.getStatistics() || {};
-        stats.renderTimeMs = this._lastRenderTime;
-        stats.memoryUsageMB = this._estimateMemoryUsage();
-        this._performanceOverlay.update(stats, undefined);
-      }
 
     } catch (error) {
       Logger.error('ヒートマップ作成エラー:', error);
       this.clear();
       throw error;
     }
+  }
+
+  /**
+   * Update voxel values while reusing the current bounds/grid when possible.
+   * 可能な場合は既存の bounds/grid を再利用して値更新のみを行います。
+   * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
+   * @param {Object} [runtimeOptions={}] - Internal runtime options / 内部実行オプション
+   * @returns {Promise<void>}
+   */
+  async updateValues(entities, runtimeOptions = {}) {
+    if (!isValidEntities(entities)) {
+      this.clear();
+      return;
+    }
+
+    if (!this._canReuseGridForUpdate(entities)) {
+      Logger.debug('updateValues fallback to setData because grid reuse conditions were not met');
+      await this.setData(entities, runtimeOptions);
+      return;
+    }
+
+    try {
+      const classificationOptions = {
+        ...this.options,
+        ...runtimeOptions,
+        voxelSize: this._grid?.voxelSizeMeters || this.options.voxelSize
+      };
+
+      this._voxelData = await DataProcessor.classifyEntitiesIntoVoxels(
+        entities,
+        this._bounds,
+        this._grid,
+        classificationOptions
+      );
+
+      await this._finalizeVoxelRender(classificationOptions, null, {
+        ...runtimeOptions,
+        _skipAutoView: true
+      });
+    } catch (error) {
+      Logger.error('updateValues failed, falling back to full rebuild:', error);
+      await this.setData(entities, runtimeOptions);
+    }
+  }
+
+  async _finalizeVoxelRender(classificationOptions, autoAdjustmentInfo = null, runtimeOptions = {}) {
+    Logger.debug('Step 4: 統計計算');
+    this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid, classificationOptions);
+    Logger.debug('統計情報:', this._statistics);
+
+    if (autoAdjustmentInfo) {
+      this._statistics.autoAdjusted = autoAdjustmentInfo.adjusted;
+      this._statistics.originalVoxelSize = autoAdjustmentInfo.originalSize;
+      this._statistics.finalVoxelSize = autoAdjustmentInfo.finalSize;
+      this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
+    }
+
+    if (classificationOptions.spatialId?.enabled) {
+      this._statistics.spatialIdEnabled = true;
+      this._statistics.spatialIdMode = classificationOptions.spatialId.mode;
+      this._statistics.spatialIdProvider = classificationOptions._spatialIdProvider || null;
+      this._statistics.spatialIdZoom = classificationOptions._resolvedZoom || null;
+      this._statistics.zoomControl = classificationOptions.spatialId.zoomControl;
+    } else {
+      this._statistics.spatialIdEnabled = false;
+    }
+
+    Logger.debug('Step 5: 描画');
+    const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+    const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    this._lastRenderTime = Math.max(0, t1 - t0);
+    this._statistics.renderedVoxels = renderedVoxelCount;
+    this._statistics.renderTimeMs = this._lastRenderTime;
+    Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
+
+    if (this.options.autoView && !runtimeOptions._skipAutoView) {
+      try {
+        Logger.debug('Auto view adjustment triggered');
+        await this.fitView();
+        Logger.debug('Auto view adjustment completed');
+      } catch (error) {
+        Logger.warn('Auto view adjustment failed:', error);
+      }
+    }
+
+    if (this._performanceOverlay && this._performanceOverlay.isVisible) {
+      const stats = this.getStatistics() || {};
+      stats.renderTimeMs = this._lastRenderTime;
+      stats.memoryUsageMB = this._estimateMemoryUsage();
+      this._performanceOverlay.update(stats, undefined);
+    }
+  }
+
+  _canReuseGridForUpdate(entities) {
+    if (!this._bounds || !this._grid || !this._voxelData) {
+      return false;
+    }
+
+    const nextBounds = CoordinateTransformer.calculateBounds(entities);
+    if (!nextBounds) {
+      return false;
+    }
+
+    const toleranceLon = 0.001;
+    const toleranceLat = 0.001;
+    const toleranceAlt = 1;
+
+    const fitsCurrentBounds =
+      nextBounds.minLon >= (this._bounds.minLon - toleranceLon) &&
+      nextBounds.maxLon <= (this._bounds.maxLon + toleranceLon) &&
+      nextBounds.minLat >= (this._bounds.minLat - toleranceLat) &&
+      nextBounds.maxLat <= (this._bounds.maxLat + toleranceLat) &&
+      nextBounds.minAlt >= (this._bounds.minAlt - toleranceAlt) &&
+      nextBounds.maxAlt <= (this._bounds.maxAlt + toleranceAlt);
+
+    if (!fitsCurrentBounds) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -875,6 +943,9 @@ export class Heatbox {
     }
     if (this.renderer.geometryRenderer && typeof this.renderer.geometryRenderer.updateOptions === 'function') {
       this.renderer.geometryRenderer.updateOptions(this.options);
+    }
+    if (this.renderer.renderPlanner && typeof this.renderer.renderPlanner.updateOptions === 'function') {
+      this.renderer.renderPlanner.updateOptions(this.options);
     }
 
     // 既存のヒートマップがある場合は再描画
