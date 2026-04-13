@@ -11,7 +11,7 @@
  */
 import * as Cesium from 'cesium';
 import { DEFAULT_OPTIONS, ERROR_MESSAGES, PERFORMANCE_LIMITS } from './utils/constants.js';
-import { 
+import {
   isValidViewer,
   isValidEntities,
   validateAndNormalizeOptions,
@@ -27,6 +27,8 @@ import { DataProcessor } from './core/DataProcessor.js';
 import { VoxelRenderer } from './core/VoxelRenderer.js';
 import { getProfileNames, getProfile, applyProfile } from './utils/profiles.js';
 import { PerformanceOverlay } from './utils/performanceOverlay.js';
+import { Legend } from './ui/Legend.js';
+import { TimeController } from './core/temporal/TimeController.js';
 
 /**
  * @typedef {('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data')} ProfileName
@@ -89,6 +91,26 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  */
 
 /**
+ * @typedef {Object} TemporalDataEntry
+ * @property {Cesium.JulianDate|string|Date|number} start - Interval start time / インターバル開始時刻
+ * @property {Cesium.JulianDate|string|Date|number} stop - Interval end time / インターバル終了時刻
+ * @property {Array<Cesium.Entity|Object>} data - Entities rendered during the interval / その期間に描画するエンティティ配列
+ */
+
+/**
+ * @typedef {Object} TemporalOptions
+ * @property {boolean} [enabled=false] - Enable temporal mode / 時間依存モードを有効化
+ * @property {TemporalDataEntry[]} [data=[]] - Ordered temporal slices / ソート済みの時系列スライス
+ * @property {('global'|'per-time')} [classificationScope='global'] - Classification scope / 分類スコープ
+ * @property {('frame'|number)} [updateInterval=100] - Update interval (`frame` or milliseconds) / 更新間隔
+ * @property {('clear'|'hold')} [outOfRangeBehavior='hold'] - Behaviour when clock is outside data range / データ範囲外時の挙動
+ * @property {('skip'|'prefer-earlier'|'prefer-later')} [overlapResolution='prefer-earlier'] - Overlap resolution strategy / 重複時の解決方法
+ * @property {boolean} [interpolate=false] - Interpolate numeric values across temporal gaps / 時系列ギャップで数値を補間
+ * @property {?function(Cesium.JulianDate, Object): (Promise<TemporalDataEntry[]|TemporalDataEntry|null>|TemporalDataEntry[]|TemporalDataEntry|null)} [dataSource=null] - Async/Sync temporal entry provider / 遅延ロード用データ供給関数
+ * @property {boolean} [useWorker=false] - Opt-in worker hint for temporal preprocessing / 時系列前処理の worker 利用ヒント
+ */
+
+/**
  * @typedef {Object} HeatboxBounds
  * @property {number} minLon - Minimum longitude / 最小経度
  * @property {number} maxLon - Maximum longitude / 最大経度
@@ -117,6 +139,16 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  */
 
 /**
+ * @typedef {Object} SpatialIdEdgeCaseMetrics
+ * @property {number} datelineNeighborsChecked - Number of neighbor checks near dateline / 日付変更線近傍で検証した近傍セル数
+ * @property {number} datelineNeighborsMismatched - Number of neighbor mismatches near dateline / 日付変更線近傍で不一致となった近傍セル数
+ * @property {number} polarTilesChecked - Number of polar tiles evaluated / 極域タイルの検証数
+ * @property {number} polarMaxRelativeErrorXY - Maximum relative XY error near poles / 極域近傍でのXY相対誤差の最大値
+ * @property {number} hemisphereBoundsChecked - Number of hemisphere-crossing bounds evaluated / 半球跨ぎboundsの検証数
+ * @property {number} hemisphereBoundsMismatched - Number of hemisphere-crossing mismatches / 半球跨ぎで不一致となったケース数
+ */
+
+/**
  * @typedef {Object} HeatboxStatistics
  * @property {number} totalVoxels - Total voxels generated / 生成された総ボクセル数
  * @property {number} renderedVoxels - Voxels actually rendered / 実際に描画されたボクセル数
@@ -138,6 +170,12 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {number} [autoMaxRenderVoxels] - Auto-assigned maxRenderVoxels / 自動設定された maxRenderVoxels
  * @property {number|null} [occupancyRatio] - Ratio of rendered voxels to limit / 描画ボクセルと上限の比率
  * @property {HeatboxLayerStat[]} [layers] - Top-N layer aggregation (v0.1.18 ADR-0014) / 上位N個のレイヤ集約
+ * @property {Object} [spatialId] - Spatial ID statistics (v0.1.19 ADR-0015) / 空間ID関連の統計情報
+ * @property {boolean} [spatialId.enabled] - Whether Spatial ID mode is enabled / 空間IDモードが有効か
+ * @property {string|null} [spatialId.provider] - Spatial ID provider identifier ('ouranos-gex' or null) / 空間IDプロバイダー識別子
+ * @property {number|null} [spatialId.zoom] - Resolved zoom level / 解決済みズームレベル
+ * @property {('auto'|'manual'|null)} [spatialId.zoomControl] - Zoom control mode / ズーム制御モード
+ * @property {SpatialIdEdgeCaseMetrics|null} [spatialId.edgeCaseMetrics] - QA metrics for global edge cases / グローバル端ケースQA用メトリクス
  */
 
 /**
@@ -240,6 +278,7 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {?function(entity):string} [aggregation.keyResolver=null] - Custom layer key resolver function (takes precedence over byProperty) / カスタムレイヤキー解決関数（byPropertyより優先）
  * @property {boolean} [aggregation.showInDescription=true] - Show layer breakdown in voxel description / ボクセル説明文にレイヤ内訳を表示
  * @property {number} [aggregation.topN=10] - Number of top layers to include in statistics / 統計情報に含める上位レイヤ数
+ * @property {TemporalOptions|null} [temporal=null] - Temporal playback configuration / 時系列再生の設定
  */
 
 /**
@@ -265,9 +304,9 @@ export class Heatbox {
     if (!isValidViewer(viewer)) {
       throw new Error(ERROR_MESSAGES.INVALID_VIEWER);
     }
-    
+
     this.viewer = viewer;
-    
+
     // v0.1.9: Auto Render Budgetの適用
     // Phase 4: Ensure profile and legacy migration are applied before merging defaults
     let userOptions = { ...(options || {}) };
@@ -278,27 +317,38 @@ export class Heatbox {
     }
     const mergedOptions = { ...DEFAULT_OPTIONS, ...userOptions };
     this.options = validateAndNormalizeOptions(applyAutoRenderBudget(mergedOptions));
-    
+
     // ログレベルをオプションに基づいて設定
     Logger.setLogLevel(this.options);
     this.renderer = new VoxelRenderer(this.viewer, this.options);
-    
+
     this._bounds = null;
     this._grid = null;
     this._voxelData = null;
     this._statistics = null;
+    this._spatialIdEdgeCaseMetrics = null;
     this._eventHandler = null;
     this._performanceOverlay = null;
     this._lastRenderTime = null;
     this._overlayLastUpdate = 0;
     this._postRenderListener = null;
     this._prevFrameTimestamp = null;
+    this._postRenderListener = null;
+    this._prevFrameTimestamp = null;
+    this._legend = null;
+    this._timeController = null;
+    this._timeControllerSignature = null;
 
     this._initializeEventListeners();
-    
+
     // v0.1.12: Initialize performance overlay if enabled
     if (this.options.performanceOverlay && this.options.performanceOverlay.enabled) {
       this._initializePerformanceOverlay();
+    }
+
+    // v1.2.0: Initialize TimeController if temporal mode is enabled
+    if (this.options.temporal && this.options.temporal.enabled) {
+      this._initializeTimeController();
     }
   }
 
@@ -364,7 +414,7 @@ export class Heatbox {
     };
 
     this._performanceOverlay = new PerformanceOverlay(overlayOptions);
-    
+
     // Show immediately if configured
     if (overlayOptions.autoShow) {
       this._performanceOverlay.show();
@@ -374,6 +424,101 @@ export class Heatbox {
 
     // Hook postRender to provide real-time updates with low overhead
     this._hookPerformanceOverlayUpdates();
+  }
+
+  /**
+   * Initialize TimeController
+   * TimeController を初期化します
+   * @private
+   * @since 1.2.0
+   */
+  _initializeTimeController() {
+    try {
+      this._timeController = new TimeController(this.viewer, this, this.options.temporal);
+      this._timeController.activate();
+      this._timeControllerSignature = this._serializeTemporalOptions(this.options.temporal);
+      Logger.info('TimeController initialized and activated');
+    } catch (error) {
+      this._timeController = null;
+      this._timeControllerSignature = null;
+      Logger.error('Failed to initialize TimeController:', error);
+    }
+  }
+
+  /**
+   * Deactivate and dispose TimeController instance safely.
+   * TimeController を安全に停止・破棄します。
+   * @private
+   */
+  _teardownTimeController() {
+    if (!this._timeController) {
+      return;
+    }
+
+    try {
+      this._timeController.deactivate();
+    } catch (error) {
+      Logger.debug('timeController deactivate failed (non-fatal)', error);
+    }
+
+    this._timeController = null;
+    this._timeControllerSignature = null;
+  }
+
+  /**
+   * Synchronize TimeController when temporal options change.
+   * temporalオプション変更時にTimeControllerを同期します。
+   * @param {Object|null|undefined} previousTemporal
+   * @param {Object|null|undefined} nextTemporal
+   * @param {boolean} wasTemporalUpdated
+   * @private
+   */
+  _syncTimeController(previousTemporal, nextTemporal, wasTemporalUpdated) {
+    const prevEnabled = !!(previousTemporal && previousTemporal.enabled);
+    const nextEnabled = !!(nextTemporal && nextTemporal.enabled);
+
+    if (!prevEnabled && nextEnabled) {
+      this._initializeTimeController();
+      return;
+    }
+
+    if (prevEnabled && !nextEnabled) {
+      this._teardownTimeController();
+      return;
+    }
+
+    if (nextEnabled && wasTemporalUpdated) {
+      const nextSignature = this._serializeTemporalOptions(nextTemporal);
+      if (this._timeControllerSignature !== nextSignature) {
+        this._teardownTimeController();
+        this._initializeTimeController();
+      }
+    }
+  }
+
+  /**
+   * Create a stable signature for temporal options to detect config changes.
+   * temporalオプションの変更検知用シグネチャを生成します。
+   * @param {Object|null|undefined} temporalOptions
+   * @returns {string|null}
+   * @private
+   */
+  _serializeTemporalOptions(temporalOptions) {
+    if (!temporalOptions) {
+      return null;
+    }
+
+    try {
+      return JSON.stringify(temporalOptions, (key, value) => {
+        if (typeof value === 'function') {
+          return `[Function:${value.name || 'anonymous'}]`;
+        }
+        return value;
+      });
+    } catch (error) {
+      Logger.debug('Failed to serialize temporal options for comparison', error);
+      return null;
+    }
   }
 
   /**
@@ -388,7 +533,7 @@ export class Heatbox {
       Logger.warn('Performance overlay not initialized. Set performanceOverlay.enabled: true in options.');
       return false;
     }
-    
+
     this._performanceOverlay.toggle();
     return this._performanceOverlay.isVisible;
   }
@@ -459,7 +604,7 @@ export class Heatbox {
   _estimateMemoryUsage() {
     try {
       // Rough estimation based on rendered entities and data
-      const entityCount = (this.renderer?.geometryRenderer?.entities?.length) 
+      const entityCount = (this.renderer?.geometryRenderer?.entities?.length)
         || (this.renderer?.voxelEntities?.length) || 0;
       let voxelDataSize = 0;
       if (this._voxelData) {
@@ -473,7 +618,7 @@ export class Heatbox {
           voxelDataSize = Object.keys(this._voxelData).length;
         }
       }
-      
+
       // Estimate: ~1KB per entity + ~100B per voxel data entry
       const estimated = (entityCount * 1024 + voxelDataSize * 100) / (1024 * 1024);
       return Math.max(0.1, estimated);
@@ -489,17 +634,18 @@ export class Heatbox {
    * ヒートマップデータを設定し、境界計算→ボクセル分類→描画の順で処理します。
    *
    * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
+   * @param {Object} [runtimeOptions={}] - Internal runtime options / 内部実行オプション
    * @returns {Promise<void>} Resolves when rendering is completed / 描画完了時に解決
    */
-  async setData(entities) {
+  async setData(entities, runtimeOptions = {}) {
     if (!isValidEntities(entities)) {
       this.clear();
       return;
     }
-    
+
     try {
       Logger.debug('Heatbox.setData - 処理開始:', entities.length, '個のエンティティ');
-      
+
       // 1. 境界計算
       Logger.debug('Step 1: 境界計算');
       this._bounds = CoordinateTransformer.calculateBounds(entities);
@@ -513,22 +659,22 @@ export class Heatbox {
       // v0.1.4+v0.1.9: 自動ボクセルサイズ調整（占有率ベース対応）
       let finalVoxelSize = this.options.voxelSize || DEFAULT_OPTIONS.voxelSize;
       let autoAdjustmentInfo = null;
-      
+
       if (this.options.autoVoxelSize && !this.options.voxelSize) {
         try {
           Logger.debug('自動ボクセルサイズ調整開始');
-          
+
           // v0.1.9: 占有率ベースの計算オプション
           const sizeOptions = {
             autoVoxelSizeMode: this.options.autoVoxelSizeMode,
             autoVoxelTargetFill: this.options.autoVoxelTargetFill,
             maxRenderVoxels: this.options.maxRenderVoxels
           };
-          
+
           const estimatedSize = estimateInitialVoxelSize(this._bounds, entities.length, sizeOptions);
           const tempGrid = VoxelGrid.createGrid(this._bounds, estimatedSize);
           const validation = validateVoxelCount(tempGrid.totalVoxels, estimatedSize);
-          
+
           if (!validation.valid && validation.recommendedSize) {
             finalVoxelSize = validation.recommendedSize;
             autoAdjustmentInfo = {
@@ -569,77 +715,142 @@ export class Heatbox {
       Logger.debug('Step 2: グリッド生成 (サイズ:', finalVoxelSize, 'm)');
       this._grid = VoxelGrid.createGrid(this._bounds, finalVoxelSize);
       Logger.debug('グリッド生成完了:', this._grid);
-      
+
       // 3. エンティティ分類（v0.1.17: 空間IDサポート）
       Logger.debug('Step 3: エンティティ分類');
       // Pass options with voxelSize for spatial ID auto zoom calculation
-      const classificationOptions = { ...this.options, voxelSize: finalVoxelSize };
+      const classificationOptions = { ...this.options, ...runtimeOptions, voxelSize: finalVoxelSize };
       this._voxelData = await DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid, classificationOptions);
       Logger.debug('エンティティ分類完了:', this._voxelData.size, '個のボクセル');
-      
-      // 4. 統計計算
-      Logger.debug('Step 4: 統計計算');
-      this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid);
-      Logger.debug('統計情報:', this._statistics);
-      
-      // 統計情報に自動調整情報を追加
-      if (autoAdjustmentInfo) {
-        this._statistics.autoAdjusted = autoAdjustmentInfo.adjusted;
-        this._statistics.originalVoxelSize = autoAdjustmentInfo.originalSize;
-        this._statistics.finalVoxelSize = autoAdjustmentInfo.finalSize;
-        this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
-      }
-      
-      // v0.1.17: 空間ID情報を統計に追加
-      if (classificationOptions.spatialId?.enabled) {
-        this._statistics.spatialIdEnabled = true;
-        this._statistics.spatialIdMode = classificationOptions.spatialId.mode;
-        this._statistics.spatialIdProvider = classificationOptions._spatialIdProvider || null;
-        this._statistics.spatialIdZoom = classificationOptions._resolvedZoom || null;
-        this._statistics.zoomControl = classificationOptions.spatialId.zoomControl;
-      } else {
-        this._statistics.spatialIdEnabled = false;
-      }
-      
-      // 5. 描画（レンダリング時間の計測）
-      Logger.debug('Step 5: 描画');
-      const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-      const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
-      const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-      this._lastRenderTime = Math.max(0, t1 - t0);
-      
-      // 統計情報に実際の描画数を反映
-      this._statistics.renderedVoxels = renderedVoxelCount;
-      this._statistics.renderTimeMs = this._lastRenderTime;
-      Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
-      
-      // v0.1.9: 自動視点調整
-      if (this.options.autoView) {
-        try {
-          Logger.debug('Auto view adjustment triggered');
-          await this.fitView();
-          Logger.debug('Auto view adjustment completed');
-        } catch (error) {
-          Logger.warn('Auto view adjustment failed:', error);
-          // 自動視点調整の失敗は致命的エラーとしない
-        }
-      }
-      
+      await this._finalizeVoxelRender(classificationOptions, autoAdjustmentInfo, runtimeOptions);
       Logger.debug('Heatbox.setData - 処理完了');
-      
-      // Update overlay immediately after render if available
-      if (this._performanceOverlay && this._performanceOverlay.isVisible) {
-        const stats = this.getStatistics() || {};
-        stats.renderTimeMs = this._lastRenderTime;
-        stats.memoryUsageMB = this._estimateMemoryUsage();
-        this._performanceOverlay.update(stats, undefined);
-      }
-      
+
     } catch (error) {
       Logger.error('ヒートマップ作成エラー:', error);
       this.clear();
       throw error;
     }
+  }
+
+  /**
+   * Update voxel values while reusing the current bounds/grid when possible.
+   * 可能な場合は既存の bounds/grid を再利用して値更新のみを行います。
+   * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
+   * @param {Object} [runtimeOptions={}] - Internal runtime options / 内部実行オプション
+   * @returns {Promise<void>}
+   */
+  async updateValues(entities, runtimeOptions = {}) {
+    if (!isValidEntities(entities)) {
+      this.clear();
+      return;
+    }
+
+    if (!this._canReuseGridForUpdate(entities)) {
+      Logger.debug('updateValues fallback to setData because grid reuse conditions were not met');
+      await this.setData(entities, runtimeOptions);
+      return;
+    }
+
+    try {
+      const classificationOptions = {
+        ...this.options,
+        ...runtimeOptions,
+        voxelSize: this._grid?.voxelSizeMeters || this.options.voxelSize
+      };
+
+      this._voxelData = await DataProcessor.classifyEntitiesIntoVoxels(
+        entities,
+        this._bounds,
+        this._grid,
+        classificationOptions
+      );
+
+      await this._finalizeVoxelRender(classificationOptions, null, {
+        ...runtimeOptions,
+        _skipAutoView: true
+      });
+    } catch (error) {
+      Logger.error('updateValues failed, falling back to full rebuild:', error);
+      await this.setData(entities, runtimeOptions);
+    }
+  }
+
+  async _finalizeVoxelRender(classificationOptions, autoAdjustmentInfo = null, runtimeOptions = {}) {
+    Logger.debug('Step 4: 統計計算');
+    this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid, classificationOptions);
+    Logger.debug('統計情報:', this._statistics);
+
+    if (autoAdjustmentInfo) {
+      this._statistics.autoAdjusted = autoAdjustmentInfo.adjusted;
+      this._statistics.originalVoxelSize = autoAdjustmentInfo.originalSize;
+      this._statistics.finalVoxelSize = autoAdjustmentInfo.finalSize;
+      this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
+    }
+
+    if (classificationOptions.spatialId?.enabled) {
+      this._statistics.spatialIdEnabled = true;
+      this._statistics.spatialIdMode = classificationOptions.spatialId.mode;
+      this._statistics.spatialIdProvider = classificationOptions._spatialIdProvider || null;
+      this._statistics.spatialIdZoom = classificationOptions._resolvedZoom || null;
+      this._statistics.zoomControl = classificationOptions.spatialId.zoomControl;
+    } else {
+      this._statistics.spatialIdEnabled = false;
+    }
+
+    Logger.debug('Step 5: 描画');
+    const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+    const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    this._lastRenderTime = Math.max(0, t1 - t0);
+    this._statistics.renderedVoxels = renderedVoxelCount;
+    this._statistics.renderTimeMs = this._lastRenderTime;
+    Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
+
+    if (this.options.autoView && !runtimeOptions._skipAutoView) {
+      try {
+        Logger.debug('Auto view adjustment triggered');
+        await this.fitView();
+        Logger.debug('Auto view adjustment completed');
+      } catch (error) {
+        Logger.warn('Auto view adjustment failed:', error);
+      }
+    }
+
+    if (this._performanceOverlay && this._performanceOverlay.isVisible) {
+      const stats = this.getStatistics() || {};
+      stats.renderTimeMs = this._lastRenderTime;
+      stats.memoryUsageMB = this._estimateMemoryUsage();
+      this._performanceOverlay.update(stats, undefined);
+    }
+  }
+
+  _canReuseGridForUpdate(entities) {
+    if (!this._bounds || !this._grid || !this._voxelData) {
+      return false;
+    }
+
+    const nextBounds = CoordinateTransformer.calculateBounds(entities);
+    if (!nextBounds) {
+      return false;
+    }
+
+    const toleranceLon = 0.001;
+    const toleranceLat = 0.001;
+    const toleranceAlt = 1;
+
+    const fitsCurrentBounds =
+      nextBounds.minLon >= (this._bounds.minLon - toleranceLon) &&
+      nextBounds.maxLon <= (this._bounds.maxLon + toleranceLon) &&
+      nextBounds.minLat >= (this._bounds.minLat - toleranceLat) &&
+      nextBounds.maxLat <= (this._bounds.maxLat + toleranceLat) &&
+      nextBounds.minAlt >= (this._bounds.minAlt - toleranceAlt) &&
+      nextBounds.maxAlt <= (this._bounds.maxAlt + toleranceAlt);
+
+    if (!fitsCurrentBounds) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -697,6 +908,11 @@ export class Heatbox {
       try { this._performanceOverlay.destroy(); } catch (_) { Logger.debug('overlay destroy failed (non-fatal)'); }
       this._performanceOverlay = null;
     }
+    if (this._legend) {
+      try { this._legend.destroy(); } catch (_) { Logger.debug('legend destroy failed (non-fatal)'); }
+      this._legend = null;
+    }
+    this._teardownTimeController();
     this._eventHandler = null;
   }
 
@@ -723,6 +939,9 @@ export class Heatbox {
    * @param {HeatboxOptions} newOptions - New options (partial allowed) / 新しいオプション（部分指定可）
    */
   updateOptions(newOptions) {
+    const previousTemporal = this.options ? this.options.temporal : undefined;
+    const temporalUpdated = newOptions ? Object.prototype.hasOwnProperty.call(newOptions, 'temporal') : false;
+
     this.options = validateAndNormalizeOptions({ ...this.options, ...newOptions });
     this.renderer.options = this.options;
 
@@ -732,13 +951,18 @@ export class Heatbox {
     if (this.renderer.geometryRenderer && typeof this.renderer.geometryRenderer.updateOptions === 'function') {
       this.renderer.geometryRenderer.updateOptions(this.options);
     }
-    
+    if (this.renderer.renderPlanner && typeof this.renderer.renderPlanner.updateOptions === 'function') {
+      this.renderer.renderPlanner.updateOptions(this.options);
+    }
+
     // 既存のヒートマップがある場合は再描画
     if (this._voxelData) {
       const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
       // 統計情報を更新
       this._statistics.renderedVoxels = renderedVoxelCount;
     }
+
+    this._syncTimeController(previousTemporal, this.options.temporal, temporalUpdated);
   }
 
   /**
@@ -752,9 +976,9 @@ export class Heatbox {
     // クリックイベントでInfoBoxを更新
     this._eventHandler.setInputAction(movement => {
       const pickedObject = this.viewer.scene.pick(movement.position);
-      if (Cesium.defined(pickedObject) && pickedObject.id && 
-          pickedObject.id.properties && 
-          pickedObject.id.properties.type === 'voxel') {
+      if (Cesium.defined(pickedObject) && pickedObject.id &&
+        pickedObject.id.properties &&
+        pickedObject.id.properties.type === 'voxel') {
         // プロパティからキー値を取得
         const voxelKey = pickedObject.id.properties.key;
         const voxelInfo = {
@@ -763,7 +987,7 @@ export class Heatbox {
           z: pickedObject.id.properties.z,
           count: pickedObject.id.properties.count
         };
-        
+
         // InfoBoxに表示するためのダミーエンティティを作成
         const dummyEntity = new Cesium.Entity({
           id: `voxel-${voxelKey}`,
@@ -808,10 +1032,22 @@ export class Heatbox {
       stats.occupancyRatio = null;
     }
 
+    // v0.1.19: Spatial ID statistics sub-object (ADR-0015)
+    const spatialIdOptions = this.options && this.options.spatialId ? this.options.spatialId : {};
+    const spatialIdEnabled = Boolean(stats.spatialIdEnabled);
+    const edgeCaseMetrics = this._spatialIdEdgeCaseMetrics ?? null;
+    stats.spatialId = {
+      enabled: spatialIdEnabled,
+      provider: spatialIdEnabled ? (stats.spatialIdProvider ?? null) : null,
+      zoom: spatialIdEnabled ? (stats.spatialIdZoom ?? null) : null,
+      zoomControl: stats.zoomControl ?? spatialIdOptions.zoomControl ?? null,
+      edgeCaseMetrics
+    };
+
     // v0.1.18: Layer aggregation statistics (ADR-0014)
     if (this.options.aggregation?.enabled && this._voxelData) {
       const globalLayerCounts = new Map();
-      
+
       // Aggregate across all voxels / 全ボクセルを集約
       for (const voxelInfo of this._voxelData.values()) {
         if (voxelInfo.layerStats) {
@@ -823,15 +1059,15 @@ export class Heatbox {
           }
         }
       }
-      
+
       // Top N layers (configurable via options.aggregation.topN) / 上位N個のレイヤ（options.aggregation.topNで設定可能）
       const topN = this.options.aggregation?.topN ?? 10;
       const sorted = Array.from(globalLayerCounts.entries())
         .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
         .slice(0, topN);
-      
+
       stats.layers = sorted.map(([key, total]) => ({ key, total }));
-      
+
       Logger.debug(`[aggregation] Aggregated ${globalLayerCounts.size} unique layers, returning top ${stats.layers.length}`);
     }
 
@@ -859,7 +1095,7 @@ export class Heatbox {
       grid: this._grid,
       statistics: this._statistics
     };
-    
+
     // v0.1.4: 自動調整情報を追加
     if (this.options.autoVoxelSize) {
       baseInfo.autoVoxelSizeInfo = {
@@ -869,11 +1105,11 @@ export class Heatbox {
         adjusted: this._statistics?.autoAdjusted || false,
         reason: this._statistics?.adjustmentReason,
         dataRange: this._bounds ? calculateDataRange(this._bounds) : null,
-        estimatedDensity: this._bounds && this._statistics ? 
+        estimatedDensity: this._bounds && this._statistics ?
           this._statistics.totalEntities / (calculateDataRange(this._bounds).x * calculateDataRange(this._bounds).y * calculateDataRange(this._bounds).z) : null
       };
     }
-    
+
     return baseInfo;
   }
 
@@ -976,11 +1212,11 @@ export class Heatbox {
             await this._fitByBoundingSphere(targetBounds, safeOptions);
           } catch (e) {
             Logger.warn('fitView (postRender) failed, trying fallback:', e);
-          try {
-            await this.viewer.zoomTo(this.viewer.entities);
-          } catch (zoomErr) {
-            Logger.warn('zoomTo fallback failed:', zoomErr);
-          }
+            try {
+              await this.viewer.zoomTo(this.viewer.entities);
+            } catch (zoomErr) {
+              Logger.warn('zoomTo fallback failed:', zoomErr);
+            }
           } finally {
             try {
               this.viewer.scene.postRender.removeEventListener(handler);
@@ -1030,15 +1266,15 @@ export class Heatbox {
    */
   _isValidBounds(bounds) {
     return bounds &&
-           typeof bounds.minLon === 'number' && !isNaN(bounds.minLon) &&
-           typeof bounds.maxLon === 'number' && !isNaN(bounds.maxLon) &&
-           typeof bounds.minLat === 'number' && !isNaN(bounds.minLat) &&
-           typeof bounds.maxLat === 'number' && !isNaN(bounds.maxLat) &&
-           typeof bounds.minAlt === 'number' && !isNaN(bounds.minAlt) &&
-           typeof bounds.maxAlt === 'number' && !isNaN(bounds.maxAlt) &&
-           bounds.minLon <= bounds.maxLon &&
-           bounds.minLat <= bounds.maxLat &&
-           bounds.minAlt <= bounds.maxAlt;
+      typeof bounds.minLon === 'number' && !isNaN(bounds.minLon) &&
+      typeof bounds.maxLon === 'number' && !isNaN(bounds.maxLon) &&
+      typeof bounds.minLat === 'number' && !isNaN(bounds.minLat) &&
+      typeof bounds.maxLat === 'number' && !isNaN(bounds.maxLat) &&
+      typeof bounds.minAlt === 'number' && !isNaN(bounds.minAlt) &&
+      typeof bounds.maxAlt === 'number' && !isNaN(bounds.maxAlt) &&
+      bounds.minLon <= bounds.maxLon &&
+      bounds.minLat <= bounds.maxLat &&
+      bounds.minAlt <= bounds.maxAlt;
   }
 
   /**
@@ -1053,11 +1289,11 @@ export class Heatbox {
    */
   async _handleMinimalDataRange(centerLon, centerLat, centerAlt, fitOptions) {
     Logger.debug('Handling minimal data range');
-    
+
     const destination = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt + 2000);
     const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
     const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
-    
+
     return this.viewer.camera.flyTo({
       destination,
       orientation: { heading, pitch, roll: 0 },
@@ -1075,22 +1311,22 @@ export class Heatbox {
    */
   async _handleLargeDataRange(bounds, fitOptions) {
     Logger.debug('Handling large data range with bounding sphere');
-    
+
     const centerLon = (bounds.minLon + bounds.maxLon) / 2;
     const centerLat = (bounds.minLat + bounds.maxLat) / 2;
     const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
-    
+
     const dataRange = calculateDataRange(bounds);
     const maxRange = Math.max(dataRange.x, dataRange.y, dataRange.z);
-    
+
     const boundingSphere = new Cesium.BoundingSphere(
       Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
       maxRange / 2
     );
-    
+
     const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
     const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
-    
+
     return this.viewer.camera.flyToBoundingSphere(boundingSphere, {
       duration: 2.5,
       offset: new Cesium.HeadingPitchRange(heading, pitch, 0)
@@ -1114,30 +1350,30 @@ export class Heatbox {
     try {
       const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
       const fov = this.viewer.camera.frustum.fovy || Cesium.Math.toRadians(60);
-      
+
       // 幾何学的計算: データがフレームに収まる高度を計算
       const adjustedRange = maxRange + paddingMeters;
       const baseCameraHeight = adjustedRange / (2 * Math.tan(fov / 2));
-      
+
       // ピッチ補正（斜め視点での見え方調整）
       const absPitch = Math.abs(pitch);
-      const pitchFactor = Math.max(0.5, Math.sin(Math.PI/2 - absPitch) + 0.3);
+      const pitchFactor = Math.max(0.5, Math.sin(Math.PI / 2 - absPitch) + 0.3);
       let cameraHeight = baseCameraHeight * pitchFactor;
-      
+
       // アスペクト比補正（極端に細長いデータの場合）
       const aspectRatio = maxRange / Math.min(maxRange, 100);
       if (aspectRatio > 5) {
         cameraHeight *= Math.log10(aspectRatio) + 1;
       }
-      
+
       // 制限値適用（データ範囲に基づく適応的制限）
       const minHeight = Math.max(500, maxRange * 0.1);
       const maxHeight = Math.min(100000, maxRange * 10);
       cameraHeight = Math.max(minHeight, Math.min(maxHeight, cameraHeight));
-      
+
       Logger.debug(`Camera height calculated: ${cameraHeight.toFixed(0)}m (range: ${maxRange.toFixed(0)}m, pitch: ${fitOptions.pitchDegrees || fitOptions.pitch}°)`);
       return cameraHeight;
-      
+
     } catch (error) {
       Logger.warn('Camera height calculation failed, using fallback:', error);
       return Math.max(2000, maxRange * 2);
@@ -1161,8 +1397,8 @@ export class Heatbox {
     try {
       // 目標カメラ位置
       const destination = Cesium.Cartesian3.fromDegrees(
-        centerLon, 
-        centerLat, 
+        centerLon,
+        centerLat,
         centerAlt + cameraHeight
       );
 
@@ -1202,7 +1438,7 @@ export class Heatbox {
           Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
           maxRange / 2 + paddingMeters
         );
-        
+
         await this.viewer.camera.flyToBoundingSphere(boundingSphere, {
           duration,
           offset: new Cesium.HeadingPitchRange(heading, pitch, 0)
@@ -1212,10 +1448,45 @@ export class Heatbox {
       }
 
       Logger.info('fitView completed successfully');
-      
+
     } catch (error) {
       Logger.error('Camera movement execution failed:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Create a classification legend (Phase 5).
+   * 分類用の凡例UIを生成します。
+   * @param {HTMLElement} [container] - 追加先コンテナ（省略時はbodyに追加）
+   * @returns {HTMLElement|null} legend element / 凡例DOM要素
+   */
+  createLegend(container = null) {
+    if (!this._legend) {
+      this._legend = new Legend({ container });
+    }
+    this._legend.render(this.renderer?._classifier || null, this.options.classification || {});
+    return this._legend.container || null;
+  }
+
+  /**
+   * Update legend contents using latest classifier.
+   * 最新の分類状態で凡例を更新します。
+   */
+  updateLegend() {
+    if (this._legend) {
+      this._legend.update(this.renderer?._classifier || null, this.options.classification || {});
+    }
+  }
+
+  /**
+   * Destroy legend UI.
+   * 凡例UIを破棄します。
+   */
+  destroyLegend() {
+    if (this._legend) {
+      this._legend.destroy();
+      this._legend = null;
     }
   }
 
@@ -1243,7 +1514,7 @@ export class Heatbox {
  */
 import * as Cesium from 'cesium';
 import { DEFAULT_OPTIONS, ERROR_MESSAGES, PERFORMANCE_LIMITS } from './utils/constants.js';
-import { 
+import {
   isValidViewer,
   isValidEntities,
   validateAndNormalizeOptions,
@@ -1259,6 +1530,8 @@ import { DataProcessor } from './core/DataProcessor.js';
 import { VoxelRenderer } from './core/VoxelRenderer.js';
 import { getProfileNames, getProfile, applyProfile } from './utils/profiles.js';
 import { PerformanceOverlay } from './utils/performanceOverlay.js';
+import { Legend } from './ui/Legend.js';
+import { TimeController } from './core/temporal/TimeController.js';
 
 /**
  * @typedef {('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data')} ProfileName
@@ -1321,6 +1594,26 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  */
 
 /**
+ * @typedef {Object} TemporalDataEntry
+ * @property {Cesium.JulianDate|string|Date|number} start - Interval start time / インターバル開始時刻
+ * @property {Cesium.JulianDate|string|Date|number} stop - Interval end time / インターバル終了時刻
+ * @property {Array<Cesium.Entity|Object>} data - Entities rendered during the interval / その期間に描画するエンティティ配列
+ */
+
+/**
+ * @typedef {Object} TemporalOptions
+ * @property {boolean} [enabled=false] - Enable temporal mode / 時間依存モードを有効化
+ * @property {TemporalDataEntry[]} [data=[]] - Ordered temporal slices / ソート済みの時系列スライス
+ * @property {('global'|'per-time')} [classificationScope='global'] - Classification scope / 分類スコープ
+ * @property {('frame'|number)} [updateInterval=100] - Update interval (`frame` or milliseconds) / 更新間隔
+ * @property {('clear'|'hold')} [outOfRangeBehavior='hold'] - Behaviour when clock is outside data range / データ範囲外時の挙動
+ * @property {('skip'|'prefer-earlier'|'prefer-later')} [overlapResolution='prefer-earlier'] - Overlap resolution strategy / 重複時の解決方法
+ * @property {boolean} [interpolate=false] - Interpolate numeric values across temporal gaps / 時系列ギャップで数値を補間
+ * @property {?function(Cesium.JulianDate, Object): (Promise<TemporalDataEntry[]|TemporalDataEntry|null>|TemporalDataEntry[]|TemporalDataEntry|null)} [dataSource=null] - Async/Sync temporal entry provider / 遅延ロード用データ供給関数
+ * @property {boolean} [useWorker=false] - Opt-in worker hint for temporal preprocessing / 時系列前処理の worker 利用ヒント
+ */
+
+/**
  * @typedef {Object} HeatboxBounds
  * @property {number} minLon - Minimum longitude / 最小経度
  * @property {number} maxLon - Maximum longitude / 最大経度
@@ -1349,6 +1642,16 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  */
 
 /**
+ * @typedef {Object} SpatialIdEdgeCaseMetrics
+ * @property {number} datelineNeighborsChecked - Number of neighbor checks near dateline / 日付変更線近傍で検証した近傍セル数
+ * @property {number} datelineNeighborsMismatched - Number of neighbor mismatches near dateline / 日付変更線近傍で不一致となった近傍セル数
+ * @property {number} polarTilesChecked - Number of polar tiles evaluated / 極域タイルの検証数
+ * @property {number} polarMaxRelativeErrorXY - Maximum relative XY error near poles / 極域近傍でのXY相対誤差の最大値
+ * @property {number} hemisphereBoundsChecked - Number of hemisphere-crossing bounds evaluated / 半球跨ぎboundsの検証数
+ * @property {number} hemisphereBoundsMismatched - Number of hemisphere-crossing mismatches / 半球跨ぎで不一致となったケース数
+ */
+
+/**
  * @typedef {Object} HeatboxStatistics
  * @property {number} totalVoxels - Total voxels generated / 生成された総ボクセル数
  * @property {number} renderedVoxels - Voxels actually rendered / 実際に描画されたボクセル数
@@ -1370,6 +1673,12 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {number} [autoMaxRenderVoxels] - Auto-assigned maxRenderVoxels / 自動設定された maxRenderVoxels
  * @property {number|null} [occupancyRatio] - Ratio of rendered voxels to limit / 描画ボクセルと上限の比率
  * @property {HeatboxLayerStat[]} [layers] - Top-N layer aggregation (v0.1.18 ADR-0014) / 上位N個のレイヤ集約
+ * @property {Object} [spatialId] - Spatial ID statistics (v0.1.19 ADR-0015) / 空間ID関連の統計情報
+ * @property {boolean} [spatialId.enabled] - Whether Spatial ID mode is enabled / 空間IDモードが有効か
+ * @property {string|null} [spatialId.provider] - Spatial ID provider identifier ('ouranos-gex' or null) / 空間IDプロバイダー識別子
+ * @property {number|null} [spatialId.zoom] - Resolved zoom level / 解決済みズームレベル
+ * @property {('auto'|'manual'|null)} [spatialId.zoomControl] - Zoom control mode / ズーム制御モード
+ * @property {SpatialIdEdgeCaseMetrics|null} [spatialId.edgeCaseMetrics] - QA metrics for global edge cases / グローバル端ケースQA用メトリクス
  */
 
 /**
@@ -1472,6 +1781,7 @@ import { PerformanceOverlay } from './utils/performanceOverlay.js';
  * @property {?function(entity):string} [aggregation.keyResolver=null] - Custom layer key resolver function (takes precedence over byProperty) / カスタムレイヤキー解決関数（byPropertyより優先）
  * @property {boolean} [aggregation.showInDescription=true] - Show layer breakdown in voxel description / ボクセル説明文にレイヤ内訳を表示
  * @property {number} [aggregation.topN=10] - Number of top layers to include in statistics / 統計情報に含める上位レイヤ数
+ * @property {TemporalOptions|null} [temporal=null] - Temporal playback configuration / 時系列再生の設定
  */
 
 /**
@@ -1497,9 +1807,9 @@ export class Heatbox {
     if (!isValidViewer(viewer)) {
       throw new Error(ERROR_MESSAGES.INVALID_VIEWER);
     }
-    
+
     this.viewer = viewer;
-    
+
     // v0.1.9: Auto Render Budgetの適用
     // Phase 4: Ensure profile and legacy migration are applied before merging defaults
     let userOptions = { ...(options || {}) };
@@ -1510,27 +1820,38 @@ export class Heatbox {
     }
     const mergedOptions = { ...DEFAULT_OPTIONS, ...userOptions };
     this.options = validateAndNormalizeOptions(applyAutoRenderBudget(mergedOptions));
-    
+
     // ログレベルをオプションに基づいて設定
     Logger.setLogLevel(this.options);
     this.renderer = new VoxelRenderer(this.viewer, this.options);
-    
+
     this._bounds = null;
     this._grid = null;
     this._voxelData = null;
     this._statistics = null;
+    this._spatialIdEdgeCaseMetrics = null;
     this._eventHandler = null;
     this._performanceOverlay = null;
     this._lastRenderTime = null;
     this._overlayLastUpdate = 0;
     this._postRenderListener = null;
     this._prevFrameTimestamp = null;
+    this._postRenderListener = null;
+    this._prevFrameTimestamp = null;
+    this._legend = null;
+    this._timeController = null;
+    this._timeControllerSignature = null;
 
     this._initializeEventListeners();
-    
+
     // v0.1.12: Initialize performance overlay if enabled
     if (this.options.performanceOverlay && this.options.performanceOverlay.enabled) {
       this._initializePerformanceOverlay();
+    }
+
+    // v1.2.0: Initialize TimeController if temporal mode is enabled
+    if (this.options.temporal && this.options.temporal.enabled) {
+      this._initializeTimeController();
     }
   }
 
@@ -1596,7 +1917,7 @@ export class Heatbox {
     };
 
     this._performanceOverlay = new PerformanceOverlay(overlayOptions);
-    
+
     // Show immediately if configured
     if (overlayOptions.autoShow) {
       this._performanceOverlay.show();
@@ -1606,6 +1927,101 @@ export class Heatbox {
 
     // Hook postRender to provide real-time updates with low overhead
     this._hookPerformanceOverlayUpdates();
+  }
+
+  /**
+   * Initialize TimeController
+   * TimeController を初期化します
+   * @private
+   * @since 1.2.0
+   */
+  _initializeTimeController() {
+    try {
+      this._timeController = new TimeController(this.viewer, this, this.options.temporal);
+      this._timeController.activate();
+      this._timeControllerSignature = this._serializeTemporalOptions(this.options.temporal);
+      Logger.info('TimeController initialized and activated');
+    } catch (error) {
+      this._timeController = null;
+      this._timeControllerSignature = null;
+      Logger.error('Failed to initialize TimeController:', error);
+    }
+  }
+
+  /**
+   * Deactivate and dispose TimeController instance safely.
+   * TimeController を安全に停止・破棄します。
+   * @private
+   */
+  _teardownTimeController() {
+    if (!this._timeController) {
+      return;
+    }
+
+    try {
+      this._timeController.deactivate();
+    } catch (error) {
+      Logger.debug('timeController deactivate failed (non-fatal)', error);
+    }
+
+    this._timeController = null;
+    this._timeControllerSignature = null;
+  }
+
+  /**
+   * Synchronize TimeController when temporal options change.
+   * temporalオプション変更時にTimeControllerを同期します。
+   * @param {Object|null|undefined} previousTemporal
+   * @param {Object|null|undefined} nextTemporal
+   * @param {boolean} wasTemporalUpdated
+   * @private
+   */
+  _syncTimeController(previousTemporal, nextTemporal, wasTemporalUpdated) {
+    const prevEnabled = !!(previousTemporal && previousTemporal.enabled);
+    const nextEnabled = !!(nextTemporal && nextTemporal.enabled);
+
+    if (!prevEnabled && nextEnabled) {
+      this._initializeTimeController();
+      return;
+    }
+
+    if (prevEnabled && !nextEnabled) {
+      this._teardownTimeController();
+      return;
+    }
+
+    if (nextEnabled && wasTemporalUpdated) {
+      const nextSignature = this._serializeTemporalOptions(nextTemporal);
+      if (this._timeControllerSignature !== nextSignature) {
+        this._teardownTimeController();
+        this._initializeTimeController();
+      }
+    }
+  }
+
+  /**
+   * Create a stable signature for temporal options to detect config changes.
+   * temporalオプションの変更検知用シグネチャを生成します。
+   * @param {Object|null|undefined} temporalOptions
+   * @returns {string|null}
+   * @private
+   */
+  _serializeTemporalOptions(temporalOptions) {
+    if (!temporalOptions) {
+      return null;
+    }
+
+    try {
+      return JSON.stringify(temporalOptions, (key, value) => {
+        if (typeof value === 'function') {
+          return `[Function:${value.name || 'anonymous'}]`;
+        }
+        return value;
+      });
+    } catch (error) {
+      Logger.debug('Failed to serialize temporal options for comparison', error);
+      return null;
+    }
   }
 
   /**
@@ -1620,7 +2036,7 @@ export class Heatbox {
       Logger.warn('Performance overlay not initialized. Set performanceOverlay.enabled: true in options.');
       return false;
     }
-    
+
     this._performanceOverlay.toggle();
     return this._performanceOverlay.isVisible;
   }
@@ -1691,7 +2107,7 @@ export class Heatbox {
   _estimateMemoryUsage() {
     try {
       // Rough estimation based on rendered entities and data
-      const entityCount = (this.renderer?.geometryRenderer?.entities?.length) 
+      const entityCount = (this.renderer?.geometryRenderer?.entities?.length)
         || (this.renderer?.voxelEntities?.length) || 0;
       let voxelDataSize = 0;
       if (this._voxelData) {
@@ -1705,7 +2121,7 @@ export class Heatbox {
           voxelDataSize = Object.keys(this._voxelData).length;
         }
       }
-      
+
       // Estimate: ~1KB per entity + ~100B per voxel data entry
       const estimated = (entityCount * 1024 + voxelDataSize * 100) / (1024 * 1024);
       return Math.max(0.1, estimated);
@@ -1721,17 +2137,18 @@ export class Heatbox {
    * ヒートマップデータを設定し、境界計算→ボクセル分類→描画の順で処理します。
    *
    * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
+   * @param {Object} [runtimeOptions={}] - Internal runtime options / 内部実行オプション
    * @returns {Promise<void>} Resolves when rendering is completed / 描画完了時に解決
    */
-  async setData(entities) {
+  async setData(entities, runtimeOptions = {}) {
     if (!isValidEntities(entities)) {
       this.clear();
       return;
     }
-    
+
     try {
       Logger.debug('Heatbox.setData - 処理開始:', entities.length, '個のエンティティ');
-      
+
       // 1. 境界計算
       Logger.debug('Step 1: 境界計算');
       this._bounds = CoordinateTransformer.calculateBounds(entities);
@@ -1745,22 +2162,22 @@ export class Heatbox {
       // v0.1.4+v0.1.9: 自動ボクセルサイズ調整（占有率ベース対応）
       let finalVoxelSize = this.options.voxelSize || DEFAULT_OPTIONS.voxelSize;
       let autoAdjustmentInfo = null;
-      
+
       if (this.options.autoVoxelSize && !this.options.voxelSize) {
         try {
           Logger.debug('自動ボクセルサイズ調整開始');
-          
+
           // v0.1.9: 占有率ベースの計算オプション
           const sizeOptions = {
             autoVoxelSizeMode: this.options.autoVoxelSizeMode,
             autoVoxelTargetFill: this.options.autoVoxelTargetFill,
             maxRenderVoxels: this.options.maxRenderVoxels
           };
-          
+
           const estimatedSize = estimateInitialVoxelSize(this._bounds, entities.length, sizeOptions);
           const tempGrid = VoxelGrid.createGrid(this._bounds, estimatedSize);
           const validation = validateVoxelCount(tempGrid.totalVoxels, estimatedSize);
-          
+
           if (!validation.valid && validation.recommendedSize) {
             finalVoxelSize = validation.recommendedSize;
             autoAdjustmentInfo = {
@@ -1801,77 +2218,142 @@ export class Heatbox {
       Logger.debug('Step 2: グリッド生成 (サイズ:', finalVoxelSize, 'm)');
       this._grid = VoxelGrid.createGrid(this._bounds, finalVoxelSize);
       Logger.debug('グリッド生成完了:', this._grid);
-      
+
       // 3. エンティティ分類（v0.1.17: 空間IDサポート）
       Logger.debug('Step 3: エンティティ分類');
       // Pass options with voxelSize for spatial ID auto zoom calculation
-      const classificationOptions = { ...this.options, voxelSize: finalVoxelSize };
+      const classificationOptions = { ...this.options, ...runtimeOptions, voxelSize: finalVoxelSize };
       this._voxelData = await DataProcessor.classifyEntitiesIntoVoxels(entities, this._bounds, this._grid, classificationOptions);
       Logger.debug('エンティティ分類完了:', this._voxelData.size, '個のボクセル');
-      
-      // 4. 統計計算
-      Logger.debug('Step 4: 統計計算');
-      this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid);
-      Logger.debug('統計情報:', this._statistics);
-      
-      // 統計情報に自動調整情報を追加
-      if (autoAdjustmentInfo) {
-        this._statistics.autoAdjusted = autoAdjustmentInfo.adjusted;
-        this._statistics.originalVoxelSize = autoAdjustmentInfo.originalSize;
-        this._statistics.finalVoxelSize = autoAdjustmentInfo.finalSize;
-        this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
-      }
-      
-      // v0.1.17: 空間ID情報を統計に追加
-      if (classificationOptions.spatialId?.enabled) {
-        this._statistics.spatialIdEnabled = true;
-        this._statistics.spatialIdMode = classificationOptions.spatialId.mode;
-        this._statistics.spatialIdProvider = classificationOptions._spatialIdProvider || null;
-        this._statistics.spatialIdZoom = classificationOptions._resolvedZoom || null;
-        this._statistics.zoomControl = classificationOptions.spatialId.zoomControl;
-      } else {
-        this._statistics.spatialIdEnabled = false;
-      }
-      
-      // 5. 描画（レンダリング時間の計測）
-      Logger.debug('Step 5: 描画');
-      const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-      const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
-      const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-      this._lastRenderTime = Math.max(0, t1 - t0);
-      
-      // 統計情報に実際の描画数を反映
-      this._statistics.renderedVoxels = renderedVoxelCount;
-      this._statistics.renderTimeMs = this._lastRenderTime;
-      Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
-      
-      // v0.1.9: 自動視点調整
-      if (this.options.autoView) {
-        try {
-          Logger.debug('Auto view adjustment triggered');
-          await this.fitView();
-          Logger.debug('Auto view adjustment completed');
-        } catch (error) {
-          Logger.warn('Auto view adjustment failed:', error);
-          // 自動視点調整の失敗は致命的エラーとしない
-        }
-      }
-      
+      await this._finalizeVoxelRender(classificationOptions, autoAdjustmentInfo, runtimeOptions);
       Logger.debug('Heatbox.setData - 処理完了');
-      
-      // Update overlay immediately after render if available
-      if (this._performanceOverlay && this._performanceOverlay.isVisible) {
-        const stats = this.getStatistics() || {};
-        stats.renderTimeMs = this._lastRenderTime;
-        stats.memoryUsageMB = this._estimateMemoryUsage();
-        this._performanceOverlay.update(stats, undefined);
-      }
-      
+
     } catch (error) {
       Logger.error('ヒートマップ作成エラー:', error);
       this.clear();
       throw error;
     }
+  }
+
+  /**
+   * Update voxel values while reusing the current bounds/grid when possible.
+   * 可能な場合は既存の bounds/grid を再利用して値更新のみを行います。
+   * @param {Cesium.Entity[]} entities - Target entities array / 対象エンティティ配列
+   * @param {Object} [runtimeOptions={}] - Internal runtime options / 内部実行オプション
+   * @returns {Promise<void>}
+   */
+  async updateValues(entities, runtimeOptions = {}) {
+    if (!isValidEntities(entities)) {
+      this.clear();
+      return;
+    }
+
+    if (!this._canReuseGridForUpdate(entities)) {
+      Logger.debug('updateValues fallback to setData because grid reuse conditions were not met');
+      await this.setData(entities, runtimeOptions);
+      return;
+    }
+
+    try {
+      const classificationOptions = {
+        ...this.options,
+        ...runtimeOptions,
+        voxelSize: this._grid?.voxelSizeMeters || this.options.voxelSize
+      };
+
+      this._voxelData = await DataProcessor.classifyEntitiesIntoVoxels(
+        entities,
+        this._bounds,
+        this._grid,
+        classificationOptions
+      );
+
+      await this._finalizeVoxelRender(classificationOptions, null, {
+        ...runtimeOptions,
+        _skipAutoView: true
+      });
+    } catch (error) {
+      Logger.error('updateValues failed, falling back to full rebuild:', error);
+      await this.setData(entities, runtimeOptions);
+    }
+  }
+
+  async _finalizeVoxelRender(classificationOptions, autoAdjustmentInfo = null, runtimeOptions = {}) {
+    Logger.debug('Step 4: 統計計算');
+    this._statistics = DataProcessor.calculateStatistics(this._voxelData, this._grid, classificationOptions);
+    Logger.debug('統計情報:', this._statistics);
+
+    if (autoAdjustmentInfo) {
+      this._statistics.autoAdjusted = autoAdjustmentInfo.adjusted;
+      this._statistics.originalVoxelSize = autoAdjustmentInfo.originalSize;
+      this._statistics.finalVoxelSize = autoAdjustmentInfo.finalSize;
+      this._statistics.adjustmentReason = autoAdjustmentInfo.reason;
+    }
+
+    if (classificationOptions.spatialId?.enabled) {
+      this._statistics.spatialIdEnabled = true;
+      this._statistics.spatialIdMode = classificationOptions.spatialId.mode;
+      this._statistics.spatialIdProvider = classificationOptions._spatialIdProvider || null;
+      this._statistics.spatialIdZoom = classificationOptions._resolvedZoom || null;
+      this._statistics.zoomControl = classificationOptions.spatialId.zoomControl;
+    } else {
+      this._statistics.spatialIdEnabled = false;
+    }
+
+    Logger.debug('Step 5: 描画');
+    const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
+    const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    this._lastRenderTime = Math.max(0, t1 - t0);
+    this._statistics.renderedVoxels = renderedVoxelCount;
+    this._statistics.renderTimeMs = this._lastRenderTime;
+    Logger.info('描画完了 - 実際の描画数:', renderedVoxelCount);
+
+    if (this.options.autoView && !runtimeOptions._skipAutoView) {
+      try {
+        Logger.debug('Auto view adjustment triggered');
+        await this.fitView();
+        Logger.debug('Auto view adjustment completed');
+      } catch (error) {
+        Logger.warn('Auto view adjustment failed:', error);
+      }
+    }
+
+    if (this._performanceOverlay && this._performanceOverlay.isVisible) {
+      const stats = this.getStatistics() || {};
+      stats.renderTimeMs = this._lastRenderTime;
+      stats.memoryUsageMB = this._estimateMemoryUsage();
+      this._performanceOverlay.update(stats, undefined);
+    }
+  }
+
+  _canReuseGridForUpdate(entities) {
+    if (!this._bounds || !this._grid || !this._voxelData) {
+      return false;
+    }
+
+    const nextBounds = CoordinateTransformer.calculateBounds(entities);
+    if (!nextBounds) {
+      return false;
+    }
+
+    const toleranceLon = 0.001;
+    const toleranceLat = 0.001;
+    const toleranceAlt = 1;
+
+    const fitsCurrentBounds =
+      nextBounds.minLon >= (this._bounds.minLon - toleranceLon) &&
+      nextBounds.maxLon <= (this._bounds.maxLon + toleranceLon) &&
+      nextBounds.minLat >= (this._bounds.minLat - toleranceLat) &&
+      nextBounds.maxLat <= (this._bounds.maxLat + toleranceLat) &&
+      nextBounds.minAlt >= (this._bounds.minAlt - toleranceAlt) &&
+      nextBounds.maxAlt <= (this._bounds.maxAlt + toleranceAlt);
+
+    if (!fitsCurrentBounds) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -1929,6 +2411,11 @@ export class Heatbox {
       try { this._performanceOverlay.destroy(); } catch (_) { Logger.debug('overlay destroy failed (non-fatal)'); }
       this._performanceOverlay = null;
     }
+    if (this._legend) {
+      try { this._legend.destroy(); } catch (_) { Logger.debug('legend destroy failed (non-fatal)'); }
+      this._legend = null;
+    }
+    this._teardownTimeController();
     this._eventHandler = null;
   }
 
@@ -1955,6 +2442,9 @@ export class Heatbox {
    * @param {HeatboxOptions} newOptions - New options (partial allowed) / 新しいオプション（部分指定可）
    */
   updateOptions(newOptions) {
+    const previousTemporal = this.options ? this.options.temporal : undefined;
+    const temporalUpdated = newOptions ? Object.prototype.hasOwnProperty.call(newOptions, 'temporal') : false;
+
     this.options = validateAndNormalizeOptions({ ...this.options, ...newOptions });
     this.renderer.options = this.options;
 
@@ -1964,13 +2454,18 @@ export class Heatbox {
     if (this.renderer.geometryRenderer && typeof this.renderer.geometryRenderer.updateOptions === 'function') {
       this.renderer.geometryRenderer.updateOptions(this.options);
     }
-    
+    if (this.renderer.renderPlanner && typeof this.renderer.renderPlanner.updateOptions === 'function') {
+      this.renderer.renderPlanner.updateOptions(this.options);
+    }
+
     // 既存のヒートマップがある場合は再描画
     if (this._voxelData) {
       const renderedVoxelCount = this.renderer.render(this._voxelData, this._bounds, this._grid, this._statistics);
       // 統計情報を更新
       this._statistics.renderedVoxels = renderedVoxelCount;
     }
+
+    this._syncTimeController(previousTemporal, this.options.temporal, temporalUpdated);
   }
 
   /**
@@ -1984,9 +2479,9 @@ export class Heatbox {
     // クリックイベントでInfoBoxを更新
     this._eventHandler.setInputAction(movement => {
       const pickedObject = this.viewer.scene.pick(movement.position);
-      if (Cesium.defined(pickedObject) && pickedObject.id && 
-          pickedObject.id.properties && 
-          pickedObject.id.properties.type === 'voxel') {
+      if (Cesium.defined(pickedObject) && pickedObject.id &&
+        pickedObject.id.properties &&
+        pickedObject.id.properties.type === 'voxel') {
         // プロパティからキー値を取得
         const voxelKey = pickedObject.id.properties.key;
         const voxelInfo = {
@@ -1995,7 +2490,7 @@ export class Heatbox {
           z: pickedObject.id.properties.z,
           count: pickedObject.id.properties.count
         };
-        
+
         // InfoBoxに表示するためのダミーエンティティを作成
         const dummyEntity = new Cesium.Entity({
           id: `voxel-${voxelKey}`,
@@ -2040,10 +2535,22 @@ export class Heatbox {
       stats.occupancyRatio = null;
     }
 
+    // v0.1.19: Spatial ID statistics sub-object (ADR-0015)
+    const spatialIdOptions = this.options && this.options.spatialId ? this.options.spatialId : {};
+    const spatialIdEnabled = Boolean(stats.spatialIdEnabled);
+    const edgeCaseMetrics = this._spatialIdEdgeCaseMetrics ?? null;
+    stats.spatialId = {
+      enabled: spatialIdEnabled,
+      provider: spatialIdEnabled ? (stats.spatialIdProvider ?? null) : null,
+      zoom: spatialIdEnabled ? (stats.spatialIdZoom ?? null) : null,
+      zoomControl: stats.zoomControl ?? spatialIdOptions.zoomControl ?? null,
+      edgeCaseMetrics
+    };
+
     // v0.1.18: Layer aggregation statistics (ADR-0014)
     if (this.options.aggregation?.enabled && this._voxelData) {
       const globalLayerCounts = new Map();
-      
+
       // Aggregate across all voxels / 全ボクセルを集約
       for (const voxelInfo of this._voxelData.values()) {
         if (voxelInfo.layerStats) {
@@ -2055,15 +2562,15 @@ export class Heatbox {
           }
         }
       }
-      
+
       // Top N layers (configurable via options.aggregation.topN) / 上位N個のレイヤ（options.aggregation.topNで設定可能）
       const topN = this.options.aggregation?.topN ?? 10;
       const sorted = Array.from(globalLayerCounts.entries())
         .sort((a, b) => b[1] - a[1])  // Sort by count descending / カウント降順でソート
         .slice(0, topN);
-      
+
       stats.layers = sorted.map(([key, total]) => ({ key, total }));
-      
+
       Logger.debug(`[aggregation] Aggregated ${globalLayerCounts.size} unique layers, returning top ${stats.layers.length}`);
     }
 
@@ -2091,7 +2598,7 @@ export class Heatbox {
       grid: this._grid,
       statistics: this._statistics
     };
-    
+
     // v0.1.4: 自動調整情報を追加
     if (this.options.autoVoxelSize) {
       baseInfo.autoVoxelSizeInfo = {
@@ -2101,11 +2608,11 @@ export class Heatbox {
         adjusted: this._statistics?.autoAdjusted || false,
         reason: this._statistics?.adjustmentReason,
         dataRange: this._bounds ? calculateDataRange(this._bounds) : null,
-        estimatedDensity: this._bounds && this._statistics ? 
+        estimatedDensity: this._bounds && this._statistics ?
           this._statistics.totalEntities / (calculateDataRange(this._bounds).x * calculateDataRange(this._bounds).y * calculateDataRange(this._bounds).z) : null
       };
     }
-    
+
     return baseInfo;
   }
 
@@ -2208,11 +2715,11 @@ export class Heatbox {
             await this._fitByBoundingSphere(targetBounds, safeOptions);
           } catch (e) {
             Logger.warn('fitView (postRender) failed, trying fallback:', e);
-          try {
-            await this.viewer.zoomTo(this.viewer.entities);
-          } catch (zoomErr) {
-            Logger.warn('zoomTo fallback failed:', zoomErr);
-          }
+            try {
+              await this.viewer.zoomTo(this.viewer.entities);
+            } catch (zoomErr) {
+              Logger.warn('zoomTo fallback failed:', zoomErr);
+            }
           } finally {
             try {
               this.viewer.scene.postRender.removeEventListener(handler);
@@ -2262,15 +2769,15 @@ export class Heatbox {
    */
   _isValidBounds(bounds) {
     return bounds &&
-           typeof bounds.minLon === 'number' && !isNaN(bounds.minLon) &&
-           typeof bounds.maxLon === 'number' && !isNaN(bounds.maxLon) &&
-           typeof bounds.minLat === 'number' && !isNaN(bounds.minLat) &&
-           typeof bounds.maxLat === 'number' && !isNaN(bounds.maxLat) &&
-           typeof bounds.minAlt === 'number' && !isNaN(bounds.minAlt) &&
-           typeof bounds.maxAlt === 'number' && !isNaN(bounds.maxAlt) &&
-           bounds.minLon <= bounds.maxLon &&
-           bounds.minLat <= bounds.maxLat &&
-           bounds.minAlt <= bounds.maxAlt;
+      typeof bounds.minLon === 'number' && !isNaN(bounds.minLon) &&
+      typeof bounds.maxLon === 'number' && !isNaN(bounds.maxLon) &&
+      typeof bounds.minLat === 'number' && !isNaN(bounds.minLat) &&
+      typeof bounds.maxLat === 'number' && !isNaN(bounds.maxLat) &&
+      typeof bounds.minAlt === 'number' && !isNaN(bounds.minAlt) &&
+      typeof bounds.maxAlt === 'number' && !isNaN(bounds.maxAlt) &&
+      bounds.minLon <= bounds.maxLon &&
+      bounds.minLat <= bounds.maxLat &&
+      bounds.minAlt <= bounds.maxAlt;
   }
 
   /**
@@ -2285,11 +2792,11 @@ export class Heatbox {
    */
   async _handleMinimalDataRange(centerLon, centerLat, centerAlt, fitOptions) {
     Logger.debug('Handling minimal data range');
-    
+
     const destination = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt + 2000);
     const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
     const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
-    
+
     return this.viewer.camera.flyTo({
       destination,
       orientation: { heading, pitch, roll: 0 },
@@ -2307,22 +2814,22 @@ export class Heatbox {
    */
   async _handleLargeDataRange(bounds, fitOptions) {
     Logger.debug('Handling large data range with bounding sphere');
-    
+
     const centerLon = (bounds.minLon + bounds.maxLon) / 2;
     const centerLat = (bounds.minLat + bounds.maxLat) / 2;
     const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
-    
+
     const dataRange = calculateDataRange(bounds);
     const maxRange = Math.max(dataRange.x, dataRange.y, dataRange.z);
-    
+
     const boundingSphere = new Cesium.BoundingSphere(
       Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
       maxRange / 2
     );
-    
+
     const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
     const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
-    
+
     return this.viewer.camera.flyToBoundingSphere(boundingSphere, {
       duration: 2.5,
       offset: new Cesium.HeadingPitchRange(heading, pitch, 0)
@@ -2346,30 +2853,30 @@ export class Heatbox {
     try {
       const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
       const fov = this.viewer.camera.frustum.fovy || Cesium.Math.toRadians(60);
-      
+
       // 幾何学的計算: データがフレームに収まる高度を計算
       const adjustedRange = maxRange + paddingMeters;
       const baseCameraHeight = adjustedRange / (2 * Math.tan(fov / 2));
-      
+
       // ピッチ補正（斜め視点での見え方調整）
       const absPitch = Math.abs(pitch);
-      const pitchFactor = Math.max(0.5, Math.sin(Math.PI/2 - absPitch) + 0.3);
+      const pitchFactor = Math.max(0.5, Math.sin(Math.PI / 2 - absPitch) + 0.3);
       let cameraHeight = baseCameraHeight * pitchFactor;
-      
+
       // アスペクト比補正（極端に細長いデータの場合）
       const aspectRatio = maxRange / Math.min(maxRange, 100);
       if (aspectRatio > 5) {
         cameraHeight *= Math.log10(aspectRatio) + 1;
       }
-      
+
       // 制限値適用（データ範囲に基づく適応的制限）
       const minHeight = Math.max(500, maxRange * 0.1);
       const maxHeight = Math.min(100000, maxRange * 10);
       cameraHeight = Math.max(minHeight, Math.min(maxHeight, cameraHeight));
-      
+
       Logger.debug(`Camera height calculated: ${cameraHeight.toFixed(0)}m (range: ${maxRange.toFixed(0)}m, pitch: ${fitOptions.pitchDegrees || fitOptions.pitch}°)`);
       return cameraHeight;
-      
+
     } catch (error) {
       Logger.warn('Camera height calculation failed, using fallback:', error);
       return Math.max(2000, maxRange * 2);
@@ -2393,8 +2900,8 @@ export class Heatbox {
     try {
       // 目標カメラ位置
       const destination = Cesium.Cartesian3.fromDegrees(
-        centerLon, 
-        centerLat, 
+        centerLon,
+        centerLat,
         centerAlt + cameraHeight
       );
 
@@ -2434,7 +2941,7 @@ export class Heatbox {
           Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
           maxRange / 2 + paddingMeters
         );
-        
+
         await this.viewer.camera.flyToBoundingSphere(boundingSphere, {
           duration,
           offset: new Cesium.HeadingPitchRange(heading, pitch, 0)
@@ -2444,10 +2951,45 @@ export class Heatbox {
       }
 
       Logger.info('fitView completed successfully');
-      
+
     } catch (error) {
       Logger.error('Camera movement execution failed:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Create a classification legend (Phase 5).
+   * 分類用の凡例UIを生成します。
+   * @param {HTMLElement} [container] - 追加先コンテナ（省略時はbodyに追加）
+   * @returns {HTMLElement|null} legend element / 凡例DOM要素
+   */
+  createLegend(container = null) {
+    if (!this._legend) {
+      this._legend = new Legend({ container });
+    }
+    this._legend.render(this.renderer?._classifier || null, this.options.classification || {});
+    return this._legend.container || null;
+  }
+
+  /**
+   * Update legend contents using latest classifier.
+   * 最新の分類状態で凡例を更新します。
+   */
+  updateLegend() {
+    if (this._legend) {
+      this._legend.update(this.renderer?._classifier || null, this.options.classification || {});
+    }
+  }
+
+  /**
+   * Destroy legend UI.
+   * 凡例UIを破棄します。
+   */
+  destroyLegend() {
+    if (this._legend) {
+      this._legend.destroy();
+      this._legend = null;
     }
   }
 

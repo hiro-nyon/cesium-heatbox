@@ -46,8 +46,72 @@ export class GeometryRenderer {
 
     // Entity management
     this.entities = [];
+    this._records = new Map();
+    this._activeFrameKeys = new Set();
+    this._debugEntities = [];
 
     Logger.debug('GeometryRenderer initialized with viewer and options:', this.options);
+  }
+
+  /**
+   * Start diff-based frame update.
+   * 差分更新フレームを開始します。
+   */
+  beginFrame() {
+    this._activeFrameKeys.clear();
+  }
+
+  /**
+   * Finish diff-based frame update and remove stale voxel records.
+   * 差分更新フレームを終了し、未使用のボクセルレコードを削除します。
+   */
+  endFrame() {
+    for (const key of this._records.keys()) {
+      if (!this._activeFrameKeys.has(key)) {
+        this._removeRecord(key);
+      }
+    }
+
+    this._rebuildEntitiesCache();
+  }
+
+  /**
+   * Remove debug-only entities such as bounding boxes.
+   * デバッグ専用エンティティを削除します。
+   */
+  clearDebugEntities() {
+    this._debugEntities.forEach(entity => this._removeEntity(entity));
+    this._debugEntities = [];
+    this._rebuildEntitiesCache();
+  }
+
+  /**
+   * Upsert a voxel render record keyed by voxelKey.
+   * voxelKey 単位でレンダレコードを更新します。
+   * @param {Object} config
+   */
+  syncVoxel(config) {
+    const { voxelKey } = config;
+    this._activeFrameKeys.add(voxelKey);
+
+    const record = this._records.get(voxelKey) || {
+      key: voxelKey,
+      boxEntity: null,
+      insetEntity: null,
+      frameEntities: [],
+      polylineEntities: []
+    };
+
+    if (!record.boxEntity) {
+      record.boxEntity = this.createVoxelBox(config);
+    } else {
+      this._updateVoxelBox(record.boxEntity, config);
+    }
+
+    this._syncInsetRecord(record, config);
+    this._syncPolylineRecord(record, config);
+
+    this._records.set(voxelKey, record);
   }
 
   /**
@@ -406,6 +470,7 @@ export class GeometryRenderer {
    * `boxHeight` (number) / ボックス高さ、
    * `outlineColor` (Cesium.Color) / 枠線色、
    * `outlineWidth` (number) / 枠線太さ、
+   * `outlineOpacity` (number) / 枠線透明度、
    * `voxelKey` (string) / ボクセルキー
    * @returns {Array<Cesium.Entity>} Created polyline entities / 作成されたポリラインエンティティ配列
    */
@@ -413,7 +478,7 @@ export class GeometryRenderer {
     const {
       centerLon, centerLat, centerAlt,
       cellSizeX, cellSizeY, boxHeight,
-      outlineColor, outlineWidth, voxelKey
+      outlineColor, outlineWidth, outlineOpacity = null, voxelKey
     } = config;
 
     const polylineEntities = [];
@@ -529,11 +594,19 @@ export class GeometryRenderer {
           return;
         }
 
+        let effectiveMaterial = outlineColor;
+        if (outlineOpacity !== null && outlineOpacity !== undefined && typeof outlineColor?.withAlpha === 'function') {
+          const clampedOpacity = Math.max(0, Math.min(1, outlineOpacity));
+          effectiveMaterial = outlineColor.withAlpha(clampedOpacity);
+        }
+
+        const safeOutlineWidth = Number.isFinite(outlineWidth) ? outlineWidth : 1;
+
         const polylineEntity = this.viewer.entities.add({
           polyline: {
             positions: positions,
-            width: Math.max(Math.min(outlineWidth, 20), 1), // width制限も追加
-            material: outlineColor,
+            width: Math.max(Math.min(safeOutlineWidth, 20), 1), // width制限も追加
+            material: effectiveMaterial,
             clampToGround: false
           },
           properties: {
@@ -617,6 +690,149 @@ export class GeometryRenderer {
     `;
   }
 
+  _updateVoxelBox(entity, config) {
+    if (!entity) {
+      return;
+    }
+
+    const {
+      centerLon, centerLat, centerAlt,
+      cellSizeX, cellSizeY, boxHeight,
+      color, opacity,
+      shouldShowOutline, outlineColor, outlineWidth,
+      voxelInfo, voxelKey,
+      emulateThick = false
+    } = config;
+
+    const hideBox = this.options.wireframeOnly || this.options.outlineRenderMode === 'emulation-only';
+    const showOutline = Boolean(shouldShowOutline && !emulateThick);
+    entity.position = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt);
+    entity.box = entity.box || {};
+    entity.box.dimensions = new Cesium.Cartesian3(cellSizeX, cellSizeY, boxHeight);
+    entity.box.outline = showOutline;
+    entity.box.outlineColor = showOutline ? outlineColor : undefined;
+    entity.box.outlineWidth = showOutline ? Math.max(outlineWidth || 1, 1) : undefined;
+    entity.box.material = hideBox ? Cesium.Color.TRANSPARENT : color.withAlpha(opacity);
+    entity.box.fill = !hideBox;
+    entity.properties = entity.properties || {};
+    entity.properties.type = 'voxel';
+    entity.properties.key = voxelKey;
+    entity.properties.count = voxelInfo.count;
+    entity.properties.x = voxelInfo.x;
+    entity.properties.y = voxelInfo.y;
+    entity.properties.z = voxelInfo.z;
+    if (voxelInfo.spatialId) {
+      entity.properties.spatialId = voxelInfo.spatialId;
+    }
+    if (voxelInfo.layerTop) {
+      entity.properties.layerTop = voxelInfo.layerTop;
+    }
+    if (voxelInfo.layerStats) {
+      const layerStatsObj = {};
+      for (const [key, count] of voxelInfo.layerStats) {
+        layerStatsObj[key] = count;
+      }
+      entity.properties.layerStats = layerStatsObj;
+    }
+    entity.description = this.createVoxelDescription(voxelInfo, voxelKey);
+  }
+
+  _syncInsetRecord(record, config) {
+    const shouldShowInset = Boolean(config.shouldShowInsetOutline);
+
+    if (!shouldShowInset) {
+      this._removeEntity(record.insetEntity);
+      record.insetEntity = null;
+      record.frameEntities.forEach(entity => this._removeEntity(entity));
+      record.frameEntities = [];
+      return;
+    }
+
+    this._removeEntity(record.insetEntity);
+    record.frameEntities.forEach(entity => this._removeEntity(entity));
+    record.frameEntities = [];
+    record.insetEntity = this.createInsetOutline({
+      centerLon: config.centerLon,
+      centerLat: config.centerLat,
+      centerAlt: config.centerAlt,
+      baseSizeX: config.cellSizeX,
+      baseSizeY: config.cellSizeY,
+      baseSizeZ: config.boxHeight,
+      outlineColor: config.outlineColor,
+      outlineWidth: Math.max(config.outlineWidth || 1, 1),
+      voxelKey: config.voxelKey,
+      insetAmount: this.options.outlineInset > 0 ? this.options.outlineInset : 1
+    });
+
+    if (this.options.enableThickFrames) {
+      record.frameEntities = this.entities.filter(entity => entity?.properties?.parentKey === config.voxelKey && String(entity?.properties?.type || '').startsWith('voxel-thick-frame-'));
+    }
+  }
+
+  _syncPolylineRecord(record, config) {
+    const shouldShowPolylines = Boolean(config.emulateThick);
+    record.polylineEntities.forEach(entity => this._removeEntity(entity));
+    record.polylineEntities = [];
+
+    if (!shouldShowPolylines) {
+      return;
+    }
+
+    const outlineOpacity = config.adaptiveParams?.outlineOpacity ?? config.outlineColor?.alpha ?? null;
+    record.polylineEntities = this.createEdgePolylines({
+      centerLon: config.centerLon,
+      centerLat: config.centerLat,
+      centerAlt: config.centerAlt,
+      cellSizeX: config.cellSizeX,
+      cellSizeY: config.cellSizeY,
+      boxHeight: config.boxHeight,
+      outlineColor: config.outlineColor,
+      outlineWidth: Math.max(config.outlineWidth || 1, 1),
+      outlineOpacity,
+      voxelKey: config.voxelKey
+    });
+  }
+
+  _removeRecord(key) {
+    const record = this._records.get(key);
+    if (!record) {
+      return;
+    }
+
+    this._removeEntity(record.boxEntity);
+    this._removeEntity(record.insetEntity);
+    record.frameEntities.forEach(entity => this._removeEntity(entity));
+    record.polylineEntities.forEach(entity => this._removeEntity(entity));
+    this._records.delete(key);
+  }
+
+  _removeEntity(entity) {
+    try {
+      const isDestroyed = entity && typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
+      if (entity && !isDestroyed) {
+        this.viewer.entities.remove(entity);
+      }
+    } catch (error) {
+      Logger.warn('Entity removal error:', error);
+    }
+  }
+
+  _rebuildEntitiesCache() {
+    const voxelEntities = [];
+    for (const record of this._records.values()) {
+      if (record.boxEntity) {
+        voxelEntities.push(record.boxEntity);
+      }
+      if (record.insetEntity) {
+        voxelEntities.push(record.insetEntity);
+      }
+      voxelEntities.push(...record.frameEntities.filter(Boolean));
+      voxelEntities.push(...record.polylineEntities.filter(Boolean));
+    }
+
+    this.entities = [...voxelEntities, ...this._debugEntities.filter(Boolean)];
+  }
+
   /**
    * Check if inset outline should be applied
    * インセット枠線を適用すべきかどうかを判定
@@ -643,20 +859,11 @@ export class GeometryRenderer {
    */
   clear() {
     Logger.debug('GeometryRenderer.clear - Removing', this.entities.length, 'entities');
-    
-    this.entities.forEach(entity => {
-      try {
-        // entityとisDestroyedのチェックを安全に行う
-        const isDestroyed = entity && typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
-        
-        if (entity && !isDestroyed) {
-          this.viewer.entities.remove(entity);
-        }
-      } catch (error) {
-        Logger.warn('Entity removal error:', error);
-      }
-    });
-    
+
+    this.entities.forEach(entity => this._removeEntity(entity));
+    this._records.clear();
+    this._activeFrameKeys.clear();
+    this._debugEntities = [];
     this.entities = [];
   }
 
@@ -687,7 +894,8 @@ export class GeometryRenderer {
         },
         description: `Bounding Box<br>Size: ${widthMeters.toFixed(1)} x ${depthMeters.toFixed(1)} x ${heightMeters.toFixed(1)} m`
       });
-      this.entities.push(boundingBox);
+      this._debugEntities.push(boundingBox);
+      this._rebuildEntitiesCache();
       Logger.debug('Debug bounding box added:', {
         center: { lon: centerLon, lat: centerLat, alt: centerAlt },
         size: { width: widthMeters, depth: depthMeters, height: heightMeters }
@@ -784,8 +992,72 @@ export class GeometryRenderer {
 
     // Entity management
     this.entities = [];
+    this._records = new Map();
+    this._activeFrameKeys = new Set();
+    this._debugEntities = [];
 
     Logger.debug('GeometryRenderer initialized with viewer and options:', this.options);
+  }
+
+  /**
+   * Start diff-based frame update.
+   * 差分更新フレームを開始します。
+   */
+  beginFrame() {
+    this._activeFrameKeys.clear();
+  }
+
+  /**
+   * Finish diff-based frame update and remove stale voxel records.
+   * 差分更新フレームを終了し、未使用のボクセルレコードを削除します。
+   */
+  endFrame() {
+    for (const key of this._records.keys()) {
+      if (!this._activeFrameKeys.has(key)) {
+        this._removeRecord(key);
+      }
+    }
+
+    this._rebuildEntitiesCache();
+  }
+
+  /**
+   * Remove debug-only entities such as bounding boxes.
+   * デバッグ専用エンティティを削除します。
+   */
+  clearDebugEntities() {
+    this._debugEntities.forEach(entity => this._removeEntity(entity));
+    this._debugEntities = [];
+    this._rebuildEntitiesCache();
+  }
+
+  /**
+   * Upsert a voxel render record keyed by voxelKey.
+   * voxelKey 単位でレンダレコードを更新します。
+   * @param {Object} config
+   */
+  syncVoxel(config) {
+    const { voxelKey } = config;
+    this._activeFrameKeys.add(voxelKey);
+
+    const record = this._records.get(voxelKey) || {
+      key: voxelKey,
+      boxEntity: null,
+      insetEntity: null,
+      frameEntities: [],
+      polylineEntities: []
+    };
+
+    if (!record.boxEntity) {
+      record.boxEntity = this.createVoxelBox(config);
+    } else {
+      this._updateVoxelBox(record.boxEntity, config);
+    }
+
+    this._syncInsetRecord(record, config);
+    this._syncPolylineRecord(record, config);
+
+    this._records.set(voxelKey, record);
   }
 
   /**
@@ -1144,6 +1416,7 @@ export class GeometryRenderer {
    * `boxHeight` (number) / ボックス高さ、
    * `outlineColor` (Cesium.Color) / 枠線色、
    * `outlineWidth` (number) / 枠線太さ、
+   * `outlineOpacity` (number) / 枠線透明度、
    * `voxelKey` (string) / ボクセルキー
    * @returns {Array<Cesium.Entity>} Created polyline entities / 作成されたポリラインエンティティ配列
    */
@@ -1151,7 +1424,7 @@ export class GeometryRenderer {
     const {
       centerLon, centerLat, centerAlt,
       cellSizeX, cellSizeY, boxHeight,
-      outlineColor, outlineWidth, voxelKey
+      outlineColor, outlineWidth, outlineOpacity = null, voxelKey
     } = config;
 
     const polylineEntities = [];
@@ -1267,11 +1540,19 @@ export class GeometryRenderer {
           return;
         }
 
+        let effectiveMaterial = outlineColor;
+        if (outlineOpacity !== null && outlineOpacity !== undefined && typeof outlineColor?.withAlpha === 'function') {
+          const clampedOpacity = Math.max(0, Math.min(1, outlineOpacity));
+          effectiveMaterial = outlineColor.withAlpha(clampedOpacity);
+        }
+
+        const safeOutlineWidth = Number.isFinite(outlineWidth) ? outlineWidth : 1;
+
         const polylineEntity = this.viewer.entities.add({
           polyline: {
             positions: positions,
-            width: Math.max(Math.min(outlineWidth, 20), 1), // width制限も追加
-            material: outlineColor,
+            width: Math.max(Math.min(safeOutlineWidth, 20), 1), // width制限も追加
+            material: effectiveMaterial,
             clampToGround: false
           },
           properties: {
@@ -1355,6 +1636,149 @@ export class GeometryRenderer {
     `;
   }
 
+  _updateVoxelBox(entity, config) {
+    if (!entity) {
+      return;
+    }
+
+    const {
+      centerLon, centerLat, centerAlt,
+      cellSizeX, cellSizeY, boxHeight,
+      color, opacity,
+      shouldShowOutline, outlineColor, outlineWidth,
+      voxelInfo, voxelKey,
+      emulateThick = false
+    } = config;
+
+    const hideBox = this.options.wireframeOnly || this.options.outlineRenderMode === 'emulation-only';
+    const showOutline = Boolean(shouldShowOutline && !emulateThick);
+    entity.position = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt);
+    entity.box = entity.box || {};
+    entity.box.dimensions = new Cesium.Cartesian3(cellSizeX, cellSizeY, boxHeight);
+    entity.box.outline = showOutline;
+    entity.box.outlineColor = showOutline ? outlineColor : undefined;
+    entity.box.outlineWidth = showOutline ? Math.max(outlineWidth || 1, 1) : undefined;
+    entity.box.material = hideBox ? Cesium.Color.TRANSPARENT : color.withAlpha(opacity);
+    entity.box.fill = !hideBox;
+    entity.properties = entity.properties || {};
+    entity.properties.type = 'voxel';
+    entity.properties.key = voxelKey;
+    entity.properties.count = voxelInfo.count;
+    entity.properties.x = voxelInfo.x;
+    entity.properties.y = voxelInfo.y;
+    entity.properties.z = voxelInfo.z;
+    if (voxelInfo.spatialId) {
+      entity.properties.spatialId = voxelInfo.spatialId;
+    }
+    if (voxelInfo.layerTop) {
+      entity.properties.layerTop = voxelInfo.layerTop;
+    }
+    if (voxelInfo.layerStats) {
+      const layerStatsObj = {};
+      for (const [key, count] of voxelInfo.layerStats) {
+        layerStatsObj[key] = count;
+      }
+      entity.properties.layerStats = layerStatsObj;
+    }
+    entity.description = this.createVoxelDescription(voxelInfo, voxelKey);
+  }
+
+  _syncInsetRecord(record, config) {
+    const shouldShowInset = Boolean(config.shouldShowInsetOutline);
+
+    if (!shouldShowInset) {
+      this._removeEntity(record.insetEntity);
+      record.insetEntity = null;
+      record.frameEntities.forEach(entity => this._removeEntity(entity));
+      record.frameEntities = [];
+      return;
+    }
+
+    this._removeEntity(record.insetEntity);
+    record.frameEntities.forEach(entity => this._removeEntity(entity));
+    record.frameEntities = [];
+    record.insetEntity = this.createInsetOutline({
+      centerLon: config.centerLon,
+      centerLat: config.centerLat,
+      centerAlt: config.centerAlt,
+      baseSizeX: config.cellSizeX,
+      baseSizeY: config.cellSizeY,
+      baseSizeZ: config.boxHeight,
+      outlineColor: config.outlineColor,
+      outlineWidth: Math.max(config.outlineWidth || 1, 1),
+      voxelKey: config.voxelKey,
+      insetAmount: this.options.outlineInset > 0 ? this.options.outlineInset : 1
+    });
+
+    if (this.options.enableThickFrames) {
+      record.frameEntities = this.entities.filter(entity => entity?.properties?.parentKey === config.voxelKey && String(entity?.properties?.type || '').startsWith('voxel-thick-frame-'));
+    }
+  }
+
+  _syncPolylineRecord(record, config) {
+    const shouldShowPolylines = Boolean(config.emulateThick);
+    record.polylineEntities.forEach(entity => this._removeEntity(entity));
+    record.polylineEntities = [];
+
+    if (!shouldShowPolylines) {
+      return;
+    }
+
+    const outlineOpacity = config.adaptiveParams?.outlineOpacity ?? config.outlineColor?.alpha ?? null;
+    record.polylineEntities = this.createEdgePolylines({
+      centerLon: config.centerLon,
+      centerLat: config.centerLat,
+      centerAlt: config.centerAlt,
+      cellSizeX: config.cellSizeX,
+      cellSizeY: config.cellSizeY,
+      boxHeight: config.boxHeight,
+      outlineColor: config.outlineColor,
+      outlineWidth: Math.max(config.outlineWidth || 1, 1),
+      outlineOpacity,
+      voxelKey: config.voxelKey
+    });
+  }
+
+  _removeRecord(key) {
+    const record = this._records.get(key);
+    if (!record) {
+      return;
+    }
+
+    this._removeEntity(record.boxEntity);
+    this._removeEntity(record.insetEntity);
+    record.frameEntities.forEach(entity => this._removeEntity(entity));
+    record.polylineEntities.forEach(entity => this._removeEntity(entity));
+    this._records.delete(key);
+  }
+
+  _removeEntity(entity) {
+    try {
+      const isDestroyed = entity && typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
+      if (entity && !isDestroyed) {
+        this.viewer.entities.remove(entity);
+      }
+    } catch (error) {
+      Logger.warn('Entity removal error:', error);
+    }
+  }
+
+  _rebuildEntitiesCache() {
+    const voxelEntities = [];
+    for (const record of this._records.values()) {
+      if (record.boxEntity) {
+        voxelEntities.push(record.boxEntity);
+      }
+      if (record.insetEntity) {
+        voxelEntities.push(record.insetEntity);
+      }
+      voxelEntities.push(...record.frameEntities.filter(Boolean));
+      voxelEntities.push(...record.polylineEntities.filter(Boolean));
+    }
+
+    this.entities = [...voxelEntities, ...this._debugEntities.filter(Boolean)];
+  }
+
   /**
    * Check if inset outline should be applied
    * インセット枠線を適用すべきかどうかを判定
@@ -1381,20 +1805,11 @@ export class GeometryRenderer {
    */
   clear() {
     Logger.debug('GeometryRenderer.clear - Removing', this.entities.length, 'entities');
-    
-    this.entities.forEach(entity => {
-      try {
-        // entityとisDestroyedのチェックを安全に行う
-        const isDestroyed = entity && typeof entity.isDestroyed === 'function' ? entity.isDestroyed() : false;
-        
-        if (entity && !isDestroyed) {
-          this.viewer.entities.remove(entity);
-        }
-      } catch (error) {
-        Logger.warn('Entity removal error:', error);
-      }
-    });
-    
+
+    this.entities.forEach(entity => this._removeEntity(entity));
+    this._records.clear();
+    this._activeFrameKeys.clear();
+    this._debugEntities = [];
     this.entities = [];
   }
 
@@ -1425,7 +1840,8 @@ export class GeometryRenderer {
         },
         description: `Bounding Box<br>Size: ${widthMeters.toFixed(1)} x ${depthMeters.toFixed(1)} x ${heightMeters.toFixed(1)} m`
       });
-      this.entities.push(boundingBox);
+      this._debugEntities.push(boundingBox);
+      this._rebuildEntitiesCache();
       Logger.debug('Debug bounding box added:', {
         center: { lon: centerLon, lat: centerLat, alt: centerAlt },
         size: { width: widthMeters, depth: depthMeters, height: heightMeters }

@@ -41,6 +41,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.6] - 2026-04-13
+
+### Changed
+- Wiki 同期フローを更新し、`npm run wiki:sync` が JSDoc 生成物に加えて主要 Markdown ページも `wiki/` へ同期するようにしました。
+- `wiki-sync` の GitHub Actions を `src/`、`package.json`、`jsdoc.config.json`、`tools/wiki-sync.js` の変更でも起動するように修正し、API 更新後に Wiki が古いまま残る問題を防止しました。
+- `docs/wiki-maintenance.md` と生成済み `wiki/` ページを現行の `v1.3.6` 状態へ再同期しました。
+
 ## [1.3.4] - 2026-04-07
 
 ### Fixed

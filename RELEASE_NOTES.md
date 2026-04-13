@@ -1,5 +1,18 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 1.3.6（2026-04-13）
+
+**Wiki sync refresh / documentation release**
+
+### ハイライト
+- **Wiki sync refresh**: `npm run wiki:sync` が API リファレンスだけでなく `Home`、`Quick-Start`、`Getting-Started`、`API` などの主要 Wiki ページもまとめて再生成するようになりました。
+- **Trigger fix**: `src/` や版番号ファイルの変更でも Wiki 自動同期が走るようにし、コード更新後に Wiki の版情報や公開 API が古いまま残る問題を防ぎます。
+
+### 主な変更
+- `.github/workflows/wiki-sync.yml` のトリガー条件を拡張し、`tools/wiki-sync.js` に同期ロジックを集約しました。
+- `docs/wiki-maintenance.md` と `wiki/Publishing-to-GitHub-Wiki.md` を現行運用に合わせて更新しました。
+- 生成済み `wiki/` の API ページを `1.3.6` に再同期し、`createLegend` / `updateLegend` / `destroyLegend` など現行 API を反映しました。
+
 ## バージョン 1.3.5（2026-04-07）
 
 **Version comparison demos / measured temporal follow-up**

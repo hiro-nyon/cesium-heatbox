@@ -15,7 +15,10 @@ This documentation is auto-generated from JSDoc comments in the source code.
 - [GeometryRenderer](GeometryRenderer) — GeometryRenderer - Creates Cesium entities consumed by VoxelRenderer.
 - [Heatbox](Heatbox) — Main class of CesiumJS Heatbox.
 - [PerformanceOverlay](PerformanceOverlay) — Performance Overlay UI component
+- [RenderPlanner](RenderPlanner) — Lightweight render planner for prioritization, LoD, and viewport culling.
 - [SpatialIdAdapter](SpatialIdAdapter) — SpatialIdAdapter - Abstraction layer for spatial ID providers
+- [TimeController](TimeController) — Controller to synchronize Heatbox with Cesium Clock.
+- [TimeSlicer](TimeSlicer) — TimeSlicer class for managing and retrieving time-series data.
 - [VoxelGrid](VoxelGrid) — Class for managing 3D voxel grids.
 - [VoxelRenderer](VoxelRenderer) — VoxelRenderer - 3D voxel rendering orchestration class.
 - [VoxelSelector](VoxelSelector) — Voxel selection strategy executor.
@@ -23,8 +26,8 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 ### Version Information
 
-- **Current Version**: 0.1.18-alpha.2
-- **Last Updated**: 2025-11-02
+- **Current Version**: 1.3.6
+- **Last Updated**: 2026-04-13
 - **Generated From**: JSDoc → Markdown conversion
 
 ### Quick Links
@@ -32,11 +35,6 @@ This documentation is auto-generated from JSDoc comments in the source code.
 - [Home](Home)
 - [Getting Started](Getting-Started)
 - [Examples](Examples)
-- [Temporal Data](Temporal-Data)
-
-### Temporal Data (v1.2.0)
-
-Use the new `temporal` option to feed ordered `{ start, stop, data }` slices and let Heatbox synchronize with `viewer.clock`. See [Temporal Data](Temporal-Data) for option details, overlap policies, and migration tips from manual `clock.onTick` handlers.
 
 ## 日本語
 
@@ -51,7 +49,10 @@ Use the new `temporal` option to feed ordered `{ start, stop, data }` slices and
 - [GeometryRenderer](GeometryRenderer) — ジオメトリレンダラー - VoxelRenderer が利用する Cesium エンティティを生成・管理
 - [Heatbox](Heatbox) — CesiumJS Heatbox メインクラス。
 - [PerformanceOverlay](PerformanceOverlay) — パフォーマンスオーバーレイUIコンポーネント
+- [RenderPlanner](RenderPlanner) — 描画優先度、簡易LoD、ビューポートカリングを担当する軽量プランナー。
 - [SpatialIdAdapter](SpatialIdAdapter) — 空間IDプロバイダーの抽象化層
+- [TimeController](TimeController) — Cesium Clock と Heatbox を連携させるコントローラ。
+- [TimeSlicer](TimeSlicer) — 時系列データの管理と高速検索を担当するクラス。
 - [VoxelGrid](VoxelGrid) — 3Dボクセルグリッドを管理するクラス。
 - [VoxelRenderer](VoxelRenderer) — 3Dボクセル描画オーケストレーションクラス。
 - [VoxelSelector](VoxelSelector) — VoxelSelector - ボクセル選択戦略の実装。
@@ -59,8 +60,8 @@ Use the new `temporal` option to feed ordered `{ start, stop, data }` slices and
 
 ### バージョン情報
 
-- **現在のバージョン**: 0.1.18-alpha.2
-- **最終更新**: 2025-11-02
+- **現在のバージョン**: 1.3.6
+- **最終更新**: 2026-04-13
 - **生成元**: JSDoc → Markdown変換
 
 ### クイックリンク
@@ -68,8 +69,3 @@ Use the new `temporal` option to feed ordered `{ start, stop, data }` slices and
 - [Home](Home) - ホーム
 - [Getting Started](Getting-Started) - はじめに
 - [Examples](Examples) - サンプル
-- [Temporal Data](Temporal-Data) - 時系列データガイド
-
-### 時系列データ (v1.2.0)
-
-`temporal` オプションに時間帯ごとのエンティティ配列を渡すと、Heatbox が `viewer.clock` と同期して自動で `setData()` を切り替えます。`classificationScope` や `updateInterval`、`overlapResolution` の詳細は [Temporal Data](Temporal-Data) を参照してください。

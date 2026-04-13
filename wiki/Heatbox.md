@@ -27,9 +27,21 @@ Resolves with the statistics snapshot calculated by getStatistics.
 |---|---|---|
 | entities | Array.<Cesium.Entity> | Target entities array / 対象エンティティ配列 |
 
+#### createLegend(containeropt) → {HTMLElement|null}
+
+Create a classification legend (Phase 5).
+
+| Name | Type | Attributes | Default | Description |
+|---|---|---|---|---|
+| container | HTMLElement | <optional> | null | 追加先コンテナ（省略時はbodyに追加） |
+
 #### destroy()
 
 Destroy the instance and release event listeners.
+
+#### destroyLegend()
+
+Destroy legend UI.
 
 #### dispose()
 
@@ -68,14 +80,15 @@ Get statistics information.
 
 Hide performance overlay
 
-#### (async) setData(entities) → {Promise.<void>}
+#### (async) setData(entities, runtimeOptionsopt) → {Promise.<void>}
 
 Set heatmap data and render.
 Calculates bounds, prepares the voxel grid, runs classification, and finally renders.
 
-| Name | Type | Description |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | Target entities array / 対象エンティティ配列 |
+| Name | Type | Attributes | Default | Description |
+|---|---|---|---|---|
+| entities | Array.<Cesium.Entity> |  |  | Target entities array / 対象エンティティ配列 |
+| runtimeOptions | Object | <optional> | {} | Internal runtime options / 内部実行オプション |
 
 #### setPerformanceOverlayEnabled(enabled, optionsopt) → {boolean}
 
@@ -102,6 +115,10 @@ Show performance overlay
 
 Toggle performance overlay visibility
 
+#### updateLegend()
+
+Update legend contents using latest classifier.
+
 #### updateOptions(newOptions)
 
 Update options and re-render if applicable.
@@ -109,6 +126,15 @@ Update options and re-render if applicable.
 | Name | Type | Description |
 |---|---|---|
 | newOptions | HeatboxOptions | New options (partial allowed) / 新しいオプション（部分指定可） |
+
+#### (async) updateValues(entities, runtimeOptionsopt) → {Promise.<void>}
+
+Update voxel values while reusing the current bounds/grid when possible.
+
+| Name | Type | Attributes | Default | Description |
+|---|---|---|---|---|
+| entities | Array.<Cesium.Entity> |  |  | Target entities array / 対象エンティティ配列 |
+| runtimeOptions | Object | <optional> | {} | Internal runtime options / 内部実行オプション |
 
 #### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
 
@@ -147,19 +173,35 @@ const stats = await heatbox.createFromEntities(entities);
 console.log('rendered voxels:', stats.renderedVoxels);
 ```
 
-## v0.1.6 New Features
+## Classification Example
 
 ```javascript
-// Adaptive outline width control
-const options = {
-  outlineWidthResolver: ({ voxel, isTopN, normalizedDensity }) => {
-    if (isTopN) return 6;           // TopN: thick outline
-    if (normalizedDensity > 0.7) return 1; // Dense: thin
-    return 3;                       // Sparse: normal
-  },
-  voxelGap: 1.5,        // Gap between voxels (meters)
-  outlineOpacity: 0.8   // Outline transparency
-};
+const heatbox = new Heatbox(viewer, {
+  classification: {
+    enabled: true,
+    scheme: 'quantile',
+    classes: 5,
+    colorMap: ['#0f172a', '#1d4ed8', '#22d3ee', '#f97316', '#facc15']
+  }
+});
+
+await heatbox.createFromEntities(entities);
+const legendElement = heatbox.createLegend();
+```
+
+## Temporal Example
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  temporal: {
+    enabled: true,
+    classificationScope: 'global',
+    data: [
+      { start: '2024-01-01T00:00:00Z', stop: '2024-01-01T06:00:00Z', data: morning },
+      { start: '2024-01-01T06:00:00Z', stop: '2024-01-01T12:00:00Z', data: afternoon }
+    ]
+  }
+});
 ```
 
 ## 日本語
@@ -187,9 +229,21 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 |---|---|---|
 | entities | Array.<Cesium.Entity> | Target entities array / 対象エンティティ配列 |
 
+#### createLegend(containeropt) → {HTMLElement|null}
+
+分類用の凡例UIを生成します。
+
+| 名前 | 型 | 属性 | 既定値 | 説明 |
+|---|---|---|---|---|
+| container | HTMLElement | <optional> | null | 追加先コンテナ（省略時はbodyに追加） |
+
 #### destroy()
 
 インスタンスを破棄し、イベントリスナーを解放します。
+
+#### destroyLegend()
+
+凡例UIを破棄します。
 
 #### dispose()
 
@@ -234,13 +288,14 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 
 パフォーマンスオーバーレイを非表示
 
-#### (async) setData(entities) → {Promise.<void>}
+#### (async) setData(entities, runtimeOptionsopt) → {Promise.<void>}
 
 ヒートマップデータを設定し、境界計算→ボクセル分類→描画の順で処理します。
 
-| 名前 | 型 | 説明 |
-|---|---|---|
-| entities | Array.<Cesium.Entity> | Target entities array / 対象エンティティ配列 |
+| 名前 | 型 | 属性 | 既定値 | 説明 |
+|---|---|---|---|---|
+| entities | Array.<Cesium.Entity> |  |  | Target entities array / 対象エンティティ配列 |
+| runtimeOptions | Object | <optional> | {} | Internal runtime options / 内部実行オプション |
 
 #### setPerformanceOverlayEnabled(enabled, optionsopt) → {boolean}
 
@@ -267,6 +322,10 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 
 パフォーマンスオーバーレイの表示/非表示切り替え
 
+#### updateLegend()
+
+最新の分類状態で凡例を更新します。
+
 #### updateOptions(newOptions)
 
 オプションを更新し、必要に応じて再描画します。
@@ -274,6 +333,15 @@ CesiumJS 環境で 3D ボクセルベースのヒートマップ可視化を提�
 | 名前 | 型 | 説明 |
 |---|---|---|
 | newOptions | HeatboxOptions | New options (partial allowed) / 新しいオプション（部分指定可） |
+
+#### (async) updateValues(entities, runtimeOptionsopt) → {Promise.<void>}
+
+可能な場合は既存の bounds/grid を再利用して値更新のみを行います。
+
+| 名前 | 型 | 属性 | 既定値 | 説明 |
+|---|---|---|---|---|
+| entities | Array.<Cesium.Entity> |  |  | Target entities array / 対象エンティティ配列 |
+| runtimeOptions | Object | <optional> | {} | Internal runtime options / 内部実行オプション |
 
 #### (static) filterEntities(entities, predicate) → {Array.<Cesium.Entity>}
 

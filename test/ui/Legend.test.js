@@ -27,7 +27,7 @@ describe('Legend UI', () => {
 
     expect(element).toBeTruthy();
     const items = element.querySelectorAll('.heatbox-legend-item');
-    expect(items.length).toBe(2);
+    expect(items).toHaveLength(2);
     legend.destroy();
   });
 
@@ -44,7 +44,7 @@ describe('Legend UI', () => {
     legend.update(newClassifier, {});
 
     const items = legend.container.querySelectorAll('.heatbox-legend-item');
-    expect(items.length).toBe(3);
+    expect(items).toHaveLength(3);
     legend.destroy();
   });
 

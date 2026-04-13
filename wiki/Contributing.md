@@ -1,55 +1,174 @@
-# Contributing（プロジェクトへの貢献） / Contributing
+# Contributing to the Project (プロジェクトへの貢献)
 
-**日本語** | [English](#english)
-
-歓迎します！バグ報告・機能提案・プルリクエストの流れを簡潔にまとめます。詳細は `docs/contributing.md` を参照してください。
-
-## 日本語
-
-## バグ報告
-- 事象の説明、再現手順、期待結果/実結果、環境情報（ブラウザ/OS/CesiumJS など）
-- 可能ならスクリーンショットや動画を添付
-
-## 機能提案
-- 目的・ユースケース・課題、実装アイデア（任意）を Issue へ
-
-## プルリクエスト手順
-1. リポジトリをフォーク
-2. ブランチ作成（`feature/*` or `fix/*`）
-3. 実装とテスト追加
-4. Lint/テストを通す（`npm run lint` / `npm test`）
-5. 変更をコミット・プッシュ
-6. PR を作成（動機/変更点/影響範囲/確認手順を記載）
-
-## コーディング規約
-- ESLint に準拠、JSDoc コメント、意味のあるコミットメッセージ
-- 破壊的変更はメジャー、機能追加はマイナー、修正はパッチ（v1系以降の方針）
-
-## ライセンス
-- 貢献は MIT ライセンスの下で公開されます。
+[English](#english) | [日本語](#日本語)
 
 ## English
 
-Welcome! We briefly summarize the flow of bug reports, feature proposals, and pull requests. Please refer to `docs/contributing.md` for details.
+We welcome contributions to the CesiumJS Heatbox project. This guide explains how to contribute and the procedures involved.
 
-### Bug Reports
-- Description of the issue, reproduction steps, expected/actual results, environment information (browser/OS/CesiumJS, etc.)
-- Attach screenshots or videos if possible
+### How to Contribute
 
-### Feature Proposals
-- Purpose, use cases, issues, implementation ideas (optional) to Issue
+#### Bug Reports
 
-### Pull Request Procedure
+If you find a bug, please report it on the GitHub Issue tracker. When reporting, please include the following information:
+
+- Detailed description of the bug
+- Steps to reproduce
+- Expected behavior vs actual behavior
+- Environment information (browser, OS, CesiumJS version, etc.)
+- Screenshots or videos if possible
+
+#### Feature Requests
+
+If you have ideas for new features, please propose them on the GitHub Issue tracker. Include the following information in your proposal:
+
+- Detailed description of the feature
+- Use cases or problems it solves
+- Implementation ideas (optional)
+
+#### Pull Requests
+
+If you want to make code changes or implement new features, please follow these steps to submit a pull request:
+
 1. Fork the repository
-2. Create branch (`feature/*` or `fix/*`)
-3. Implementation and test addition
-4. Pass Lint/tests (`npm run lint` / `npm test`)
-5. Commit and push changes
-6. Create PR (describe motivation/changes/impact scope/verification procedure)
+2. Create a new branch (`feature/your-feature-name` or `fix/your-fix-name`)
+3. Implement your changes
+4. Add or update tests
+5. Check code style (`npm run lint`)
+6. Ensure tests pass (`npm test`)
+7. Commit your changes
+8. Push to your forked repository
+9. Create a pull request
 
-### Coding Guidelines
-- Conform to ESLint, JSDoc comments, meaningful commit messages
-- Breaking changes for major version, feature additions for minor, fixes for patch
+### Development Environment Setup
+
+1. Clone the repository
+   ```bash
+   git clone https://github.com/hiro-nyon/cesium-heatbox.git
+   cd cesium-heatbox
+   ```
+
+2. Install dependencies
+   ```bash
+   npm install
+   ```
+
+3. Start development server
+   ```bash
+   npm run dev
+   ```
+
+### Coding Standards
+
+- Follow ESLint configuration guidelines
+- Add tests for new features
+- Add JSDoc comments to code
+- Write clear and concise commit messages
+
+### Testing
+
+Before making changes, ensure existing tests pass:
+
+```bash
+npm test
+```
+
+Add tests for new features or fixes. You can check test coverage with:
+
+```bash
+npm run test:coverage
+```
+
+### Documentation
+
+Update documentation as needed when making code changes. For API changes, update JSDoc comments and run `npm run docs` to regenerate API documentation.
 
 ### License
-- Contributions will be published under the MIT license.
+
+Contributions to this project are made under the [MIT License](../LICENSE). By submitting a pull request, you agree that your contributions will be published under this license.
+
+## 日本語
+
+CesiumJS Heatboxプロジェクトへの貢献を歓迎します。このガイドでは、貢献の方法と手順について説明します。
+
+## 貢献方法
+
+### バグ報告
+
+バグを見つけた場合は、GitHubのIssueトラッカーに報告してください。報告する際は以下の情報を含めてください：
+
+- バグの詳細な説明
+- 再現手順
+- 期待される動作と実際の動作
+- 環境情報（ブラウザ、OS、CesiumJSのバージョンなど）
+- 可能であれば、スクリーンショットや動画
+
+### 機能リクエスト
+
+新機能のアイデアがある場合は、GitHubのIssueトラッカーに提案してください。提案には以下の情報を含めると良いでしょう：
+
+- 機能の詳細な説明
+- ユースケースや解決する問題
+- 実装のアイデア（オプション）
+
+### プルリクエスト
+
+コードの変更や新機能の実装を行いたい場合は、以下の手順でプルリクエストを送ってください：
+
+1. リポジトリをフォークする
+2. 新しいブランチを作成する（`feature/your-feature-name` または `fix/your-fix-name`）
+3. 変更を実装する
+4. テストを追加または更新する
+5. コードスタイルを確認する（`npm run lint`）
+6. テストが通ることを確認する（`npm test`）
+7. 変更をコミットする
+8. フォークしたリポジトリにプッシュする
+9. プルリクエストを作成する
+
+## 開発環境のセットアップ
+
+1. リポジトリをクローンする
+   ```bash
+   git clone https://github.com/hiro-nyon/cesium-heatbox.git
+   cd cesium-heatbox
+   ```
+
+2. 依存関係をインストールする
+   ```bash
+   npm install
+   ```
+
+3. 開発サーバーを起動する
+   ```bash
+   npm run dev
+   ```
+
+## コーディング規約
+
+- ESLintの設定に従ってコードを書いてください
+- 新しい機能には必ずテストを追加してください
+- コードにはJSDocコメントを追加してください
+- コミットメッセージは明確で簡潔にしてください
+
+## テスト
+
+変更を加える前に、既存のテストが通ることを確認してください：
+
+```bash
+npm test
+```
+
+新しい機能や修正にはテストを追加してください。テストカバレッジは以下のコマンドで確認できます：
+
+```bash
+npm run test:coverage
+```
+
+## ドキュメント
+
+コードの変更に伴い、必要に応じてドキュメントを更新してください。APIの変更がある場合は、JSDocコメントを更新し、`npm run docs`を実行してAPIドキュメントを再生成してください。
+
+## ライセンス
+
+プロジェクトへの貢献は[MITライセンス](../LICENSE)の下で行われます。プルリクエストを送ることで、あなたの貢献がこのライセンスの下で公開されることに同意したものとみなします。
+

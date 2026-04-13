@@ -100,6 +100,18 @@ Coerce various input types to boolean while respecting common string representat
 | value | * |  |  | 値 |
 | fallback | boolean | <optional> | false | 未定義/無効値時のフォールバック |
 
+#### colorToCss()
+
+Legend UI component for Heatbox classification.
+
+#### computeSpatialIdEdgeCaseMetrics(adapter) → {Object}
+
+Compute SpatialIdEdgeCaseMetrics for a given adapter instance.
+
+| Name | Type | Description |
+|---|---|---|
+| adapter | Object | Loaded SpatialIdAdapter instance / 初期化済みSpatialIdAdapterインスタンス |
+
 #### createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMeters) → {Object}
 
 Create an axis-aligned bounding box from a centre point and edge length.
@@ -377,6 +389,12 @@ Warn once about deprecated feature
 
 #### ProfileName
 
+#### SpatialIdEdgeCaseMetrics
+
+#### TemporalDataEntry
+
+#### TemporalOptions
+
 
 ## 日本語
 
@@ -475,6 +493,20 @@ Auto Render Budgetをオプションに適用
 |---|---|---|---|---|
 | value | * |  |  | 値 |
 | fallback | boolean | <optional> | false | 未定義/無効値時のフォールバック |
+
+#### colorToCss()
+
+Heatboxの分類用凡例コンポーネント。
+
+#### computeSpatialIdEdgeCaseMetrics(adapter) → {Object}
+
+指定されたアダプタに対する SpatialIdEdgeCaseMetrics を計算します。
+主にテスト用の軽量なQAヘルパーであり、本番運用では明示的に呼び出さない限り
+メトリクスは計算されません。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| adapter | Object | Loaded SpatialIdAdapter instance / 初期化済みSpatialIdAdapterインスタンス |
 
 #### createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMeters) → {Object}
 
@@ -754,3 +786,9 @@ v0.1.5: batchMode 非推奨化と新機能バリデーションを追加。
 #### PerformanceOverlayConfig
 
 #### ProfileName
+
+#### SpatialIdEdgeCaseMetrics
+
+#### TemporalDataEntry
+
+#### TemporalOptions
