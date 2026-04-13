@@ -1,5 +1,100 @@
 # Cesium Heatbox リリースノート
 
+## バージョン 1.3.6（2026-04-13）
+
+**Wiki sync refresh / documentation release**
+
+### ハイライト
+- **Wiki sync refresh**: `npm run wiki:sync` が API リファレンスだけでなく `Home`、`Quick-Start`、`Getting-Started`、`API` などの主要 Wiki ページもまとめて再生成するようになりました。
+- **Trigger fix**: `src/` や版番号ファイルの変更でも Wiki 自動同期が走るようにし、コード更新後に Wiki の版情報や公開 API が古いまま残る問題を防ぎます。
+
+### 主な変更
+- `.github/workflows/wiki-sync.yml` のトリガー条件を拡張し、`tools/wiki-sync.js` に同期ロジックを集約しました。
+- `docs/wiki-maintenance.md` と `wiki/Publishing-to-GitHub-Wiki.md` を現行運用に合わせて更新しました。
+- 生成済み `wiki/` の API ページを `1.3.6` に再同期し、`createLegend` / `updateLegend` / `destroyLegend` など現行 API を反映しました。
+
+## バージョン 1.3.5（2026-04-07）
+
+**Version comparison demos / measured temporal follow-up**
+
+### ハイライト
+- **Measured version comparisons**: CDN 固定版の `1.2.1` / `1.3.4` を同条件で比較する observability / temporal デモを追加し、単一時点と時系列の両方で差分を確認できるようにしました。
+- **Temporal benchmark correction**: temporal 比較ページは `viewer.clock.currentTime` の反映完了を `totalEntities` 一致で待つようにし、`updateInterval=0` で時刻ジャンプ性能をより公平に比較できるようにしました。
+
+### 主な変更
+- `examples/observability/version-compare-demo.html` は `setData()` 完了まで待機するよう修正し、元ポイント表示切替と固定 seed データで `1.2.1` / `1.3.4` の描画比較を行えるようにしました。
+- `examples/temporal/version-compare-demo.html` は CZML + temporal slices を使い、`viewer.clock.currentTime` の時刻ジャンプごとの反映時間を `totalEntities` 一致ベースで比較できるようにしました。
+- `examples/observability/README.md` と `examples/temporal/README.md` に比較デモの入口を追加しました。
+
+### 計測メモ
+- 単一時点の local CDN 比較では、`desktop-balanced` / `voxelSize=80` 条件で定常更新時間が `1.2.1` 比で概ね `10-13%` 改善、`5000-10000 points` の初回 `setData` は概ね `17-19%` 改善でした。
+- temporal 比較では、`commute` シナリオ・`hours=0,12`・`updateInterval=0` の確認用ランで、平均時刻ジャンプ時間が `1566.20ms -> 569.55ms` と改善し、`1.3.4` 側で時間移動時の反映が速くなることを確認しました。
+- 上記は examples 上の実測値であり、環境・カメラ位置・voxelSize・scenario 構成によって変動します。
+
+## バージョン 1.3.4（2026-04-07）
+
+**Temporal example recovery / camera refresh fix**
+
+### ハイライト
+- **Temporal examples repaired**: `basic-temporal.html`、`global-vs-per-time.html`、`simulation.html`、`advanced-temporal.html` で共通に発生していた「時間は進むが voxel が出ない」症状を解消しました。
+- **Camera refresh**: `TimeController` がカメラ移動を検知して現在の time slice を再描画し、初回カリング後でも表示が回復するようにしました。
+
+### 主な変更
+- `examples/temporal/temporal-data.js` は `document.currentScript` 基準で CZML を解決し、examples の URL 解決ずれを避けるようにしました。
+- `RenderPlanner` の簡易カリングを Cesium の Cartesian 座標ベースへ寄せ、小さな `maxRenderVoxels` でも予算を過剰に持ち上げないように調整しました。
+- `TimeSlicer` は lazy loading 後に統計キャッシュを無効化し、`Heatbox.updateValues()` は bounds 外更新でフル再構築へ戻るよう調整しました。
+- `advanced-temporal.html` は初期スライスの明示描画、ポイントプレビュー、全高レイアウトを追加し、サンプル単体でも表示状態を追いやすくしました。
+
+## バージョン 1.3.3（2026-04-06）
+
+**Temporal example refresh / release metadata sync**
+
+### ハイライト
+- **Advanced temporal example**: `examples/temporal/advanced-temporal.html` を追加し、`interpolate` / `dataSource` / `useWorker` をブラウザ上で同時に確認できるようにしました。
+- **Version sync**: `package.json` と `src/index.js` を `1.3.3` に更新し、examples/API ドキュメントの版表記も揃えました。
+
+### 主な変更
+- Temporal examples の README と Examples overview を更新し、v1.3.x の時系列機能セットに合わせて説明を整理しました。
+- 新しいサンプルでは 2 時間刻みのアンカースライスと奇数時間帯のギャップを使い、補間と lazy loading の効き方を可視化します。
+- README / API ドキュメントの temporal セクションに `updateValues()`、`dataSource`、`useWorker` の役割を追記しました。
+
+## バージョン 1.3.2（2026-04-06）
+
+**Temporal interpolation / lazy loading / worker offload**
+
+### ハイライト
+- **Gap interpolation**: `temporal.interpolate` により、隣接スライス間の数値プロパティを補間できます。
+- **Lazy loading**: `temporal.dataSource` から必要な時点のスライスを遅延供給できます。
+- **Worker preprocessing**: `temporal.useWorker` で補間と時系列統計の前処理を worker へオフロードできます。
+
+### 主な変更
+- `TimeSlicer` が同期/非同期の両方の時系列参照経路を持ち、worker 非対応環境では自動でメインスレッドへフォールバックします。
+- `TimeController` は dataSource/useWorker が有効な場合に非同期経路を使い、時系列再生中の更新を維持します。
+
+## バージョン 1.3.1（2026-04-06）
+
+**Lightweight update API**
+
+### ハイライト
+- **`Heatbox.updateValues()`**: 同じ bounds/grid を維持できる更新では、フル再構築を避けて軽量更新を行います。
+
+### 主な変更
+- `TimeController` は `updateValues()` が利用可能な場合にそれを優先し、時系列同期時の再構築を削減します。
+
+## バージョン 1.3.0（2026-04-06）
+
+**Performance foundation / render planning / compatibility**
+
+### ハイライト
+- **差分更新レンダリング**: `GeometryRenderer` がボクセルキー単位の render record を保持し、全削除・全再生成ではなく add/update/remove を使うようになりました。
+- **描画計画の分離**: `RenderPlanner` を追加し、重要ボクセル優先、簡易 LoD、ビューポートカリングをレンダ本体から切り離しました。
+- **Cesium compatibility**: minimum supported を `^1.120.0` とし、CI で `cesium@^1.120.0` / `cesium@latest` の dual smoke test を実行します。
+
+### 主な変更
+- `DataProcessor` の voxel record は `count`、位置/境界、Spatial ID、aggregation 情報を中心とした compact 表現へ移行しました。
+- `GeometryRenderer` と `VoxelRenderer` の責務を整理し、描画候補生成と差分更新の分離を進めました。
+- README / API / ROADMAP を `1.3.0` の性能基盤スコープに合わせて更新しました。
+
 ## バージョン 0.1.15-alpha.4（2025-10-10）
 
 **Phase 4 ドキュメント & 品質保証アップデート（プレリリース）**

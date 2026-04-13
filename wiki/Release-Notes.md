@@ -1,201 +1,772 @@
-# Release Notes（リリースノート） / Release Notes
+# Changelog
 
-**日本語** | [English](#english)
+All notable changes to this project will be documented in this file.
 
-最新の変更はリポジトリの `CHANGELOG.md` を参照してください。ここでは主要トピックを抜粋します。
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 日本語
+## [1.0.0] - 2025-11-18
 
-## 0.1.15-alpha.3 (2025-10-10)
-- ADR-0011 Phase 4 を完了し、適応制御の最終調整を実装
-  - `adaptiveParams.zScaleCompensation` の既定を有効化
-  - `adaptiveParams.overlapDetection` による重なり診断と推奨モードの導入
-  - `outlineWidthRange` / `boxOpacityRange` / `outlineOpacityRange` の正規化を統一
-- `PerformanceOverlay` を拡張し、レンダリング時間・メモリ推定・適応メトリクスを表示
-- `profile` と `adaptiveParams` のドキュメント/型定義を整理、TypeScript 用 `types/index.d.ts` を更新
-- Wiki/ガイドを全面的に日英併記へ刷新
+初回安定版。`1.0.0-alpha.1` と同じ機能セットを正式リリースし、ドキュメント/QA を再確認しました。
 
-## 0.1.11 (2025-09-08)
-- ADR-0009 に基づく責務分離を完了（`VoxelRenderer` をオーケストレーションに特化）
-- 新コア: `ColorCalculator` / `VoxelSelector` / `AdaptiveController` / `GeometryRenderer`
-- Playground: i18n とアクセシビリティの改善、emulation-only モードの整備
-- ドキュメント: API/Wiki 自動生成の安定化、Source ページもMarkdown化
-- テスト: パフォーマンス受入は `PERF_TESTS=1` で任意実行、メモリの閾値調整（CIばらつき対策）
+### Added
+- **Classification engine (ADR-0016)**: `classification.scheme` で `linear`/`log`/`equal-interval`/`quantize`/`threshold` を宣言的に切替できる新しい分類システムをコアに統合。`classification.colorMap` や `classificationTargets.color` を通じて `VoxelRenderer` の色判定に優先される（`colorResolver` が無い場合）。
+- **simple-statistics backend**: `src/utils/classificationBackend.js` で quantile/summary を `simple-statistics` に委譲し、`DataProcessor` の統計 (`HeatboxStatistics.classification`) に分位点・ヒストグラム・breaks を収集。
+- **Advanced example**: `examples/advanced/classification-demo.html` に5スキーム比較UIを追加し、Viridis を既定パレットとしてスキーム切替・stats表示がブラウザのみで再現可能。
+- **Performance QA**: `test/performance/classification-performance.test.js` を追加し、分類オン/オフの処理時間上昇 ≤15％・メモリ増 ≤20％ とスケーリング（500→2000件で<3.5x）を自動検証。
 
-参考: ADR-0009（VoxelRenderer責任分離） `docs/adr/ADR-0009-voxel-renderer-responsibility-separation.md`
+### Changed
+- `Heatbox.createFromEntities` と `VoxelRenderer` が分類オプションを尊重し、`_getVoxelColor` の優先順位を `colorResolver > classification > legacy` と定義。
+- `validation.js` に `classification` 正規化を追加し、しきい値スキームや `classificationTargets` を検証。`DEFAULT_OPTIONS` に `classification` を追加。
+- `docs/API.md`/`README.md`/`MIGRATION.md`/`examples/README.md` で v1.0.0 の分類機能・使い方・移行ノートを記述。
 
-## 0.1.10 (2025-09-04)
-- 内部リファクタリング・モジュール化の段階実施。公開APIは互換維持。
-  - 選択戦略/推定/視点調整の外部化とI/F明確化、`VoxelRenderer`の役割縮小の準備
-- ドキュメント: ADR-0007/0008 を追加（最終的に 0009 に置換）。MIGRATION 計画を文書化（実運用は 0.1.11 へ統合）。
+### Fixed
+- `examples/advanced/classification-demo` が設定反映・統計表示・Viridis 初期化を確実に行うよう修正し、UI操作と描画の同期を改善。
 
-参考: ADR-0007（v0.1.10 リファクタ） `docs/adr/ADR-0007-v0.1.10-refactoring-modularization.md`  /  ADR-0008（API整理案） `docs/adr/ADR-0008-v0.1.10-refactor-and-api-cleanup.md`
+## [1.0.0-alpha.1] - 2025-11-18
 
-## 0.1.9 (2025-08-30)
+### Added
+- **Classification engine (ADR-0016)**: `classification.scheme` で `linear`/`log`/`equal-interval`/`quantize`/`threshold` を宣言的に切替できる新しい分類システムをコアに統合。`classification.colorMap` や `classificationTargets.color` を通じて `VoxelRenderer` の色判定に優先される（`colorResolver` が無い場合）。
+- **simple-statistics backend**: `src/utils/classificationBackend.js` で quantile/summary を `simple-statistics` に委譲し、`DataProcessor` の統計 (`HeatboxStatistics.classification`) に分位点・ヒストグラム・breaks を収集。
+- **Advanced example**: `examples/advanced/classification-demo.html` に5スキーム比較UIを追加し、Viridis を既定パレットとしてスキーム切替・stats表示がブラウザのみで再現可能。
+- **Performance QA**: `test/performance/classification-performance.test.js` を追加し、分類オン/オフの処理時間上昇 ≤15％・メモリ増 ≤20％ とスケーリング（500→2000件で<3.5x）を自動検証。
+
+### Changed
+- `Heatbox.createFromEntities` と `VoxelRenderer` が分類オプションを尊重し、`_getVoxelColor` の優先順位を `colorResolver > classification > legacy` と定義。
+- `validation.js` に `classification` 正規化を追加し、しきい値スキームや `classificationTargets` を検証。`DEFAULT_OPTIONS` に `classification` を追加。
+- `docs/API.md`/`README.md`/`MIGRATION.md`/`examples/README.md` で v1.0.0 の分類機能・使い方・移行ノートを記述。
+
+### Fixed
+- `examples/advanced/classification-demo` が設定反映・統計表示・Viridis 初期化を確実に行うよう修正し、UI操作と描画の同期を改善。
+
+## [Unreleased]
+
+## [1.3.6] - 2026-04-13
+
+### Changed
+- Wiki 同期フローを更新し、`npm run wiki:sync` が JSDoc 生成物に加えて主要 Markdown ページも `wiki/` へ同期するようにしました。
+- `wiki-sync` の GitHub Actions を `src/`、`package.json`、`jsdoc.config.json`、`tools/wiki-sync.js` の変更でも起動するように修正し、API 更新後に Wiki が古いまま残る問題を防止しました。
+- `docs/wiki-maintenance.md` と生成済み `wiki/` ページを現行の `v1.3.6` 状態へ再同期しました。
+
+## [1.3.4] - 2026-04-07
+
+### Fixed
+- temporal examples で初回表示やカメラ移動後に voxel が空のまま残る問題を修正しました。
+- `TimeController` がカメラ変更時に現在の time slice を再描画するようにし、`RenderPlanner` のカリング後でも表示が回復するようにしました。
+- `examples/temporal/temporal-data.js` の CZML パス解決をページ URL 非依存に修正し、examples 配下での読み込み失敗を防止しました。
+- `TimeSlicer` は lazy-loaded entry を統合した際に global stats cache を破棄するようになりました。
+- `Heatbox.updateValues()` の bounds 再利用判定を保守的に見直し、既存グリッドを不正に再利用しないようにしました。
+- `examples/temporal/advanced-temporal.html` は初期スライス描画、ポイントプレビュー、全高レイアウトを追加し、ロード直後から表示状態を確認しやすくしました。
+
+## [1.3.3] - 2026-04-06
+
+### Added
+- `examples/temporal/advanced-temporal.html` を追加し、`temporal.interpolate` / `temporal.dataSource` / `temporal.useWorker` を単一画面で確認できるようにしました。
+
+### Changed
+- `package.json`、`package-lock.json`、`src/index.js` の版番号を `1.3.3` に更新しました。
+- `examples/README.md`、`examples/temporal/README.md`、`docs/API.md` を現行の時系列機能セットに合わせて更新しました。
+- `README.md` と `README.ja.md` の temporal セクションに `useWorker` と時系列デモ構成の説明を追記しました。
+
+## [1.3.2] - 2026-04-06
+
+### Added
+- `temporal.interpolate` を実装し、スライス間ギャップの数値プロパティ補間を追加しました。
+- `temporal.dataSource` を実装し、遅延ロードで時系列スライスを供給できるようにしました。
+- `temporal.useWorker` を実装し、補間と時系列統計の前処理を worker へオフロードできるようにしました。
+
+### Changed
+- `TimeController` と `TimeSlicer` を非同期時系列経路に対応させ、worker 非対応環境ではメインスレッドへフォールバックするよう整理しました。
+- README / MIGRATION / ROADMAP / API docs を `v1.3.2` の temporal 拡張内容に合わせて更新しました。
+
+## [1.3.1] - 2026-04-06
+
+### Added
+- `Heatbox.updateValues(entities, runtimeOptions?)` を追加し、既存 bounds/grid を再利用できる更新を軽量化しました。
+
+### Changed
+- `TimeController` は `updateValues()` を優先利用し、時系列更新時の再構築コストを削減するようになりました。
+
+## [1.3.0] - 2026-04-06
+
+### Added
+- `RenderPlanner` を追加し、描画優先度制御、簡易LoD、ビューポートカリングを分離。
+- CI に `cesium@^1.120.0` / `cesium@latest` の dual smoke test を追加。
+
+### Changed
+- `DataProcessor` の voxel record から `entities` 配列保持を削除し、compact な内部表現へ変更。
+- `GeometryRenderer` を差分更新型に変更し、ボクセルキー単位の add/update/remove を実装。
+- 互換性ポリシーを整理し、minimum supported Cesium を `^1.120.0` と明記。
+
+### Fixed
+- レンダ/クリア反復時の不要なエンティティ再生成を抑制し、ヒープ増分の回帰を起こしにくい構成へ修正。
+
+## [1.1.0] - 2025-11-19
+
+### Changed
+- 1.1.0-alpha.1 の分類拡張（quantile/jenks、multi-target、Legend UI）を安定化し、テスト/ドキュメントを確認した上で正式リリース。
+- DataProcessor の統計出力と分類ターゲットまわりのQAを再確認し、回帰が無いことを確認。
+
+### Fixed
+- 1.1.0-alpha.1 時点の分類拡張の微細なドキュメント差異を修正。
+
+## [1.1.0-alpha.1] - 2024-11-19
+
+### Added
+- Classification extension (quantile/jenks) with multi-target control (color/opacity/width) and Legend UI.
+- DataProcessor statistics now expose quantiles (Q1–Q4), jenks breaks, and ckmeans clusters.
+- New advanced examples: `classification-extension-demo` and `emulation-opacity-demo`.
+
+### Changed
+- Performance tests cover v1.1.0 classification targets to guard regressions.
+
+### Fixed
+- Emulation polylines inherit classified outline opacity; legend updates preserve options and Heatbox destroy cleans legend.
+
+> **Note**: 将来の予定・ロードマップは [ROADMAP.md](ROADMAP.md) および [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で管理されています。
+
+## [0.1.18] - 2025-11-18
+
+### Added
+- **Layer aggregation pipeline**: `Heatbox` の `aggregation` オプションでレイヤカテゴリ別にボクセルを集計し、`layerStats`/`layerTop`/`layers`（トップN）などの統計を取得できるようにしました。プロパティベースと `keyResolver` の両方をサポートし、ピッキング説明文にもレイヤ構成を表示できます。
+- **Examples & ADR**: `examples/aggregation/*` と `docs/adr/ADR-0014-v0.1.18-voxel-layer-aggregation.md` を追加し、単一/複数ソースのユースケースや推奨値を示しました。
+- **Helper utilities**: `src/utils/cesiumProperty.js`、`src/utils/escapeHtml.js` を追加し、レイヤ統計の整形と Cesium Property ラッパーを共通化しました。
+
+### Changed
+- **DataProcessor / GeometryRenderer**: レイヤ集計のために内部データ構造を拡張し、グローバル統計とピッキング説明を自動生成するよう更新しました。
+- **Validation & constants**: 参照テーブルを拡充し、`aggregation.topN` や `aggregation.byProperty` などの検証を強化しました。
+- **テスト**: `test/core/aggregation.test.js`、`test/integration/aggregation.test.js`、`test/performance/aggregation-performance.test.js` を追加/拡張し、層別集計の回帰・性能を担保しました。
+
+### Documentation
+- README/Wiki にレイヤ集計ガイドを追記し、日本語/英語のコード例、ベストプラクティス、Spatial ID セットアップガイドを更新しました。
+
+## [0.1.15-alpha.4] - 2025-10-10
+
+### Added
+- **品質検証の自動化**: `test/integration/quality-assurance.test.js` を追加し、適応制御の受け入れ基準を自動検証。
+- **ベンチマーク強化**: `tools/benchmark.js` に適応メトリクス（`denseAreaRatio`, `avgOutlineWidth`, `emulationUsage` など）と `--adaptive` フラグを追加。
+- **回帰テストスクリプト**: `tools/adr0011/phase4-baseline.js` を新規追加し、Phase 1 との性能比較レポートを自動生成。
+
+### Changed
+- `src/Heatbox.js` を中心に JSDoc を日英併記へ拡充し、API リファレンス記述を整理。
+- 検証ロジック（`utils/validation.js`）を調整し、境界値入力での RangeError を防止。
+- `tools/build-types.js` の出力整理と生成速度を改善。
+
+### Documentation
+- `wiki/Guides-Performance.md` に適応制御チューニング手順を追加。
+- `wiki/Troubleshooting.md` を刷新し、FAQ 10件を追加。
+- API ドキュメント全体を更新し、表レイアウト崩れを解消。
+
+### Notes
+- Phase 4 ベースライン測定により、Phase 1 から性能劣化がないことを確認。
+- ADR-0011 Phase 4 の成果を `CHANGELOG.md` / `RELEASE_NOTES.md` に反映。
+
+## [0.1.15] - 2025-10-10
+
+**ADR-0011: 適応的表示の核・視認性最適化の仕上げ（Phase 4: ドキュメント・品質保証完了）**
+
+v0.1系における適応的可視化機能の仕上げバージョン。Phase 0-3で実装された適応制御の基盤に対し、Phase 4ではドキュメント整備・ツール拡張・品質保証を実施し、v1.0.0への移行準備を完了しました。
+
+### Added
+- **ドキュメント強化**
+  - `wiki/Guides-Performance.md` に適応制御のチューニングセクションを追加（データ特性診断・プロファイル選択・パラメータ調整優先順位・視認性検証・コード例3件）
+  - `wiki/Troubleshooting.md` に適応制御FAQ 10項目を追加（各項目200-300語、診断・解決策のコード例付き）
+- **ツール拡張**
+  - `tools/benchmark.js` に適応制御メトリクス（`denseAreaRatio`, `avgOutlineWidth`, `emulationUsage` 等）を追加、`--adaptive` フラグで詳細出力対応
+  - `tools/adr0011/phase4-baseline.js` を作成し、Phase 1 との比較測定を実施（性能劣化なしを確認）
+- **テスト拡充**
+  - `test/integration/quality-assurance.test.js` に適応制御の受け入れ基準テスト（視認性・TopN・モード切替・優先順位・パフォーマンス・エッジケース・統合）を追加
+
+### Changed
+- `test/utils/performanceOverlay.test.js` のlintエラーを修正（unused variable, missing global）
+
+### Fixed
+- validation.js の数値計算で発生しうる RangeError を修正（正規化処理の端数・境界値で例外となるケースを解消）
+
+### Performance
+- Phase 4 ベースライン測定により、Phase 1 から性能劣化なし（全デルタ +0.000）を確認
+- 適応制御の計算時間増加 ≤ +15%、メモリ使用量増加 ≤ +10% の要件を満たしていることを検証
+
+### Documentation
+- ADR-0011 Phase 4 完了を記録、実施結果テーブルを追加
+- 受け入れ基準（機能・パフォーマンス・品質・ドキュメント）をすべて達成
+- v1.0.0移行準備完了
+
+## [0.1.14] - 2025-09-14
+
+本リリースでは v0.1.13 の互換方針を拡張し、outline 幅の resolver 互換も復元しました。API破壊はありません。
+
+### Changed
+- validation: `outlineWidthResolver` を「警告は出すが削除しない」挙動へ変更（関数でない値は無効化）。
+- docs(ROADMAP): Resolver を宣言的API（adaptive ranges / classification）で置き換える計画を詳細化。
+  - AdaptiveController の補間は classification と同一ロジック（linear/log/quantize/threshold/quantile/jenks 等）を共有する方針を明記。
+- docs(AGENTS/MIGRATION): 代替実装が安定提供されるまで Resolver を削除しないポリシーを再掲・強調。
+
+### Notes
+- Resolver API は引き続き非推奨です。`adaptiveParams.*Range` と将来の `classification.*` へ段階的に移行してください。
+
+## [0.1.13] - 2025-09-14
+
+緊急パッチ。v1.0.0へ向けたAPI整理の過程で resolver（box/outline opacity）が正規化段階で削除されるため、密度ベースの不透明度制御が使えないケースが発生していました。本リリースでは、非推奨の警告は維持しつつ、削除せずに通過させる互換挙動へ戻します。
+
+### Changed
+- validation: `boxOpacityResolver` / `outlineOpacityResolver` を「警告は出すが削除しない」挙動に変更。関数でない値が来た場合のみ無効化。
+
+### Fixed
+- Playground/Quick Start の密度ベース不透明度シナリオが再び機能する（resolver 経由）。
+
+### Docs
+- ROADMAP: 「AdaptiveController で `boxOpacityRange`/`outlineOpacityRange` を実装し終えるまで resolver を絶対に削除しない」強い方針を明記。
+- MIGRATION: resolver は v1.0.0 で削除予定だが、実装完了までは維持する注記を追加。
+
+## [0.1.12] - 2025-09-14
+
+本リリースは 0.1.12-alpha.11 ～ 0.1.12-alpha.13 の安定化変更を取り込み、描画と自動カメラ調整の競合、適応制御・エミュレーション経路の安全性、ジオメトリ生成の堅牢性を高めました。
+
+### Fixed
+- 自動カメラ調整（fitView）
+  - `viewer.scene.postRender` で一回だけ実行する方式に変更し、描画とカメラ移動が同フレームで競合して発生しうる RangeError を回避。
+  - Rectangle→BoundingSphere に基づく安定ズームへ切替（`camera.flyToBoundingSphere` + `HeadingPitchRange`）。
+  - 俯角は安全範囲にクランプ（既定: -35°, 範囲: [-85°, -10°]）。失敗時は `viewer.zoomTo(entities)` にフォールバック。
+- 太線エミュレーション経路の誤作動を排除
+  - 標準表示ではエミュレーション・エッジ（ポリライン）を生成しない（`outlineRenderMode==='emulation-only'` または `emulationScope!=='off'` の場合のみ生成）。
+- 適応制御（Adaptive）
+  - `'adaptive'`/`'topn-focus'` の線幅を安全範囲にクランプ（最小1.0、最大3.0倍相当）。
+- GeometryRenderer の堅牢化
+  - `box.outline=false` の場合は `outlineColor/outlineWidth` を設定しない。
+  - Inset outline の `outlineWidth` を常に >= 1 にクランプ。
+  - 厚みフレーム生成でゼロ/負厚みを検出してスキップ。座標・オフセットも保守的に検証。
+- validation:
+  - `outlineInsetMode: 'off'` をレガシーエイリアスとして `'none'` に正規化し、`'all'|'topn'|'none'` を許容。
+
+### Changed
+- 公開APIの変更なし。`fitViewOptions`（`headingDegrees`/`pitchDegrees`/`paddingPercent`）はそのまま尊重。
+
+## [0.1.12-alpha.13] - 2025-09-14
+
+### Fixed
+- fitView の実行を `viewer.scene.postRender` で1回だけ行う方式に変更し、描画とカメラ移動が同フレームで競合して発生しうる RangeError を回避。
+- Rectangle→BoundingSphere に基づく安定ズームへ切り替え（`camera.flyToBoundingSphere` + `HeadingPitchRange`）。
+  - 俯角は安全範囲にクランプ（既定: -35°, 範囲: [-85°, -10°]）。
+  - 失敗時は `viewer.zoomTo(viewer.entities)` へフォールバック。
+
+### Changed
+- 公開APIの変更なし。`fitViewOptions`（`headingDegrees`/`pitchDegrees`/`paddingPercent`）はそのまま尊重。
+
+## [0.1.12-alpha.12] - 2025-09-14
+
+### Fixed
+- 標準表示時に太線エミュレーションのエッジ・ポリラインが誤って生成される可能性を排除。
+  - `outlineRenderMode==='emulation-only'` または `emulationScope!=='off'` の場合のみ、エミュレーション・エッジを生成。
+
+## [0.1.12-alpha.11] - 2025-09-14
+
+### Fixed
+- AdaptiveController: `'adaptive'`/`'topn-focus'` の線幅を安全範囲にクランプ（最小1.0、最大3.0倍相当）。
+- GeometryRenderer の堅牢化:
+  - `box.outline=false` の場合は `outlineColor/outlineWidth` を設定しない。
+  - Inset outline の `outlineWidth` を常に >= 1 にクランプ。
+  - 厚みフレーム生成でゼロ/負厚みを検出してスキップ。座標オフセットも保守的に検証。
+- VoxelRenderer: `emulationScope='off'` のとき、adaptive制御から太線エミュレーションが有効化されないようガード。
+- validation: `outlineInsetMode: 'off'` をレガシーエイリアスとして `'none'` に正規化し、`'all'|'topn'|'none'` を許容。
+
+### Notes
+- これらの変更は公開APIに影響を与えず、レンダリングの安定性を高めるための内部修正です。
+
+## [0.1.12-alpha.6] - 2025-09-14
+
+### Changed
+- Auto Render Budget をより保守的な上限に調整（Safari/モバイル環境では追加の上限キャップを適用）。
+
+### Notes
+- GH Pages（Quick Start/Playground）での大量エンティティ生成時の安定性を向上。
+
+## [0.1.12-alpha.7] - 2025-09-14
+
+### Fixed
+- ESLint ビルドエラーを解消（createInsetOutline で安全化値を使用、空の catch を回避）。
+
+### Changed
+- 0.1.12-alpha.6 の調整を踏まえて再タグ（ビルド通過版）。
+
+## [0.1.12-alpha.8] - 2025-09-14
+
+### Changed
+- CI build 通過後のバージョン更新（安定化反映のプレリリース）。
+
+## [0.1.12-alpha.4] - 2025-09-13
+
+### Added
+- 観測可能性 (Phase 2): パフォーマンスオーバーレイを実装（`viewer.scene.postRender` にフック、`updateIntervalMs` スロットリング）。
+- ランタイム制御 API: `setPerformanceOverlayEnabled`/`togglePerformanceOverlay`/`showPerformanceOverlay`/`hidePerformanceOverlay` を追加。
+- プロファイル機能 (Phase 2): `Heatbox.listProfiles()`/`Heatbox.getProfileDetails()` と `profile` オプション、`getEffectiveOptions()` を追加。
+
+### Changed
+- 移行/正規化 (Phase 3):
+  - `outlineEmulation` → `outlineRenderMode` + `emulationScope` への統合マッピングを強化。
+  - `fitViewOptions.pitch/heading` → `pitchDegrees/headingDegrees` へ移行（旧名は警告のみ）。
+  - `outlineWidthPreset` の旧名（`uniform`/`adaptive-density`/`topn-focus`）を `medium`/`adaptive`/`thick` に統一。
+- プロファイル適用順序を明確化（`defaults ← profile ← user`）。
+- ドキュメント整備 (Phase 3/4): README/MIGRATION/ADR/Wiki を v0.1.12 に同期、英語サマリを追加。
+- バージョンを `0.1.12-alpha.4` に更新。
+
+### Fixed
+- テスト安定化 (Phase 4): Claude の変更を取り込み、移行シナリオ/警告マッチングを堅牢化。Viewer モックを強化し `isValidViewer` を満たすよう修正。
+- CI ばらつき対策: 環境依存の重いスイート（perftest/QA）をデフォルト実行から除外（必要時のみ別ジョブで実行）。
+
+### Docs
+- MIGRATION.md を追加し v0.1.11→v0.1.12 の移行手順とコード例を整理。
+- Wiki/API を再生成・同期。README の旧API表記を新APIへ更新（`outlineRenderMode`/`emulationScope`、`pitchDegrees`/`headingDegrees`）。
+
+## [0.1.11] - 2025-09-08
+
+### Added
+- ADR-0009 Orchestration Architecture 完了（`VoxelRenderer` をオーケストレーションに特化）
+  - 新コア: `ColorCalculator`（色計算）, `VoxelSelector`（選択戦略）, `AdaptiveController`（適応制御）, `GeometryRenderer`（描画/エンティティ管理）
+- Playground の国際化・アクセシビリティ改善（i18n属性/ARIA、emulation-only モード強化）
+- JSDoc → Wiki 変換の安定化（SourceページのMarkdown化、英語/日本語セクションの自動抽出）
+
+### Changed
+- プレリリース表記（-alpha）を安定版 0.1.11 に更新（README/テスト/コード内の表記整合）
+- パフォーマンス受け入れテストを `PERF_TESTS=1` 指定で任意実行に変更（環境揺らぎ対策）
+- メモリしきい値をCIばらつきに合わせて調整（テストをグリーン化）
+
+### Fixed
+- ESM向けJSDocビルド設定（jsdoc.config.json: `source.type = 'module'`）
+- Wiki自動生成で Source ページや英語セクションが空になる問題（変換ロジックを改良）
+
+### Removed
+- MIGRATION.md（0.1.10 は破棄のため移行ガイドは不要。変更点は Release Notes / ADR を参照）
+
+### References
+- ADR-0009: `docs/adr/ADR-0009-voxel-renderer-responsibility-separation.md`
+- ADR-0006（v0.1.9 設計）: `docs/adr/ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md`
+
+## [0.1.10] - 2025-09-04
+
+> 内部リファクタリングおよびモジュール化の段階実施版。最終設計は 0.1.11 の ADR-0009 で確定。
+
+### Changed
+- モジュール分割の準備と段階導入（描画周辺の責務整理）
+  - 選択戦略・推定・視点調整の外部化とI/F明確化（テスト整備）
+  - `VoxelRenderer` の責務を縮小しやすい構造へ移行（オーケストレーション化の前段）
+- 公開APIは互換維持（Breakingは見送り、0.1.11で最終化）
+
+### Docs
+- ADR更新（ADR-0007/0008 の策定と置換関係の明記）
+- MIGRATION計画を文書化（実運用は 0.1.11 に統合）
+
+### References
+- ADR-0007: `docs/adr/ADR-0007-v0.1.10-refactoring-modularization.md`
+- ADR-0008: `docs/adr/ADR-0008-v0.1.10-refactor-and-api-cleanup.md`
+
+## [0.1.9] - 2025-08-30
+
+### Added
 - 適応的レンダリング制限（選抜戦略の拡張）
   - `renderLimitStrategy: 'density'|'coverage'|'hybrid'`
-  - `minCoverageRatio`, `coverageBinsXY('auto'|number)`
-- 自動ボクセルサイズ強化（占有率ベース）: `autoVoxelSizeMode: 'occupancy'`, `autoVoxelTargetFill`
-- Auto Render Budget: `renderBudgetMode: 'auto'|'manual'`（端末ティアに応じて上限を初期化）
-- スマート視覚化支援: `autoView: true`, `fitView(bounds, options)` 公開
+  - `minCoverageRatio`（hybrid用の層化抽出比率）、`coverageBinsXY`（層化ビン数 `'auto'` | number）
+- 自動ボクセルサイズ強化（占有率ベース）
+  - `autoVoxelSizeMode: 'basic'|'occupancy'`, `autoVoxelTargetFill`
+- 端末ティアに応じたレンダリング上限（Auto Render Budget）
+  - `renderBudgetMode: 'auto'|'manual'`（端末に応じて `maxRenderVoxels` を初期化）
+- スマート視覚化支援
+  - `autoView: true` で自動視点調整を有効化、`fitView(bounds, options)` を公開
 
-参考: ADR-0006（v0.1.9） `docs/adr/ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md`
+### Enhanced
+- `getStatistics()` に選抜戦略やクリップ数などの統計を拡充
+- 疎密混在データでの視覚的カバレッジを改善（hybrid/coverage 戦略）
 
-## 0.1.5 (2025-08-25)
-- デバッグ: `debug.showBounds` で境界ボックス表示を明示的に制御（`debug` は boolean | object）
-- カラーマップ: `colorMap: 'viridis' | 'inferno'`、発散配色 `diverging`/`divergingPivot`
-- 強調表示: `highlightTopN` と `highlightStyle` で上位Nボクセルを強調
-- 非推奨: `batchMode` はDeprecated（互換性のため受理するが無視。将来削除）
-- ドキュメント: README / API / Wiki を v0.1.5 に同期
+### Docs
+- チューニング指針（戦略/比率/上限の目安）をドキュメント/Examples/Wikiに追記
 
-## 0.1.4 (2025-08-24)
-- 新機能: `autoVoxelSize` によるボクセルサイズ自動決定（`voxelSize` 未指定時）
-- 統計/デバッグ拡充: `HeatboxStatistics` と `getDebugInfo()` に自動調整の詳細を追加
-- 仕様明確化: 実描画寸法は各軸の実セルサイズ `cellSizeX/Y/Z` を使用する旨を明記
-- 不具合修正: 分母ゼロ安全化と寸法計算の是正で隣接ボクセルの重なりを解消
-- ドキュメント: API/Getting Started/Examples を v0.1.4 内容に同期
+### References
+- ADR-0006: `docs/adr/ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md`
 
-## 0.1.3 (2025-01-22)
-- 統計の整合性: `renderedVoxels` を実描画数と一致させる修正
-- デバッグ制御: `debug` オプションでログ出力や境界表示を制御
-- 互換性/サンプル: UMD対応の高度な例と日本語UI統一、CDN整合
-- 細かな修正: 選択イベント情報の取得や未使用コードの整理 等
+## [0.1.8] - 2025-08-30
 
-## 0.1.2 (2025-10-05)
-- **視認性改善**: `wireframeOnly`オプションで枠線のみ表示、重なったボクセルが見やすく
-- **高さベース表現**: `heightBased`オプションで密度を高さで視覚化
-- **UI拡張**: Playgroundに新しい表示オプションを追加
-- **テスト整備**: シンプル化されたAPIに対応したテストケース更新
+### Added
+- **完全バイリンガル対応**: 全ドキュメントとソースコードの日英併記対応
+  - 全 docs/ ファイル（API.md, contributing.md, development-guide.md など）を「English → 日本語」構造に統一
+  - 各ページ先頭に言語切替リンク（[English](#english) | [日本語](#日本語)）を追加
+  - 包括的な英語翻訳：技術仕様、開発ガイド、API仕様、貢献ガイドなど全セクション
+- **ソースコード国際化**: 全 JSDoc コメントの英日併記対応
+  - メインクラス（Heatbox.js）とコアモジュール（CoordinateTransformer, DataProcessor, VoxelGrid, VoxelRenderer）
+  - ユーティリティモジュール（constants.js, logger.js, validation.js）とエントリーポイント（index.js）
+  - パラメータ、戻り値、メソッド説明を「English description / 日本語説明」形式で併記
+- **Wiki自動化の国際化対応**: tools/wiki-sync.js の大幅拡張
+  - JSDoc → Markdown 変換時の自動バイリンガル構造生成
+  - API Reference インデックスページの日英併記対応
+  - テーブルヘッダー（Name/型, Type/型 など）の自動翻訳機能
 
-## 0.1.1 (2025-08-20)
-- **レンダリング実装の変更**: PrimitiveベースからEntityベースへ移行
-- **互換性の向上**: Cesium 1.132との完全互換性を確保
-- **エラー処理の強化**: エンティティの削除と表示/非表示切り替えでのエラー処理改善
-- **デバッグ支援**: バウンディングボックス表示と詳細ログ出力
+### Enhanced
+- **ドキュメント構造統一**: 全9個の docs/ ファイルで一貫したバイリンガル形式を採用
+  - 言語順序の統一：常に English → 日本語 の順序
+  - セクション識別子の統一：`## English` と `## 日本語` で明確に区分
+  - ナビゲーション統一：各ページに `[English](#english) | [日本語](#日本語)` リンク
+- **ADR（Architecture Decision Records）整合性**: 不整合だったADRファイル一覧を修正
+  - docs/adr/README.md に ADR-0003, ADR-0004, ADR-0005 を正式に追加
+  - 全ADRのステータス情報を最新状態に同期
+- **README.md国際化**: 既存のバイリンガル構造を維持しつつ品質向上
+  - 特徴比較、インストール方法、使用例の英語セクション充実
 
-## 0.1.0 (2025-09-15)
-- 安定版リリース（alpha から移行）
-- CI（GitHub Actions）導入、ツリーシェイキング対応
-- README/設定の整理、重複設定の解消
+### Documentation
+- **開発者向けドキュメント**: 英語翻訳による国際的な開発者サポート強化
+  - Quick Start Guide: 10-15分セットアップガイドの英語版
+  - Development Guide: 初心者向け開発ガイドの包括的英語翻訳
+  - Git & NPM Reference: コマンドリファレンスの英語版
+  - Legend Implementation Guide: カスタム凡例実装の英語版
+- **API仕様**: 全てのクラス・メソッド・パラメータの英語説明追加
+  - TypeScript型定義情報の英語解説
+  - エラーハンドリング、パフォーマンス要件の英語ドキュメント
+  - 実装ガイドライン、制約事項の英語版
 
-## 0.1.0-alpha.3
-- 新規 API 追加: `createFromEntities`, `getOptions`, `getDebugInfo`, `Heatbox.filterEntities`
-- Jest 設定の安定化、JSDoc/型定義生成スクリプト整備
-- ESM/UMD エントリーポイント整理、外部モジュール扱い調整
+### Technical
+- **Wiki自動同期機能拡張**: バイリンガル対応による生成品質向上
+  - 日本語テキスト自動判定機能（`isJapanese()` 関数）
+  - 言語別セクション生成の自動化
+  - API Reference インデックスのバイリンガル構造自動生成
+- **型定義国際化**: JSDoc コメントの英日併記による TypeScript 支援向上
+- **保守性向上**: 統一されたドキュメント構造による保守コスト削減
 
-## 0.1.0-alpha.2 / alpha.1
-- 初期実装、基本ボクセル可視化と統計
-- 仕様・開発ガイド・クイックスタートの追加
+### Compatibility
+- **Non-breaking**: 全ての変更は後方互換性を維持（APIに変更なし）
+- **国際対応**: 日本語ユーザーの既存ワークフローを完全保持
+- **開発環境**: 既存の開発・ビルドプロセスに影響なし
 
-## 取得・ビルド手順
+## [0.1.7] - 2025-08-26
 
-```bash
-git clone https://github.com/hiro-nyon/cesium-heatbox.git
-cd cesium-heatbox
-npm install
-npm run build:umd
-```
+### Added
+- **適応的枠線制御**: 近傍密度、TopN/選択、カメラ距離、重なりリスクに応じた自動調整
+  - `adaptiveOutlines: true` で適応的制御を有効化（オプトイン）
+  - `outlineWidthPreset` でプリセット選択（'uniform', 'adaptive-density', 'topn-focus'）
+  - 近傍密度計算、カメラ距離補正、重なりリスク考慮の自動パラメータ調整
+- **表示モード拡張**: `outlineRenderMode` で描画方式を制御
+  - 'standard': 既存の標準モード（デフォルト）
+  - 'inset': インセット枠線主体の表示
+  - 'emulation-only': エミュレーション専用（標準枠線・インセットなし）
+- **透明度resolver**: カスタム透明度制御機能
+  - `boxOpacityResolver: (ctx) => number(0-1)` でボックス透明度制御
+  - `outlineOpacityResolver: (ctx) => number(0-1)` で枠線透明度制御
+  - 優先順位: resolver > 適応的パラメータ > 固定値
 
-詳細は Getting Started / Quick Start ページを参照してください。
+### Enhanced
+- **優先順位システム**: ユーザーresolverが指定された場合は適応ロジックは補助的に動作
+- **安全域クランプ**: 透明度（0-1）、インセット量、線太さの範囲を安全域でクランプ
+- **エラーハンドリング**: resolver実行時の例外を適切にキャッチしフォールバック値を使用
+- **Examples更新**: basic/index.htmlに適応的表示UIとエミュレーション専用トグルを追加
 
-> 詳細は `CHANGELOG.md` を参照してください。
+### Technical
+- **適応的制御パラメータ**: neighborhoodRadius, densityThreshold, cameraDistanceFactor, overlapRiskFactor
+- **性能最適化**: 適応ロジックのオーバーヘッドを<5%に抑制（事前計算・キャッシュ活用）
+- **インセット制御拡張**: _createInsetOutline でインセット量のオーバーライド対応
+- **テスト追加**: v0.1.7新機能の包括的テストケース追加
 
-## English
+### API Changes
+- `DEFAULT_OPTIONS` に v0.1.7 の新オプションを追加
+- `VoxelRenderer._calculateAdaptiveParams()` メソッド追加
+- Examples UI に v0.1.7 制御パネル追加
 
-### v0.1.15-alpha.3 (2025-10-10)
-- Completed ADR-0011 Phase 4, finalising adaptive visualisation
-  - Enabled `adaptiveParams.zScaleCompensation` by default
-  - Added `adaptiveParams.overlapDetection` to surface recommended outline modes
-  - Unified normalisation for `outlineWidthRange`, `boxOpacityRange`, `outlineOpacityRange`
-- Expanded `PerformanceOverlay` with render time, memory estimates, and adaptive metrics
-- Refined `profile` and `adaptiveParams` documentation and regenerated the public type definition (`types/index.d.ts`)
-- Refreshed the Wiki/guides with bilingual (JA/EN) coverage
+## [0.1.6.2] - 2025-08-26
 
-### v0.1.11 (2025-09-08)
-- Completed responsibility separation per ADR-0009 (`VoxelRenderer` acts as orchestrator)
-- New core modules: `ColorCalculator`, `VoxelSelector`, `AdaptiveController`, `GeometryRenderer`
-- Playground: i18n & accessibility improvements; refined emulation-only mode
-- Docs: Stable API/Wiki generation, including Source pages to Markdown
-- Tests: Gate perf acceptance with `PERF_TESTS=1`; relaxed memory thresholds for CI variance
+### Fixed
+- Wiki API-Reference のクラスリンクが生の.mdとして表示される問題を修正（拡張子なしのWikiページリンクに変更）。
+- Lintエラー（未使用変数）を修正。
 
-Ref: ADR-0009 `docs/adr/ADR-0009-voxel-renderer-responsibility-separation.md`
+### Docs
+- API（docs/API.md）に太線エミュレーションの中間位置配置と inset 連携を明記。
+- docs/api を再生成、Wikiのクラスページを再生成・同期。
 
-### v0.1.10 (2025-09-04)
-- Incremental refactoring/modularization with API compatibility preserved.
-  - Extracted selection/estimation/view-fitting concerns, prepared `VoxelRenderer` for orchestration role
-- Docs: Added ADR-0007/0008 (superseded by 0009). Migration plan documented (operationalized in 0.1.11).
+## [0.1.6.2] - 2025-08-26
 
-Refs: ADR-0007 `docs/adr/ADR-0007-v0.1.10-refactoring-modularization.md` / ADR-0008 `docs/adr/ADR-0008-v0.1.10-refactor-and-api-cleanup.md`
+### Added
+- **「すべて太線」モード**: `outlineEmulation: 'all'` で全ボクセルに太線エミュレーションを適用
+- **厚い枠線表示機能**: `enableThickFrames` オプションで WebGL 1px 制限を完全回避
+  - インセット枠線とメインボックス間を12個のフレームボックスで埋める
+  - 視覚的に厚い枠線を実現（WebGL制限に関係なし）
+  - 手動制御または「すべて太線」選択時の自動有効化
+- **自動最適化機能**: 「すべて太線」選択時に最適設定を自動適用
+  - インセット枠線: 2メートルの自動適用
+  - 厚い枠線表示: 自動有効化
+  - コンソールログ: 自動適用の確認メッセージ
 
-### v0.1.9 (2025-08-30)
-- Adaptive rendering limits (selection strategies)
-  - `renderLimitStrategy: 'density'|'coverage'|'hybrid'`
-  - `minCoverageRatio`, `coverageBinsXY('auto'|number)`
-- Occupancy-based auto voxel size: `autoVoxelSizeMode: 'occupancy'`, `autoVoxelTargetFill`
-- Auto Render Budget: `renderBudgetMode: 'auto'|'manual'`
-- Smart view assistance: `autoView: true`, `fitView(bounds, options)`
+### Enhanced
+- **太線エミュレーション拡張**: `outlineEmulation` に 'non-topn' と 'all' モード追加
+- **フレーム配置の精密化**: 外側・内側境界の中心に正確フィット（隣接重なり防止）
+- **Playground UI改善**: 太線エミュレーション選択肢を4つに拡張
+  - 無効 / TopNのみ / TopN以外のみ / すべて太線（自動インセット適用）
+- **adaptiveモード最適化**: 「すべて太線」時の太さ調整（TopN: 6px, その他: 4px）
 
-Ref: ADR-0006 `docs/adr/ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md`
+### Fixed
+- **隣接ボクセル重なり**: 正確な境界計算により隣接ボクセルとの重なりを解決
+- **地形表示安定化**: EllipsoidTerrainProvider の明示的設定
 
-Please refer to the repository's `CHANGELOG.md` for the latest changes. Here we extract major topics.
+### Technical
+- **フレーム位置計算**: 外側・内側境界の中心への精密配置アルゴリズム
+- **デバッグ機能強化**: 境界情報の詳細ログ出力で検証可能
+- **バリデーション**: `enableThickFrames` オプションの検証機能追加
 
-### v0.1.7 (2025-01-09)
-- **Adaptive Outline Control**: Automatic adjustment based on neighborhood density, camera distance, and overlap risk
-- **Display Mode Extension**: Switching between standard/inset/emulation-only rendering methods  
-- **Opacity Resolvers**: Custom opacity control functionality
-- Performance optimization and error handling enhancements
+## [0.1.6.1] - 2025-08-26
 
-### v0.1.6.1 (2025-08-26)
-- **Inset Outline Feature**: Display outlines offset inward for improved visibility
-- Examples updated with inset outline UI
-- Comprehensive unit and integration tests added
+### Added
+- **インセット枠線機能 (ADR-0004)**: 枠線を内側にオフセット表示する機能を追加
+  - `outlineInset` オプション: インセット距離（メートル、デフォルト: 0）
+  - `outlineInsetMode` オプション: 適用範囲（'all' | 'topn'、デフォルト: 'all'）
+  - 二重Box方式で実装（fill用 + outline専用エンティティ）
+  - 各軸寸法の最大40%まで制限（過度な縮小を防止）
+- **Examples更新**: Basic/Advanced例にインセット枠線UI追加
+  - スライダー（メートル単位）とモード選択（OFF/TopN/全体）
+  - outline-overlap-demo にインセット枠線機能統合
 
-### v0.1.6 (2025-08-26)
-- **Outline Overlap Mitigation**: `voxelGap` option for inter-voxel gaps to improve visibility
-- **Outline Transparency Control**: `outlineOpacity` option to control outline transparency (0-1)
-- **Dynamic Outline Width Control**: `outlineWidthResolver` function for dynamic per-voxel outline width determination
-- **Legend Implementation Guide**: Detailed documentation for custom legend implementation
-- **Wiki Auto-sync**: Complete automation of Wiki updates via GitHub Actions
+### Technical
+- インセット枠線のユニットテスト・結合テスト追加
+- バリデーション機能でインセット枠線パラメータ検証
+- パフォーマンス影響: エンティティ数最大2倍（制限値内で管理）
 
-### v0.1.5 (2025-08-25)
-- Debug: Explicit control of bounding box display with `debug.showBounds`
-- Color maps: `colorMap: 'viridis' | 'inferno'`, diverging colors `diverging`/`divergingPivot`
-- Highlighting: Emphasize top N voxels with `highlightTopN` and `highlightStyle`
-- Deprecated: `batchMode` is deprecated (accepted for compatibility but ignored, will be removed in future)
+## [0.1.6] - 2025-08-26
 
-### v0.1.4 (2025-08-24)
-- New feature: Automatic voxel size determination with `autoVoxelSize` (when `voxelSize` is unspecified)
-- Statistics/debug enhancement: Added auto-adjustment details to `HeatboxStatistics` and `getDebugInfo()`
-- Specification clarification: Clarified that actual rendering dimensions use actual cell sizes `cellSizeX/Y/Z` for each axis
+### Added
+- **枠線重なり対策**: `voxelGap` オプションによるボクセル間ギャップ設定で視認性向上
+- **枠線透明度制御**: `outlineOpacity` オプションで重なり部分の視覚ノイズ軽減
+- **動的枠線太さ制御**: `outlineWidthResolver` 関数により個別ボクセルの枠線太さを動的調整
+- **Legend実装ガイド**: `docs/legend-implementation-guide.md` でカスタム凡例の実装方法を詳細解説
+- **Wiki自動同期**: `tools/wiki-sync.js` によるJSDoc HTML→Markdown変換自動化
+- **GitHub Actions**: Wiki更新の完全自動化ワークフロー (`.github/workflows/wiki-sync.yml`)
+- **パフォーマンステスト**: `outlineWidthResolver` 使用時のパフォーマンス影響測定
+- **Examples UI強化**: v0.1.6新機能のリアルタイム調整UI（voxelGap, outlineOpacity, adaptiveOutline）
 
-### v0.1.2 (2025-10-05)
-- **Visibility Improvement**: `wireframeOnly` option for outline-only display, making overlapping voxels easier to see
-- **Height-based Representation**: `heightBased` option to visualize density through height
-- **UI Extension**: Added new display options to Playground
+### Enhanced
+- **VoxelRenderer**: 枠線重なり対策とパフォーマンス最適化
+- **Examples**: 適応的枠線制御のデモ実装（密度に応じた動的太さ調整）
+- **Test Coverage**: 色補間・発散配色・TopN強調の主要分岐テスト追加
+- **Documentation**: Wiki保守手順書 (`docs/wiki-maintenance.md`) 追加
 
-### v0.1.0 (2025-09-15)
-- Stable release (migrated from alpha)
-- CI (GitHub Actions) introduction, tree shaking support
-- README/configuration organization, duplicate configuration resolution
+### Technical
+- **Dependencies**: `jsdom` 追加（Wiki同期用）
+- **Validation**: `voxelGap`/`outlineOpacity`/`outlineWidthResolver` の新オプション検証
+- **Performance**: 動的枠線制御のパフォーマンス影響<5%を達成（ADR-0003受け入れ基準準拠）
 
-### v0.1.0-alpha.3
-- New API additions: `createFromEntities`, `getOptions`, `getDebugInfo`, `Heatbox.filterEntities`
-- Jest configuration stabilization, JSDoc/type definition generation script organization
-- ESM/UMD entry point organization, external module handling adjustment
+### Compatibility
+- **Non-breaking**: 全ての変更は後方互換性を維持
+- **CesiumJS**: 1.120.0+ サポート継続
+- **Browser**: モダンブラウザ (ES6+) 対応
 
-### v0.1.0-alpha.2 / alpha.1
-- Initial implementation, basic voxel visualization and statistics
-- Addition of specifications, development guide, and quick start
+## [0.1.5] - 2025-08-25
 
-### Installation and Build Instructions
+### Added
+- **デバッグ境界制御**: `debug.showBounds` オプションでバウンディングボックス表示のON/OFF制御。`debug: true` (従来)と `debug: { showBounds: true }` (新規)をサポート。
+- **知覚均等カラーマップ**: `colorMap: 'viridis'` / `'inferno'` オプションで科学的定番のカラーマップをサポート。既存の `minColor`/`maxColor` は、`colorMap: 'custom'` で継続使用可能。
+- **二極性データ対応**: `diverging: true` と `divergingPivot` オプションでblue-white-red発散配色を実装。正負値のデータに適合。
+- **TopN強調表示**: `highlightTopN` オプションで密度上位Nボクセルのみを強調表示。`highlightStyle` でアウトライン幅や不透明度の調整が可能。
 
-```bash
-git clone https://github.com/hiro-nyon/cesium-heatbox.git
-cd cesium-heatbox
-npm install
-npm run build:umd
-```
+### Deprecated
+- **batchMode非推奨化**: `batchMode: 'auto'` オプションは非推奨化され、`debug` 時に警告を表示。v1.0.0で削除予定。
 
-Please refer to the Getting Started / Quick Start pages for details.
+### Changed
+- **Logger拡張**: `Logger.setLogLevel()` が `debug` オプションのオブジェクト形式に対応。互換性を保ちつつ拡張。
+- **VoxelRenderer機能拡張**: カラーマップ対応とTopN強調表示で `interpolateColor()` 関数を大幅強化。
+- **ドキュメント更新**: README.md でv0.1.5の新機能を記載。
 
-> Please refer to `CHANGELOG.md` for details.
+### Fixed
+- **バージョン整合性**: package.json の peerDependencies `cesium: "^1.120.0"` とサンプルファイルのCDN参照(1.120)が一致であることを確認。
+
+### Technical
+- **バージョン更新**: package.json を v0.1.5 に更新
+- **constants.js拡張**: DEFAULT_OPTIONS にv0.1.5新機能のデフォルト値を追加
+- **validation.js強化**: 新オプションのバリデーションとbatchMode非推奨警告を実装
+- **カラーマップLUT**: VoxelRendererに16段階のviridis/inferno/divergingカラーテーブルを実装
+
+## [0.1.4] - 2025-08-24
+
+### Added
+- **ボクセルサイズ自動決定機能**: エンティティ数・分布範囲から最適な `voxelSize` を推定する `autoVoxelSize` オプションを追加（`voxelSize` 未指定時に有効）。データ密度に応じてパフォーマンス制限内で最適なサイズを自動算出。
+- **統計情報拡張**: 自動調整の有無・元サイズ・最終サイズ・調整理由を `HeatboxStatistics` に追加（`autoAdjusted`, `originalVoxelSize`, `finalVoxelSize`, `adjustmentReason`）。
+- **デバッグ情報拡張**: `getDebugInfo()` に `autoVoxelSizeInfo` として自動調整関連の詳細情報を追加（データ範囲、推定密度、調整ログ）。
+- **基本例のUI改良**: `examples/basic` に Auto Voxel Size 切替チェックボックスと自動調整統計表示を追加。手動・自動の比較が可能。
+
+### Changed
+- **寸法仕様の明確化**: 描画ボックスの幅・奥行・高さは各軸の実セルサイズ（`cellSizeX/Y/Z`）を使用し、`voxelSize` は目標値として扱う仕様をドキュメントに明記。
+- **API仕様の更新**: 全ドキュメント（API.md, wiki/*）でv0.1.4の新機能と寸法仕様変更を反映。
+- **型定義の更新**: TypeScript定義に `autoVoxelSize` オプションと拡張統計フィールドを追加。
+
+### Fixed
+- **ボクセル重なり完全解決**: `DataProcessor.js` で分母ゼロ安全対策（`lonDen === 0 ? 0 : Math.floor(...)`）とボックス寸法の軸別実セルサイズ使用により、隣接ボクセルの重なりを完全に解消。
+- **VoxelRenderer.js**: 描画時の寸法を `grid.cellSizeX/Y/Z` を優先使用し、フォールバック値も含めた堅牢な実装。
+- **VoxelGrid.js**: 実際のセルサイズ（`cellSizeX/Y/Z`）をグリッド情報に追加し、ceil操作による分割数増加を考慮した正確な寸法計算を実装。
+
+### Technical
+- 新規ユーティリティ関数: `estimateInitialVoxelSize()`, `calculateDataRange()` を `validation.js` に追加
+- パフォーマンス制限チェック: `validateVoxelCount()` との連携で制限超過時の自動調整
+- 統計収集の強化: 自動調整プロセスの全情報を統計・デバッグ両方に記録
+
+## [0.1.3] - 2025-08-23
+
+### Fixed
+- **選択イベント情報の修正**: `pickedObject.id.type` → `pickedObject.id.properties?.type` の判定不一致を修正
+- **統計値の整合性修正**: `renderedVoxels` が実際の描画数を反映しない問題を修正  
+- **ピック判定のキー取得**: `properties.key` から正しくキー値を取得するよう修正
+- **未使用コード削除**: `this._selectedEntitySubscription` を完全に削除
+- **Cesiumバージョン整合**: examples の CDN を 1.132 → 1.120 に修正
+
+### Changed
+- **型定義生成の整合性**: `tools/build-types.js` に `wireframeOnly`, `heightBased`, `outlineWidth`, `debug` オプションを追加
+- **ログ抑制機能**: `debug` フラグや `NODE_ENV` による `console.log` 出力制御を実装
+- **デフォルト設定最適化**: `DEFAULT_OPTIONS.debug = false` に変更（本番環境向け）
+- **Debug境界ボックス制御**: `options.debug` 連動でバウンディングボックス表示をON/OFF制御
+
+### Added  
+- **基本例のUX改善**: UMD読み込み方式・日本語UI統一・Debugログチェックボックス追加
+- **統計表示の改善**: 描画制限による非表示ボクセルの説明を追加
+- **高度な例のUMD対応**: `wireframe-height-demo-umd.html` でブラウザ直接実行対応
+- **Wiki API更新**: `HeatboxStatistics.renderedVoxels` を追記
+
+### Technical
+- **JSDoc HTML完全再生成**: docs/api内を最新実装に同期
+- **パッケージバージョン更新**: v0.1.3にバージョンアップ
+- **Lintエラー**: 0件達成・コード品質向上
+
+## [0.1.2] - 2025-08-20
+
+### Added
+- `wireframeOnly` オプション: 枠線のみ表示で視認性を大幅改善
+- `heightBased` オプション: 密度に応じた高さベース表現
+- `outlineWidth` オプション: 枠線の太さ調整機能
+- Playgroundに新しい表示オプションのUI追加
+- `examples/rendering/wireframe-height-demo.js`: v0.1.2新機能の包括的デモ
+- `examples/selection-limits/performance-optimization.js`: 大量データ処理とパフォーマンス最適化例
+- `examples/advanced/README.md`: 高度な使用例の詳細ドキュメント
+
+### Changed
+- 重なったボクセルの視認性問題を解決
+- デバッグログ出力の最適化（ESLintエラー対応）
+- 全ドキュメントの整備とインストール方法の更新
+- `examples/basic/`: v0.1.2新機能に対応したUI・ロジック更新
+- `examples/data/entity-filtering.js`: 削除されたAPIの置き換えと新機能対応
+- `wiki/Examples.md`: v0.1.2新機能の実用例を追加
+- `wiki/Getting-Started.md`: インストール手順の更新
+- `types/index.d.ts`: 新オプションの型定義追加
+
+### Fixed
+- ESLintエラーとワーニングを修正
+- 未使用変数とconsole.logの適切な処理
+- v0.1.2のシンプル化に伴うテストケースの更新と修正
+- 削除されたAPI（`CoordinateTransformer.getEntityPosition`等）を使用していたexamplesを修正
+
+## [0.1.1] - 2025-08-20
+
+### Changed
+- レンダリング実装をPrimitiveベースからEntityベースに変更
+- コンポーネント設計をシンプル化（直接的なアプローチ）
+- 座標変換ロジックの簡素化とパフォーマンス最適化
+- デバッグログ出力の強化
+
+### Fixed
+- Cesium 1.132との互換性問題を解決
+- `entity.isDestroyed` メソッド呼び出しでのエラー対応
+- エンティティの削除と表示/非表示切り替えでのエラー処理強化
+- バウンディングボックス表示によるデバッグ支援機能追加
+
+## [0.1.0] - 2025-08-20
+
+### Added
+- GitHub Actions CI workflow
+- Contributing guidelines (docs/contributing.md)
+- Tree-shaking support with sideEffects: false
+- Rendering cap via `maxRenderVoxels` (draw top-N dense voxels)
+- Unit tests for core modules (VoxelGrid, DataProcessor, VoxelRenderer)
+- GitHub Wiki pages (`wiki/*`) and publishing script (`tools/wiki/publish-wiki.sh`)
+
+### Changed
+- Upgraded from alpha to stable release
+- Restricted console output to development environment only
+- Optimized package.json files array (removed src/ from distribution)
+- Heatbox auto-adjusts voxel size to keep total voxels under performance limits
+- Simplified CI workflow and updated Codecov settings
+- API documentation refined and aligned with implementation
+
+### Fixed
+- Removed duplicate Jest configuration files
+- Updated README links to point to existing files
+
+## [0.1.0-alpha.3] - 2025-08-19
+
+### Added
+- New Heatbox APIs: `createFromEntities`, `getOptions`, `getDebugInfo`, static `filterEntities`
+- Jest configuration migrated to CJS (`jest.config.cjs`) with robust Cesium module mock
+- JSDoc config (`jsdoc.config.json`) and benchmark stub (`tools/benchmark.js`) for CI stability
+- Types generation script (`tools/build-types.js`) and published `types/index.d.ts`
+
+### Changed
+- Unified Cesium imports to `import * as Cesium from 'cesium'`
+- Fixed package entry points/exports to match built files (ESM/UMD)
+- Webpack externals handling adjusted for ESM/UMD targets
+- README documentation links corrected to existing docs
+- Coverage thresholds tuned (temporary) until broader tests are added
+
+### Fixed
+- Bounds validation bug in sample data utility
+- Zero-range and normalization edge cases in grid/index calculation
+- Test failures due to missing Cesium mocks and ESM config mismatch
+
+## [0.1.0-alpha.2] - 2025-01-21
+
+### Added
+- Enhanced documentation for developer onboarding
+- Troubleshooting section in getting-started.md
+- Development guide for beginners
+- Quick-start guide for immediate usage
+- Git and npm reference guide
+- Data source selection API (roadmap)
+
+### Changed
+- Updated release workflow to support staged npm tags (alpha, beta, rc, latest)
+- Improved CI/CD pipeline configuration
+- Enhanced specification roadmap with data source selection feature
+
+### Fixed
+- ESLint configuration compatibility issues (downgraded to 8.x)
+- Jest configuration for module name mapping
+- Package dependency conflicts
+- Build system configuration issues
+- Test setup and import paths
+- Removed @types/cesium dependency conflicts
+
+### Technical
+- Cleaned up node_modules and package-lock.json
+- Reinstalled dependencies with proper versions
+- Confirmed successful build and test execution
+
+## [0.1.0-alpha.1] - 2025-07-09
+
+### Added
+- Initial implementation of Heatbox core library
+- Basic voxel-based 3D heatmap visualization
+- Entity processing and coordinate transformation
+- HSV color interpolation for density visualization
+- Batch rendering with Cesium Primitives
+- Comprehensive test suite with Jest
+- TypeScript type definitions
+- Basic usage examples
+- Complete project structure with build system
+
+### Features
+- Process CesiumJS entities into 3D voxel grid
+- Automatic bounds calculation from entity distribution
+- Configurable voxel size and appearance options
+- Performance optimizations for large datasets
+- Error handling and validation
+
+### Technical
+- ES modules support with UMD fallback
+- Webpack build system with Babel transpilation
+- ESLint configuration with TypeScript support
+- GitHub Actions CI/CD pipeline
+- Comprehensive documentation
+
+### Known Issues
+- Data source selection not yet implemented
+- Real-time updates not supported
+- Limited to uniform voxel sizes
+
+### Breaking Changes
+- None (initial release)

@@ -124,6 +124,69 @@ describe('Heatbox', () => {
       const options = heatbox.getOptions();
       expect(options.voxelSize).toBe(50);
     });
+
+    test('updateValuesは条件を満たす場合に既存グリッドを再利用する', async () => {
+      const initialEntities = [
+        testUtils.createMockEntity(139.7000, 35.6000, 50),
+        testUtils.createMockEntity(139.7004, 35.6004, 58),
+        testUtils.createMockEntity(139.7002, 35.6002, 54)
+      ];
+      await heatbox.setData(initialEntities);
+
+      const initialGrid = heatbox._grid;
+      const initialBounds = heatbox._bounds;
+
+      const nextEntities = [
+        testUtils.createMockEntity(139.7001, 35.6001, 52),
+        testUtils.createMockEntity(139.7003, 35.6003, 56)
+      ];
+
+      await heatbox.updateValues(nextEntities);
+
+      expect(heatbox._grid).toBe(initialGrid);
+      expect(heatbox._bounds).toBe(initialBounds);
+      expect(heatbox.getStatistics().totalEntities).toBe(2);
+    });
+
+    test('updateValuesは条件を満たさない場合にsetData相当へフォールバックする', async () => {
+      const initialEntities = [
+        testUtils.createMockEntity(139.7000, 35.6000, 50),
+        testUtils.createMockEntity(139.7002, 35.6002, 55)
+      ];
+      await heatbox.setData(initialEntities);
+
+      const initialGrid = heatbox._grid;
+
+      const farEntities = [
+        testUtils.createMockEntity(140.5, 36.2, 80),
+        testUtils.createMockEntity(140.6, 36.3, 90)
+      ];
+
+      await heatbox.updateValues(farEntities);
+
+      expect(heatbox._grid).not.toBe(initialGrid);
+      expect(heatbox.getStatistics().totalEntities).toBe(2);
+    });
+
+    test('updateValuesは旧boundsを超える更新を軽量経路で再利用しない', async () => {
+      const initialEntities = [
+        testUtils.createMockEntity(139.7000, 35.6000, 50),
+        testUtils.createMockEntity(139.7008, 35.6008, 55)
+      ];
+      await heatbox.setData(initialEntities);
+
+      const initialGrid = heatbox._grid;
+
+      const expandedEntities = [
+        testUtils.createMockEntity(139.6990, 35.5990, 49),
+        testUtils.createMockEntity(139.7025, 35.6025, 58)
+      ];
+
+      await heatbox.updateValues(expandedEntities);
+
+      expect(heatbox._grid).not.toBe(initialGrid);
+      expect(heatbox.getStatistics().totalEntities).toBe(2);
+    });
   });
   
   describe('静的メソッド', () => {

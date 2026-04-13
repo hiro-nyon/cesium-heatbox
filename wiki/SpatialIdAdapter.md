@@ -30,6 +30,15 @@ to the closest match if no zoom meets the tolerance.
 | centerLat | number |  |  | Center latitude for calculation in degrees (計算用の中心緯度、度単位) |
 | tolerance | number | <optional> | 10 | Tolerance percentage, 0-100 (許容誤差、パーセント、0-100) |
 
+#### children(zfxy) → {Array.<{z:number, f:number, x:number, y:number}>}
+
+Get children for given ZFXY tile (4-way subdivision in X/Y).
+Altitude index F is kept as-is; vertical subdivision is not modeled here.
+
+| Name | Type | Description |
+|---|---|---|
+| zfxy | Object | Parent tile / 親タイル |
+
 #### getStatus() → {Object}
 
 Get provider status information
@@ -51,6 +60,24 @@ to built-in Web Mercator converter.
 #### (async) loadProvider() → {Promise.<boolean>}
 
 Load spatial ID provider dynamically
+
+#### neighbors(zfxy) → {Array.<{z:number, f:number, x:number, y:number}>}
+
+Get neighbors for given ZFXY tile (8-connected in X/Y).
+Dateline wrapping is handled in X so that tiles at x=0 and x=max
+are considered neighbors across the ±180° meridian.
+
+| Name | Type | Description |
+|---|---|---|
+| zfxy | Object | Tile identifier / タイル識別子 |
+
+#### parent(zfxy) → {Object|null}
+
+Get parent tile for given ZFXY tile.
+
+| Name | Type | Description |
+|---|---|---|
+| zfxy | Object | Child tile / 子タイル |
 
 
 ## 日本語
@@ -81,6 +108,15 @@ Load spatial ID provider dynamically
 | centerLat | number |  |  | Center latitude for calculation in degrees (計算用の中心緯度、度単位) |
 | tolerance | number | <optional> | 10 | Tolerance percentage, 0-100 (許容誤差、パーセント、0-100) |
 
+#### children(zfxy) → {Array.<{z:number, f:number, x:number, y:number}>}
+
+指定ZFXYタイルの子セル（X/Yを2分割した4セル）を取得します。
+高度方向Fはそのままとし、垂直方向の細分化は扱いません。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| zfxy | Object | Parent tile / 親タイル |
+
 #### getStatus() → {Object}
 
 プロバイダーステータス情報を取得
@@ -102,3 +138,20 @@ Load spatial ID provider dynamically
 #### (async) loadProvider() → {Promise.<boolean>}
 
 空間IDプロバイダーを動的に読み込む
+
+#### neighbors(zfxy) → {Array.<{z:number, f:number, x:number, y:number}>}
+
+指定ZFXYタイルの隣接セル（X/Yの8近傍）を取得します。
+経度±180°付近ではX方向のラップを考慮し、x=0 と x=max を隣接セルとして扱います。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| zfxy | Object | Tile identifier / タイル識別子 |
+
+#### parent(zfxy) → {Object|null}
+
+指定ZFXYタイルの親セルを取得します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| zfxy | Object | Child tile / 子タイル |

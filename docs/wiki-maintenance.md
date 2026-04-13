@@ -6,7 +6,7 @@
 
 ### Overview
 
-v0.1.6 introduced GitHub Wiki automatic synchronization functionality. Changes to docs/api, README.md, and CHANGELOG.md are automatically reflected in the Wiki.
+GitHub Wiki synchronization is driven by `npm run wiki:sync`. The sync process regenerates API reference pages from JSDoc and mirrors the main Markdown entry pages used by the Wiki.
 
 ### Automation Configuration
 
@@ -15,9 +15,9 @@ v0.1.6 introduced GitHub Wiki automatic synchronization functionality. Changes t
 **File**: `.github/workflows/wiki-sync.yml`
 
 **Trigger Conditions**:
-- Push changes to `docs/` on `main` branch
-- Push changes to `wiki/` folder  
-- Changes to `README.md`, `CHANGELOG.md`
+- Push changes to `src/`, `docs/`, or `wiki/` on `main` branch
+- Changes to `README.md`, `CHANGELOG.md`, `package.json`, `jsdoc.config.json`
+- Changes to `tools/wiki-sync.js`
 - Manual execution (`workflow_dispatch`)
 
 **Permission Requirements**:
@@ -32,7 +32,7 @@ npm run wiki:update
 
 # Individual execution
 npm run docs           # JSDoc generation
-npm run wiki:sync      # docs/api → wiki/ conversion
+npm run wiki:sync      # docs/api conversion + major Markdown pages → wiki/
 npm run wiki:publish   # Push to GitHub Wiki
 ```
 
@@ -41,10 +41,10 @@ npm run wiki:publish   # Push to GitHub Wiki
 ```
 cesium-heatbox/
 ├── .github/workflows/wiki-sync.yml    # Automation workflow
-├── docs/api/                           # JSDoc generation (source)
-├── wiki/                              # Markdown conversion results
+├── docs/api/                           # JSDoc generation output
+├── wiki/                              # Markdown conversion + synced Wiki pages
 ├── tools/
-│   ├── wiki-sync.js                   # docs/api → wiki/ conversion
+│   ├── wiki-sync.js                   # docs/api → wiki/ conversion and page sync
 │   └── wiki/publish-wiki.sh           # GitHub Wiki push
 └── docs/wiki-maintenance.md           # This procedure document
 ```
@@ -82,7 +82,7 @@ npm run wiki:update
 
 #### Daily Operation (Automatic)
 
-1. Push docs/ changes to `main` branch
+1. Push changes that affect public docs (`src/`, `docs/`, `README.md`, `CHANGELOG.md`, `package.json`) to `main`
 2. Wiki automatically updates after 2-3 minutes
 3. Check https://github.com/hiro-nyon/cesium-heatbox/wiki as needed
 
@@ -140,7 +140,7 @@ npm run wiki:update
 
 2. **Test with local execution**:
    ```bash
-   npm run wiki:sync  # Test conversion only
+   npm run wiki:sync  # Test conversion and page sync
    npm run wiki:publish  # Test push only
    ```
 
@@ -175,7 +175,7 @@ npm run wiki:update
 
 ## 概要
 
-v0.1.6でGitHub Wikiの自動同期機能を導入。docs/api、README.md、CHANGELOG.md の変更が自動的にWikiに反映される。
+GitHub Wiki の同期は `npm run wiki:sync` を中心に行います。JSDoc から生成した API リファレンスに加え、Wiki の主要エントリページとして使う Markdown も同じ処理で `wiki/` に反映されます。
 
 ## 自動化の構成
 
@@ -184,9 +184,9 @@ v0.1.6でGitHub Wikiの自動同期機能を導入。docs/api、README.md、CHAN
 **ファイル**: `.github/workflows/wiki-sync.yml`
 
 **トリガー条件**:
-- `main` ブランチへの `docs/` 変更push
-- `wiki/` フォルダ変更push  
-- `README.md`、`CHANGELOG.md` 変更push
+- `main` ブランチへの `src/`、`docs/`、`wiki/` 変更 push
+- `README.md`、`CHANGELOG.md`、`package.json`、`jsdoc.config.json` の変更 push
+- `tools/wiki-sync.js` の変更 push
 - 手動実行（`workflow_dispatch`）
 
 **権限要件**:
@@ -201,7 +201,7 @@ npm run wiki:update
 
 # 個別実行
 npm run docs           # JSDoc生成
-npm run wiki:sync      # docs/api → wiki/ 変換
+npm run wiki:sync      # docs/api の変換結果 + 主要 Markdown を wiki/ に同期
 npm run wiki:publish   # GitHub Wikiにpush
 ```
 
@@ -210,10 +210,10 @@ npm run wiki:publish   # GitHub Wikiにpush
 ```
 cesium-heatbox/
 ├── .github/workflows/wiki-sync.yml    # 自動化workflow
-├── docs/api/                           # JSDoc生成（ソース）
-├── wiki/                              # Markdown変換結果
+├── docs/api/                           # JSDoc生成結果
+├── wiki/                              # Markdown変換結果と同期済みWikiページ
 ├── tools/
-│   ├── wiki-sync.js                   # docs/api → wiki/ 変換
+│   ├── wiki-sync.js                   # docs/api → wiki/ 変換とページ同期
 │   └── wiki/publish-wiki.sh           # GitHub Wiki push
 └── docs/wiki-maintenance.md           # この手順書
 ```
@@ -251,7 +251,7 @@ npm run wiki:update
 
 ### 日常運用（自動）
 
-1. `main` ブランチに docs/ 変更をpush
+1. `main` ブランチに公開ドキュメントへ影響する変更（`src/`、`docs/`、`README.md`、`CHANGELOG.md`、`package.json` など）を push
 2. 2-3分後にWikiが自動更新される
 3. 必要に応じて https://github.com/hiro-nyon/cesium-heatbox/wiki で確認
 
@@ -309,7 +309,7 @@ npm run wiki:update
 
 2. **ローカル実行でテスト**:
    ```bash
-   npm run wiki:sync  # 変換のみテスト
+   npm run wiki:sync  # 変換と主要ページ同期をテスト
    npm run wiki:publish  # push のみテスト
    ```
 

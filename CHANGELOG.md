@@ -41,6 +41,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.6] - 2026-04-13
+
+### Changed
+- Wiki 同期フローを更新し、`npm run wiki:sync` が JSDoc 生成物に加えて主要 Markdown ページも `wiki/` へ同期するようにしました。
+- `wiki-sync` の GitHub Actions を `src/`、`package.json`、`jsdoc.config.json`、`tools/wiki-sync.js` の変更でも起動するように修正し、API 更新後に Wiki が古いまま残る問題を防止しました。
+- `docs/wiki-maintenance.md` と生成済み `wiki/` ページを現行の `v1.3.6` 状態へ再同期しました。
+
+## [1.3.4] - 2026-04-07
+
+### Fixed
+- temporal examples で初回表示やカメラ移動後に voxel が空のまま残る問題を修正しました。
+- `TimeController` がカメラ変更時に現在の time slice を再描画するようにし、`RenderPlanner` のカリング後でも表示が回復するようにしました。
+- `examples/temporal/temporal-data.js` の CZML パス解決をページ URL 非依存に修正し、examples 配下での読み込み失敗を防止しました。
+- `TimeSlicer` は lazy-loaded entry を統合した際に global stats cache を破棄するようになりました。
+- `Heatbox.updateValues()` の bounds 再利用判定を保守的に見直し、既存グリッドを不正に再利用しないようにしました。
+- `examples/temporal/advanced-temporal.html` は初期スライス描画、ポイントプレビュー、全高レイアウトを追加し、ロード直後から表示状態を確認しやすくしました。
+
+## [1.3.3] - 2026-04-06
+
+### Added
+- `examples/temporal/advanced-temporal.html` を追加し、`temporal.interpolate` / `temporal.dataSource` / `temporal.useWorker` を単一画面で確認できるようにしました。
+
+### Changed
+- `package.json`、`package-lock.json`、`src/index.js` の版番号を `1.3.3` に更新しました。
+- `examples/README.md`、`examples/temporal/README.md`、`docs/API.md` を現行の時系列機能セットに合わせて更新しました。
+- `README.md` と `README.ja.md` の temporal セクションに `useWorker` と時系列デモ構成の説明を追記しました。
+
+## [1.3.2] - 2026-04-06
+
+### Added
+- `temporal.interpolate` を実装し、スライス間ギャップの数値プロパティ補間を追加しました。
+- `temporal.dataSource` を実装し、遅延ロードで時系列スライスを供給できるようにしました。
+- `temporal.useWorker` を実装し、補間と時系列統計の前処理を worker へオフロードできるようにしました。
+
+### Changed
+- `TimeController` と `TimeSlicer` を非同期時系列経路に対応させ、worker 非対応環境ではメインスレッドへフォールバックするよう整理しました。
+- README / MIGRATION / ROADMAP / API docs を `v1.3.2` の temporal 拡張内容に合わせて更新しました。
+
+## [1.3.1] - 2026-04-06
+
+### Added
+- `Heatbox.updateValues(entities, runtimeOptions?)` を追加し、既存 bounds/grid を再利用できる更新を軽量化しました。
+
+### Changed
+- `TimeController` は `updateValues()` を優先利用し、時系列更新時の再構築コストを削減するようになりました。
+
+## [1.3.0] - 2026-04-06
+
+### Added
+- `RenderPlanner` を追加し、描画優先度制御、簡易LoD、ビューポートカリングを分離。
+- CI に `cesium@^1.120.0` / `cesium@latest` の dual smoke test を追加。
+
+### Changed
+- `DataProcessor` の voxel record から `entities` 配列保持を削除し、compact な内部表現へ変更。
+- `GeometryRenderer` を差分更新型に変更し、ボクセルキー単位の add/update/remove を実装。
+- 互換性ポリシーを整理し、minimum supported Cesium を `^1.120.0` と明記。
+
+### Fixed
+- レンダ/クリア反復時の不要なエンティティ再生成を抑制し、ヒープ増分の回帰を起こしにくい構成へ修正。
+
 ## [1.1.0] - 2025-11-19
 
 ### Changed

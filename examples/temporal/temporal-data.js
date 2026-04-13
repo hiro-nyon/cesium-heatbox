@@ -1,5 +1,10 @@
 (function (global) {
-  const CZML_URL = './temporal-flow.czml';
+  // Resolve CZML next to this script so the URL stays correct even if the page base URL differs.
+  const SCRIPT_SRC = document.currentScript && document.currentScript.src;
+  const CZML_URL = SCRIPT_SRC
+    ? new URL('temporal-flow.czml', SCRIPT_SRC).href
+    : './temporal-flow.czml';
+
   const START_ISO = '2025-03-01T00:00:00Z';
   const STOP_ISO = '2025-03-02T00:00:00Z';
   const HOURS = Array.from({ length: 24 }, (_, i) => i);

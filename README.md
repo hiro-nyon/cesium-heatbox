@@ -51,6 +51,12 @@ npm install
 npm run build
 ```
 
+## Compatibility
+
+- Minimum supported Cesium: `^1.120.0`
+- Latest verified Cesium: latest version that passes the CI compatibility smoke job
+- CI validates both `cesium@^1.120.0` and `cesium@latest`
+
 ## Quick Start
 
 ```javascript
@@ -128,13 +134,18 @@ const heatbox = new Heatbox(viewer, {
     ],
     classificationScope: 'global',  // or 'per-time'
     updateInterval: 1000,           // ms throttle
-    outOfRangeBehavior: 'clear'     // or 'hold'
+    outOfRangeBehavior: 'clear',    // or 'hold'
+    interpolate: true               // interpolate numeric properties across gaps
   }
 });
 ```
 
 - Overlap resolution: `prefer-earlier`, `prefer-later`, or `skip`
 - Binary search + cache for efficient temporal lookup
+- `updateValues()` reuses the current grid when temporal slices stay within the existing bounds
+- `dataSource(currentTime, context)` can lazily provide additional temporal slices
+- `useWorker: true` offloads interpolation and temporal stats preprocessing when workers are available
+- Demos cover baseline playback, global/per-time comparison, scenario simulation, and advanced interpolation/lazy-loading flows
 - Demos: `examples/temporal/`
 
 See [API Reference — Temporal](docs/API.md) for full details.
@@ -266,6 +277,7 @@ See [Aggregation Examples](examples/aggregation/) for details.
 | `new Heatbox(viewer, options)` | Create a new instance |
 | `createFromEntities(entities)` | Create heatmap (async, returns statistics) |
 | `setData(entities)` | Set data and render |
+| `updateValues(entities, runtimeOptions?)` | Update data while reusing the current grid when possible |
 | `updateOptions(newOptions)` | Update options and re-render |
 | `setVisible(show)` | Toggle visibility |
 | `clear()` | Clear heatmap |

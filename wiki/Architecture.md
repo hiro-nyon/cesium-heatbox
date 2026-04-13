@@ -1,101 +1,1791 @@
-# Architecture（設計） / Architecture
+# CesiumJS Heatbox Library Specification (CesiumJS Heatbox ライブラリ仕様書)
 
-**日本語** | [English](#english)
-
-本ライブラリは v0.1.11 で ADR-0009 に基づく責務分離を完了し、`VoxelRenderer` は各専門コンポーネントを統括するオーケストレーションに特化しました。
-
-## 日本語
-
-### コンポーネント（v0.1.11）
-- `VoxelRenderer`（Orchestrator）
-  - 下記 4 コンポーネントを統括し、描画フローを制御
-  - 公開APIの互換維持、エラーハンドリングとログの一元化
-- `ColorCalculator`（色計算）
-  - 線形補間/カラーマップ/発散配色の純粋関数群
-- `VoxelSelector`（選択戦略）
-  - density/coverage/hybrid の戦略と TopN 強調、統計収集
-- `AdaptiveController`（適応制御）
-  - 近傍密度・カメラ要素・重なりリスクを踏まえたパラメータ決定
-- `GeometryRenderer`（描画/エンティティ管理）
-  - ボックス/インセット枠線/ポリライン等の生成とライフサイクル管理（Cesium依存）
-
-### 処理フロー（v0.1.11）
-1. **境界計算**: `CoordinateTransformer.calculateBounds(entities)`
-2. **グリッド生成**: `VoxelGrid.createGrid(bounds, voxelSize)`
-3. **分類/集計**: `DataProcessor.classifyEntitiesIntoVoxels(...)` → `calculateStatistics(...)`
-4. **オーケストレーション**: `VoxelRenderer.render(...)`
-   - `VoxelSelector` で選抜 → `AdaptiveController` でパラメータ → `ColorCalculator` で色 → `GeometryRenderer` で描画
-
-### v0.1.11 のポイント
-- **責務分離**: SRPに基づく明確な分離でテスト/拡張容易性が向上（ADR-0009）
-- **依存境界**: {Selector, Adaptive, Color} → GeometryRenderer への逆参照禁止、Cesium依存はGeometryRendererに限定
-- **互換性維持**: 公開APIは継続、内部刷新のみ（Examples/Quick-Start はそのまま動作）
-
-### v0.1.7 新機能オプション
-```javascript
-const heatbox = new Heatbox(viewer, {
-  // 適応的枠線制御
-  adaptiveOutlines: true,
-  outlineWidthPreset: 'adaptive-density',
-  // 表示モード
-  outlineRenderMode: 'emulation-only',
-  // 透明度resolver
-  boxOpacityResolver: ({ isTopN, normalizedDensity }) => 
-    isTopN ? 1.0 : Math.max(0.3, 0.3 + 0.7 * normalizedDensity),
-  // インセット枠線
-  outlineInset: 2.0,
-  outlineInsetMode: 'all'
-});
-```
-
-### 拡張の余地
-- npm パッケージ化
-- リアルタイム更新最適化
-- カスタムカラーマップ
-- データソース選択機能
+[English](#english) | [日本語](#日本語)
 
 ## English
 
-This library consists of 4 core components (enhanced with adaptive control in v0.1.7).
+**Version**: 0.1.9  
+**Last Updated**: September 2025  
+**Author**: hiro-nyon  
 
-### Components
-- `CoordinateTransformer` **(v0.1.2: Simplified)**
-  - Handles position retrieval from entities, boundary calculation, and conversion to voxel coordinates.
-  - Removed complex methods and changed to direct approach.
-- `VoxelGrid` **(v0.1.2: Lightweight)**
-  - Generates grids from ranges and voxel sizes, provides index/key calculations.
-  - Removed advanced features like neighbor voxel retrieval.
-- `DataProcessor` **(v0.1.2: Robust)**
-  - Classifies entities into voxels, calculates statistics (min/max/avg, etc.).
-  - Enhanced error handling and implemented safe entity processing.
-- `VoxelRenderer` **(v0.1.2: Entity-based)**
-  - Renders voxels using Cesium Entity (changed from Primitive).
-  - Added new features like wireframeOnly and heightBased.
+### Table of Contents
 
-### Processing Flow (v0.1.2)
-1. **Boundary Calculation**: `CoordinateTransformer.calculateBounds(entities)` - Direct coordinate range calculation
-2. **Grid Generation**: `VoxelGrid.createGrid(bounds, voxelSize)` - Simple grid creation
-3. **Classification/Aggregation**: `DataProcessor.classifyEntitiesIntoVoxels(...)` - Safe entity processing
-4. **Statistics Calculation**: `DataProcessor.calculateStatistics(...)` - Basic statistics calculation
-5. **Rendering**: `VoxelRenderer.render(...)` - Entity-based rendering
+1. [Project Overview](#project-overview)
+2. [Technical Specifications](#technical-specifications)
+3. [Architecture Design](#architecture-design)
+4. [API Specifications](#api-specifications)
+5. [Performance Requirements](#performance-requirements)
+6. [Error Handling](#error-handling)
+7. [UI/UX Specifications](#uiux-specifications)
+8. [Test Specifications](#test-specifications)
+9. [Implementation Guidelines](#implementation-guidelines)
+10. [Constraints](#constraints)
+11. [Future Extensions](#future-extensions)
 
-### 互換性・依存
-- **Entity-based Rendering**: Changed from Primitive to Entity for improved stability
-- Cesium: ^1.120.0（peer）/ Node.js: >=18
-- Auto Render Budget / fitView 等は v0.1.9 の設計（ADR-0006）を継承
+#### Project Overview
 
-### New Feature Options
+**Purpose**
+
+Develop "Heatbox", a 3D voxel-based heatmap visualization library targeting existing entities in CesiumJS environments. Visualize spatial data analysis by dividing geographic space into fixed-size voxels and visualizing entity density within each voxel in 3D space.
+
+**Basic Principles**
+
+- **Entity-based**: Automatically acquire data from existing Cesium Entities
+- **Automatic range setting**: Auto-calculate optimal rectangular (AABB) range from entity distribution
+- **Adaptive rendering**: Smart voxel selection strategies (density/coverage/hybrid) for balanced visualization (v0.1.9)
+- **Intelligent sizing**: Occupancy-based auto voxel size calculation for optimal performance (v0.1.9)
+- **Device-aware**: Auto render budget based on device capabilities for consistent experience (v0.1.9)
+- **Smart visualization**: Automatic camera positioning and view optimization (v0.1.9)
+- **Relative color coding**: Dynamic color coding based on minimum/maximum values in data
+- **Performance optimization**: Efficient processing with adaptive limits and multi-tier device support
+
+**Version History**
+
+- **v0.1.6** - Hardening and Documentation: Enhanced outline width control, overlap prevention, wiki automation
+- **v0.1.6.1** - Inset Outlines: Dual-box rendering system for visual separation
+- **v0.1.7** - Adaptive Outlines: Dynamic outline control, multiple rendering modes, opacity resolvers
+- **v0.1.8** - Performance and Stability: Improved rendering pipeline with caching optimizations
+- **v0.1.9** - Adaptive Rendering and Smart Views: Device-aware optimization, smart view assistance
+
+**Target Users**
+
+- Geographic spatial application developers using CesiumJS
+- Researchers and analysts requiring 3D spatial data density analysis
+- Specialists in architecture and urban planning performing 3D visualization
+
+#### Technical Specifications
+
+**Technology Stack**
+
+Development Environment:
+- **Module System**: ES Modules (ES6 import/export)
+- **Build Tool**: Webpack 5
+- **Transpiler**: Babel (ES2015+ support)
+- **Test Framework**: Jest
+- **Linter**: ESLint (JavaScript Standard Style)
+- **Package Manager**: npm
+- **Type Checking**: TypeScript (type definition files)
+
+Dependency Management:
+- **peerDependencies**: cesium ^1.120.0
+- **dependencies**: {} (no runtime dependencies for lightweight design)
+- **devDependencies**: Development tools (Webpack, Babel, Jest, ESLint, TypeScript, etc.)
+
+Supported Module Formats:
+- **ES Modules (recommended)**: For modern browsers and Node.js environments
+- **UMD (legacy support)**: Direct browser loading
+- **CommonJS**: Old Node.js environments
+- **TypeScript type definitions**: Included
+
+Browser Support:
+- **Minimum requirements**: Chrome 90+, Firefox 90+, Safari 14+, Edge 90+
+- **Recommended**: Latest versions
+
+Node.js Requirements:
+- **Development environment**: Node.js 18.0.0+, npm 8.0.0+
+- **Runtime requirements**: ESM support Node.js 14.0.0+
+
+#### Architecture Design
+
+**Project Structure**
+
+```
+cesium-heatbox/
+├── src/                       # Source code
+│   ├── index.js              # Main entry point
+│   ├── Heatbox.js            # Main class
+│   ├── core/                 # Core functionality
+│   │   ├── CoordinateTransformer.js
+│   │   ├── VoxelGrid.js
+│   │   ├── DataProcessor.js
+│   │   └── VoxelRenderer.js
+│   └── utils/                # Utilities
+├── dist/                      # Build output
+├── test/                      # Test code
+├── examples/                  # Usage examples
+├── docs/                      # Documentation
+└── types/                     # TypeScript type definitions
+```
+
+**Class Structure**
+
 ```javascript
-const heatbox = new Heatbox(viewer, {
-  wireframeOnly: true,    // Show only wireframes
-  heightBased: true,      // Height-based representation  
-  outlineWidth: 2,        // Outline thickness
-  maxRenderVoxels: 300    // Render count limitation
+class Heatbox {
+    constructor(viewer, options)
+    setData(entities)
+    updateOptions(newOptions)
+    setVisible(show)
+    clear()
+    destroy()
+    getStatistics()
+    getBounds()
+    fitView(bounds, options)  // v0.1.9: Smart view assistance
+}
+```
+
+**Data Structures**
+
+Bounds (boundary information):
+```javascript
+const bounds = {
+    minLon: number,     // Minimum longitude
+    maxLon: number,     // Maximum longitude
+    minLat: number,     // Minimum latitude
+    maxLat: number,     // Maximum latitude
+    minAlt: number,     // Minimum altitude
+    maxAlt: number,     // Maximum altitude
+    centerLon: number,  // Center longitude
+    centerLat: number,  // Center latitude
+    centerAlt: number   // Center altitude
+};
+```
+
+#### Performance Requirements
+
+**Processing Time Goals**
+
+| Entity Count | Target Time | Approx Voxels | Instanced FPS |
+|-------------|-------------|---------------|---------------|
+| 100-500     | < 1 sec     | < 5,000       | ≥ 60          |
+| 500-1,500   | < 3 sec     | < 15,000      | ≥ 58          |
+| 1,500-3,000 | < 5 sec     | < 30,000      | ≥ 56          |
+| 3,000+      | < 10 sec    | < 50,000      | ≥ 55          |
+
+**Memory Usage**
+- **Base memory**: 10-20MB (library core)
+- **Voxel data**: (2KB × non-empty voxels) + (0.2KB × empty voxels)
+- **Maximum recommended**: Under 100MB
+
+**Limitation Values**
+```javascript
+const performanceLimits = {
+    maxEntities: 5000,              // Maximum processable entities
+    maxVoxels: 50000,              // Maximum renderable voxels
+    maxEmptyVoxelsRendered: 10000,  // Empty voxel rendering limit
+    minVoxelSize: 5,               // Minimum voxel size (meters)
+    maxVoxelSize: 1000,            // Maximum voxel size (meters)
+    warningThreshold: 30000,       // Warning display voxel count threshold
+    // v0.1.9 Auto Render Budget device tiers
+    deviceTiers: {
+        low: { min: 8000, max: 12000 },
+        mid: { min: 20000, max: 35000 },
+        high: { min: 40000, max: 50000 }
+    }
+};
+```
+
+#### Error Handling
+
+**Error Classification and Response**
+
+Input Data Errors:
+```javascript
+// No entities
+if (entities.length === 0) {
+    throw new Error('No target entities');
+}
+
+// Invalid position information
+if (!position || isNaN(position.x)) {
+    console.warn(`Entity ${index} has invalid position`);
+    continue; // Skip and continue processing
+}
+```
+
+Resource Limit Errors:
+```javascript
+// Voxel count exceeds limit
+if (totalVoxels > maxVoxels) {
+    throw new Error(
+        `Voxel count exceeds limit(${maxVoxels}): ${totalVoxels}\n` +
+        `Please increase voxel size to ${recommendedSize}m or higher`
+    );
+}
+```
+
+#### Future Extensions
+
+**v0.1.9 Implemented Features**
+
+Adaptive rendering and smart visualization:
+- **Adaptive rendering strategies**: density/coverage/hybrid voxel selection (✅ Implemented)
+- **Device-aware performance**: Auto render budget based on device capabilities (✅ Implemented)
+- **Smart view assistance**: Automatic camera positioning and fitView method (✅ Implemented)
+- **Enhanced auto voxel sizing**: Occupancy-based calculation with iterative approximation (✅ Implemented)
+
+Outline enhancements (v0.1.6-0.1.8 features integrated):
+- **Dynamic outline width**: `outlineWidthResolver` function for per-voxel control (✅ Implemented)
+- **Outline overlap prevention**: `voxelGap` and `outlineOpacity` controls (✅ Implemented)
+- **Inset outlines**: Dual-box rendering with `outlineInset` for visual separation (✅ Implemented)
+- **Adaptive outline control**: Multiple rendering modes with density-based adjustments (✅ Implemented)
+- **Opacity resolvers**: Dynamic `boxOpacityResolver` and `outlineOpacityResolver` (✅ Implemented)
+
+Performance and stability:
+- **Caching optimizations**: Improved rendering pipeline for large datasets (✅ Implemented)
+- **Enhanced emulation**: WebGL line width limitation workarounds (✅ Implemented)
+- **Memory management**: Leak prevention and stability improvements (✅ Implemented)
+
+**v1.0.0 Planned Features**
+
+Dynamic functionality:
+- **Real-time updates**: Automatic reflection of entity changes
+- **Animation**: Time-series data playback functionality
+- **Interaction**: Voxel click and hover events
+
+Data source selection functionality:
+- **Data source specification**: Generate heatmaps from specific data source entities only
+- **Data source switching**: Compare heatmaps between multiple data sources
+- **Data source integration**: Create heatmaps combining multiple data sources
+- **Data source management**: List and search functionality for data sources
+
+Customization:
+- **Custom color scales**: Gradients and categorical color coding
+- **Filtering**: Conditional filtering by attributes
+- **Export**: PNG and data CSV output
+
+**v2.0.0 Planned Features**
+
+Advanced analysis:
+- **Hierarchical voxels**: Different levels of detail (LOD)
+- **Statistical analysis**: Advanced statistics like variance and correlation coefficients
+- **Interpolation functionality**: Density interpolation in 3D space
+
+Performance optimization:
+- **WebWorker**: Background processing
+- **WebGPU support investigation**: Introduction of next-generation GPU computing
+- **Color LUT texturization**: GPU optimization of color coding processing
+
+**Long-term Roadmap**
+
+v1.0.0 features:
+- **Production quality**: Enterprise environment support
+- **Plugin system**: Third-party extensions
+- **Cloud integration**: Direct database connection
+
+Research and development items:
+- **Machine learning integration**: Anomaly detection and pattern recognition
+- **AR/VR support**: 3D display in WebXR environments
+- **Distributed processing**: Parallel analysis of large-scale data
+
+For detailed specifications, constraints, and implementation guidelines, see the Japanese section below.
+
+## 日本語
+
+**バージョン**: 0.1.9  
+**最終更新**: 2025年9月  
+**作成者**: hiro-nyon  
+
+## 目次
+
+1. [プロジェクト概要](#プロジェクト概要)
+2. [技術仕様](#技術仕様)
+3. [アーキテクチャ設計](#アーキテクチャ設計)
+4. [API仕様](#api仕様)
+5. [パフォーマンス要件](#パフォーマンス要件)
+6. [エラーハンドリング](#エラーハンドリング)
+7. [UI/UX仕様](#uiux仕様)
+8. [テスト仕様](#テスト仕様)
+9. [実装ガイドライン](#実装ガイドライン)
+10. [制約事項](#制約事項)
+11. [将来的な拡張](#将来的な拡張)
+
+---
+
+## プロジェクト概要
+
+### 目的
+
+CesiumJS環境内の既存エンティティを対象とした3Dボクセルベースヒートマップ可視化ライブラリ「Heatbox」を開発する。地理的空間内のエンティティ分布を固定サイズのボクセルで分割し、各ボクセル内のエンティティ密度を3D空間で可視化することで、空間的なデータ分析を支援する。
+
+### 基本方針
+
+- **Entityベース**: 既存のCesium Entityから自動でデータを取得
+- **自動範囲設定**: エンティティ分布から最適な直方体（AABB）範囲を自動計算
+- **適応的レンダリング**: 疎密バランスを考慮したボクセル選択戦略（density/coverage/hybrid）（v0.1.9）
+- **知的サイズ決定**: 占有率ベースの自動ボクセルサイズ計算による最適なパフォーマンス（v0.1.9）
+- **端末適応**: 端末能力に基づく自動レンダリング予算で一貫した体験（v0.1.9）
+- **スマート可視化**: 自動カメラ位置調整と視点最適化（v0.1.9）
+- **相対的色分け**: データ内の最小値・最大値に基づく動的色分け
+- **パフォーマンス最適化**: 適応的制限とマルチティア端末サポートによる効率的処理
+
+### バージョン履歴
+
+- **v0.1.6** - ハードニングとドキュメント: 枠線太さ制御の強化、重なり防止、Wiki自動化
+- **v0.1.6.1** - インセット枠線: 視覚的分離のための二重ボックスレンダリングシステム
+- **v0.1.7** - 適応的枠線: 動的枠線制御、複数レンダリングモード、透明度リゾルバー
+- **v0.1.8** - パフォーマンスと安定性: キャッシング最適化によるレンダリングパイプライン改善
+- **v0.1.9** - 適応的レンダリングとスマートビュー: 端末適応最適化、スマートビュー支援
+
+### 対象ユーザー
+
+- CesiumJSを使用した地理空間アプリケーション開発者
+- 3D空間でのデータ密度分析が必要な研究者・アナリスト
+- 建築・都市計画分野での3D可視化を行う専門家
+
+---
+
+## 技術仕様
+
+### 技術スタック
+
+#### 開発環境
+- **モジュールシステム**: ESモジュール（ES6 import/export）
+- **ビルドツール**: Webpack 5
+- **トランスパイラ**: Babel（ES2015+対応）
+- **テストフレームワーク**: Jest
+- **リンター**: ESLint（JavaScript Standard Style）
+- **パッケージマネージャー**: npm
+- **型チェック**: TypeScript（型定義ファイル）
+
+#### 依存関係管理
+
+##### peerDependencies
+```json
+{
+  "cesium": "^1.120.0"
+}
+```
+
+##### devDependencies
+```json
+{
+  "@babel/core": "^7.26.0",
+  "@babel/preset-env": "^7.26.0",
+  "@babel/preset-typescript": "^7.26.0",
+  "@babel/eslint-parser": "^7.25.0",
+  "@types/node": "^22.10.0",
+  "@types/cesium": "^1.130.0",
+  "@typescript-eslint/eslint-plugin": "^8.15.0",
+  "@typescript-eslint/parser": "^8.15.0",
+  "babel-jest": "^30.0.0",
+  "babel-loader": "^9.2.0",
+  "eslint": "^9.15.0",
+  "eslint-config-standard": "^17.1.0",
+  "eslint-plugin-jest": "^29.0.0",
+  "jest": "^30.0.0",
+  "jsdoc": "^4.0.4",
+  "typescript": "^5.7.0",
+  "webpack": "^5.97.0",
+  "webpack-cli": "^6.0.0",
+  "webpack-dev-server": "^5.2.0",
+  "eslint-webpack-plugin": "^4.2.0"
+}
+```
+
+##### dependencies
+```json
+{}
+```
+※ 軽量化のため、runtime dependenciesは使用しない
+
+#### 対応モジュール形式
+
+##### ESモジュール（推奨）
+```javascript
+// モダンブラウザ・Node.js環境向け
+import Heatbox from 'cesium-heatbox';
+import { generateTestEntities } from 'cesium-heatbox';
+```
+
+##### UMD（レガシー対応）
+```html
+<!-- ブラウザ直接読み込み -->
+<script src="cesium-heatbox.umd.js"></script>
+<script>
+  const heatbox = new CesiumHeatbox(viewer);
+</script>
+```
+
+##### CommonJS（Node.js環境）
+```javascript
+// 古いNode.js環境
+const Heatbox = require('cesium-heatbox');
+```
+
+#### TypeScript型定義
+
+```typescript
+// types/index.d.ts
+declare module 'cesium-heatbox' {
+  export interface HeatboxOptions {
+    voxelSize?: number;
+    opacity?: number;
+    emptyOpacity?: number;
+    showOutline?: boolean;
+    showEmptyVoxels?: boolean;
+    minColor?: [number, number, number];
+    maxColor?: [number, number, number];
+    maxRenderVoxels?: number | 'auto'; // v0.1.9: Auto Render Budget
+    batchMode?: 'auto' | 'primitive' | 'entity';
+    // v0.1.4+ features
+    autoVoxelSize?: boolean;
+    debug?: boolean | { showBounds?: boolean };
+    colorMap?: 'custom' | 'viridis' | 'inferno';
+    diverging?: boolean;
+    divergingPivot?: number;
+    highlightTopN?: number | null;
+    highlightStyle?: { outlineWidth?: number; boostOpacity?: number };
+    // v0.1.6 outline enhancements
+    outlineWidth?: number;
+    outlineOpacity?: number;
+    outlineWidthResolver?: (params: {
+      voxel: { x: number; y: number; z: number; count: number };
+      isTopN: boolean;
+      normalizedDensity: number;
+    }) => number;
+    voxelGap?: number;
+    // v0.1.6.1 inset outlines
+    outlineInset?: number;
+    outlineInsetMode?: 'all' | 'topn';
+    // v0.1.7 adaptive outlines
+    outlineRenderMode?: 'standard' | 'inset' | 'emulation-only';
+    boxOpacityResolver?: (ctx: any) => number;
+    outlineOpacityResolver?: (ctx: any) => number;
+    outlineWidthPreset?: 'adaptive-density' | 'topn-focus' | 'uniform';
+    adaptiveOutlines?: boolean;
+    // v0.1.9 adaptive rendering features
+    autoVoxelSizeMode?: 'basic' | 'occupancy';
+    renderLimitStrategy?: 'density' | 'coverage' | 'hybrid';
+    minCoverageRatio?: number;
+    coverageBinsXY?: number | 'auto';
+    renderBudgetMode?: 'manual' | 'auto';
+    autoView?: boolean;
+    fitViewOptions?: {
+      paddingPercent?: number;
+      pitch?: number;
+      heading?: number;
+      altitudeStrategy?: 'auto' | 'manual';
+    };
+  }
+
+  export interface HeatboxStatistics {
+    totalVoxels: number;
+    renderedVoxels: number;
+    nonEmptyVoxels: number;
+    emptyVoxels: number;
+    totalEntities: number;
+    minCount: number;
+    maxCount: number;
+    averageCount: number;
+    // v0.1.4+ additions
+    autoAdjusted?: boolean;
+    originalVoxelSize?: number;
+    finalVoxelSize?: number;
+    adjustmentReason?: string;
+    // v0.1.9 adaptive rendering statistics
+    selectionStrategy?: string;
+    clippedNonEmpty?: number;
+    coverageRatio?: number;
+    renderBudgetTier?: 'low' | 'mid' | 'high';
+    autoMaxRenderVoxels?: number;
+  }
+
+  export default class Heatbox {
+    constructor(viewer: any, options?: HeatboxOptions);
+    setData(entities: any[]): void;
+    updateOptions(newOptions: HeatboxOptions): void;
+    setVisible(show: boolean): void;
+    clear(): void;
+    destroy(): void;
+    getStatistics(): HeatboxStatistics | null;
+    getBounds(): object | null;
+    // v0.1.9: Smart view assistance
+    fitView(bounds?: object, options?: {
+      paddingPercent?: number;
+      pitch?: number;
+      heading?: number;
+      altitudeStrategy?: 'auto' | 'manual';
+    }): Promise<void>;
+  }
+
+  export function createHeatbox(viewer: any, options: HeatboxOptions): Heatbox;
+  export function getAllEntities(viewer: any): any[];
+  export function generateTestEntities(viewer: any, bounds: any, count?: number): any[];
+  export function getEnvironmentInfo(): object;
+}
+```
+
+#### ビルド設定
+
+##### Webpack設定
+```javascript
+// webpack.config.js
+const path = require('path');
+const ESLintPlugin = require('eslint-webpack-plugin');
+
+module.exports = (env, argv) => {
+  const isProduction = argv.mode === 'production';
+  
+  return {
+    entry: './src/index.js',
+    
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: isProduction ? 
+        'cesium-heatbox.min.js' : 
+        'cesium-heatbox.js',
+      library: {
+        name: 'CesiumHeatbox',
+        type: 'umd',
+        export: 'default'
+      },
+      globalObject: 'this',
+      clean: true
+    },
+    
+    externals: {
+      cesium: {
+        commonjs: 'cesium',
+        commonjs2: 'cesium',
+        amd: 'cesium',
+        root: 'Cesium'
+      }
+    },
+    
+    module: {
+      rules: [
+        {
+          test: /\.js$/,
+          exclude: /node_modules/,
+          use: {
+            loader: 'babel-loader',
+            options: {
+              presets: [
+                ['@babel/preset-env', {
+                  targets: {
+                    browsers: ["> 1%", "last 2 versions", "not dead"]
+                  }
+                }]
+              ]
+            }
+          }
+        }
+      ]
+    },
+    
+    plugins: [
+      new ESLintPlugin({
+        extensions: ['js'],
+        configType: 'eslintrc',
+        fix: true
+      })
+    ],
+    
+    resolve: {
+      extensions: ['.js']
+    },
+    
+    devtool: isProduction ? 'source-map' : 'eval-source-map',
+    
+    optimization: {
+      minimize: isProduction
+    },
+    
+    devServer: {
+      static: {
+        directory: path.join(__dirname, 'examples'),
+      },
+      compress: true,
+      port: 8080,
+      hot: true,
+      open: true
+    }
+  };
+};
+```
+
+##### Babel設定
+```json
+{
+  "presets": [
+    ["@babel/preset-env", {
+      "targets": {
+        "browsers": ["> 1%", "last 2 versions", "not dead"]
+      },
+      "modules": false
+    }],
+    "@babel/preset-typescript"
+  ],
+  "env": {
+    "test": {
+      "presets": [
+        ["@babel/preset-env", {
+          "targets": { "node": "current" }
+        }],
+        "@babel/preset-typescript"
+      ]
+    }
+  }
+}
+```
+
+##### ESLint設定（最新フラット設定）
+```javascript
+// eslint.config.js (ESLint 9.0+対応)
+import js from '@eslint/js';
+import typescript from '@typescript-eslint/eslint-plugin';
+import typescriptParser from '@typescript-eslint/parser';
+import jest from 'eslint-plugin-jest';
+
+export default [
+  js.configs.recommended,
+  {
+    files: ['src/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        Cesium: 'readonly'
+      }
+    },
+    rules: {
+      'no-console': 'warn',
+      'prefer-const': 'error',
+      'no-var': 'error'
+    }
+  },
+  {
+    files: ['src/**/*.ts'],
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module'
+      }
+    },
+    plugins: {
+      '@typescript-eslint': typescript
+    },
+    rules: {
+      ...typescript.configs.recommended.rules
+    }
+  },
+  {
+    files: ['test/**/*.js', 'test/**/*.ts'],
+    ...jest.configs['flat/recommended'],
+    rules: {
+      ...jest.configs['flat/recommended'].rules,
+      'jest/prefer-expect-assertions': 'off'
+    }
+  }
+];
+```
+
+##### Jest設定
+```javascript
+// jest.config.js
+export default {
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
+  moduleNameMapping: {
+    '^@/(.*)': '<rootDir>/src/$1'
+  },
+  collectCoverageFrom: [
+    'src/**/*.{js,ts}',
+    '!src/index.{js,ts}'
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  transform: {
+    '^.+\.(js|ts)': 'babel-jest'
+  },
+  testMatch: [
+    '<rootDir>/test/**/*.{test,spec}.{js,ts}'
+  ]
+};
+```
+
+##### TypeScript設定
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "declarationDir": "./types",
+    "declaration": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
+    "sourceMap": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test"
+  ]
+}
+```
+
+#### 対応ブラウザ
+
+##### 最小要件
+- **Chrome**: 90+
+- **Firefox**: 90+
+- **Safari**: 14+
+- **Edge**: 90+
+
+##### 推奨環境
+- **Chrome**: 100+（最新版）
+- **Firefox**: 100+（最新版）
+- **Safari**: 15+
+- **Edge**: 100+（最新版）
+
+#### Node.js要件
+
+##### 開発環境
+- **Node.js**: 18.0.0+
+- **npm**: 8.0.0+
+
+##### ランタイム要件
+- **ESM対応**: Node.js 14.0.0+
+- **型チェック**: TypeScript 4.5.0+
+
+### 座標系と変換
+
+#### 入力座標系
+- **WGS84地理座標**: 経度（度）、緯度（度）、高度（メートル）
+- **Cesium Entity.position**: Cartesian3またはPropertyによる位置情報
+
+#### 内部処理座標系
+- **ローカル直交座標系**: East-North-Up (ENU) 座標系
+- **変換方法**: `Cesium.Transforms.eastNorthUpToFixedFrame()`
+- **単位**: メートル
+
+#### 座標変換の実装
+
+```javascript
+// 度からメートルへの概算変換
+const lonRangeMeters = (maxLon - minLon) * 111000 * Math.cos(centerLat_rad);
+const latRangeMeters = (maxLat - minLat) * 111000;
+
+// ボクセルインデックス計算
+const voxelX = Math.floor(
+    (lon - bounds.minLon) / (bounds.maxLon - bounds.minLon) * grid.numVoxelsX
+);
+const voxelY = Math.floor(
+    (lat - bounds.minLat) / (bounds.maxLat - bounds.minLat) * grid.numVoxelsY
+);
+const voxelZ = Math.floor(
+    (alt - bounds.minAlt) / (bounds.maxAlt - bounds.minAlt) * grid.numVoxelsZ
+);
+```
+
+### データ処理アルゴリズム
+
+#### 処理フロー
+
+1. **Entity範囲計算**: `CoordinateTransformer.calculateBounds(entities)`
+   - 全エンティティの3D Bounding Boxを計算
+   - 有効な位置情報を持つエンティティのみを対象
+   
+2. **ボクセルグリッド生成**: `VoxelGrid.createGrid(bounds, voxelSize)`
+   - 範囲を内包する最小のボクセルグリッドを生成
+   - ボクセル数 = ceil(範囲_メートル / ボクセルサイズ_メートル)
+   
+3. **エンティティ分類**: `DataProcessor.classifyEntitiesIntoVoxels(entities, bounds, grid)`
+   - 各エンティティのボクセルインデックスを計算
+   - Map構造でボクセルごとのエンティティリストを管理
+   
+4. **統計計算**: `DataProcessor.calculateStatistics(voxelData, grid)`
+   - 密度の最小値・最大値・平均値を計算
+   - 空ボクセル数もカウント
+   
+5. **可視化**: `VoxelRenderer.render(voxelData, bounds, grid, stats)`
+   - **描画はCesium.Entity.BoxをGeometryInstance + Primitiveでバッチ化して行う**
+   - 密度に応じた色分けを適用
+
+### ボクセル管理
+
+#### ボクセルサイズ仕様
+- **推奨範囲**: 10-100メートル
+- **デフォルト値**: 20メートル
+- **用途別推奨値**:
+  - 5-10m: 建物内部解析（超詳細）
+  - 10-20m: 建物レベル解析
+  - 20-50m: 街区レベル解析
+  - 50-100m: 地区レベル解析
+
+#### 空ボクセル処理
+- **デフォルト**: 非表示（パフォーマンス重視）
+- **オプション**: 表示可能（全体構造把握用）
+- **空ボクセル色**: `Cesium.Color.LIGHTGRAY`
+- **空ボクセル透明度**: 0.01-0.2（ユーザー調整可能）
+
+#### 色分けアルゴリズム
+- **カラーマップ**: HSV補間による線形色分け
+- **デフォルト色範囲**: 
+  - minColor: [0, 32, 255] （青系）
+  - maxColor: [255, 64, 0] （赤系）
+- **正規化**: 密度の最小値・最大値から相対的色分け
+- **極値処理**: 高密度点の視認性を最適化
+
+#### バッチ描画実装（VoxelRenderer.js）
+
+```javascript
+class VoxelRenderer {
+  createBatchedVoxels(voxelData, options) {
+    const instances = [];
+    const { minCount, maxCount } = this.statistics;
+    
+    voxelData.forEach((voxel) => {
+      // HSV補間による色計算
+      const normalizedDensity = (voxel.count - minCount) / (maxCount - minCount);
+      const hue = (1.0 - normalizedDensity) * 240; // 青(240°) → 赤(0°)
+      const saturation = 0.8 + normalizedDensity * 0.2; // 彩度調整
+      const brightness = 0.7 + normalizedDensity * 0.3; // 明度調整
+      
+      const color = Cesium.Color.fromHsl(hue / 360, saturation, brightness);
+      
+      // GeometryInstance作成
+      const instance = new Cesium.GeometryInstance({
+        geometry: new Cesium.BoxGeometry({
+          vertexFormat: Cesium.PerInstanceColorAppearance.VERTEX_FORMAT,
+          dimensions: new Cesium.Cartesian3(
+            grid.cellSizeX,
+            grid.cellSizeY,
+            grid.cellSizeZ
+          )
+        }),
+        modelMatrix: Cesium.Matrix4.multiplyByTranslation(
+          Cesium.Transforms.eastNorthUpToFixedFrame(voxel.worldPosition),
+          new Cesium.Cartesian3(0, 0, grid.cellSizeZ / 2),
+          new Cesium.Matrix4()
+        ),
+        attributes: {
+          color: Cesium.ColorGeometryInstanceAttribute.fromColor(
+            color.withAlpha(this.options.opacity)
+          )
+        }
+      });
+      
+      instances.push(instance);
+    });
+    
+    // Primitive作成（バッチ描画）
+    const primitive = new Cesium.Primitive({
+      geometryInstances: instances,
+      appearance: new Cesium.PerInstanceColorAppearance({
+        closed: true,
+        translucent: this.options.opacity < 1.0
+      }),
+      allowPicking: true
+    });
+    
+    return primitive;
+  }
+}
+```
+
+---
+
+## アーキテクチャ設計
+
+### プロジェクト構造
+
+```
+cesium-heatbox/
+├── package.json                 # パッケージ設定・依存関係
+├── webpack.config.js           # Webpackビルド設定
+├── babel.config.js             # Babel設定
+├── jest.config.js              # Jest設定
+├── .eslintrc.js               # ESLint設定
+├── tsconfig.json              # TypeScript設定
+├── README.md                  # プロジェクト概要
+├── LICENSE                    # MITライセンス
+├── CHANGELOG.md               # 変更履歴
+├── .gitignore                 # Git除外設定
+├── .github/                   # GitHub Actions
+│   └── workflows/
+│       ├── ci.yml            # CI/CDパイプライン
+│       └── release.yml       # リリース自動化
+├── src/                       # ソースコード
+│   ├── index.js              # メインエントリーポイント
+│   ├── Heatbox.js            # 主要クラス
+│   ├── core/                 # 核心機能
+│   │   ├── CoordinateTransformer.js
+│   │   ├── VoxelGrid.js
+│   │   ├── DataProcessor.js
+│   │   └── VoxelRenderer.js
+│   └── utils/                # ユーティリティ
+│       ├── sampleData.js
+│       ├── validation.js
+│       └── constants.js
+├── dist/                      # ビルド出力
+│   ├── cesium-heatbox.js
+│   ├── cesium-heatbox.min.js
+│   ├── cesium-heatbox.umd.js
+│   └── cesium-heatbox.d.ts
+├── types/                     # TypeScript型定義
+│   └── index.d.ts
+├── test/                      # テストコード
+│   ├── Heatbox.test.js
+│   ├── integration/
+│   └── fixtures/
+├── examples/                  # 使用例
+│   ├── basic/
+│   │   ├── index.html
+│   │   └── app.js
+│   ├── advanced/
+│   └── performance/
+├── docs/                      # ドキュメント
+│   ├── API.md
+│   ├── getting-started.md
+│   ├── examples.md
+│   └── contributing.md
+└── tools/                     # 開発ツール
+    ├── build.js
+    ├── test-coverage.js
+    └── benchmark.js
+```
+
+### ビルドプロセス
+
+#### 開発ビルド
+```bash
+# 開発サーバー起動
+npm run dev
+
+# ウォッチモード
+npm run build:watch
+
+# リンティング
+npm run lint
+npm run lint:fix
+```
+
+#### 本番ビルド
+```bash
+# 全ての形式でビルド
+npm run build
+
+# ESM版のみ
+npm run build:esm
+
+# UMD版のみ  
+npm run build:umd
+
+# 型定義生成
+npm run build:types
+```
+
+#### 品質チェック
+```bash
+# テスト実行
+npm test
+npm run test:watch
+npm run test:coverage
+
+# 型チェック
+npm run type-check
+
+# パフォーマンステスト
+npm run benchmark
+```
+
+### 配布仕様
+
+#### NPMパッケージ構成（現行）
+```json
+{
+  "name": "cesium-heatbox",
+  "version": "0.1.4",
+  "main": "dist/cesium-heatbox.umd.min.js",
+  "module": "dist/cesium-heatbox.min.js",
+  "types": "types/index.d.ts",
+  "browser": "dist/cesium-heatbox.umd.min.js",
+  "files": [
+    "dist/",
+    "types/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/cesium-heatbox.min.js",
+      "require": "./dist/cesium-heatbox.umd.min.js",
+      "default": "./dist/cesium-heatbox.umd.min.js"
+    }
+  }
+}
+```
+
+#### CDN配布
+```html
+<!-- jsDelivr CDN -->
+<script src="https://cdn.jsdelivr.net/npm/cesium-heatbox@latest/dist/cesium-heatbox.min.js"></script>
+
+<!-- unpkg CDN -->
+<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.min.js"></script>
+```
+
+### クラス構造
+
+```javascript
+class Heatbox {
+    constructor(viewer, options)
+    setData(entities)
+    updateOptions(newOptions)
+    setVisible(show)
+    clear()
+    destroy()
+    getStatistics()
+    getBounds()
+    fitView(bounds, options)  // v0.1.9: スマート視覚化支援
+}
+```
+
+### データ構造
+
+#### Bounds（境界情報）
+```javascript
+const bounds = {
+    minLon: number,     // 最小経度
+    maxLon: number,     // 最大経度
+    minLat: number,     // 最小緯度
+    maxLat: number,     // 最大緯度
+    minAlt: number,     // 最小高度
+    maxAlt: number,     // 最大高度
+    centerLon: number,  // 中心経度
+    centerLat: number,  // 中心緯度
+    centerAlt: number   // 中心高度
+};
+```
+
+#### Grid（グリッド情報）
+```javascript
+const grid = {
+    numVoxelsX: number,        // X方向ボクセル数
+    numVoxelsY: number,        // Y方向ボクセル数
+    numVoxelsZ: number,        // Z方向ボクセル数
+    totalVoxels: number,       // 総ボクセル数
+    voxelSizeMeters: number,   // ボクセルサイズ（メートル）
+    lonRangeMeters: number,    // 経度範囲（メートル）
+    latRangeMeters: number,    // 緯度範囲（メートル）
+    altRangeMeters: number     // 高度範囲（メートル）
+};
+```
+
+#### VoxelData（ボクセルデータ）
+```javascript
+const voxelData = new Map(); // Key: "x,y,z", Value: VoxelInfo
+
+const voxelInfo = {
+    x: number,              // ボクセルX座標
+    y: number,              // ボクセルY座標  
+    z: number,              // ボクセルZ座標
+    entities: Entity[],     // 含まれるエンティティ配列
+    count: number          // エンティティ数
+};
+```
+
+---
+
+## API仕様
+
+### コンストラクタ
+
+```javascript
+new Heatbox(viewer, options)
+```
+
+**パラメータ**:
+- `viewer` (Cesium.Viewer): CesiumJSビューワーインスタンス
+- `options` (Object): 設定オプション
+
+**オプション**:
+```javascript
+const options = {
+    voxelSize: 20,                    // 目標ボクセルサイズ（メートル）（実寸は cellSizeX/Y/Z）
+    opacity: 0.8,                     // データボクセルの透明度
+    emptyOpacity: 0.03,               // 空ボクセルの透明度
+    showOutline: true,                // アウトライン表示
+    showEmptyVoxels: false,           // 空ボクセル表示
+    minColor: [0, 32, 255],          // 最小密度の色（RGB）
+    maxColor: [255, 64, 0],          // 最大密度の色（RGB）
+    maxRenderVoxels: 50000,          // 最大描画ボクセル数
+    batchMode: 'auto'                // 'auto' | 'primitive' | 'entity'
+};
+```
+
+### 主要メソッド
+
+#### setData(entities)
+
+```javascript
+heatbox.setData(entities);
+```
+
+**パラメータ**:
+- `entities` (Array<Cesium.Entity>): 対象エンティティ配列
+
+**説明**:
+エンティティ配列からヒートマップデータを作成し、描画します。このメソッドは非同期ではありません。処理が完了すると、`getStatistics()`で統計情報を取得できます。
+
+#### updateOptions(newOptions)
+
+```javascript
+heatbox.updateOptions({ voxelSize: 30 });
+```
+
+**パラメータ**:
+- `newOptions` (Object): 更新したいオプション
+
+**説明**:
+既存のヒートマップのオプションを更新し、再描画します。
+
+#### その他のメソッド
+
+```javascript
+// 表示/非表示切り替え
+heatbox.setVisible(true/false);
+
+// 統計情報取得
+const stats = heatbox.getStatistics();
+
+// 境界情報取得
+const bounds = heatbox.getBounds();
+
+// 全クリア
+heatbox.clear();
+
+// インスタンス破棄
+heatbox.destroy();
+```
+
+### ユーティリティ関数
+
+```javascript
+// Heatboxインスタンスを生成するヘルパー関数
+const heatbox = createHeatbox(viewer, options);
+
+// 全エンティティ取得
+const allEntities = getAllEntities(viewer);
+
+// テスト用エンティティ生成
+const testEntities = generateTestEntities(viewer, bounds, count);
+
+// 環境情報取得
+const envInfo = getEnvironmentInfo();
+```
+
+---
+
+## パフォーマンス要件
+
+### 処理時間目標
+
+| エンティティ数 | 処理時間目標 | ボクセル数目安 | Instanced FPS |
+|---------------|-------------|---------------|---------------|
+| 100-500       | < 1秒       | < 5,000       | ≥ 60          |
+| 500-1,500     | < 3秒       | < 15,000      | ≥ 58          |
+| 1,500-3,000   | < 5秒       | < 30,000      | ≥ 56          |
+| 3,000+        | < 10秒      | < 50,000      | ≥ 55          |
+
+### メモリ使用量
+
+- **基本メモリ**: 10-20MB（ライブラリ本体）
+- **ボクセルデータ**: (2KB × 非空ボクセル) + (0.2KB × 空ボクセル)
+- **最大推奨**: 100MB以下
+
+### 制限値
+
+```javascript
+const performanceLimits = {
+    maxEntities: 5000,              // 処理可能な最大エンティティ数
+    maxVoxels: 50000,              // 描画可能な最大ボクセル数
+    maxEmptyVoxelsRendered: 10000,  // 空ボクセル描画上限
+    minVoxelSize: 5,               // 最小ボクセルサイズ（メートル）
+    maxVoxelSize: 1000,            // 最大ボクセルサイズ（メートル）
+    warningThreshold: 30000,       // 警告表示のボクセル数閾値
+    // v0.1.9 自動レンダリング予算の端末ティア
+    deviceTiers: {
+        low: { min: 8000, max: 12000 },    // 低性能端末
+        mid: { min: 20000, max: 35000 },   // 中性能端末
+        high: { min: 40000, max: 50000 }   // 高性能端末
+    }
+};
+```
+
+### 最適化手法
+
+1. **スパース表現**: 空ボクセルは必要時のみ描画
+2. **視野外カリング**: 画面外のボクセルをスキップ
+3. **LOD考慮**: 距離に応じた詳細度調整（将来実装）
+4. **バッチ処理**: エンティティの一括処理
+
+---
+
+## エラーハンドリング
+
+### エラー分類と対応
+
+#### 入力データエラー
+```javascript
+// エンティティなし
+if (entities.length === 0) {
+    throw new Error('対象エンティティがありません');
+}
+
+// 無効な位置情報
+if (!position || isNaN(position.x)) {
+    console.warn(`エンティティ ${index} の位置が無効です`);
+    continue; // スキップして処理継続
+}
+```
+
+#### リソース制限エラー
+```javascript
+// ボクセル数上限超過
+if (totalVoxels > maxVoxels) {
+    throw new Error(
+        `ボクセル数が上限(${maxVoxels})を超えています: ${totalVoxels}個\n` +
+        `ボクセルサイズを${recommendedSize}m以上に増やしてください`
+    );
+}
+
+// メモリ不足警告
+if (estimatedMemory > warningThreshold) {
+    console.warn(
+        `推定メモリ使用量: ${estimatedMemory}MB\n` +
+        `パフォーマンスが低下する可能性があります`
+    );
+}
+```
+
+#### システムエラー
+```javascript
+// Viewer未初期化
+if (!this.viewer) {
+    throw new Error('CesiumJS Viewerが初期化されていません');
+}
+
+// WebGL対応チェック
+if (!viewer.scene.canvas.getContext('webgl')) {
+    throw new Error('WebGLがサポートされていません');
+}
+```
+
+### エラー回復処理
+
+1. **Graceful Degradation**: 制限超過時は描画数を制限（`maxRenderVoxels`）。v0.1.4 からは `autoVoxelSize` によりボクセルサイズの自動調整に対応。
+2. **部分処理継続**: 一部エンティティの処理失敗時も継続
+3. **リソース解放**: エラー時も確実にメモリ・リソースを解放
+
+---
+
+## UI/UX仕様
+
+### 推奨設定値
+
+```javascript
+const defaultSettings = {
+    voxelSize: 20,              // 東京駅規模に最適
+    entityCount: 800,           // バランスの良い数
+    opacity: 0.8,               // データボクセル
+    emptyOpacity: 0.03,         // 空ボクセル
+    showOutline: true,          // 境界線表示
+    showEmptyVoxels: false      // 空ボクセル非表示
+};
+```
+
+### コントロール範囲
+
+```javascript
+const controlRanges = {
+    voxelSize: { 
+        min: 10, max: 100, step: 5,
+        sliderRange: [10, 50]    // UIスライダーの推奨範囲
+    },
+    entityCount: { 
+        min: 50, max: 3000, step: 50,
+        recommended: [200, 1500]  // 推奨範囲
+    },
+    opacity: { 
+        min: 0.1, max: 1.0, step: 0.1,
+        dataVoxel: [0.5, 1.0],   // データボクセル推奨
+        emptyVoxel: [0.01, 0.2]  // 空ボクセル推奨
+    }
+};
+```
+
+### ユーザーフィードバック
+
+#### 進捗表示
+- エンティティ処理中: 「テストエンティティを生成中...」
+- ボクセル作成中: 「ヒートマップを作成中...」
+- 完了時: 「作成完了: XXX個の非空ボクセル」
+
+#### 統計情報表示
+```javascript
+const statisticsUI = {
+    format: `
+        総ボクセル数: ${stats.totalVoxels.toLocaleString()}
+        表示ボクセル数: ${stats.renderedVoxels.toLocaleString()}
+        非空ボクセル数: ${stats.nonEmptyVoxels.toLocaleString()}
+        総エンティティ数: ${stats.totalEntities.toLocaleString()}
+        最小密度: ${stats.minCount}
+        最大密度: ${stats.maxCount}
+        平均密度: ${stats.averageCount.toFixed(2)}
+    `,
+    updateTiming: "リアルタイム更新"
+};
+```
+
+#### エラーメッセージ
+- 具体的な原因と対処法を含む
+- ユーザーが理解しやすい平易な表現
+- 推奨設定値の提示
+
+---
+
+## テスト仕様
+
+### 単体テスト
+
+#### カバレッジ要件
+- **最小カバレッジ**: 80%
+- **重要メソッド**: 95%以上
+- **エラーハンドリング**: 100%
+
+#### テストケース
+```javascript
+describe('Heatbox', () => {
+    // 正常系テスト
+    test('基本的なヒートマップ作成', () => {});
+    test('異なるボクセルサイズでの動作', () => {});
+    test('空ボクセル表示の切り替え', () => {});
+    
+    // 異常系テスト
+    test('エンティティなしでのエラー処理', () => {});
+    test('無効な位置情報の処理', () => {});
+    test('メモリ上限超過時の処理', () => {});
 });
 ```
 
-### Extension Possibilities
-- npm packaging
-- Real-time update optimization
-- Custom color maps
-- Data source selection features
+### パフォーマンステスト
+
+#### ベンチマークスイート（Vitest + @vitest/bench）
+
+```bash
+# FPSとメモリをCSV出力
+npm run benchmark
+```
+
+#### 測定項目
+- 処理時間（エンティティ数別）
+- メモリ使用量
+- 描画フレームレート
+- ブラウザ別の性能差
+
+#### ベンチマーク設定
+```javascript
+// vitest.bench.config.js
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    benchmark: {
+      include: ['test/benchmark/**/*.bench.{js,ts}'],
+      outputFile: './benchmark-results.csv',
+      reporters: ['verbose', 'csv']
+    }
+  }
+});
+```
+
+#### ベンチマーク環境
+- **CPU**: Intel i5 8th gen以上
+- **メモリ**: 8GB以上
+- **GPU**: WebGL 2.0対応
+- **ブラウザ**: Chrome 90+, Firefox 90+, Safari 14+
+
+### 統合テスト
+
+#### テストシナリオ
+1. 東京駅周辺での実データテスト
+2. 大量エンティティでの負荷テスト
+3. **極値ケース（100mボクセル×500m範囲）**: 新E2Eテストシナリオ
+4. 異なる地理的範囲でのテスト
+5. ユーザーインタラクションテスト
+
+#### 極値ケース詳細
+```javascript
+// test/e2e/extreme-cases.test.js
+describe('極値ケーステスト', () => {
+  test('100mボクセル×500m範囲での性能', async () => {
+    const bounds = { /* 500m × 500m range */ };
+    const options = { voxelSize: 100 };
+    const entities = generateTestEntities(viewer, bounds, 1000);
+    
+    const startTime = performance.now();
+    await heatmap.createFromEntities(entities);
+    const endTime = performance.now();
+    
+    expect(endTime - startTime).toBeLessThan(3000); // 3秒以内
+    expect(heatmap.getStatistics().renderedVoxels).toBeLessThan(125); // 5×5×5
+  });
+});
+```
+
+---
+
+## 実装ガイドライン
+
+### コーディング規約
+
+#### ESLint設定
+```javascript
+module.exports = {
+    extends: ['standard'],
+    rules: {
+        'no-console': 'warn',
+        'prefer-const': 'error',
+        'no-var': 'error'
+    },
+    globals: {
+        Cesium: 'readonly'
+    }
+};
+```
+
+#### JSDoc規約
+```javascript
+/**
+ * エンティティからヒートマップを作成
+ * @param {Array<Cesium.Entity>} entities - 対象エンティティ配列
+ * @returns {Promise<Object>} 統計情報
+ * @throws {Error} エンティティが空の場合
+ * @example
+ * const stats = await heatbox.createFromEntities(entities);
+ */
+```
+
+### 数学的背景
+
+#### 座標変換の理論
+- **WGS84楕円体**: a=6378137m, f=1/298.257223563
+- **緯度1度の距離**: 約111,000m
+- **経度1度の距離**: 約111,000m × cos(緯度)
+
+#### ボクセル分割アルゴリズム
+```javascript
+// 3D空間の均等分割
+const voxelIndex = {
+    x: Math.floor((position.x - minX) / voxelSize),
+    y: Math.floor((position.y - minY) / voxelSize), 
+    z: Math.floor((position.z - minZ) / voxelSize)
+};
+```
+
+### ベストプラクティス
+
+1. **メモリ管理**: 大量のボクセル生成時はバッチ処理
+2. **エラー処理**: 処理継続可能なエラーは警告レベル
+3. **パフォーマンス**: 重い処理は非同期で実行
+4. **ユーザビリティ**: 進捗表示と中断機能の提供
+
+---
+
+## 制約事項
+
+### 技術的制約
+
+#### システム要件
+- **CesiumJS**: 1.120.0以上
+- **Node.js**: 18.0.0以上（開発環境）
+- **WebGL**: 2.0対応ブラウザ
+- **メモリ**: 4GB以上推奨
+
+#### 機能制約
+- **固定ボクセルサイズ**: 均一サイズのみサポート
+- **リアルタイム更新**: 未対応（v0.1.0）
+- **データ永続化**: セッション内のみ
+- **並列処理**: WebWorker未対応
+
+### 地理的制約
+
+#### 座標系制限
+- **極地対応**: 極地付近では精度低下
+- **日付変更線**: 180度跨ぎでの特別処理が必要
+- **高度範囲**: 地下・成層圏での使用は未検証
+
+#### スケール制限
+```javascript
+const scaleConstraints = {
+    minimumArea: "10m × 10m",      // 最小解析範囲
+    maximumArea: "10km × 10km",    // 最大解析範囲
+    recommendedArea: "100m-1km",    // 推奨範囲
+    heightRange: "0-1000m"         // 推奨高度範囲
+};
+```
+
+### パフォーマンス制約
+
+#### ハードウェア要件
+- **GPU**: WebGL対応必須
+- **RAM**: 8GB以上推奨
+- **CPU**: マルチコア推奨
+
+#### ソフトウェア制約
+- **ブラウザメモリ制限**: 通常2-4GB
+- **WebGL制限**: 最大テクスチャサイズ等
+- **JavaScript実行時間**: 長時間処理でのブラウザ応答停止
+
+---
+
+## 将来的な拡張
+
+### v0.1.9 実装済み機能
+
+#### 適応的レンダリングとスマート可視化
+- **適応的レンダリング戦略**: density/coverage/hybridボクセル選択（✅ 実装済み）
+- **端末適応パフォーマンス**: 端末能力に基づく自動レンダリング予算（✅ 実装済み）
+- **スマート視覚化支援**: 自動カメラ位置調整とfitViewメソッド（✅ 実装済み）
+- **拡張自動ボクセルサイジング**: 占有率ベース計算と反復近似（✅ 実装済み）
+
+### v1.0.0 計画機能
+
+#### 動的機能
+- **リアルタイム更新**: エンティティ変更の自動反映
+- **アニメーション**: 時系列データの再生機能
+- **インタラクション**: ボクセルクリック・ホバーイベント
+
+#### データソース選択機能
+- **データソース指定**: 特定のデータソースのエンティティのみでヒートマップ生成
+  - `createFromDataSource(viewer, dataSource, options)`: 指定したデータソースから生成
+  - `createFromDataSourceByName(viewer, dataSourceName, options)`: 名前指定での生成
+- **データソース切り替え**: 複数のデータソース間でのヒートマップ比較
+  - `switchDataSource(dataSource)`: 動的なデータソース切り替え
+  - `updateFromDataSource(dataSource)`: 指定データソースでの更新
+- **データソース統合**: 複数のデータソースを組み合わせたヒートマップ作成
+  - `createFromMultipleDataSources(viewer, dataSources, options)`: 複数データソース統合
+  - `addDataSource(dataSource)`: 追加データソースの結合
+- **データソース管理**: データソースの一覧表示・名前検索機能
+  - `getAvailableDataSources()`: 利用可能なデータソース一覧取得
+  - `findDataSourceByName(name)`: 名前によるデータソース検索
+  - `getDataSourceInfo(dataSource)`: データソース詳細情報取得
+
+#### カスタマイゼーション
+- **カスタム色スケール**: グラデーション、カテゴリ別色分け
+- **フィルタリング**: 属性による条件絞り込み
+- **エクスポート**: PNG、データCSV出力
+
+### v2.0.0 計画機能
+
+#### 高度な解析
+- **階層ボクセル**: 異なる詳細度レベル（LOD）
+- **統計解析**: 分散、相関係数等の高度統計
+- **補間機能**: 3D空間での密度補間
+
+#### パフォーマンス最適化
+- **WebWorker**: バックグラウンド処理
+- **★★★ WebGPU対応調査**: 次世代GPU演算の導入検討
+- **★★★ カラーLUTテクスチャ化**: 色分け処理のGPU最適化
+
+### 長期ロードマップ
+
+#### v1.0.0 機能
+- **プロダクション品質**: エンタープライズ環境対応
+- **プラグインシステム**: サードパーティ拡張
+- **クラウド連携**: データベース直接接続
+
+#### 研究開発項目
+- **機械学習統合**: 異常検知、パターン認識
+- **AR/VR対応**: WebXR環境での3D表示
+- **分散処理**: 大規模データの並列解析
+
+---
+
+## CI/CD・リリース管理
+
+### 継続的インテグレーション
+
+#### GitHub Actions設定
+```yaml
+# .github/workflows/ci.yml
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run build
+      
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm ci
+      - run: npm run test:coverage
+      - uses: codecov/codecov-action@v3
+```
+
+#### 品質ゲート
+- **リンティング**: ESLint Standard設定
+- **型チェック**: TypeScript strict mode
+- **テストカバレッジ**: 80%以上
+- **ビルド成功**: 全対応形式
+- **パフォーマンス**: ベンチマーク基準内
+
+### リリースプロセス
+
+#### セマンティックバージョニング
+```
+MAJOR.MINOR.PATCH
+
+- MAJOR: 破壊的変更
+- MINOR: 新機能追加（後方互換あり）
+- PATCH: バグフィックス
+```
+
+#### リリース手順
+```bash
+# 1. 機能完成・テスト完了
+npm run test:all
+npm run build:all
+
+# 2. バージョン更新
+npm version patch|minor|major
+
+# 3. CHANGELOG更新
+npm run changelog
+
+# 4. リリース
+git push origin main --tags
+npm publish
+```
+
+#### 自動リリース
+```yaml
+# .github/workflows/release.yml
+name: Release
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm ci
+      - run: npm run build:all
+      - run: npm test:all
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### デプロイメント戦略
+
+#### 段階的リリース
+1. **Alpha版**: 内部テスト用（@alpha タグ）
+2. **Beta版**: 限定ユーザー向け（@beta タグ）
+3. **RC版**: リリース候補（@rc タグ）
+4. **Stable版**: 本番リリース（@latest タグ）
+
+#### ロールバック計画
+- **緊急時**: 前バージョンへの即座復旧
+- **非互換性**: 移行ガイドの提供
+- **データ保護**: 設定・データの下位互換
+
+### 監視・メトリクス
+
+#### 使用統計
+- **NPMダウンロード数**: 週次・月次
+- **GitHub Star数**: 人気度指標
+- **Issue・PR数**: 開発活動度
+
+#### 品質メトリクス
+- **テストカバレッジ**: 継続的向上
+- **パフォーマンス**: ベンチマーク推移
+- **バンドルサイズ**: サイズ増加監視
+
+---
+
+## 付録
+
+### A. 設定例
+
+#### 小規模解析（建物レベル）
+```javascript
+const buildingLevelConfig = {
+    voxelSize: 10,
+    area: "100m × 100m",
+    entities: 500,
+    useCase: "建物内人流解析"
+};
+```
+
+#### 中規模解析（街区レベル）
+```javascript
+const blockLevelConfig = {
+    voxelSize: 25,
+    area: "500m × 500m", 
+    entities: 1500,
+    useCase: "商業地区分析"
+};
+```
+
+#### 大規模解析（地区レベル）
+```javascript
+const districtLevelConfig = {
+    voxelSize: 50,
+    area: "1km × 1km",
+    entities: 3000,
+    useCase: "都市計画支援"
+};
+```
+
+### B. トラブルシューティング
+
+#### よくある問題と解決策
+
+**問題**: メモリ不足エラー
+**解決**: ボクセルサイズを2倍に増やす、エンティティ数を削減
+
+**問題**: 処理が遅い
+**解決**: 空ボクセル表示をオフ、ボクセル数を1万個以下に
+
+**問題**: 色が表示されない
+**解決**: 透明度設定を確認、最小・最大密度の差を確認
+
+### C. 参考資料
+
+- [CesiumJS公式ドキュメント](https://cesium.com/learn/)
+- [WebGL仕様書](https://www.khronos.org/webgl/)
+- [WGS84座標系について](https://ja.wikipedia.org/wiki/WGS84)
+- [3D可視化のベストプラクティス](https://example.com/3d-viz)
+
+---
+
+**ドキュメント管理**
+- **作成日**: 2025年7月
+- **バージョン**: v0.1.1-spec
+- **次回更新予定**: v0.1.1リリース後

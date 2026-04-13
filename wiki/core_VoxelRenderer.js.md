@@ -33,6 +33,8 @@ import { ColorCalculator } from './color/ColorCalculator.js';
 import { VoxelSelector } from './selection/VoxelSelector.js';
 import { AdaptiveController } from './adaptive/AdaptiveController.js';
 import { GeometryRenderer } from './geometry/GeometryRenderer.js';
+import { RenderPlanner } from './render/RenderPlanner.js';
+import { createClassifier } from '../utils/classification.js';
 
 // v0.1.11: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
 // v0.1.11: VoxelSelector added (ADR-0009 Phase 2)
@@ -97,6 +99,9 @@ export class VoxelRenderer {
       outlineWidthPreset: 'medium', // v0.1.12: updated default
       ...options
     };
+    if (!this.options.classification || typeof this.options.classification !== 'object') {
+      this.options.classification = { enabled: false };
+    }
     
     // v0.1.11-alpha: VoxelSelector instantiation (ADR-0009 Phase 2)
     this.voxelSelector = new VoxelSelector(this.options);
@@ -107,6 +112,7 @@ export class VoxelRenderer {
     
     // v0.1.11-alpha: GeometryRenderer instantiation (ADR-0009 Phase 4)
     this.geometryRenderer = new GeometryRenderer(this.viewer, this.options);
+    this.renderPlanner = new RenderPlanner(this.viewer, this.options);
     
     // Legacy compatibility: voxelEntities now delegates to GeometryRenderer
     Object.defineProperty(this, 'voxelEntities', {
@@ -116,6 +122,7 @@ export class VoxelRenderer {
     });
 
     this._currentVoxelData = null;
+    this._classifier = null;
 
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
@@ -128,12 +135,20 @@ export class VoxelRenderer {
    * @param {boolean} isTopN - Whether it is TopN / TopNボクセルかどうか
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @param {Object} statistics - Statistics / 統計情報
-   * @returns {Object} Adaptive params / 適応的パラメータ
-   * @private
-   */
+  * @returns {Object} Adaptive params / 適応的パラメータ
+  * @private
+  */
   _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, grid) {
     // v0.1.11: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
-    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options, grid);
+    return this.adaptiveController.calculateAdaptiveParams(
+      voxelInfo,
+      isTopN,
+      voxelData,
+      statistics,
+      this.options,
+      grid,
+      this._classifier
+    );
   }
 
   /**
@@ -179,8 +194,9 @@ export class VoxelRenderer {
    * @returns {number} Number of rendered voxels / 実際に描画されたボクセル数
    */
   render(voxelData, bounds, grid, statistics) {
-    // v0.1.11: GeometryRendererに委譲してエンティティクリア (ADR-0009 Phase 4)
-    this.geometryRenderer.clear();
+    this.geometryRenderer.beginFrame();
+    this.geometryRenderer.clearDebugEntities();
+    this.renderPlanner.updateOptions(this.options);
     Logger.debug('VoxelRenderer.render - Starting render with simplified approach', {
       voxelDataSize: voxelData.size,
       bounds,
@@ -189,6 +205,7 @@ export class VoxelRenderer {
     });
 
     this._currentVoxelData = voxelData;
+    this._prepareClassifier(statistics);
 
     // バウンディングボックスのデバッグ表示制御（v0.1.5: debug.showBounds対応）
     const shouldShowBounds = this._shouldShowBounds();
@@ -256,6 +273,12 @@ export class VoxelRenderer {
       topN.forEach(voxel => topNVoxels.add(voxel.key));
       Logger.debug(`TopN highlight enabled: ${topNVoxels.size} voxels will be highlighted`);
     }
+
+    const plannedBudget = this.options.maxRenderVoxels
+      ? Math.min(this.options.maxRenderVoxels, displayVoxels.length)
+      : displayVoxels.length;
+    const planningResult = this.renderPlanner.plan(displayVoxels, bounds, grid, topNVoxels, plannedBudget);
+    displayVoxels = planningResult.voxels;
     
     Logger.debug(`Rendering ${displayVoxels.length} voxels`);
     
@@ -277,6 +300,7 @@ export class VoxelRenderer {
     });
 
     Logger.info(`Successfully rendered ${renderedCount} voxels`);
+    this.geometryRenderer.endFrame();
 
     this._currentVoxelData = null;
 
@@ -454,7 +478,19 @@ export class VoxelRenderer {
       color = Cesium.Color.LIGHTGRAY;
       opacity = this.options.emptyOpacity;
     } else {
-      color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
+      const classificationTargets = this.options.classification?.classificationTargets || {};
+      const shouldApplyClassificationColor = this._classifier && classificationTargets.color !== false;
+      if (shouldApplyClassificationColor) {
+        try {
+          const classIndex = this._classifier.classify(info.count ?? 0);
+          color = this._classifier.getColorForClass(classIndex);
+        } catch (error) {
+          Logger.warn('Classification color calculation failed, falling back to legacy color:', error);
+          color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
+        }
+      } else {
+        color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
+      }
       
       // Opacity calculation with resolver support
       if (this.options.boxOpacityResolver && typeof this.options.boxOpacityResolver === 'function') {
@@ -467,10 +503,10 @@ export class VoxelRenderer {
           opacity = isNaN(resolverOpacity) ? this.options.opacity : Math.max(0, Math.min(1, resolverOpacity));
         } catch (e) {
           Logger.warn('boxOpacityResolver error, using fallback:', e);
-          opacity = adaptiveParams.boxOpacity || this.options.opacity;
+          opacity = (adaptiveParams.boxOpacity ?? this.options.opacity);
         }
       } else {
-        opacity = adaptiveParams.boxOpacity || this.options.opacity;
+        opacity = (adaptiveParams.boxOpacity ?? this.options.opacity);
       }
       
       // TopN highlight adjustment 
@@ -543,7 +579,7 @@ export class VoxelRenderer {
         finalOutlineWidth = adaptiveParams.outlineWidth || this.options.outlineWidth;
       }
     } else {
-      if (this.options.adaptiveOutlines && adaptiveParams.outlineWidth !== null) {
+      if (adaptiveParams.outlineWidth !== null && adaptiveParams.outlineWidth !== undefined) {
         finalOutlineWidth = adaptiveParams.outlineWidth;
       } else {
         finalOutlineWidth = isTopN && this.options.highlightTopN ? 
@@ -553,7 +589,7 @@ export class VoxelRenderer {
     }
 
     // Outline opacity
-    const finalOutlineOpacity = adaptiveParams.outlineOpacity || (this.options.outlineOpacity ?? 1.0);
+    const finalOutlineOpacity = adaptiveParams.outlineOpacity ?? (this.options.outlineOpacity ?? 1.0);
     const outlineColorWithOpacity = color.withAlpha(finalOutlineOpacity);
 
     // Render mode configuration
@@ -623,53 +659,27 @@ export class VoxelRenderer {
    * @private
    */
   _delegateVoxelRendering(key, params) {
-    // Main voxel box
-    this.geometryRenderer.createVoxelBox({
-      centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
-      cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
-      color: params.color, opacity: params.opacity,
+    const allowEmulationEdges = (this.options.outlineRenderMode === 'emulation-only') ||
+      (this.options.emulationScope && this.options.emulationScope !== 'off');
+
+    this.geometryRenderer.syncVoxel({
+      centerLon: params.centerLon,
+      centerLat: params.centerLat,
+      centerAlt: params.centerAlt,
+      cellSizeX: params.cellSizeX,
+      cellSizeY: params.cellSizeY,
+      boxHeight: params.boxHeight,
+      color: params.color,
+      opacity: params.opacity,
       shouldShowOutline: params.shouldShowOutline,
       outlineColor: params.outlineColor,
       outlineWidth: params.outlineWidth,
       voxelInfo: params.voxelInfo,
       voxelKey: key,
-      emulateThick: params.emulateThick
+      emulateThick: allowEmulationEdges && params.emulateThick,
+      shouldShowInsetOutline: params.shouldShowInsetOutline && this.geometryRenderer.shouldApplyInsetOutline(params.isTopN),
+      adaptiveParams: params.adaptiveParams
     });
-
-    // Inset outline
-    if (params.shouldShowInsetOutline && this.geometryRenderer.shouldApplyInsetOutline(params.isTopN)) {
-      try {
-        const insetAmount = this.options.outlineInset > 0 ? this.options.outlineInset : 1;
-        this.geometryRenderer.createInsetOutline({
-          centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
-          baseSizeX: params.cellSizeX, baseSizeY: params.cellSizeY, baseSizeZ: params.boxHeight,
-          outlineColor: params.outlineColor,
-          outlineWidth: Math.max(params.outlineWidth, 1),
-          voxelKey: key,
-          insetAmount
-        });
-      } catch (e) {
-        Logger.warn('Failed to create inset outline:', e);
-      }
-    }
-    
-    // Edge polylines for thick emulation
-    // 追加の安全ガード: emulation-only もしくは emulationScope!='off' の場合のみ許可
-    const allowEmulationEdges = (this.options.outlineRenderMode === 'emulation-only') ||
-      (this.options.emulationScope && this.options.emulationScope !== 'off');
-    if (allowEmulationEdges && params.emulateThick) {
-      try {
-        this.geometryRenderer.createEdgePolylines({
-          centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
-          cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
-          outlineColor: params.outlineColor,
-          outlineWidth: Math.max(params.outlineWidth, 1),
-          voxelKey: key
-        });
-      } catch (e) {
-        Logger.warn('Failed to add emulated thick outline polylines:', e);
-      }
-    }
   }
 
   /**
@@ -683,6 +693,63 @@ export class VoxelRenderer {
   interpolateColor(normalizedDensity, rawValue = null) {
     // v0.1.11: 新しいColorCalculatorに委譲
     return ColorCalculator.calculateColor(normalizedDensity, rawValue, this.options);
+  }
+
+  _prepareClassifier(statistics) {
+    const classificationOptions = this.options.classification;
+    const classificationStats = statistics?.classification || null;
+    if (!classificationOptions || !classificationOptions.enabled) {
+      this._classifier = null;
+      return;
+    }
+
+    const allowedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold', 'quantile', 'jenks'];
+    const scheme = (classificationOptions.scheme || 'linear').toLowerCase();
+    if (!allowedSchemes.includes(scheme)) {
+      Logger.warn(`Classification scheme '${scheme}' is not supported in v1.0.0. Disabling classification.`);
+      this._classifier = null;
+      return;
+    }
+
+    const domain = Array.isArray(classificationOptions.domain) && classificationOptions.domain.length === 2
+      ? classificationOptions.domain
+      : (
+          Array.isArray(classificationStats?.domain) && classificationStats.domain.length === 2
+            ? classificationStats.domain
+            : [
+                statistics?.minCount ?? statistics?.min ?? 0,
+                statistics?.maxCount ?? statistics?.max ?? 0
+              ]
+        );
+
+    let values = null;
+    const hasExplicitBreaks = Array.isArray(classificationStats?.breaks) && classificationStats.breaks.length >= 2;
+    if (!hasExplicitBreaks && this._currentVoxelData && this._currentVoxelData.size > 0) {
+      values = [];
+      for (const voxelInfo of this._currentVoxelData.values()) {
+        if (voxelInfo && Number.isFinite(voxelInfo.count)) {
+          values.push(voxelInfo.count);
+        }
+      }
+      if (values.length === 0) {
+        values = null;
+      }
+    }
+
+    try {
+      this._classifier = createClassifier({
+        scheme,
+        classes: classificationOptions.classes,
+        thresholds: classificationOptions.thresholds,
+        colorMap: classificationOptions.colorMap,
+        domain,
+        breaks: hasExplicitBreaks ? classificationStats.breaks : null,
+        values
+      });
+    } catch (error) {
+      Logger.warn('Failed to initialize classifier:', error);
+      this._classifier = null;
+    }
   }
   
   // v0.1.11: _interpolateFromColorMap and _interpolateDivergingColor methods 
@@ -806,6 +873,8 @@ import { ColorCalculator } from './color/ColorCalculator.js';
 import { VoxelSelector } from './selection/VoxelSelector.js';
 import { AdaptiveController } from './adaptive/AdaptiveController.js';
 import { GeometryRenderer } from './geometry/GeometryRenderer.js';
+import { RenderPlanner } from './render/RenderPlanner.js';
+import { createClassifier } from '../utils/classification.js';
 
 // v0.1.11: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
 // v0.1.11: VoxelSelector added (ADR-0009 Phase 2)
@@ -870,6 +939,9 @@ export class VoxelRenderer {
       outlineWidthPreset: 'medium', // v0.1.12: updated default
       ...options
     };
+    if (!this.options.classification || typeof this.options.classification !== 'object') {
+      this.options.classification = { enabled: false };
+    }
     
     // v0.1.11-alpha: VoxelSelector instantiation (ADR-0009 Phase 2)
     this.voxelSelector = new VoxelSelector(this.options);
@@ -880,6 +952,7 @@ export class VoxelRenderer {
     
     // v0.1.11-alpha: GeometryRenderer instantiation (ADR-0009 Phase 4)
     this.geometryRenderer = new GeometryRenderer(this.viewer, this.options);
+    this.renderPlanner = new RenderPlanner(this.viewer, this.options);
     
     // Legacy compatibility: voxelEntities now delegates to GeometryRenderer
     Object.defineProperty(this, 'voxelEntities', {
@@ -889,6 +962,7 @@ export class VoxelRenderer {
     });
 
     this._currentVoxelData = null;
+    this._classifier = null;
 
     Logger.debug('VoxelRenderer initialized with options:', this.options);
   }
@@ -901,12 +975,20 @@ export class VoxelRenderer {
    * @param {boolean} isTopN - Whether it is TopN / TopNボクセルかどうか
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @param {Object} statistics - Statistics / 統計情報
-   * @returns {Object} Adaptive params / 適応的パラメータ
-   * @private
-   */
+  * @returns {Object} Adaptive params / 適応的パラメータ
+  * @private
+  */
   _calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, grid) {
     // v0.1.11: 新しいAdaptiveControllerに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 3)
-    return this.adaptiveController.calculateAdaptiveParams(voxelInfo, isTopN, voxelData, statistics, this.options, grid);
+    return this.adaptiveController.calculateAdaptiveParams(
+      voxelInfo,
+      isTopN,
+      voxelData,
+      statistics,
+      this.options,
+      grid,
+      this._classifier
+    );
   }
 
   /**
@@ -952,8 +1034,9 @@ export class VoxelRenderer {
    * @returns {number} Number of rendered voxels / 実際に描画されたボクセル数
    */
   render(voxelData, bounds, grid, statistics) {
-    // v0.1.11: GeometryRendererに委譲してエンティティクリア (ADR-0009 Phase 4)
-    this.geometryRenderer.clear();
+    this.geometryRenderer.beginFrame();
+    this.geometryRenderer.clearDebugEntities();
+    this.renderPlanner.updateOptions(this.options);
     Logger.debug('VoxelRenderer.render - Starting render with simplified approach', {
       voxelDataSize: voxelData.size,
       bounds,
@@ -962,6 +1045,7 @@ export class VoxelRenderer {
     });
 
     this._currentVoxelData = voxelData;
+    this._prepareClassifier(statistics);
 
     // バウンディングボックスのデバッグ表示制御（v0.1.5: debug.showBounds対応）
     const shouldShowBounds = this._shouldShowBounds();
@@ -1029,6 +1113,12 @@ export class VoxelRenderer {
       topN.forEach(voxel => topNVoxels.add(voxel.key));
       Logger.debug(`TopN highlight enabled: ${topNVoxels.size} voxels will be highlighted`);
     }
+
+    const plannedBudget = this.options.maxRenderVoxels
+      ? Math.min(this.options.maxRenderVoxels, displayVoxels.length)
+      : displayVoxels.length;
+    const planningResult = this.renderPlanner.plan(displayVoxels, bounds, grid, topNVoxels, plannedBudget);
+    displayVoxels = planningResult.voxels;
     
     Logger.debug(`Rendering ${displayVoxels.length} voxels`);
     
@@ -1050,6 +1140,7 @@ export class VoxelRenderer {
     });
 
     Logger.info(`Successfully rendered ${renderedCount} voxels`);
+    this.geometryRenderer.endFrame();
 
     this._currentVoxelData = null;
 
@@ -1227,7 +1318,19 @@ export class VoxelRenderer {
       color = Cesium.Color.LIGHTGRAY;
       opacity = this.options.emptyOpacity;
     } else {
-      color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
+      const classificationTargets = this.options.classification?.classificationTargets || {};
+      const shouldApplyClassificationColor = this._classifier && classificationTargets.color !== false;
+      if (shouldApplyClassificationColor) {
+        try {
+          const classIndex = this._classifier.classify(info.count ?? 0);
+          color = this._classifier.getColorForClass(classIndex);
+        } catch (error) {
+          Logger.warn('Classification color calculation failed, falling back to legacy color:', error);
+          color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
+        }
+      } else {
+        color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
+      }
       
       // Opacity calculation with resolver support
       if (this.options.boxOpacityResolver && typeof this.options.boxOpacityResolver === 'function') {
@@ -1240,10 +1343,10 @@ export class VoxelRenderer {
           opacity = isNaN(resolverOpacity) ? this.options.opacity : Math.max(0, Math.min(1, resolverOpacity));
         } catch (e) {
           Logger.warn('boxOpacityResolver error, using fallback:', e);
-          opacity = adaptiveParams.boxOpacity || this.options.opacity;
+          opacity = (adaptiveParams.boxOpacity ?? this.options.opacity);
         }
       } else {
-        opacity = adaptiveParams.boxOpacity || this.options.opacity;
+        opacity = (adaptiveParams.boxOpacity ?? this.options.opacity);
       }
       
       // TopN highlight adjustment 
@@ -1316,7 +1419,7 @@ export class VoxelRenderer {
         finalOutlineWidth = adaptiveParams.outlineWidth || this.options.outlineWidth;
       }
     } else {
-      if (this.options.adaptiveOutlines && adaptiveParams.outlineWidth !== null) {
+      if (adaptiveParams.outlineWidth !== null && adaptiveParams.outlineWidth !== undefined) {
         finalOutlineWidth = adaptiveParams.outlineWidth;
       } else {
         finalOutlineWidth = isTopN && this.options.highlightTopN ? 
@@ -1326,7 +1429,7 @@ export class VoxelRenderer {
     }
 
     // Outline opacity
-    const finalOutlineOpacity = adaptiveParams.outlineOpacity || (this.options.outlineOpacity ?? 1.0);
+    const finalOutlineOpacity = adaptiveParams.outlineOpacity ?? (this.options.outlineOpacity ?? 1.0);
     const outlineColorWithOpacity = color.withAlpha(finalOutlineOpacity);
 
     // Render mode configuration
@@ -1396,53 +1499,27 @@ export class VoxelRenderer {
    * @private
    */
   _delegateVoxelRendering(key, params) {
-    // Main voxel box
-    this.geometryRenderer.createVoxelBox({
-      centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
-      cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
-      color: params.color, opacity: params.opacity,
+    const allowEmulationEdges = (this.options.outlineRenderMode === 'emulation-only') ||
+      (this.options.emulationScope && this.options.emulationScope !== 'off');
+
+    this.geometryRenderer.syncVoxel({
+      centerLon: params.centerLon,
+      centerLat: params.centerLat,
+      centerAlt: params.centerAlt,
+      cellSizeX: params.cellSizeX,
+      cellSizeY: params.cellSizeY,
+      boxHeight: params.boxHeight,
+      color: params.color,
+      opacity: params.opacity,
       shouldShowOutline: params.shouldShowOutline,
       outlineColor: params.outlineColor,
       outlineWidth: params.outlineWidth,
       voxelInfo: params.voxelInfo,
       voxelKey: key,
-      emulateThick: params.emulateThick
+      emulateThick: allowEmulationEdges && params.emulateThick,
+      shouldShowInsetOutline: params.shouldShowInsetOutline && this.geometryRenderer.shouldApplyInsetOutline(params.isTopN),
+      adaptiveParams: params.adaptiveParams
     });
-
-    // Inset outline
-    if (params.shouldShowInsetOutline && this.geometryRenderer.shouldApplyInsetOutline(params.isTopN)) {
-      try {
-        const insetAmount = this.options.outlineInset > 0 ? this.options.outlineInset : 1;
-        this.geometryRenderer.createInsetOutline({
-          centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
-          baseSizeX: params.cellSizeX, baseSizeY: params.cellSizeY, baseSizeZ: params.boxHeight,
-          outlineColor: params.outlineColor,
-          outlineWidth: Math.max(params.outlineWidth, 1),
-          voxelKey: key,
-          insetAmount
-        });
-      } catch (e) {
-        Logger.warn('Failed to create inset outline:', e);
-      }
-    }
-    
-    // Edge polylines for thick emulation
-    // 追加の安全ガード: emulation-only もしくは emulationScope!='off' の場合のみ許可
-    const allowEmulationEdges = (this.options.outlineRenderMode === 'emulation-only') ||
-      (this.options.emulationScope && this.options.emulationScope !== 'off');
-    if (allowEmulationEdges && params.emulateThick) {
-      try {
-        this.geometryRenderer.createEdgePolylines({
-          centerLon: params.centerLon, centerLat: params.centerLat, centerAlt: params.centerAlt,
-          cellSizeX: params.cellSizeX, cellSizeY: params.cellSizeY, boxHeight: params.boxHeight,
-          outlineColor: params.outlineColor,
-          outlineWidth: Math.max(params.outlineWidth, 1),
-          voxelKey: key
-        });
-      } catch (e) {
-        Logger.warn('Failed to add emulated thick outline polylines:', e);
-      }
-    }
   }
 
   /**
@@ -1456,6 +1533,63 @@ export class VoxelRenderer {
   interpolateColor(normalizedDensity, rawValue = null) {
     // v0.1.11: 新しいColorCalculatorに委譲
     return ColorCalculator.calculateColor(normalizedDensity, rawValue, this.options);
+  }
+
+  _prepareClassifier(statistics) {
+    const classificationOptions = this.options.classification;
+    const classificationStats = statistics?.classification || null;
+    if (!classificationOptions || !classificationOptions.enabled) {
+      this._classifier = null;
+      return;
+    }
+
+    const allowedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold', 'quantile', 'jenks'];
+    const scheme = (classificationOptions.scheme || 'linear').toLowerCase();
+    if (!allowedSchemes.includes(scheme)) {
+      Logger.warn(`Classification scheme '${scheme}' is not supported in v1.0.0. Disabling classification.`);
+      this._classifier = null;
+      return;
+    }
+
+    const domain = Array.isArray(classificationOptions.domain) && classificationOptions.domain.length === 2
+      ? classificationOptions.domain
+      : (
+          Array.isArray(classificationStats?.domain) && classificationStats.domain.length === 2
+            ? classificationStats.domain
+            : [
+                statistics?.minCount ?? statistics?.min ?? 0,
+                statistics?.maxCount ?? statistics?.max ?? 0
+              ]
+        );
+
+    let values = null;
+    const hasExplicitBreaks = Array.isArray(classificationStats?.breaks) && classificationStats.breaks.length >= 2;
+    if (!hasExplicitBreaks && this._currentVoxelData && this._currentVoxelData.size > 0) {
+      values = [];
+      for (const voxelInfo of this._currentVoxelData.values()) {
+        if (voxelInfo && Number.isFinite(voxelInfo.count)) {
+          values.push(voxelInfo.count);
+        }
+      }
+      if (values.length === 0) {
+        values = null;
+      }
+    }
+
+    try {
+      this._classifier = createClassifier({
+        scheme,
+        classes: classificationOptions.classes,
+        thresholds: classificationOptions.thresholds,
+        colorMap: classificationOptions.colorMap,
+        domain,
+        breaks: hasExplicitBreaks ? classificationStats.breaks : null,
+        values
+      });
+    } catch (error) {
+      Logger.warn('Failed to initialize classifier:', error);
+      this._classifier = null;
+    }
   }
   
   // v0.1.11: _interpolateFromColorMap and _interpolateDivergingColor methods 

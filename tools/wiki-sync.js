@@ -10,6 +10,7 @@ const path = require('path');
 const { JSDOM } = require('jsdom');
 
 // パス設定
+const REPO_ROOT = path.join(__dirname, '..');
 const API_DOCS_DIR = path.join(__dirname, '../docs/api');
 const WIKI_DIR = path.join(__dirname, '../wiki');
 
@@ -316,21 +317,71 @@ const stats = await heatbox.createFromEntities(entities);
 console.log('rendered voxels:', stats.renderedVoxels);
 \`\`\`
 
-## v0.1.6 New Features
+## Classification Example
 
 \`\`\`javascript
-// Adaptive outline width control
-const options = {
-  outlineWidthResolver: ({ voxel, isTopN, normalizedDensity }) => {
-    if (isTopN) return 6;           // TopN: thick outline
-    if (normalizedDensity > 0.7) return 1; // Dense: thin
-    return 3;                       // Sparse: normal
-  },
-  voxelGap: 1.5,        // Gap between voxels (meters)
-  outlineOpacity: 0.8   // Outline transparency
-};
+const heatbox = new Heatbox(viewer, {
+  classification: {
+    enabled: true,
+    scheme: 'quantile',
+    classes: 5,
+    colorMap: ['#0f172a', '#1d4ed8', '#22d3ee', '#f97316', '#facc15']
+  }
+});
+
+await heatbox.createFromEntities(entities);
+const legendElement = heatbox.createLegend();
+\`\`\`
+
+## Temporal Example
+
+\`\`\`javascript
+const heatbox = new Heatbox(viewer, {
+  temporal: {
+    enabled: true,
+    classificationScope: 'global',
+    data: [
+      { start: '2024-01-01T00:00:00Z', stop: '2024-01-01T06:00:00Z', data: morning },
+      { start: '2024-01-01T06:00:00Z', stop: '2024-01-01T12:00:00Z', data: afternoon }
+    ]
+  }
+});
 \`\`\`
 `;
+}
+
+function copyFileIfExists(sourcePath, targetPath) {
+  if (!fs.existsSync(sourcePath)) return false;
+  fs.copyFileSync(sourcePath, targetPath);
+  return true;
+}
+
+function syncMarkdownPages() {
+  const pageMappings = [
+    ['README.md', 'Home.md'],
+    ['CHANGELOG.md', 'Release-Notes.md'],
+    ['docs/getting-started.md', 'Getting-Started.md'],
+    ['docs/quick-start.md', 'Quick-Start.md'],
+    ['docs/development-guide.md', 'Development-Guide.md'],
+    ['docs/contributing.md', 'Contributing.md'],
+    ['docs/specification.md', 'Architecture.md'],
+    ['docs/API.md', 'API.md'],
+    ['docs/wiki-maintenance.md', 'Publishing-to-GitHub-Wiki.md']
+  ];
+
+  let syncedCount = 0;
+
+  pageMappings.forEach(([sourceRelativePath, targetFilename]) => {
+    const sourcePath = path.join(REPO_ROOT, sourceRelativePath);
+    const targetPath = path.join(WIKI_DIR, targetFilename);
+
+    if (copyFileIfExists(sourcePath, targetPath)) {
+      console.log(`📝 Synced: ${sourceRelativePath} → ${targetFilename}`);
+      syncedCount++;
+    }
+  });
+
+  console.log(`📚 Synced ${syncedCount}/${pageMappings.length} Markdown pages.`);
 }
 
 /**
@@ -377,6 +428,7 @@ async function main() {
 
   // API Reference インデックスを生成
   generateApiIndex(htmlFiles);
+  syncMarkdownPages();
 
   console.log(`🎉 Conversion completed! ${convertedCount}/${htmlFiles.length} files converted.`);
 }
@@ -387,12 +439,12 @@ async function main() {
  */
 function getVersion() {
   try {
-    const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.js'), 'utf8');
+    const src = fs.readFileSync(path.join(REPO_ROOT, 'src', 'index.js'), 'utf8');
     const m = src.match(/export const VERSION\s*=\s*['\"]([^'\"]+)['\"]/);
     if (m) return m[1];
   } catch (_) {}
   try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+    const pkg = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8'));
     return pkg.version || '0.1.6.1';
   } catch (_) {}
   return '0.1.6.1';

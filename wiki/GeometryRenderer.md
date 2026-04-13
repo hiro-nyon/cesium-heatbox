@@ -14,9 +14,17 @@ ADR-0009 Phase 4
 
 ### Methods
 
+#### beginFrame()
+
+Start diff-based frame update.
+
 #### clear()
 
 Clear all managed entities
+
+#### clearDebugEntities()
+
+Remove debug-only entities such as bounding boxes.
 
 #### createEdgePolylines(config) → {Array.<Cesium.Entity>}
 
@@ -24,7 +32,7 @@ Create edge polylines for thick outline emulation
 
 | Name | Type | Description |
 |---|---|---|
-| config | Object | Edge polyline configuration / エッジポリライン設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、 `boxHeight` (number) / ボックス高さ、 `outlineColor` (Cesium.Color) / 枠線色、 `outlineWidth` (number) / 枠線太さ、 `voxelKey` (string) / ボクセルキー |
+| config | Object | Edge polyline configuration / エッジポリライン設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、 `boxHeight` (number) / ボックス高さ、 `outlineColor` (Cesium.Color) / 枠線色、 `outlineWidth` (number) / 枠線太さ、 `outlineOpacity` (number) / 枠線透明度、 `voxelKey` (string) / ボクセルキー |
 
 #### createInsetOutline(config) → {Cesium.Entity}
 
@@ -59,6 +67,10 @@ Create voxel description HTML
 | voxelInfo | Object | Voxel information / ボクセル情報 |
 | voxelKey | string | Voxel key / ボクセルキー |
 
+#### endFrame()
+
+Finish diff-based frame update and remove stale voxel records.
+
 #### getConfiguration() → {Object}
 
 Get current configuration
@@ -83,6 +95,14 @@ Check if inset outline should be applied
 |---|---|---|
 | isTopN | boolean | Is TopN voxel / TopNボクセルかどうか |
 
+#### syncVoxel(config)
+
+Upsert a voxel render record keyed by voxelKey.
+
+| Name | Type | Description |
+|---|---|---|
+| config | Object |  |
+
 #### updateOptions(newOptions)
 
 Update rendering options
@@ -106,9 +126,17 @@ Update rendering options
 
 ### メソッド
 
+#### beginFrame()
+
+差分更新フレームを開始します。
+
 #### clear()
 
 管理対象の全エンティティをクリア
+
+#### clearDebugEntities()
+
+デバッグ専用エンティティを削除します。
 
 #### createEdgePolylines(config) → {Array.<Cesium.Entity>}
 
@@ -116,7 +144,7 @@ Update rendering options
 
 | 名前 | 型 | 説明 |
 |---|---|---|
-| config | Object | Edge polyline configuration / エッジポリライン設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、 `boxHeight` (number) / ボックス高さ、 `outlineColor` (Cesium.Color) / 枠線色、 `outlineWidth` (number) / 枠線太さ、 `voxelKey` (string) / ボクセルキー |
+| config | Object | Edge polyline configuration / エッジポリライン設定 Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、 `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、 `boxHeight` (number) / ボックス高さ、 `outlineColor` (Cesium.Color) / 枠線色、 `outlineWidth` (number) / 枠線太さ、 `outlineOpacity` (number) / 枠線透明度、 `voxelKey` (string) / ボクセルキー |
 
 #### createInsetOutline(config) → {Cesium.Entity}
 
@@ -151,6 +179,10 @@ Update rendering options
 | voxelInfo | Object | Voxel information / ボクセル情報 |
 | voxelKey | string | Voxel key / ボクセルキー |
 
+#### endFrame()
+
+差分更新フレームを終了し、未使用のボクセルレコードを削除します。
+
 #### getConfiguration() → {Object}
 
 現在の設定を取得
@@ -174,6 +206,14 @@ Update rendering options
 | 名前 | 型 | 説明 |
 |---|---|---|
 | isTopN | boolean | Is TopN voxel / TopNボクセルかどうか |
+
+#### syncVoxel(config)
+
+voxelKey 単位でレンダレコードを更新します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| config | Object |  |
 
 #### updateOptions(newOptions)
 

@@ -1,189 +1,550 @@
-# Getting Started（はじめに）
+# Development Environment Setup (開発環境のセットアップ)
 
-**日本語** | [English](#english)
-
-このページでは、ライブラリ利用者向けに最短で使い始めるための手順を説明します。
+[English](#english) | [日本語](#日本語)
 
 ## English
 
-This page explains the quickest steps for library users to get started.
+### Requirements
 
-## インストール / Installation
+- Node.js 18.0.0 or higher
+- npm 8.0.0 or higher
+- Git
 
-### 日本語
+### Installation
 
-#### npmからインストール（推奨）
 ```bash
+# Install from npm
 npm install cesium-heatbox
-```
 
-#### GitHubから直接取得
-```bash
+# Or clone repository for development
 git clone https://github.com/hiro-nyon/cesium-heatbox.git
 cd cesium-heatbox
 npm install
+```
+
+### Development Commands
+
+```bash
+# Start development server
+npm run dev
+
+# Build (all formats)
+npm run build
+
+# ESM build only
+npm run build:esm
+
+# UMD build only
 npm run build:umd
+
+# Generate type definitions
+npm run build:types
+
+# Watch mode
+npm run build:watch
+
+# Run tests
+npm test
+
+# Test watch mode
+npm run test:watch
+
+# Test with coverage
+npm run test:coverage
+
+# Linting
+npm run lint
+npm run lint:fix
+
+# Type checking
+npm run type-check
+
+# Benchmark
+npm run benchmark
+
+# Generate documentation
+npm run docs
+
+# Cleanup
+npm run clean
 ```
 
-#### CDN経由
-```html
-<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
+### Project Structure
+
+```
+cesium-heatbox/
+├── src/                    # Source code
+│   ├── index.js           # Entry point
+│   ├── Heatbox.js         # Main class
+│   ├── core/              # Core functionality
+│   │   ├── CoordinateTransformer.js
+│   │   ├── VoxelGrid.js
+│   │   ├── DataProcessor.js
+│   │   └── VoxelRenderer.js
+│   └── utils/             # Utilities
+│       ├── constants.js
+│       ├── validation.js
+│       └── sampleData.js
+├── test/                  # Test files
+├── examples/              # Usage examples
+├── docs/                  # Documentation
+├── types/                 # TypeScript type definitions
+└── dist/                  # Build output
 ```
 
-Peer Dependency として Cesium を別途インストールしてください。
+### Development Guidelines
 
-### English
+#### Coding Standards
 
-#### Install from npm (Recommended)
+- Use ESLint Standard Style
+- Document with JSDoc format
+- Function names start with verbs
+- Constants use UPPER_SNAKE_CASE
+- Class names use PascalCase
+
+#### Commit Messages
+
+```
+type(scope): description
+
+Examples:
+feat(core): add new voxel rendering algorithm
+fix(utils): handle edge case in coordinate transformation
+docs(api): update API documentation
+test(heatbox): add comprehensive test cases
+```
+
+#### Branch Strategy
+
+- `main`: Stable version
+- `develop`: Development version
+- `feature/*`: New feature development
+- `hotfix/*`: Emergency fixes
+
+### Testing
+
+#### Running Tests
+
 ```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test -- Heatbox.test.js
+
+# Generate coverage report
+npm run test:coverage
+```
+
+#### Writing Tests
+
+```javascript
+describe('MyClass', () => {
+  let instance;
+  
+  beforeEach(() => {
+    instance = new MyClass();
+  });
+  
+  test('should do something', () => {
+    const result = instance.doSomething();
+    expect(result).toBe(expected);
+  });
+});
+```
+
+### Debugging
+
+#### Browser Debugging
+
+```bash
+# Start development server
+npm run dev
+
+# Access http://localhost:8080 in browser
+```
+
+#### Node.js Debugging
+
+```bash
+# Run with Node.js debugger
+node --inspect-brk node_modules/.bin/jest --runInBand
+
+# Access chrome://inspect in Chrome DevTools
+```
+
+### Building
+
+#### Development Build
+
+```bash
+npm run build:esm
+```
+
+#### Production Build
+
+```bash
+npm run build
+```
+
+Output files:
+- `dist/cesium-heatbox.js` - ESM development version
+- `dist/cesium-heatbox.min.js` - ESM production version
+- `dist/cesium-heatbox.umd.js` - UMD development version
+- `dist/cesium-heatbox.umd.min.js` - UMD production version
+
+### Release
+
+#### Version Management
+
+```bash
+# Patch version
+npm version patch
+
+# Minor version
+npm version minor
+
+# Major version
+npm version major
+
+# Push release tags
+git push origin main --tags
+```
+
+#### Automated Release
+
+GitHub Actions automatically:
+1. Runs tests
+2. Performs builds
+3. Publishes to NPM
+4. Creates GitHub Releases
+
+when tags are pushed.
+
+### Common Issues and Solutions
+
+**npm install fails:**
+```bash
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**ESLint configuration issues:**
+- Use ESLint 8.x (9.x not supported)
+- Use `.eslintrc.js` format
+
+**Test failures:**
+- Check import paths
+- Verify Cesium mocks in `test/setup.js`
+
+For detailed troubleshooting, see the Japanese section below.
+
+## 日本語
+
+## 必要な環境
+
+- Node.js 18.0.0 以上
+- npm 8.0.0 以上
+- Git
+
+## インストール（npm推奨）
+
+```bash
+# npmからインストール（推奨）
 npm install cesium-heatbox
-```
 
-#### Direct from GitHub (for development)
-```bash
+# または開発用にリポジトリをクローン
 git clone https://github.com/hiro-nyon/cesium-heatbox.git
 cd cesium-heatbox
 npm install
+```
+
+## 開発コマンド
+
+```bash
+# 開発サーバーを起動
+npm run dev
+
+# ビルド（全形式）
+npm run build
+
+# ESMビルドのみ
+npm run build:esm
+
+# UMDビルドのみ
 npm run build:umd
+
+# 型定義生成
+npm run build:types
+
+# ウォッチモード
+npm run build:watch
+
+# テスト実行
+npm test
+
+# テスト（ウォッチモード）
+npm run test:watch
+
+# カバレッジ付きテスト
+npm run test:coverage
+
+# リンティング
+npm run lint
+npm run lint:fix
+
+# 型チェック
+npm run type-check
+
+# ベンチマーク
+npm run benchmark
+
+# ドキュメント生成
+npm run docs
+
+# クリーンアップ
+npm run clean
 ```
 
-#### Via CDN
-```html
-<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
+## プロジェクト構造
+
+```
+cesium-heatbox/
+├── src/                    # ソースコード
+│   ├── index.js           # エントリーポイント
+│   ├── Heatbox.js         # メインクラス
+│   ├── core/              # コア機能
+│   │   ├── CoordinateTransformer.js
+│   │   ├── VoxelGrid.js
+│   │   ├── DataProcessor.js
+│   │   └── VoxelRenderer.js
+│   └── utils/             # ユーティリティ
+│       ├── constants.js
+│       ├── validation.js
+│       └── sampleData.js
+├── test/                  # テストファイル
+├── examples/              # 使用例
+├── docs/                  # ドキュメント
+├── types/                 # TypeScript型定義
+└── dist/                  # ビルド出力
 ```
 
-Please install Cesium separately as a peer dependency.
+## 開発ガイドライン
 
-## 使い方（基本） / Basic Usage
+### コーディング規約
 
-### 日本語
+- ESLint Standard Style を使用
+- JSDoc形式でドキュメントを記述
+- 関数名は動詞で始める
+- 定数は UPPER_SNAKE_CASE
+- クラス名は PascalCase
+
+### コミットメッセージ
+
+```
+type(scope): description
+
+feat(core): add new voxel rendering algorithm
+fix(utils): handle edge case in coordinate transformation
+docs(api): update API documentation
+test(heatbox): add comprehensive test cases
+```
+
+### ブランチ戦略
+
+- `main`: 安定版
+- `develop`: 開発版
+- `feature/*`: 新機能開発
+- `hotfix/*`: 緊急修正
+
+## テスト
+
+### テストの実行
+
+```bash
+# 全テストを実行
+npm test
+
+# 特定のテストファイルを実行
+npm test -- Heatbox.test.js
+
+# カバレッジレポートを生成
+npm run test:coverage
+```
+
+### テストの書き方
 
 ```javascript
-import Heatbox from 'cesium-heatbox';
-
-// 1) Cesium Viewer の用意
-const viewer = new Cesium.Viewer('cesiumContainer');
-
-// 2) Heatbox を初期化（v0.1.15）
-const heatbox = new Heatbox(viewer, {
-  profile: 'desktop-balanced', // 端末に応じた推奨設定（v0.1.12+）
-  autoVoxelSize: true,         // voxelSize 未指定時に自動決定
-  adaptiveOutlines: true,      // v0.1.15 の適応制御
-  adaptiveParams: {
-    outlineWidthRange: [1.2, 3.0],
-    zScaleCompensation: true,
-    overlapDetection: true
-  },
-  performanceOverlay: {
-    enabled: true,
-    position: 'top-right'
-  }
+describe('MyClass', () => {
+  let instance;
+  
+  beforeEach(() => {
+    instance = new MyClass();
+  });
+  
+  test('should do something', () => {
+    const result = instance.doSomething();
+    expect(result).toBe(expected);
+  });
 });
-
-// 3) エンティティからヒートマップ生成（非同期）
-const entities = viewer.entities.values;
-const stats = await heatbox.createFromEntities(entities);
-console.log('統計', stats);
-
-// 4) 表示切替・クリアなど
-heatbox.setVisible(true);
-// heatbox.clear();
-// heatbox.destroy();
 ```
 
-### English
+## デバッグ
 
-```javascript
-import Heatbox from 'cesium-heatbox';
+### ブラウザでのデバッグ
 
-// 1) Prepare a Cesium Viewer
-const viewer = new Cesium.Viewer('cesiumContainer');
+```bash
+# 開発サーバーを起動
+npm run dev
 
-// 2) Initialize Heatbox (v0.1.15)
-const heatbox = new Heatbox(viewer, {
-  profile: 'desktop-balanced', // Recommended bundle for desktop GPUs
-  autoVoxelSize: true,
-  adaptiveOutlines: true,
-  adaptiveParams: {
-    outlineWidthRange: [1.2, 3.0],
-    zScaleCompensation: true,
-    overlapDetection: true
-  },
-  performanceOverlay: {
-    enabled: true,
-    position: 'top-right'
-  }
-});
-
-// 3) Create heatmap from entities (async)
-const entities = viewer.entities.values;
-const stats = await heatbox.createFromEntities(entities);
-console.log('stats', stats);
-
-// 4) Toggle visibility / clear / destroy
-heatbox.setVisible(true);
-// heatbox.clear();
-// heatbox.destroy();
+# ブラウザで http://localhost:8080 にアクセス
 ```
 
-## オプション一覧 / Options (v0.1.15)
+### Node.js でのデバッグ
 
-### 日本語
-- **基本描画**: `voxelSize` / `autoVoxelSize` / `maxRenderVoxels` / `opacity` / `emptyOpacity`
-- **プロファイル**: `profile`（`mobile-fast` / `desktop-balanced` / `dense-data` / `sparse-data`）で推奨値を一括適用
-- **適応制御**: `adaptiveOutlines`, `outlineWidthPreset`, `adaptiveParams.neighborhoodRadius`, `adaptiveParams.zScaleCompensation`, `adaptiveParams.overlapDetection`
-- **表示モード**: `outlineRenderMode`, `emulationScope`, `wireframeOnly`, `heightBased`
-- **カラーマップ**: `colorMap`, `diverging`, `divergingPivot`, `highlightTopN`, `highlightStyle`
-- **観測性**: `performanceOverlay`, `togglePerformanceOverlay()`, `getStatistics()`
-- **チューニング**: `renderLimitStrategy`, `renderBudgetMode`, `debug.showBounds`
+```bash
+# Node.js デバッガーで実行
+node --inspect-brk node_modules/.bin/jest --runInBand
 
-### English
-- **Core rendering**: `voxelSize`, `autoVoxelSize`, `maxRenderVoxels`, `opacity`, `emptyOpacity`
-- **Profiles**: `profile` (`mobile-fast`, `desktop-balanced`, `dense-data`, `sparse-data`) apply curated presets
-- **Adaptive control**: `adaptiveOutlines`, `outlineWidthPreset`, `adaptiveParams.neighborhoodRadius`, `adaptiveParams.zScaleCompensation`, `adaptiveParams.overlapDetection`
-- **Display modes**: `outlineRenderMode`, `emulationScope`, `wireframeOnly`, `heightBased`
-- **Colour & highlight**: `colorMap`, `diverging`, `divergingPivot`, `highlightTopN`, `highlightStyle`
-- **Observability**: `performanceOverlay`, overlay helper methods, `getStatistics()`
-- **Tuning knobs**: `renderLimitStrategy`, `renderBudgetMode`, `debug.showBounds`
+# Chrome DevTools で chrome://inspect にアクセス
+```
 
-| オプション / Option | 既定値 / Default | 説明 / Description |
-|---|---|---|
-| `profile` | _unset_ | 推奨プリセットで `voxelSize` や `maxRenderVoxels` をまとめて設定。<br>Apply curated bundles tuned for mobile/desktop/dataset density. |
-| `voxelSize` | `20` | 単位メートルでのボクセルサイズ。<br>Base voxel size in metres (overridden when `autoVoxelSize` succeeds). |
-| `autoVoxelSize` | `false` | 範囲とエンティティ数から `voxelSize` を自動推定。<br>Enables automatic voxel size estimation (`autoVoxelSizeMode` / `autoVoxelTargetFill`). |
-| `maxRenderVoxels` | `50000` | 描画上限。超過すると密度で間引き。<br>Upper bound for rendered voxels; excess voxels are thinned. |
-| `wireframeOnly` | `false` | 枠線のみ表示で重なりを判別しやすく。<br>Render outlines only to keep dense scenes readable. |
-| `heightBased` | `false` | 密度に応じて高さを調整。<br>Scale voxel height by normalised density. |
-| `outlineRenderMode` | `'standard'` | `'inset'` / `'emulation-only'` で線の重なり対策。<br>Switch to inset or emulation-only outlines for cluttered data. |
-| `adaptiveOutlines` | `false` | `adaptiveParams` に基づく太さ・透明度の自動制御。<br>Enables ADR-0011 adaptive outline logic. |
-| `performanceOverlay.enabled` | `false` | ブラウザ上にレンダリング負荷を表示。<br>Shows FPS / render time overlay when true. |
-| `renderLimitStrategy` | `'density'` | `'coverage'` / `'hybrid'` で均等抽出。<br>Choose voxel selection strategy when hitting budgets. |
+## ビルド
 
-最新の型情報は `types/index.d.ts` と [API Reference](API-Reference.md) を参照し、`heatbox.updateOptions({...})` で動的に切り替えられます。
+### 開発ビルド
 
-## 統計情報 / Statistics
-`getStatistics()` で取得できる主な項目:
-- `totalVoxels` 総ボクセル数
-- `renderedVoxels` 実際に描画されたボクセル数（v0.1.3追加）
-- `nonEmptyVoxels` データ有りボクセル数
-- `emptyVoxels` 空ボクセル数
-- `totalEntities` 総エンティティ数
-- `minCount` / `maxCount` / `averageCount`
+```bash
+npm run build:esm
+```
 
-Key fields from `getStatistics()`:
-- `totalVoxels`, `renderedVoxels`, `nonEmptyVoxels`, `emptyVoxels`
-- `totalEntities`, `minCount`, `maxCount`, `averageCount`
+### 本番ビルド
 
-> v0.1.15 以降は `renderTimeMs` や `occupancyRatio` などのメトリクスも取得できます。
+```bash
+npm run build
+```
 
-## TypeScript / 型定義
-型定義（`types/index.d.ts`）を同梱しています。ESM 環境でそのまま利用可能です。  
-Type definitions are bundled in `types/index.d.ts` and usable in ESM.
+出力ファイル:
+- `dist/cesium-heatbox.js` - ESM開発版
+- `dist/cesium-heatbox.min.js` - ESM本番版
+- `dist/cesium-heatbox.umd.js` - UMD開発版
+- `dist/cesium-heatbox.umd.min.js` - UMD本番版
 
-## 対応バンドル形式 / Bundles
-- ES Modules: `import Heatbox from 'cesium-heatbox'`
-- UMD: `<script src=".../cesium-heatbox.umd.min.js"></script>` → `window.CesiumHeatbox`
+## リリース
 
-## 次のステップ / Next Steps
-- 基本コードと UI 操作例 / Basic code and UI examples: [[Examples]]
-- 詳細 API / Detailed API: [[API-Reference]]
+### バージョン管理
+
+```bash
+# パッチバージョンを上げる
+npm version patch
+
+# マイナーバージョンを上げる
+npm version minor
+
+# メジャーバージョンを上げる
+npm version major
+
+# リリースタグをプッシュ
+git push origin main --tags
+```
+
+### 自動リリース
+
+GitHub Actions により、タグがプッシュされると自動的に:
+1. テストが実行される
+2. ビルドが行われる
+3. NPMに公開される
+4. GitHub Releasesが作成される
+
+## トラブルシューティング
+
+### よくある問題
+
+#### `npm install` が失敗する
+
+**問題**: 依存関係の競合エラー
+```
+npm ERR! code ERESOLVE
+npm ERR! ERESOLVE unable to resolve dependency tree
+```
+
+**解決方法**:
+```bash
+# 1. キャッシュをクリア
+npm cache clean --force
+
+# 2. node_modulesとpackage-lock.jsonを削除
+rm -rf node_modules package-lock.json
+
+# 3. 再インストール
+npm install
+```
+
+#### ESLint設定の問題
+
+**問題**: ESLintの設定ファイルの形式が古い
+```
+Error: ESLint configuration in eslint.config.js is invalid
+```
+
+**解決方法**:
+- ESLint 8.x系を使用（9.x系は非対応）
+- `.eslintrc.js`形式を使用（フラット設定は未対応）
+
+#### Cesiumの型定義の問題
+
+**問題**: `@types/cesium`パッケージの警告
+```
+warn deprecated @types/cesium@1.70.4: This is a stub types definition. 
+cesium provides its own type definitions, so you don't need this installed.
+```
+
+**解決方法**:
+```bash
+# @types/cesiumを削除（CesiumJS本体が型定義を提供）
+npm uninstall @types/cesium
+```
+
+#### テストが失敗する
+
+**問題**: Jest設定の問題
+```
+Unknown option "moduleNameMapping" with value
+```
+
+**解決方法**:
+- `jest.config.js`で`moduleNameMapping`を`moduleNameMapper`に修正
+
+**問題**: テストファイルのimportパスエラー
+```
+Cannot find module '../src/core/CoordinateTransformer.js'
+```
+
+**解決方法**:
+- 相対パスを正しく設定（`../../src/core/...`）
+
+**問題**: Cesiumオブジェクトの未定義エラー
+```
+TypeError: Cesium.Cartesian3 is not a constructor
+```
+
+**解決方法**:
+- `test/setup.js`でCesiumのモックを適切に設定
+
+## サポート
+
+問題が発生した場合は、以下の方法でサポートを受けられます:
+
+1. [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で報告
+2. [Discussion](https://github.com/hiro-nyon/cesium-heatbox/discussions) で質問
+3. メールでの問い合わせ
+
+## コントリビューション
+
+1. このリポジトリをフォーク
+2. 新しいブランチを作成 (`git checkout -b feature/amazing-feature`)
+3. 変更をコミット (`git commit -m 'Add amazing feature'`)
+4. ブランチをプッシュ (`git push origin feature/amazing-feature`)
+5. Pull Request を作成
+
+詳細は [CONTRIBUTING.md](contributing.md) を参照してください。

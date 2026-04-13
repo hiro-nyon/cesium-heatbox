@@ -108,13 +108,14 @@
 
 ### ⏱ Temporal / 時系列 (`temporal/`)
 
-**対象**: v1.2.0 の `temporal` オプションを試したい方
+**対象**: v1.3.x の `temporal` オプションを試したい方
 
 - `basic-temporal.html` – Cesium タイムラインと同期する最小構成。Per-Time スコープで各時間帯のコントラストを最大化。
 - `global-vs-per-time.html` – Global/Per-Time をラジオで切り替え、ドメインとクォンタイルの差を観察。
 - `simulation.html` – 平日ラッシュ/イベント/週末のシナリオを動的に切り替え、`updateInterval` や `outOfRangeBehavior` を調整。
+- `advanced-temporal.html` – 奇数時間帯のギャップを使って `interpolate` / `dataSource` / `useWorker` の実動作を比較。
 
-いずれも `dist/cesium-heatbox.umd.min.js` を読み込み、`heatbox.updateOptions({ temporal: { ... } })` で TimeController を再初期化するフローを確認できます。
+いずれも `dist/cesium-heatbox.umd.min.js` を読み込み、`heatbox.updateOptions({ temporal: { ... } })` で TimeController を再初期化するフローを確認できます。`advanced-temporal.html` では lazy loading と worker 経路もブラウザ上で追跡できます。
 
 ### 🧪 Advanced / Classification (`advanced/`)
 

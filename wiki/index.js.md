@@ -13,12 +13,14 @@
 import { Heatbox } from './Heatbox.js';
 import { Logger } from './utils/logger.js';
 import { getAllEntities, generateTestEntities } from './utils/sampleData.js';
+import { Legend } from './ui/Legend.js';
 
 // デフォルトエクスポート
 export default Heatbox;
 
 // 名前付きエクスポート
 export { Heatbox };
+export { Legend };
 export { getAllEntities, generateTestEntities };
 
 // 互換性のための追加エクスポート
@@ -28,7 +30,7 @@ export { Heatbox as CesiumHeatbox };
  * Library metadata.
  * ライブラリのメタ情報。
  */
-export const VERSION = '0.1.18-alpha.2';
+export const VERSION = '1.3.6';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 
@@ -86,12 +88,14 @@ Logger.info(`CesiumJS Heatbox v${VERSION} loaded`);
 import { Heatbox } from './Heatbox.js';
 import { Logger } from './utils/logger.js';
 import { getAllEntities, generateTestEntities } from './utils/sampleData.js';
+import { Legend } from './ui/Legend.js';
 
 // デフォルトエクスポート
 export default Heatbox;
 
 // 名前付きエクスポート
 export { Heatbox };
+export { Legend };
 export { getAllEntities, generateTestEntities };
 
 // 互換性のための追加エクスポート
@@ -101,7 +105,7 @@ export { Heatbox as CesiumHeatbox };
  * Library metadata.
  * ライブラリのメタ情報。
  */
-export const VERSION = '0.1.18-alpha.2';
+export const VERSION = '1.3.6';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 

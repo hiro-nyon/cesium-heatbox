@@ -66,7 +66,7 @@ describe('Temporal deterministic performance guards', () => {
     expect(stats.median).toBe((stats.count - 1) / 2);
     expect(stats.domain).toEqual([stats.min, stats.max]);
     expect(Array.isArray(stats.quantiles)).toBe(true);
-    expect(stats.quantiles.length).toBe(3);
+    expect(stats.quantiles).toHaveLength(3);
 
     const cached = slicer.calculateGlobalStats('intensity');
     expect(cached).toBe(stats);

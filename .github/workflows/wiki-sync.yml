@@ -1,5 +1,5 @@
 # GitHub Wiki 自動同期 Workflow
-# トリガー: docs/ 変更時、または手動実行
+# トリガー: 公開ドキュメントや API 生成元の変更時、または手動実行
 
 name: Wiki Sync
 
@@ -7,8 +7,12 @@ on:
   push:
     branches: [main]
     paths:
+      - 'src/**'
       - 'docs/**'
       - 'wiki/**'
+      - 'tools/wiki-sync.js'
+      - 'jsdoc.config.json'
+      - 'package.json'
       - 'README.md'
       - 'CHANGELOG.md'
   workflow_dispatch:
@@ -47,30 +51,9 @@ jobs:
           npm run docs
         fi
     
-    - name: Sync docs/api to wiki/
+    - name: Sync wiki content
       run: |
-        # Phase 1: JSDoc HTML → Markdown変換
-        if [ -f "tools/wiki-sync.js" ]; then
-          node tools/wiki-sync.js
-        fi
-        
-        # Phase 2: 基本コンテンツ同期（README/CHANGELOG）
-        cp README.md wiki/Home.md
-        cp CHANGELOG.md wiki/Release-Notes.md
-
-        # Phase 3: 主要Markdownの同期（docs/ → wiki/）
-        # ガイド/チュートリアル類をWikiに反映して、重複更新のリスクを低減
-        if [ -f "docs/getting-started.md" ]; then cp docs/getting-started.md wiki/Getting-Started.md; fi
-        if [ -f "docs/quick-start.md" ]; then cp docs/quick-start.md wiki/Quick-Start.md; fi
-        if [ -f "docs/development-guide.md" ]; then cp docs/development-guide.md wiki/Development-Guide.md; fi
-        if [ -f "docs/contributing.md" ]; then cp docs/contributing.md wiki/Contributing.md; fi
-        if [ -f "docs/specification.md" ]; then cp docs/specification.md wiki/Architecture.md; fi
-        # APIの概説（JSDocリファレンスとは別に）
-        if [ -f "docs/API.md" ]; then cp docs/API.md wiki/API.md; fi
-        # Wiki保守手順
-        if [ -f "docs/wiki-maintenance.md" ]; then cp docs/wiki-maintenance.md wiki/Publishing-to-GitHub-Wiki.md; fi
-        
-        # ここでは早期終了しない。実際の変更有無はWikiリポジトリ側で判定する。
+        npm run wiki:sync
     
     - name: Configure Git
       if: ${{ success() }}

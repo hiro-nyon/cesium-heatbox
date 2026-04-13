@@ -107,7 +107,7 @@ describe('classification', () => {
         classes: 4
       });
 
-      expect(classifier.breaks.length).toBe(5);
+      expect(classifier.breaks).toHaveLength(5);
       expect(classifier.breaks[0]).toBe(1);
       expect(classifier.breaks[classifier.breaks.length - 1]).toBe(10);
       expect(classifier.classify(2)).toBe(0);
@@ -141,7 +141,7 @@ describe('classification', () => {
         classes: 3
       });
 
-      expect(classifier.breaks.length).toBe(4);
+      expect(classifier.breaks).toHaveLength(4);
       expect(classifier.breaks[0]).toBe(1);
       expect(classifier.breaks[classifier.breaks.length - 1]).toBe(22);
       expect(classifier.classify(2)).toBe(0);
