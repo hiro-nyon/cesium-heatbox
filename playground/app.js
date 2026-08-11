@@ -7,6 +7,15 @@
 // UMDバージョンを使用するため、グローバルのHeatboxを使用
 // import { Heatbox, createHeatbox, getEnvironmentInfo } from '../cesium-heatbox/src/index.js';
 
+function createInputPointStyle() {
+  return {
+    pixelSize: 5,
+    color: Cesium.Color.fromCssColorString('#263238').withAlpha(0.58),
+    outlineWidth: 0,
+    disableDepthTestDistance: Number.POSITIVE_INFINITY
+  };
+}
+
 class HeatboxPlayground {
   constructor() {
     console.log('=== HeatboxPlayground 初期化開始 ===');
@@ -182,7 +191,7 @@ class HeatboxPlayground {
     const toggleMenu = () => {
       const L = this._getTranslations()[this._lang] || this._getTranslations().ja;
       isMenuOpen = !isMenuOpen;
-      
+
       if (isMenuOpen) {
         toolbar.classList.add('open');
         mobileToggle.innerHTML = '✕';
@@ -598,17 +607,29 @@ class HeatboxPlayground {
    * 翻訳辞書
    */
   _getTranslations() {
-    // Externalized dictionaries take precedence (see playground/i18n/*.js)
-    try {
-      if (typeof window !== 'undefined' && window.HEATBOX_I18N) {
-        return window.HEATBOX_I18N;
-      }
-    } catch (_) {}
-    return {
+    const translations = {
       ja: {
         // Section summaries
-        sum_rendering: '描画制御',
+        sum_rendering: '描画上限',
         sum_actions: '操作・実行',
+        sum_current_api: '2 · マッピング',
+        current_api_note: '分類・空間ID・時系列を組み合わせます。',
+        group_classification: '色と分類',
+        group_structure: '空間集約',
+        group_time: '時系列',
+        label_classification_scheme: '分類方式',
+        opt_classification_off: '無効（従来の色設定）',
+        label_classification_classes: 'クラス数',
+        label_classification_palette: 'パレット',
+        label_target_opacity: '透明度も分類',
+        label_target_width: '線幅も分類',
+        label_show_legend: '凡例を表示',
+        label_aggregation: 'レイヤ集約',
+        label_spatial_id: '空間IDグリッド',
+        spatial_id_note: 'Autoは空間IDセル幅を現在のボクセルサイズに合わせます。東京サンプルで集約を見やすくする場合はz19〜20を選んでください。',
+        label_temporal_demo: '時系列デモ',
+        label_temporal_speed: '再生速度',
+        temporal_demo_note: '読み込んだデータから4時点のアニメーションを生成します。',
         // Language selector
         label_language: '言語',
         lang_ja: '日本語',
@@ -626,18 +647,19 @@ class HeatboxPlayground {
         aria_collapse_left: '左パネルの表示/非表示',
         aria_collapse_right: '右パネルの表示/非表示',
         title_main: 'Cesium Heatbox Playground',
-        subtitle: '高度なコントロール',
-        sum_data: 'データ読み込み',
+        subtitle: 'すべての機能を、必要なときだけ',
+        sum_data: '1 · データ',
+        sum_basic: '地図とカメラ',
         sum_display: '表示設定',
         sum_basemap: '背景地図',
-        sum_voxel: 'ボクセルと描画',
-        sum_color: '色設定',
-        sum_outline: '枠線・見た目',
+        sum_voxel: '3 · グリッド',
+        sum_color: 'カラー（レガシー）',
+        sum_outline: 'アウトライン',
         sum_adaptive: '適応表示',
         sum_view: 'ビュー',
         sum_legacy_adaptive: '適応表示（レガシー）',
         sum_highlight: '強調表示',
-        sum_advanced: '詳細設定',
+        sum_advanced: '診断・詳細',
         ops_title: '操作',
         btn_create: 'ヒートマップ作成',
         btn_clear: 'クリア',
@@ -697,7 +719,7 @@ class HeatboxPlayground {
         btn_generate_test: 'テストデータを生成',
         // Display section
         label_baseMap: '背景地図:',
-        chk_autoVoxel: '自動サイズ決定（v0.1.4新機能）',
+        chk_autoVoxel: '自動ボクセルサイズ',
         label_gridSize: 'グリッドサイズ（手動）:',
         chk_heightBased: '高さベース表現',
         chk_showEmpty: '空のボクセルを表示',
@@ -765,8 +787,26 @@ class HeatboxPlayground {
       },
       en: {
         // Section summaries
-        sum_rendering: 'Rendering Control',
+        sum_rendering: 'Render budget',
         sum_actions: 'Actions',
+        sum_current_api: '2 · Mapping',
+        current_api_note: 'Combine classification, Spatial ID, and temporal data.',
+        group_classification: 'Color & classification',
+        group_structure: 'Spatial grouping',
+        group_time: 'Time',
+        label_classification_scheme: 'Classification',
+        opt_classification_off: 'Off (legacy colors)',
+        label_classification_classes: 'Classes',
+        label_classification_palette: 'Palette',
+        label_target_opacity: 'Classify opacity',
+        label_target_width: 'Classify width',
+        label_show_legend: 'Show legend',
+        label_aggregation: 'Layer aggregation',
+        label_spatial_id: 'Spatial ID grid',
+        spatial_id_note: 'Auto matches Spatial ID cell width to the current voxel size. Use z19–20 to make aggregation visible with the Tokyo sample.',
+        label_temporal_demo: 'Temporal demo',
+        label_temporal_speed: 'Speed',
+        temporal_demo_note: 'Temporal demo derives four animated slices from the loaded data.',
         // Language selector
         label_language: 'Language',
         lang_ja: 'Japanese',
@@ -784,18 +824,19 @@ class HeatboxPlayground {
         aria_collapse_left: 'Toggle left panel',
         aria_collapse_right: 'Toggle right panel',
         title_main: 'Cesium Heatbox Playground',
-        subtitle: 'Advanced controls',
-        sum_data: 'Data',
+        subtitle: 'Every feature, only when you need it',
+        sum_data: '1 · Data',
+        sum_basic: 'Map & camera',
         sum_display: 'Display',
         sum_basemap: 'Base Map',
-        sum_voxel: 'Voxel Sizing & Rendering',
-        sum_color: 'Colors',
-        sum_outline: 'Outlines & Look',
+        sum_voxel: '3 · Grid',
+        sum_color: 'Color (legacy)',
+        sum_outline: 'Outlines',
         sum_adaptive: 'Adaptive',
         sum_view: 'View',
         sum_legacy_adaptive: 'Adaptive (Legacy)',
         sum_highlight: 'Highlight',
-        sum_advanced: 'Advanced',
+        sum_advanced: 'Diagnostics & details',
         ops_title: 'Actions',
         btn_create: 'Create Heatmap',
         btn_clear: 'Clear',
@@ -855,7 +896,7 @@ class HeatboxPlayground {
         btn_generate_test: 'Generate test data',
         // Display
         label_baseMap: 'Base map:',
-        chk_autoVoxel: 'Auto voxel size (v0.1.4)',
+        chk_autoVoxel: 'Auto voxel size',
         label_gridSize: 'Grid size (manual):',
         chk_heightBased: 'Height-based boxes',
         chk_showEmpty: 'Show empty voxels',
@@ -922,6 +963,17 @@ class HeatboxPlayground {
         loading: 'Processing...'
       }
     };
+    try {
+      const external = typeof window !== 'undefined'
+        ? (window.HeatboxI18N || window.HEATBOX_I18N)
+        : null;
+      if (external) {
+        Object.keys(translations).forEach((lang) => {
+          translations[lang] = { ...translations[lang], ...(external[lang] || {}) };
+        });
+      }
+    } catch (_) {}
+    return translations;
   }
   
   /**
@@ -1236,6 +1288,16 @@ class HeatboxPlayground {
     if (effBtn && typeof this.showEffectiveOptions === 'function') {
       effBtn.addEventListener('click', this.showEffectiveOptions.bind(this));
     }
+
+    const classificationClasses = document.getElementById('classificationClasses');
+    const classificationClassesValue = document.getElementById('classificationClassesValue');
+    if (classificationClasses && classificationClassesValue) {
+      const syncClassificationClasses = () => {
+        classificationClassesValue.textContent = classificationClasses.value;
+      };
+      classificationClasses.addEventListener('input', syncClassificationClasses);
+      syncClassificationClasses();
+    }
     
     // 空ボクセル表示チェックボックス
     document.getElementById('showEmptyVoxels').addEventListener('change', (e) => {
@@ -1534,10 +1596,7 @@ class HeatboxPlayground {
           id: `geojson-${index}`,
           position: Cesium.Cartesian3.fromDegrees(coords[0], coords[1], coords[2] || 0),
           point: {
-            pixelSize: 4,
-            color: Cesium.Color.CYAN,
-            outlineColor: Cesium.Color.WHITE,
-            outlineWidth: 1
+            ...createInputPointStyle()
           },
           properties: {
             weight: weight,
@@ -1578,10 +1637,7 @@ class HeatboxPlayground {
           id: `data-${index}`,
           position: position,
           point: {
-            pixelSize: 4,
-            color: Cesium.Color.MAGENTA,
-            outlineColor: Cesium.Color.WHITE,
-            outlineWidth: 1
+            ...createInputPointStyle()
           },
           properties: {
             weight: item.weight || 1,
@@ -1611,7 +1667,7 @@ class HeatboxPlayground {
       const newZMax = 400;        // 拡張後のZ最大値（より立体的に）
       const zScale = newZMax / oldZMax;
       const sampleCount = Math.round(baseCount * zScale); // 体積増分に応じて点数を増やす
-      
+
       // 複数クラスター（2〜5個）をランダムに生成
       const minCenters = 1;
       const maxCenters = 5;
@@ -1650,9 +1706,7 @@ class HeatboxPlayground {
             id: `sample-${idx++}`,
             position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
             point: {
-              pixelSize: 5,
-              color: Cesium.Color.fromCssColorString('#1976D2').withAlpha(0.85),
-              outlineWidth: 0
+              ...createInputPointStyle()
             },
             properties: {
               weight: Math.random() * 100,
@@ -1717,9 +1771,7 @@ class HeatboxPlayground {
           id: `test-${i}`,
           position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
           point: {
-            pixelSize: 5,
-            color: Cesium.Color.fromCssColorString('#1976D2').withAlpha(0.85),
-            outlineWidth: 0
+            ...createInputPointStyle()
           },
           properties: {
             weight: Math.random() * 100,
@@ -1786,6 +1838,14 @@ class HeatboxPlayground {
       
       // 設定を取得
       const options = this.getHeatmapOptions();
+      if (window.HeatboxLatestPlayground) {
+        window.HeatboxLatestPlayground.prepareTemporalViewer(
+          this.viewer,
+          options.temporal,
+          document,
+          this.currentData
+        );
+      }
       // 統計リセット（adaptiveモード時にカウントを見やすく）
       try {
         if (document.getElementById('outlineMode')?.value === 'adaptive') {
@@ -1806,14 +1866,16 @@ class HeatboxPlayground {
       this.heatbox = new HB(this.viewer, options);
       console.log('Heatboxインスタンス作成完了:', this.heatbox);
       console.log('Heatboxインスタンスのメソッド:', Object.getOwnPropertyNames(this.heatbox));
-      // NOTE: main系の正規化でboxOpacityResolverは削除されるため、生成後に再設定して密度→不透明度を適用
+      // Legacy density opacity remains available unless classification owns opacity.
       try {
         const wireframeOnly = document.getElementById('wireframeOnly')?.checked || false;
-        this.heatbox.options.boxOpacityResolver = wireframeOnly ? (() => 0) : ((ctx) => {
-          const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-          // Range: 0.2 → 0.9 (linear)
-          return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
-        });
+        const classificationOwnsOpacity = Boolean(options.classification?.classificationTargets?.opacity);
+        if (!classificationOwnsOpacity) {
+          this.heatbox.options.boxOpacityResolver = wireframeOnly ? (() => 0) : ((ctx) => {
+            const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+            return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
+          });
+        }
       } catch (_) {}
       
       // ヒートマップを生成 - createFromEntitiesメソッドを使用
@@ -1862,6 +1924,17 @@ class HeatboxPlayground {
         // 統計情報の取得
         const stats = this.heatbox.getStatistics();
         console.log('ヒートマップ統計情報:', stats);
+
+        if (window.HeatboxLatestPlayground) {
+          const legendContainer = document.getElementById('latestLegend');
+          const showLegend = document.getElementById('classificationLegend')?.checked !== false;
+          window.HeatboxLatestPlayground.renderLegend(
+            this.heatbox,
+            legendContainer,
+            Boolean(options.classification && showLegend)
+          );
+          window.HeatboxLatestPlayground.renderFeatureStats(document, stats, options);
+        }
         
         // デバッグ情報の出力
         if (typeof this.heatbox.getDebugInfo === 'function') {
@@ -2743,8 +2816,8 @@ class HeatboxPlayground {
     const outlineMode = document.getElementById('outlineMode')?.value || 'adaptive';
     const viewMode = document.getElementById('viewModePreset')?.value || this._currentViewMode || 'boxes';
     const outlineWidthManual = parseInt(document.getElementById('outlineWidth')?.value || '2', 10);
-    const outlineEmulationMode = document.getElementById('outlineEmulationMode')?.value || 'off';
     const emulationScope = document.getElementById('emulationScope')?.value || 'off';
+    const outlineEmulationMode = emulationScope;
     const outlineInset = parseFloat(document.getElementById('outlineInset')?.value || '0');
     const outlineInsetModeSel = document.getElementById('outlineInsetMode')?.value || 'all';
     const enableThickFrames = document.getElementById('enableThickFrames')?.checked || false;
@@ -2770,26 +2843,7 @@ class HeatboxPlayground {
     let outlineWidthResolver = null;
     let outlineWidthValue = 2;
     if (outlineMode === 'adaptive') {
-      outlineWidthResolver = (params) => {
-        const { isTopN, normalizedDensity } = params || {};
-        // densityベースの連続マッピング（simple.html相当の挙動に近づける）
-        const d = Math.max(0, Math.min(1, Number(normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5); // ガンマ補正（コントラスト強化）
-        const minW = 1.5;
-        const maxW = 10.0;
-        let width;
-        if (outlineEmulationMode === 'all') {
-          // すべて太線モードでは最低太さを確保しつつTopNをわずかに強調
-          width = minW + nd * (maxW - minW);
-          if (isTopN) width = Math.min(maxW, width + 2);
-          width = Math.max(3, width); // すべて太線らしく下限を上げる
-        } else {
-          width = minW + nd * (maxW - minW);
-          if (isTopN) width = Math.min(maxW, width + 2);
-        }
-        try { self._recordOutlineResolver(width, params); } catch (_) {}
-        return width;
-      };
+      outlineWidthResolver = null;
       outlineWidthValue = 2; // ベースライン
     } else {
       outlineWidthResolver = null;
@@ -2836,13 +2890,11 @@ class HeatboxPlayground {
       voxelGap: isNaN(voxelGap) ? 0 : voxelGap,
       outlineOpacity: isNaN(outlineOpacity) ? 1.0 : outlineOpacity,
       outlineWidthResolver: outlineWidthResolver,
-      // v0.1.6+: 太線エミュレーション（WebGL制約の回避）
-      outlineEmulation: outlineEmulationMode,
       emulationScope: emulationScope,
       // v0.1.7 additions
       outlineRenderMode: outlineRenderMode,
-      adaptiveOutlines: adaptiveOutlines,
-      outlineWidthPreset: outlineWidthPreset
+      adaptiveOutlines: outlineMode === 'adaptive' || adaptiveOutlines,
+      outlineWidthPreset: outlineMode === 'adaptive' ? 'adaptive' : outlineWidthPreset
     };
 
     // View Mode semantic overrides (preserve per-mode parameters via _viewModeStates)
@@ -2977,8 +3029,23 @@ class HeatboxPlayground {
         autoShow: true
       };
     }
+
+    if (window.HeatboxLatestPlayground) {
+      const latestOptions = window.HeatboxLatestPlayground.buildOptions(
+        document,
+        this.viewer,
+        this.currentData
+      );
+      Object.assign(options, latestOptions);
+      if (latestOptions.classification?.classificationTargets?.opacity) {
+        options.boxOpacityResolver = null;
+      }
+      if (latestOptions.classification?.classificationTargets?.width) {
+        options.outlineWidthResolver = null;
+      }
+    }
     
-    console.log('Heatbox options (v0.1.9):', options);
+    console.log('Heatbox options:', options);
     return options;
   }
 
@@ -3114,9 +3181,14 @@ class HeatboxPlayground {
    */
   clearHeatmap() {
     if (this.heatbox) {
-      this.heatbox.clear();
+      if (typeof this.heatbox.destroy === 'function') this.heatbox.destroy();
+      else this.heatbox.clear();
       this.heatbox = null;
     }
+    const latestLegend = document.getElementById('latestLegend');
+    if (latestLegend) latestLegend.replaceChildren();
+    const latestStats = document.getElementById('latestFeatureStats');
+    if (latestStats) latestStats.replaceChildren();
     
     // 統計情報をリセット
     this.resetStatistics();

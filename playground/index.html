@@ -7,13 +7,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0e1b22">
   <title>Cesium Heatbox Playground</title>
-  <!-- Favicon intentionally omitted to avoid emoji usage -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%2315191b'/%3E%3Cpath d='M8 17h7v7H8zm9-9h7v7h-7zm0 9h7v7h-7z' fill='%23ef6a35'/%3E%3C/svg%3E">
   <!-- CesiumJS CDN - Version 1.120 -->
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   
   <!-- Playground styles -->
   <link href="styles.css" rel="stylesheet">
+  <link href="theme-alpha.css" rel="stylesheet">
   
   <!-- Cesium settings (no Ion token; CartoDB Light imagery set in app.js) -->
   <script>
@@ -35,15 +36,16 @@
   <nav class="hb-nav">
     <div class="hb-nav-content">
       <div class="hb-nav-left">
-        <a href="../" class="hb-nav-logo">
+        <a href="../index.html" class="hb-nav-logo">
           <span class="hb-nav-title">Cesium Heatbox</span>
+          <span class="hb-nav-version">1.3.7-alpha.3</span>
         </a>
       </div>
       
       <div class="hb-nav-center">
-        <a href="../" class="hb-nav-link">Home</a>
+        <a href="../index.html" class="hb-nav-link">Home</a>
         <a href="./simple.html" class="hb-nav-link">Quick Start</a>
-        <a href="./" class="hb-nav-link active">Playground</a>
+        <a href="./index.html" class="hb-nav-link active">Playground</a>
         <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" class="hb-nav-link" target="_blank">Docs</a>
       </div>
       
@@ -54,9 +56,9 @@
           <span id="navCaret" style="margin-left: 4px;">▾</span>
         </button>
         <div id="navDropdownMenu" class="hb-dropdown liquid-glass-dark">
-          <a href="../">Home</a>
+          <a href="../index.html">Home</a>
           <a href="./simple.html">Quick Start</a>
-          <a href="./">Playground</a>
+          <a href="./index.html">Playground</a>
           <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" target="_blank">Docs</a>
           <a href="https://github.com/hiro-nyon/cesium-heatbox" target="_blank">GitHub</a>
           <div class="nav-dropdown-divider"></div>
@@ -164,9 +166,12 @@
   <button id="mobileMenuToggle" class="liquid-glass-hamburger" data-i18n-aria-label="aria_menu_toggle" aria-label="Toggle menu">☰</button>
   
   <div id="toolbar" class="liquid-glass-dark">
-    <div class="section">
-      <h3 id="i18n-title" data-i18n="playground_title">Cesium Heatbox Playground</h3>
-      <p style="font-size: 11px; margin: 5px 0;" data-i18n="subtitle">Advanced controls</p>
+    <div class="section playground-panel-header">
+      <div>
+        <p class="playground-eyebrow">1.3.7-alpha.3</p>
+        <h3 id="i18n-title" data-i18n="playground_title">Cesium Heatbox Playground</h3>
+        <p class="playground-subtitle" data-i18n="subtitle">Build and inspect a heatbox</p>
+      </div>
       <div class="control-group">
         <label id="i18n-lang-label" for="langSelect" data-i18n="label_language">Language</label>
         <select id="langSelect">
@@ -175,9 +180,25 @@
         </select>
       </div>
     </div>
+
+    <div class="section playground-action-dock" aria-label="Render actions">
+      <button id="createHeatmap" class="playground-primary-action">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M4 4h5v5H4zm7 0h5v5h-5zm-7 7h5v5H4zm7 0h5v5h-5z"/></svg>
+        <span data-i18n="btn_create">Create</span>
+      </button>
+      <button id="toggleVisibility" class="playground-icon-action" data-i18n-aria-label="btn_toggle" aria-label="Show/Hide" title="Show or hide voxels">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M1.7 10s3-5 8.3-5 8.3 5 8.3 5-3 5-8.3 5-8.3-5-8.3-5Zm8.3 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/></svg>
+      </button>
+      <button id="clearHeatmap" class="playground-icon-action" data-i18n-aria-label="btn_clear" aria-label="Clear" title="Clear heatbox">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M6 3h8l1 2h3v2H2V5h3l1-2Zm-1 6h10l-1 8H6L5 9Z"/></svg>
+      </button>
+      <button id="exportData" class="playground-icon-action" data-i18n-aria-label="btn_export" aria-label="Export" title="Export data">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M9 2h2v8l2.8-2.8 1.4 1.4L10 14 4.8 8.6l1.4-1.4L9 10V2Zm-5 13h12v3H4v-3Z"/></svg>
+      </button>
+    </div>
     
     <!-- 1. Data Source -->
-    <details class="section" open>
+    <details class="section workflow-section" open>
       <summary data-i18n="sum_data">Data Source</summary>
       <div class="section-content">
         <div class="control-group">
@@ -191,9 +212,9 @@
       </div>
     </details>
     
-    <!-- 2. Configuration Profiles (v0.1.12) -->
-    <details class="section" open>
-      <summary data-i18n="sum_profiles">🆕 Configuration Profiles (v0.1.12)</summary>
+    <!-- 2. Configuration Profiles -->
+    <details class="section secondary-section">
+      <summary data-i18n="sum_profiles">Configuration Profiles</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label data-i18n="label_profile">Profile</label>
@@ -211,8 +232,99 @@
       </div>
     </details>
 
+    <!-- Current 1.3.x API surface -->
+    <details class="section workflow-section latest-api-section" open>
+      <summary data-i18n="sum_current_api">Current API</summary>
+      <div class="controls section-content">
+        <p class="control-note" data-i18n="current_api_note">Exercise the v1.x classification, temporal, Spatial ID, aggregation, and Legend APIs.</p>
+
+        <p class="control-subhead" data-i18n="group_classification">Color & classification</p>
+        <div class="control-group">
+          <label for="classificationScheme" data-i18n="label_classification_scheme">Classification</label>
+          <select id="classificationScheme">
+            <option value="off" data-i18n="opt_classification_off">Off (legacy colors)</option>
+            <option value="linear">linear</option>
+            <option value="log">log</option>
+            <option value="equal-interval">equal-interval</option>
+            <option value="quantize">quantize</option>
+            <option value="threshold">threshold</option>
+            <option value="quantile" selected>quantile</option>
+            <option value="jenks">jenks</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="classificationClasses"><span data-i18n="label_classification_classes">Classes</span>: <span id="classificationClassesValue">5</span></label>
+          <input type="range" id="classificationClasses" min="2" max="9" step="1" value="5">
+        </div>
+        <div class="control-group">
+          <label for="classificationPalette" data-i18n="label_classification_palette">Palette</label>
+          <select id="classificationPalette">
+            <option value="viridis" selected>Viridis</option>
+            <option value="inferno">Inferno</option>
+            <option value="heat">Heat</option>
+          </select>
+        </div>
+        <div class="control-group current-api-checks">
+          <label><input type="checkbox" id="classificationOpacity"> <span data-i18n="label_target_opacity">Classify opacity</span></label>
+          <label><input type="checkbox" id="classificationWidth"> <span data-i18n="label_target_width">Classify width</span></label>
+          <label><input type="checkbox" id="classificationLegend" checked> <span data-i18n="label_show_legend">Show legend</span></label>
+        </div>
+
+        <div class="control-divider"></div>
+
+        <p class="control-subhead" data-i18n="group_structure">Spatial grouping</p>
+        <div class="control-group">
+          <label><input type="checkbox" id="aggregationEnabled"> <span data-i18n="label_aggregation">Layer aggregation</span></label>
+          <select id="aggregationProperty">
+            <option value="clusterId">clusterId</option>
+            <option value="category">category</option>
+            <option value="type">type</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label><input type="checkbox" id="spatialIdEnabled"> <span data-i18n="label_spatial_id">Spatial ID grid</span></label>
+          <select id="spatialIdZoom">
+            <option value="auto" selected>auto (20 m grid → z21 near Tokyo)</option>
+            <option value="15">zoom: 15 (~993 m)</option>
+            <option value="16">zoom: 16 (~497 m)</option>
+            <option value="17">zoom: 17 (~248 m)</option>
+            <option value="18">zoom: 18 (~124 m)</option>
+            <option value="19">zoom: 19 (~62 m)</option>
+            <option value="20">zoom: 20 (~31 m)</option>
+            <option value="21">zoom: 21 (~16 m)</option>
+            <option value="22">zoom: 22 (~8 m)</option>
+            <option value="23">zoom: 23 (~4 m)</option>
+            <option value="24">zoom: 24 (~2 m)</option>
+            <option value="25">zoom: 25 (~1 m)</option>
+          </select>
+        </div>
+        <p class="control-note" data-i18n="spatial_id_note">Auto matches Spatial ID cell width to the current voxel size. Use z19–20 to make aggregation visible with the Tokyo sample.</p>
+        <p class="control-subhead" data-i18n="group_time">Time</p>
+        <div class="control-group">
+          <label><input type="checkbox" id="temporalDemo"> <span data-i18n="label_temporal_demo">Temporal demo</span></label>
+          <select id="temporalClassificationScope">
+            <option value="global" selected>global</option>
+            <option value="per-time">per-time</option>
+          </select>
+        </div>
+        <div class="control-group temporal-runtime-controls" aria-label="Temporal playback">
+          <label for="temporalSpeed" data-i18n="label_temporal_speed">Speed</label>
+          <select id="temporalSpeed">
+            <option value="60">1×</option>
+            <option value="240" selected>4×</option>
+            <option value="600">10×</option>
+          </select>
+          <button type="button" id="temporalPlayPause" disabled aria-label="Play temporal data" title="Play temporal data">▶</button>
+          <output id="temporalStatus" aria-live="polite">off</output>
+        </div>
+        <p class="control-note" data-i18n="temporal_demo_note">Temporal demo derives four animated slices from the loaded data.</p>
+        <div id="latestLegend" class="latest-legend" aria-live="polite"></div>
+        <div id="latestFeatureStats" class="latest-feature-stats" aria-live="polite"></div>
+      </div>
+    </details>
+
     <!-- 3. Basic Configuration -->
-    <details class="section" open>
+    <details class="section secondary-section">
       <summary data-i18n="sum_basic">Basic Configuration</summary>
       <div class="controls section-content">
         <div class="control-group">
@@ -231,12 +343,12 @@
           </label>
         </div>
         <div class="control-group" id="fitViewGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_fitViewHeading">Fit View Heading Degrees (v0.1.12)</label>
+          <label data-i18n="label_fitViewHeading">Fit View Heading Degrees</label>
           <input type="range" id="fitViewHeading" min="0" max="360" step="15" value="0" disabled />
           <span id="fitViewHeadingValue">0</span>
         </div>
         <div class="control-group" id="fitViewPitchGroup" style="opacity: 0.5; pointer-events: none;">
-          <label data-i18n="label_fitViewPitch">Fit View Pitch Degrees (v0.1.12)</label>
+          <label data-i18n="label_fitViewPitch">Fit View Pitch Degrees</label>
           <input type="range" id="fitViewPitch" min="-90" max="0" step="5" value="-45" disabled />
           <span id="fitViewPitchValue">-45</span>
         </div>
@@ -247,7 +359,7 @@
     </details>
 
     <!-- 4. View Mode (Display Preset) -->
-    <details class="section" open>
+    <details class="section secondary-section">
       <summary data-i18n="sum_viewmode">View Mode</summary>
       <div class="controls section-content">
         <div class="control-group">
@@ -262,9 +374,9 @@
       </div>
     </details>
 
-    <!-- 5. Performance Overlay (v0.1.12) -->
+    <!-- 5. Performance Overlay -->
     <details class="section">
-      <summary data-i18n="sum_performance">🆕 Performance Overlay (v0.1.12)</summary>
+      <summary data-i18n="sum_performance">Performance Overlay</summary>
       <div class="controls section-content">
         <div class="control-group">
           <label>
@@ -290,7 +402,7 @@
     </details>
 
     <!-- 6. Voxel Configuration -->
-    <details class="section" open>
+    <details class="section workflow-section" open>
       <summary data-i18n="sum_voxel">Voxel Configuration</summary>
       <div class="controls section-content">
         <div class="control-group">
@@ -317,7 +429,7 @@
             <span data-i18n="chk_heightBased">Height Based</span>
           </label>
         </div>
-        
+
         <div class="control-group">
           <label>
             <input type="checkbox" id="showEmptyVoxels" />
@@ -452,21 +564,11 @@
 
         <!-- C. Emulation (WebGL constraint workaround) -->
         <div class="sub-section" style="margin-bottom: 16px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-          
+
           <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #ffb74d;" data-i18n="h4_outline_emulation">Thick Line Emulation (WebGL Constraint Workaround)</h4>
           <div class="control-group">
-            <label data-i18n="label_emulationScope">Emulation Scope (v0.1.12)</label>
+            <label data-i18n="label_emulationScope">Emulation Scope</label>
             <select id="emulationScope">
-              <option value="off" data-i18n="opt_emul_off">Disabled</option>
-              <option value="topn" data-i18n="opt_emul_topn">Top-N Only</option>
-              <option value="non-topn" data-i18n="opt_emul_non_topn">Non-TopN Only</option>
-              <option value="all" data-i18n="opt_emul_all">All Voxels</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label data-i18n="label_legacyEmulation">⚠️ Legacy outlineEmulation (Deprecated)</label>
-            <select id="outlineEmulationMode">
-              <option value="" data-i18n="opt_legacy_none">Use emulationScope above</option>
               <option value="off" data-i18n="opt_emul_off">Disabled</option>
               <option value="topn" data-i18n="opt_emul_topn">Top-N Only</option>
               <option value="non-topn" data-i18n="opt_emul_non_topn">Non-TopN Only</option>
@@ -512,7 +614,7 @@
           </label>
         </div>
           <div class="control-group">
-          <label data-i18n="label_outlinePreset">Outline Preset (v0.1.12 Updated)</label>
+          <label data-i18n="label_outlinePreset">Outline Preset</label>
           <select id="outlineWidthPreset">
             <option value="thin" data-i18n="opt_preset_thin">Thin</option>
             <option value="medium" selected data-i18n="opt_preset_medium">Medium</option>
@@ -561,7 +663,7 @@
         <button id="testHeatbox" data-i18n="btn_testHeatbox">Test Heatbox</button>
           </div>
         <div class="control-group">
-        <button id="getEffectiveOptions" data-i18n="btn_getEffectiveOptions">🆕 Get Effective Options (v0.1.12)</button>
+        <button id="getEffectiveOptions" data-i18n="btn_getEffectiveOptions">Get Effective Options</button>
           </div>
         </div>
 
@@ -569,18 +671,6 @@
     </details>
     
     
-    <!-- 8. Actions -->
-    <details class="section" open>
-      <summary data-i18n="sum_actions">Actions</summary>
-      <div class="section-content">
-        <div class="control-group" style="display: flex; gap: 8px; flex-wrap: wrap;">
-      <button id="createHeatmap" data-i18n="btn_create">Create Heatmap</button>
-      <button id="clearHeatmap" data-i18n="btn_clear">Clear</button>
-      <button id="toggleVisibility" data-i18n="btn_toggle">Toggle Visibility</button>
-      <button id="exportData" data-i18n="btn_export">Export Data</button>
-    </div>
-      </div>
-    </details>
   </div>
   
   <div id="info" class="liquid-glass-dark">
@@ -606,17 +696,17 @@
       </div>
     </div>
     
-    <div class="section">
-      <h3 id="i18n-env-title" data-i18n="h3_env_title">Environment</h3>
+    <details class="section info-details">
+      <summary id="i18n-env-title" data-i18n="h3_env_title">Environment</summary>
       <div id="environmentInfo">
         <p><span id="i18n-label-cesium" data-i18n="label_cesium">Cesium</span> <span id="cesiumVersion">-</span></p>
         <p><span id="i18n-label-heatbox" data-i18n="label_heatbox">Heatbox</span> <span id="heatboxVersion">-</span></p>
         <p><span id="i18n-label-webgl" data-i18n="label_webgl">WebGL</span> <span id="webglSupport">-</span></p>
       </div>
-    </div>
+    </details>
 
-    <div class="section">
-      <h3 id="i18n-or-title" data-i18n="or_title">Outline Statistics</h3>
+    <details class="section info-details">
+      <summary id="i18n-or-title" data-i18n="or_title">Outline Statistics</summary>
       <div id="outlineStats" style="font-size: 12px;">
         <p><span id="i18n-label-or-calls" data-i18n="or_calls">Calls</span> <span id="or_calls">0</span></p>
         <p><span id="i18n-label-or-avg" data-i18n="or_avg">Average</span> <span id="or_avg">-</span> px</p>
@@ -624,19 +714,19 @@
         <p><span id="i18n-label-or-dminmax" data-i18n="or_dminmax">D-Min/Max</span> <span id="or_dmin">-</span> / <span id="or_dmax">-</span></p>
         <p><span id="i18n-label-or-topn" data-i18n="or_topn">Top-N</span> <span id="or_topn">0</span></p>
       </div>
-    </div>
+    </details>
   </div>
   
   <div id="loading">
     <p data-i18n="loading">Loading...</p>
   </div>
   
-  <!-- Heatbox library -->
-  <!-- Heatbox library (CDN pinned to 0.1.14) -->
-  <script src="https://unpkg.com/cesium-heatbox@0.1.14/dist/cesium-heatbox.umd.min.js?v=0.1.14"></script>
+  <!-- Heatbox library (pinned to the release represented by this branch) -->
+  <script src="https://unpkg.com/cesium-heatbox@1.3.7-alpha.3/dist/cesium-heatbox.umd.min.js?v=1.3.7-alpha.3"></script>
   <!-- i18n dictionaries (externalized) -->
   <script src="i18n/en.js"></script>
   <script src="i18n/ja.js"></script>
+  <script src="latest-features.js"></script>
   <script src="app.js"></script>
   <script src="v012-features.js"></script>
   <script>

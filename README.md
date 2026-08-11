@@ -1,38 +1,50 @@
 # Cesium Heatbox – GitHub Pages
 
-このブランチ（`gh-pages`）はデモ/ドキュメント用の公開サイトです。軽量に運用できるよう、静的ファイルのみで構成しています。
+このブランチ（`gh-pages-alpha`）は、デモ/ドキュメント公開サイトのプレビュー環境です。軽量に運用できるよう、静的ファイルのみで構成しています。
 
 ## Live
 - Site: https://hiro-nyon.github.io/cesium-heatbox/
 - Playground: https://hiro-nyon.github.io/cesium-heatbox/playground/
 - Quick Start: https://hiro-nyon.github.io/cesium-heatbox/playground/simple.html
 
-現在のデモは Heatbox を CDN から読み込みます。
-- Heatbox CDN: https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js
+現在のデモは Heatbox `1.3.7-alpha.3` を CDN から読み込みます。
+- Heatbox CDN: https://unpkg.com/cesium-heatbox@1.3.7-alpha.3/dist/cesium-heatbox.umd.min.js
 
 ## 構成（主要ファイル）
 - `index.html` … Home（概要・リンク）
+- `site.css` … Home のビジュアルシステム
 - `playground/index.html` … Playground（全機能）
 - `playground/simple.html` … Quick Start（最小構成）
-- `playground/styles.css` … Liquid Glass UI / レイアウト
+- `playground/latest-features.js` … alpha.3 の classification / temporal / spatial ID / aggregation 設定
+- `playground/styles.css` … 既存レイアウトとレスポンシブ動作
+- `playground/theme-alpha.css` … alpha.3 のフラットな操作UIテーマ
 - `playground/app.js` … Playground ロジック
 - `playground/simple-app.js` … Quick Start ロジック
+- `assets/quick-start-alpha3.png` … Home に掲載する実画面
 
 ## 主要な仕様メモ
 - CesiumJS 1.120 を CDN から読込。Cesium Ion は未使用。
-- Heatbox は unpkg CDN（`cesium-heatbox@latest`）から読込。
+- Heatbox は unpkg CDN（`cesium-heatbox@1.3.7-alpha.3`）から読込。
 
 
 - 背景地図は UrlTemplateImageryProvider（Carto/OSM）。地形は `EllipsoidTerrainProvider`。
 - Quick Start:
-  - 極力シンプル（CartoDB Light 固定、Auto voxel sizing）
-  - 既定: 密度ベースのボックス不透明度で“読みやすさ”を示す
-  - ワイヤーフレーム: ボックス非表示 + 太めの枠線（密度による透明度は使わない）
-  - 統計は左 UI に内蔵（モバイルはボトムシート UI）
+  - Jenks / Viridis / Auto-fit を固定し、設定項目を増やさない
+  - 既定は Solid。Jenks を色と透明度に適用し、入力点とボクセルを同時表示する
+  - Points / Voxels は個別に表示・非表示を切り替え可能
+  - Auto-fit 完了後にボクセルを構築し、初回からカメラ依存の描画選択を安定させる
+  - 統計は左 UI に内蔵（モバイルはサイドドロワー UI）
 - Playground:
-  - セクション整理（Base Map / Voxel / Colors / Outlines / Adaptive / View / Highlight / Advanced）
+  - alpha.3 の classification / Legend / temporal / spatial ID / aggregation を操作可能
+  - Base Map / Voxel / Colors / Outlines / Adaptive / View / Highlight / Advanced も継続提供
   - デスクトップは右統計パネル、モバイル/タブレットはナビのプルダウン内に統計を表示
-  - Liquid Glass UI（薄いガラス感、モバイル最適化、スクロールバー非表示）
+  - チャコール基調のフラットUI（低彩度、角丸・透過・ブラーを抑制）
+
+## デザイン方針
+- 製品の実画面を主役にし、Home には Quick Start の実スクリーンショットを掲載。
+- 絵文字、グラデーション文字、浮遊アニメーション、反復するガラスカードを使用しない。
+- 熱分布に由来するオレンジを操作・状態のアクセントに限定。
+- タイポグラフィ、罫線、余白で情報階層を表現し、装飾を増やさない。
 
 ## 運用フロー
 - 作業ブランチ: `gh-pages-alpha`
@@ -55,7 +67,7 @@
 ## 注意点
 - このリポジトリは GitHub プロジェクトページ配下（`/cesium-heatbox/`）で公開されます。相対パスで動作するよう構成済みです。
 - 外部リソースは HTTPS のみ使用。
-- CDN のバージョンを変更する場合は、`playground/index.html` と `playground/simple.html` の Heatbox `<script>` を更新してください。
+- CDN のバージョンを変更する場合は、`index.html`、`playground/index.html`、`playground/simple.html`、このREADMEの版番号を同時に更新してください。
 
 
 問題・要望は Issue にてお知らせください。Thanks!

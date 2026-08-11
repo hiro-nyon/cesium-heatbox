@@ -1,311 +1,139 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cesium Heatbox - 3D Voxel-based Heatmap Visualization</title>
-  <meta name="description" content="A 3D voxel-based heatmap visualization library for existing entities in CesiumJS environments. Create stunning 3D heatmaps from your geospatial data.">
-  
-  <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
-  
-  <!-- Open Graph / Social Media -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cesium Heatbox — 3D voxel heatmaps for CesiumJS</title>
+  <meta name="description" content="Turn existing CesiumJS entities into readable 3D voxel heatmaps. Explore the 1.3.7-alpha.3 playground and API.">
+  <meta name="theme-color" content="#f3f1ec">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Cesium Heatbox - 3D Heatmap Visualization">
-  <meta property="og:description" content="Transform your geospatial data into stunning 3D voxel-based heatmaps with CesiumJS">
+  <meta property="og:title" content="Cesium Heatbox">
+  <meta property="og:description" content="3D voxel heatmaps for data already in CesiumJS.">
   <meta property="og:url" content="https://hiro-nyon.github.io/cesium-heatbox/">
-  
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
-      background: linear-gradient(135deg, #0e1b22 0%, #1a2a35 100%);
-      color: white;
-      line-height: 1.6;
-      min-height: 100vh;
-    }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
-    
-    /* Header */
-    .header {
-      padding: 40px 0;
-      text-align: center;
-    }
-    
-    .logo {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-      animation: float 3s ease-in-out infinite;
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
-    
-    .title {
-      font-size: 3rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      background: linear-gradient(45deg, #64b5f6, #42a5f5, #2196f3);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    
-    .subtitle {
-      font-size: 1.2rem;
-      color: #b0bec5;
-      margin-bottom: 2rem;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    
-    /* Action Cards */
-    .actions {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 2rem;
-      margin: 3rem 0;
-    }
-    
-    .action-card {
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 16px;
-      padding: 2rem;
-      text-align: center;
-      transition: all 0.3s ease;
-      text-decoration: none;
-      color: white;
-    }
-    
-    .action-card:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(66, 165, 245, 0.5);
-      transform: translateY(-4px);
-      box-shadow: 0 8px 32px rgba(33, 150, 243, 0.2);
-    }
-    
-    .action-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      display: block;
-    }
-    
-    .action-title {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-    }
-    
-    .action-desc {
-      color: #90a4ae;
-      font-size: 0.95rem;
-    }
-    
-    /* Features */
-    .features {
-      margin: 4rem 0;
-      padding: 3rem 2rem;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
-      backdrop-filter: blur(10px);
-    }
-    
-    .features h2 {
-      text-align: center;
-      font-size: 2rem;
-      margin-bottom: 2rem;
-      color: #e3f2fd;
-    }
-    
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 2rem;
-    }
-    
-    .feature {
-      text-align: center;
-    }
-    
-    .feature-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-      display: block;
-    }
-    
-    .feature h3 {
-      color: #bbdefb;
-      margin-bottom: 0.5rem;
-    }
-    
-    .feature p {
-      color: #90a4ae;
-      font-size: 0.9rem;
-    }
-    
-    /* Footer */
-    .footer {
-      text-align: center;
-      padding: 2rem 0;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      margin-top: 3rem;
-    }
-    
-    .footer a {
-      color: #64b5f6;
-      text-decoration: none;
-    }
-    
-    .footer a:hover {
-      color: #90caf9;
-    }
-    
-    /* Responsive */
-    @media (max-width: 768px) {
-      .title {
-        font-size: 2rem;
-      }
-      
-      .actions {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-      
-      .action-card {
-        padding: 1.5rem;
-      }
-      
-      .feature-grid {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-      }
-    }
-  </style>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23191c1e'/%3E%3Cpath d='M8 17h7v7H8zm9-9h7v7h-7zm0 9h7v7h-7z' fill='%23ef6a35'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="site.css">
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <div class="logo">🌍</div>
-      <h1 class="title">Cesium Heatbox</h1>
-      <p class="subtitle">
-        Transform your geospatial data into stunning 3D voxel-based heatmaps with CesiumJS
-      </p>
-      <div style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 8px; padding: 16px; margin: 20px auto; max-width: 500px;">
-        <h3 style="margin: 0 0 8px 0; color: #64b5f6; font-size: 1.1rem;">🆕 v0.1.12 Available!</h3>
-        <p style="margin: 0; font-size: 0.9rem; color: #b0bec5;">
-          New features: Configuration profiles, Performance overlay, Enhanced API, and improved migration support
-        </p>
-      </div>
-    </header>
-    
-    <main>
-      <section class="actions">
-        <a href="./playground/simple.html" class="action-card">
-          <span class="action-icon">🚀</span>
-          <h2 class="action-title">Quick Start</h2>
-          <p class="action-desc">Get started quickly with our simplified 3-step workflow</p>
-        </a>
-        
-        <a href="./playground/" class="action-card">
-          <span class="action-icon">🔬</span>
-          <h2 class="action-title">Full Playground <span style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-left: 4px;">v0.1.12</span></h2>
-          <p class="action-desc">Explore all features including new profiles and performance monitoring</p>
-        </a>
-        
-        <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" class="action-card">
-          <span class="action-icon">📚</span>
-          <h2 class="action-title">Documentation</h2>
-          <p class="action-desc">Learn how to integrate Cesium Heatbox into your projects</p>
-        </a>
-        
-        <a href="https://github.com/hiro-nyon/cesium-heatbox" class="action-card">
-          <span class="action-icon">⭐</span>
-          <h2 class="action-title">GitHub</h2>
-          <p class="action-desc">View source code, report issues, and contribute</p>
-        </a>
-      </section>
-      
-      <section class="features">
-        <h2>Features</h2>
-        <div class="feature-grid">
-          <div class="feature">
-            <span class="feature-icon">🧊</span>
-            <h3>3D Voxel Rendering</h3>
-            <p>Create stunning 3D volumetric heatmaps with customizable voxel grids</p>
-          </div>
-          
-          <div class="feature">
-            <span class="feature-icon">🎨</span>
-            <h3>Rich Styling Options</h3>
-            <p>Multiple color schemes, transparency controls, and visual effects</p>
-          </div>
-          
-          <div class="feature">
-            <span class="feature-icon">⚡</span>
-            <h3>High Performance</h3>
-            <p>Optimized for large datasets with efficient rendering algorithms</p>
-          </div>
-          
-          <div class="feature">
-            <span class="feature-icon">📱</span>
-            <h3>Mobile Responsive</h3>
-            <p>Works seamlessly across desktop, tablet, and mobile devices</p>
-          </div>
-          
-          <div class="feature">
-            <span class="feature-icon">🔧</span>
-            <h3>Easy Integration</h3>
-            <p>Simple API that works with existing CesiumJS applications</p>
-          </div>
-          
-          <div class="feature">
-            <span class="feature-icon">🌐</span>
-            <h3>Open Source</h3>
-            <p>Free and open source with active community support</p>
-          </div>
-          
-          <div class="feature">
-            <span class="feature-icon">⚙️</span>
-            <h3>Smart Profiles <span style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 4px;">v0.1.12</span></h3>
-            <p>Pre-configured settings for mobile, desktop, and different data densities</p>
-          </div>
-          
-          <div class="feature">
-            <span class="feature-icon">📊</span>
-            <h3>Performance Monitor <span style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 4px;">v0.1.12</span></h3>
-            <p>Real-time performance overlay with FPS, frame time, and memory usage</p>
-          </div>
-          
-          <div class="feature">
-            <span class="feature-icon">🔄</span>
-            <h3>Migration Support <span style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 4px;">v0.1.12</span></h3>
-            <p>Seamless upgrade path with deprecation warnings and compatibility layer</p>
-          </div>
+  <header class="site-header">
+    <a class="wordmark" href="./" aria-label="Cesium Heatbox home">
+      <span class="wordmark-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span>Cesium Heatbox</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a href="#release">Alpha.3</a>
+      <a class="nav-quick-start" href="./playground/simple.html">Quick start</a>
+      <a href="./playground/index.html">Playground</a>
+      <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki">Docs</a>
+      <a href="https://github.com/hiro-nyon/cesium-heatbox">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero shell">
+      <div class="hero-copy">
+        <p class="kicker">CesiumJS plugin <span>1.3.7-alpha.3</span></p>
+        <h1>Point data,<br>given volume.</h1>
+        <p class="hero-lede">Turn entities already in your Cesium scene into legible 3D voxel heatmaps. Keep the globe, camera, and data pipeline you have.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="./playground/simple.html">Open Quick Start <span aria-hidden="true">↗</span></a>
+          <a class="button button-quiet" href="https://github.com/hiro-nyon/cesium-heatbox/wiki">Read the docs</a>
         </div>
-      </section>
-    </main>
-    
-    <footer class="footer">
-      <p>
-        Created by <a href="https://github.com/hiro-nyon">hiro-nyon</a> | 
-        <a href="https://github.com/hiro-nyon/cesium-heatbox">View on GitHub</a>
-      </p>
-    </footer>
-  </div>
+        <a class="hero-playground-link" href="./playground/index.html">Need every control? Open the full Playground →</a>
+        <div class="install-line" aria-label="Install command">
+          <span>npm</span>
+          <code>install cesium-heatbox@1.3.7-alpha.3</code>
+        </div>
+      </div>
+
+      <figure class="product-frame">
+        <a class="product-shot" href="./playground/simple.html" aria-label="Open the interactive Quick Start">
+          <img src="./assets/quick-start-alpha3.png" width="1440" height="900" alt="Jenks-classified Viridis voxel volume and source points rendered in CesiumJS">
+        </a>
+        <figcaption>
+          <span>ACTUAL CESIUMJS OUTPUT</span>
+          <span>JENKS · VIRIDIS · OPACITY</span>
+          <a href="./playground/simple.html">Open Quick Start →</a>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="release" id="release">
+      <div class="shell release-grid">
+        <div class="release-heading">
+          <p class="kicker">Current prerelease</p>
+          <h2>1.3.7-alpha.3</h2>
+          <p>Focused on correctness at the edges: selection, temporal data, rendering limits, and package output.</p>
+        </div>
+        <ul class="release-list">
+          <li><span>01</span><p><strong>Reliable interaction</strong>Property-backed picking and thick-outline cleanup now follow the rendered voxel.</p></li>
+          <li><span>02</span><p><strong>Consistent time series</strong>Temporal global classification uses the real voxel-count domain.</p></li>
+          <li><span>03</span><p><strong>Safer rendering</strong>Render limits, Top-N styling, coverage selection, and fit-view boundaries are hardened.</p></li>
+          <li><span>04</span><p><strong>Predictable packages</strong>CommonJS, ESM, type declarations, and runtime exports stay aligned.</p></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="workflow shell" aria-labelledby="workflow-title">
+      <div class="section-heading">
+        <p class="kicker">How it fits</p>
+        <h2 id="workflow-title">A focused layer in your Cesium stack.</h2>
+      </div>
+      <ol class="steps">
+        <li><span>01</span><h3>Bring entities</h3><p>Use the data sources and Cesium entities your application already owns.</p></li>
+        <li><span>02</span><h3>Aggregate</h3><p>Choose voxel dimensions, classification, layers, time slices, or Spatial IDs.</p></li>
+        <li><span>03</span><h3>Render</h3><p>Heatbox plans a bounded, camera-aware set of boxes and outlines for the scene.</p></li>
+      </ol>
+    </section>
+
+    <section class="code-section">
+      <div class="shell code-grid">
+        <div class="section-heading">
+          <p class="kicker">Small surface area</p>
+          <h2>Start with the scene you have.</h2>
+          <p>Defaults are usable, while classification, adaptive rendering, temporal data, and aggregation stay available when the dataset demands them.</p>
+          <a class="text-link" href="./playground/simple.html">Walk through Quick Start <span aria-hidden="true">→</span></a>
+        </div>
+        <pre aria-label="JavaScript example"><span class="code-comment">// viewer and entities stay under your control</span>
+<span class="code-keyword">const</span> heatbox = <span class="code-keyword">new</span> CesiumHeatbox.<span class="code-name">Heatbox</span>(viewer, {
+  voxelSize: <span class="code-number">100</span>,
+  classification: {
+    scheme: <span class="code-string">'quantile'</span>,
+    colorMap: <span class="code-string">'viridis'</span>
+  },
+  maxRenderVoxels: <span class="code-number">5000</span>
+});
+
+heatbox.<span class="code-name">createFromEntities</span>(entities);</pre>
+      </div>
+    </section>
+
+    <section class="capabilities shell" aria-labelledby="capabilities-title">
+      <div class="section-heading">
+        <p class="kicker">Capabilities</p>
+        <h2 id="capabilities-title">Enough control without replacing Cesium.</h2>
+      </div>
+      <div class="capability-table">
+        <div><h3>Classification</h3><p>Linear, log, quantile, Jenks, threshold, and multi-target styling.</p><span>COLOR / OPACITY / WIDTH</span></div>
+        <div><h3>Adaptive rendering</h3><p>Viewport-aware selection, LoD, density controls, and render budgets.</p><span>PERFORMANCE</span></div>
+        <div><h3>Temporal data</h3><p>Time slices, interpolation, lazy data sources, and worker preprocessing.</p><span>TIME SERIES</span></div>
+        <div><h3>Spatial structure</h3><p>Spatial ID input, layer aggregation, diagnostics, and QA metrics.</p><span>ANALYSIS</span></div>
+      </div>
+    </section>
+
+    <section class="closing">
+      <div class="shell closing-inner">
+        <h2>See your first result in one step.</h2>
+        <div>
+          <a class="button button-primary" href="./playground/simple.html">Open Quick Start <span aria-hidden="true">↗</span></a>
+          <p>Starts with a completed sample. <a href="./playground/index.html">Full Playground →</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer shell">
+    <p>Cesium Heatbox · MIT License</p>
+    <div><a href="https://github.com/hiro-nyon">hiro-nyon</a><a href="https://github.com/hiro-nyon/cesium-heatbox/issues">Issues</a><a href="https://www.npmjs.com/package/cesium-heatbox">npm</a></div>
+  </footer>
 </body>
 </html>

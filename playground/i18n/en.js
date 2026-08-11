@@ -2,15 +2,15 @@
 if (typeof window !== 'undefined') {
   window.HeatboxI18N = window.HeatboxI18N || {};
   window.HeatboxI18N.en = {
-    // Profile descriptions (v0.1.12)
+    // Profile descriptions
     profile_desc_custom: 'Customize all settings manually',
     profile_desc_mobile: 'Optimized for mobile devices: Fast rendering, reduced quality',
     profile_desc_desktop: 'Balanced performance for desktop environments',
     profile_desc_dense: 'Optimized for high-density datasets with many data points',
     profile_desc_sparse: 'Optimized for sparse datasets with fewer data points',
     
-    // New v0.1.12 UI labels
-    sum_profiles: '🆕 Configuration Profiles (v0.1.12)',
+    // Extended UI labels
+    sum_profiles: 'Presets',
     label_profile: 'Profile',
     opt_profile_custom: 'Custom (No Profile)',
     opt_profile_mobile: 'Mobile Fast',
@@ -18,7 +18,7 @@ if (typeof window !== 'undefined') {
     opt_profile_dense: 'Dense Data',
     opt_profile_sparse: 'Sparse Data',
     
-    sum_performance: '🆕 Performance Overlay (v0.1.12)',
+    sum_performance: 'Performance',
     chk_performanceOverlay: 'Enable Performance Overlay',
     label_overlayPosition: 'Overlay Position',
     opt_pos_topleft: 'Top Left',
@@ -27,11 +27,11 @@ if (typeof window !== 'undefined') {
     opt_pos_bottomright: 'Bottom Right',
     label_overlayUpdate: 'Update Interval (ms)',
     
-    label_emulationScope: 'Emulation Scope (v0.1.12)',
+    label_emulationScope: 'Emulation Scope',
     label_legacyEmulation: '⚠️ Legacy outlineEmulation (Deprecated)',
     opt_legacy_none: 'Use emulationScope above',
     
-    btn_getEffectiveOptions: '🆕 Get Effective Options (v0.1.12)',
+    btn_getEffectiveOptions: 'Get Effective Options',
     
     // Preset updates
     opt_preset_thin: 'Thin',
@@ -43,7 +43,7 @@ if (typeof window !== 'undefined') {
     opt_preset_topn_legacy: '⚠️ Top-N Focus (Deprecated → Thick)'
     ,
     // View Mode (Playground)
-    sum_viewmode: 'View Mode',
+    sum_viewmode: 'Voxel style',
     label_viewmode_preset: 'Preset',
     opt_view_boxes: 'Boxes Only',
     opt_view_outline: 'Outline Only',

@@ -5,9 +5,35 @@ let heatboxInstance = null;
 let currentEntities = [];
 let currentData = null;
 let isHeatmapVisible = true; // 表示状態を追跡
+let arePointsVisible = true;
 // QS: 自動カメラ調整のタイミング制御（postRender一回）
 let _qsFitOnceHandler = null;
 let _qsFitViewOptions = null;
+let _quickStartRunInProgress = false;
+
+function setTextContent(id, value) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = value;
+  }
+  return el;
+}
+
+function showElement(id, display = 'block') {
+  const el = document.getElementById(id);
+  if (el && el.style) {
+    el.style.display = display;
+  }
+  return el;
+}
+
+function hideElement(id) {
+  const el = document.getElementById(id);
+  if (el && el.style) {
+    el.style.display = 'none';
+  }
+  return el;
+}
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -17,11 +43,14 @@ document.addEventListener('DOMContentLoaded', function() {
   setupQuickStartMobileMenu();
   initializeEnvironmentInfo();
   // setupAutoVoxelSizeToggle(); // QS enforces auto voxel size
+  const manualMode = new URLSearchParams(window.location.search).get('manual') === '1';
+  if (!manualMode) window.setTimeout(() => runSampleDemo(), 300);
 });
 
 // Initialize Cesium viewer
 function initializeCesium() {
   try {
+    const cartoStyle = 'light_all';
     viewer = new Cesium.Viewer('cesiumContainer', {
       // UI components
       animation: false,
@@ -43,7 +72,7 @@ function initializeCesium() {
       // Terrain and imagery (no Ion dependency)
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
       imageryProvider: new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        url: `https://{s}.basemaps.cartocdn.com/${cartoStyle}/{z}/{x}/{y}.png`,
         subdomains: 'abcd',
         maximumLevel: 19,
         credit: '© OpenStreetMap contributors © CARTO'
@@ -66,7 +95,7 @@ function initializeCesium() {
       if (!layers || layers.length === 0 || !layers.get(0)) {
         console.warn('No imagery layer detected at init. Forcing Carto Light add.');
         layers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-          url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+          url: `https://{s}.basemaps.cartocdn.com/${cartoStyle}/{z}/{x}/{y}.png`,
           subdomains: 'abcd',
           maximumLevel: 19,
           credit: '© OpenStreetMap contributors © CARTO'
@@ -97,8 +126,9 @@ function setupEventListeners() {
   document.getElementById('fileInput').addEventListener('change', handleFileInput);
   
   // Sample data buttons
-  document.getElementById('loadSampleData').addEventListener('click', loadSampleData);
-  document.getElementById('generateTestData').addEventListener('click', generateTestData);
+  document.getElementById('loadSampleData')?.addEventListener('click', loadSampleData);
+  document.getElementById('generateTestData')?.addEventListener('click', generateTestData);
+  document.getElementById('runSampleDemo')?.addEventListener('click', runSampleDemo);
   
   // Base map selector
   const baseMapSelect = document.getElementById('baseMap');
@@ -107,13 +137,24 @@ function setupEventListeners() {
   }
   
   // Heatmap controls
-  document.getElementById('createHeatmap').addEventListener('click', createHeatmap);
+  document.getElementById('createHeatmap')?.addEventListener('click', createHeatmap);
   document.getElementById('clearHeatmap').addEventListener('click', clearHeatmap);
-  document.getElementById('toggleVisibility').addEventListener('click', toggleVisibility);
-  
-  // Live updates for wireframe
-  const wireframeCb = document.getElementById('wireframeOnly');
-  if (wireframeCb) wireframeCb.addEventListener('change', reRenderHeatmap);
+  document.getElementById('togglePoints')?.addEventListener('click', togglePointsVisibility);
+  document.getElementById('toggleVoxels')?.addEventListener('click', toggleVoxelsVisibility);
+
+  const wireframeInput = document.getElementById('wireframeOnly');
+  const solidButton = document.getElementById('viewStyleSolid');
+  const wireframeButton = document.getElementById('viewStyleWireframe');
+  const setViewStyle = async (wireframe) => {
+    if (wireframeInput) wireframeInput.checked = wireframe;
+    solidButton?.classList.toggle('is-selected', !wireframe);
+    wireframeButton?.classList.toggle('is-selected', wireframe);
+    solidButton?.setAttribute('aria-pressed', String(!wireframe));
+    wireframeButton?.setAttribute('aria-pressed', String(wireframe));
+    if (currentEntities.length > 0) await createHeatmap();
+  };
+  solidButton?.addEventListener('click', () => setViewStyle(false));
+  wireframeButton?.addEventListener('click', () => setViewStyle(true));
   
   // Quick Start: no manual grid in UI; guard if remnants exist
   const gridSizeSlider = document.getElementById('gridSize');
@@ -125,6 +166,20 @@ function setupEventListeners() {
   }
   
   // Mobile menu handled by setupMobileMenu()
+}
+
+async function runSampleDemo() {
+  if (_quickStartRunInProgress) return;
+  _quickStartRunInProgress = true;
+  const button = document.getElementById('runSampleDemo');
+  if (button) button.disabled = true;
+  try {
+    await loadSampleData();
+    await createHeatmap();
+  } finally {
+    if (button) button.disabled = false;
+    _quickStartRunInProgress = false;
+  }
 }
 
 // Quick Start mobile bottom-sheet toggle (reuse Playground toolbar styles)
@@ -139,74 +194,6 @@ function setupQuickStartMobileMenu() {
     document.addEventListener('click', (e) => { if (!panel.contains(e.target) && !toggle.contains(e.target)) close(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
   } catch (_) {}
-}
-
-// Re-render heatmap with updated emulation/opacity settings
-function reRenderHeatmap() {
-  if (!heatboxInstance || !currentEntities || currentEntities.length === 0) return;
-  try {
-    const wireframe = document.getElementById('wireframeOnly')?.checked || false;
-    const updated = {
-      showOutline: wireframe ? false : false,
-      // 非ワイヤーフレーム時は一律不透明度を指定しない（密度ベースの不透明度を有効にする）
-      opacity: wireframe ? 0.0 : undefined,
-      // Ensure no box fill is rendered in wireframe
-      wireframeOnly: wireframe,
-      // ADR-0009 Phase 5: 適応制御オプション
-      adaptiveOutlines: true,
-      outlineWidthPreset: 'adaptive',
-      // density→opacity は app.js と同様に Resolver で実装
-      boxOpacityResolver: wireframe ? (() => 0) : (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        // Range: 0.2 → 0.9 (linear)
-        return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
-      }),
-      outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
-      // v0.2.0 deprecation対応: outlineEmulation → emulationScope
-      emulationScope: wireframe ? 'all' : 'off',
-      outlineInset: 0,
-      outlineInsetMode: 'none'
-    };
-    if (wireframe) {
-      // Direct density mapping for outlines (thicker/darker at higher density)
-      updated.outlineOpacity = undefined;
-      updated.outlineOpacityResolver = (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        const op = 0.15 + nd * 0.85;
-        return Math.max(0.05, Math.min(1.0, op));
-      });
-      updated.outlineWidth = undefined;
-      updated.outlineWidthResolver = (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        const minW = 1.5, maxW = 10;
-        return minW + nd * (maxW - minW);
-      });
-    } else {
-      // Clear resolvers when exiting wireframe（アウトライン系のみ）
-      updated.outlineOpacityResolver = undefined;
-      updated.outlineWidthResolver = undefined;
-    }
-    Object.assign(heatboxInstance.options, updated);
-    if (typeof heatboxInstance.createFromEntities === 'function') {
-      heatboxInstance.createFromEntities(currentEntities);
-    } else {
-      heatboxInstance.setData(currentEntities);
-      if (typeof heatboxInstance.update === 'function') heatboxInstance.update();
-    }
-    if (wireframe) {
-      try { adjustEmulationByDensity(); } catch (_) {}
-    }
-    
-    // 重要: 再描画後の即座な画面更新を要求
-    if (viewer && viewer.scene) {
-      viewer.scene.requestRender();
-    }
-    
-  } catch (e) {
-    console.error('Re-render failed:', e);
-  }
 }
 
 // Setup mobile hamburger to toggle bottom-sheet toolbar
@@ -351,10 +338,11 @@ function handleFileInput(event) {
   updateStatus('Loading file: ' + file.name, 'loading');
   
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = async function(e) {
     try {
       const data = JSON.parse(e.target.result);
-      processLoadedData(data, file.name);
+      await processLoadedData(data, file.name);
+      await createHeatmap();
     } catch (error) {
       console.error('Error parsing file:', error);
       updateStatus('Error parsing file: Invalid JSON format', 'error');
@@ -364,29 +352,48 @@ function handleFileInput(event) {
 }
 
 // Load sample data (align with Playground)
-function loadSampleData() {
+async function loadSampleData() {
   updateStatus('Loading sample data...', 'loading');
   try {
     // Z範囲を拡張しつつ体積密度を維持する（Playground と整合）
-    const baseCount = 800;
+    const heroCapture = document.documentElement.classList.contains('hero-capture');
+    const baseCount = heroCapture ? 450 : 800;
     const oldZMax = 200;
     const newZMax = 400; // より立体的に（400m）
     const zScale = newZMax / oldZMax;
     const count = Math.round(baseCount * zScale);
-    const data = generateTokyoClusterGeoJSON(count, 0.02, 0, newZMax);
-    processLoadedData(data, 'Playground-style Sample Data');
+    const data = generateTokyoClusterGeoJSON(
+      count,
+      heroCapture ? 0.018 : 0.02,
+      0,
+      newZMax,
+      heroCapture ? 1 : 3,
+      createSeededRandom(1373)
+    );
+    await processLoadedData(data, 'Playground-style Sample Data');
   } catch (error) {
     console.error('Error generating sample data:', error);
     updateStatus('Error loading sample data: ' + error.message, 'error');
   }
 }
 
+function createSeededRandom(seed) {
+  let state = seed >>> 0;
+  return function seededRandom() {
+    state += 0x6D2B79F5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 // Generate test data (align with Playground)
-function generateTestData() {
+async function generateTestData() {
   updateStatus('Generating test data...', 'loading');
   try {
     const testData = generateTokyoBoundsGeoJSON(300);
-    processLoadedData(testData, 'Playground-style Test Data');
+    await processLoadedData(testData, 'Playground-style Test Data');
   } catch (error) {
     console.error('Error generating test data:', error);
     updateStatus('Error generating test data: ' + error.message, 'error');
@@ -394,7 +401,7 @@ function generateTestData() {
 }
 
 // Generate Tokyo cluster GeoJSON (like Playground sample)
-function generateTokyoClusterGeoJSON(count = 800, radius = 0.02, minAlt = 0, maxAlt = 200, centerCount) {
+function generateTokyoClusterGeoJSON(count = 800, radius = 0.02, minAlt = 0, maxAlt = 200, centerCount, random = Math.random) {
   const features = [];
   const centerLon = 139.6917;
   const centerLat = 35.6895;
@@ -403,37 +410,37 @@ function generateTokyoClusterGeoJSON(count = 800, radius = 0.02, minAlt = 0, max
   if (typeof centerCount !== 'number' || centerCount < 1) {
     const minCenters = 1;
     const maxCenters = 5;
-    centerCount = Math.floor(Math.random() * (maxCenters - minCenters + 1)) + minCenters;
+    centerCount = Math.floor(random() * (maxCenters - minCenters + 1)) + minCenters;
   }
 
   // クラスター中心を東京中心周辺にばらまく
   // 全体を少し寄せる（中心分布の広がりを縮小）
-  const lonSpan = 0.06;  // ±0.03度
-  const latSpan = 0.048; // ±0.024度
+  const lonSpan = 0.042;
+  const latSpan = 0.034;
   const centers = Array.from({ length: centerCount }, () => ({
-    lon: centerLon + (Math.random() - 0.5) * lonSpan,
-    lat: centerLat + (Math.random() - 0.5) * latSpan,
+    lon: centerLon + (random() - 0.5) * lonSpan,
+    lat: centerLat + (random() - 0.5) * latSpan,
   }));
 
   // クラスター半径は 1/sqrt(N) で縮小（少しゆらぎ）し、全体の面積感を維持
   // クラスター半径もわずかに縮小
-  const clusterRadii = centers.map(() => radius / Math.sqrt(centerCount) * (0.80 + Math.random() * 0.25));
+  const clusterRadii = centers.map(() => radius / Math.sqrt(centerCount) * (0.80 + random() * 0.25));
 
   // 点数を各クラスターに割当（均等＋余りランダム）
   const counts = new Array(centerCount).fill(Math.floor(count / centerCount));
   let rem = count - counts.reduce((a, b) => a + b, 0);
-  while (rem-- > 0) counts[Math.floor(Math.random() * centerCount)]++;
+  while (rem-- > 0) counts[Math.floor(random() * centerCount)]++;
 
   let idx = 0;
   centers.forEach((c, ci) => {
     const cr = clusterRadii[ci];
     for (let k = 0; k < counts[ci]; k++) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = Math.random() * cr;
+      const angle = random() * Math.PI * 2;
+      const dist = random() * cr;
       const lon = c.lon + Math.cos(angle) * dist;
       const lat = c.lat + Math.sin(angle) * dist;
-      const alt = minAlt + Math.random() * (maxAlt - minAlt);
-      const value = Math.random() * 100;
+      const alt = minAlt + random() * (maxAlt - minAlt);
+      const value = random() * 100;
       features.push({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [lon, lat, alt] },
@@ -471,7 +478,7 @@ function generateTokyoBoundsGeoJSON(count = 300) {
 }
 
 // Process loaded data (GeoJSON or CZML)
-function processLoadedData(data, fileName) {
+async function processLoadedData(data, fileName) {
   try {
     currentData = data;
     
@@ -497,17 +504,18 @@ function processLoadedData(data, fileName) {
       if (added) addedEntities.push(added);
     });
     currentEntities = addedEntities;
+    arePointsVisible = true;
+    updateLayerButton('togglePoints', true);
     
     // Update statistics
     updateStatistics();
     
     // Enable controls
-    document.getElementById('createHeatmap').disabled = false;
+    const createButton = document.getElementById('createHeatmap');
+    if (createButton) createButton.disabled = false;
     
-    // Auto-adjust camera if enabled
-    if (document.getElementById('autoCamera').checked) {
-      viewer.zoomTo(viewer.entities);
-    }
+    // Quick Start always keeps auto-fit enabled.
+    await viewer.zoomTo(viewer.entities);
     
     updateStatus(`Successfully loaded ${currentEntities.length} data points from ${fileName}`, 'success');
     
@@ -537,6 +545,7 @@ function convertGeoJSONToEntities(geojson) {
     
     // Extract value for heatmap
     const value = props.value || props.intensity || props.weight || 1;
+    const heroCapture = document.documentElement.classList.contains('hero-capture');
     
     const entity = {
       position: position,
@@ -545,9 +554,10 @@ function convertGeoJSONToEntities(geojson) {
         originalProperties: props
       },
       point: {
-        pixelSize: 5,
-        color: Cesium.Color.fromCssColorString('#1976D2').withAlpha(0.85),
-        outlineWidth: 0
+        pixelSize: heroCapture ? 4 : 5,
+        color: Cesium.Color.fromCssColorString('#263238').withAlpha(heroCapture ? 0.5 : 0.58),
+        outlineWidth: 0,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
       }
     };
     
@@ -573,6 +583,7 @@ function convertCZMLToEntities(czml) {
       const position = Cesium.Cartesian3.fromDegrees(coords[0], coords[1], coords[2] || 0);
       
       const value = packet.properties?.value || 1;
+      const heroCapture = document.documentElement.classList.contains('hero-capture');
       
       const entity = {
         position: position,
@@ -581,9 +592,10 @@ function convertCZMLToEntities(czml) {
           originalProperties: packet.properties || {}
         },
         point: {
-          pixelSize: 5,
-          color: Cesium.Color.fromCssColorString('#1976D2').withAlpha(0.85),
-          outlineWidth: 0
+          pixelSize: heroCapture ? 4 : 5,
+          color: Cesium.Color.fromCssColorString('#263238').withAlpha(heroCapture ? 0.5 : 0.58),
+          outlineWidth: 0,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
         }
       };
       
@@ -605,18 +617,29 @@ async function createHeatmap() {
     updateStatus('Creating heatmap...', 'loading');
 
     // Quick Start: fixed auto settings (Safe fallback)
-    const autoCamera = document.getElementById('autoCamera')?.checked || true;
+    const autoCamera = true;
 
-  const wireframe = document.getElementById('wireframeOnly')?.checked || false;
-  const options = {
+    const wireframe = document.getElementById('wireframeOnly')?.checked || false;
+    const heroCapture = document.documentElement.classList.contains('hero-capture');
+    const classification = {
+      enabled: true,
+      scheme: 'jenks',
+      classes: 5,
+      colorMap: (window.HeatboxLatestPlayground?.PALETTES.viridis || [
+        '#440154', '#3b528b', '#21918c', '#5ec962', '#fde725'
+      ]).slice(),
+      classificationTargets: { color: true, opacity: true, width: false }
+    };
+    const options = {
       autoVoxelSize: true,
       autoVoxelSizeMode: 'basic',
       voxelSize: undefined,
       maxVoxelSize: 10,
-      targetCells: 3000,
+      targetCells: heroCapture ? 350 : 3000,
       maxRenderVoxels: 'auto', 
       renderLimitStrategy: 'hybrid', // バランス重視の戦略
-      colorMap: 'viridis',
+      classification,
+      classificationTargets: classification && classification.classificationTargets,
       // TopN強調表示 (Quick Start) は未指定（0を入れず警告を避ける）
       // Hide box fill in emulation-only (wireframe toggle)
       // 非ワイヤーフレーム時も base opacity は指定せず（Resolverが設定）
@@ -626,42 +649,29 @@ async function createHeatmap() {
       emptyOpacity: 0.0,
       // Do not use standard outlines when emulation-only
       showOutline: wireframe ? false : false,
-      // Default: density-driven fill opacity（app.js と同等の resolver）
-      // Emulation-only mode (thick edges only)
       outlineRenderMode: wireframe ? 'emulation-only' : 'standard',
-      // v0.2.0 deprecation対応: outlineEmulation → emulationScope
       emulationScope: wireframe ? 'all' : 'off',
       outlineInset: 0,
       outlineInsetMode: 'none',
-      // ADR-0009 Phase 5 対応: 適応的制御を有効化
       adaptiveOutlines: true,
       outlineWidthPreset: 'adaptive',
-      boxOpacityResolver: wireframe ? (() => 0) : (ctx => {
-        const d = Number(ctx?.normalizedDensity) || 0;
-        // Range: 0.2 → 0.9 (linear)
-        return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
-      }),
-      // In wireframe: higher density → thicker and darker (direct mapping)
-      outlineOpacityResolver: wireframe ? (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        return 0.15 + nd * 0.85; // 0.15→1.0 as density rises
-      }) : undefined,
-      outlineWidthResolver: wireframe ? (ctx => {
-        const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5);
-        const minW = 1.5, maxW = 10; // px
-        return minW + nd * (maxW - minW);
-      }) : undefined,
+      adaptiveParams: {
+        boxOpacityRange: wireframe ? [0, 0] : (heroCapture ? [0.04, 0.92] : [0.08, 0.92]),
+        outlineOpacityRange: wireframe ? (heroCapture ? [0.12, 0.82] : [0.15, 1]) : null,
+        outlineWidthRange: wireframe ? (heroCapture ? [1, 4] : [1.5, 8]) : [1, 5],
+        adaptiveOpacityEnabled: true
+      },
       // Quick Start用設定（ライブラリfitViewは使わず、後段でpostRender一回に集約）
       autoView: false,
       debugMode: false // Quick Startはデバッグ無効
     };
     
-    // Clear existing heatmap and apply new options when reusing instance
+    // Recreate the instance so classification and renderer state are normalized together.
     if (heatboxInstance) {
-      heatboxInstance.clear();
-      try { Object.assign(heatboxInstance.options, options); } catch (_) {}
+      if (typeof heatboxInstance.destroy === 'function') heatboxInstance.destroy();
+      else heatboxInstance.clear();
+      heatboxInstance = null;
+      document.getElementById('quickLegend')?.replaceChildren();
     }
     
     // Initialize heatbox if needed
@@ -673,17 +683,9 @@ async function createHeatmap() {
         : null;
       if (!HB) throw new Error('Heatbox constructor not found');
       heatboxInstance = new HB(viewer, options);
-      // Re-apply runtime-only resolvers removed by normalization
-      try {
-        heatboxInstance.options.boxOpacityResolver = wireframe ? (() => 0) : (ctx => {
-          const d = Number(ctx?.normalizedDensity) || 0;
-          // Range: 0.2 → 0.9 (linear)
-          return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
-        });
-      } catch (_) {}
       // Update heatbox version info
       const hv = document.getElementById('heatboxVersion');
-      if (hv) hv.textContent = 'Loaded';
+      if (hv) hv.textContent = window.HeatboxLatestPlayground?.VERSION || '1.3.7-alpha.3';
       try {
         const eff = typeof heatboxInstance.getEffectiveOptions === 'function' ? heatboxInstance.getEffectiveOptions() : null;
         console.log('[Heatbox] Effective adaptive params after init:', eff?.adaptiveParams, 'opacity:', eff?.opacity);
@@ -699,6 +701,13 @@ async function createHeatmap() {
         heatboxInstance.update();
       }
     }
+    if (window.HeatboxLatestPlayground) {
+      window.HeatboxLatestPlayground.renderLegend(
+        heatboxInstance,
+        document.getElementById('quickLegend'),
+        Boolean(classification)
+      );
+    }
     try {
       const eff2 = typeof heatboxInstance.getEffectiveOptions === 'function' ? heatboxInstance.getEffectiveOptions() : null;
       console.log('[Heatbox] Effective adaptive params after data:', eff2?.adaptiveParams, 'opacity:', eff2?.opacity);
@@ -707,27 +716,27 @@ async function createHeatmap() {
     if (wireframe) {
       try { adjustEmulationByDensity(); } catch (_) {}
     }
+    currentEntities.forEach((entity) => { entity.show = arePointsVisible; });
     
     // Update statistics with heatmap info
     updateStatisticsWithHeatmap(options);
     
     // 表示状態を初期化
-    isHeatmapVisible = true;
-    
     // Enable additional controls
     document.getElementById('clearHeatmap').disabled = false;
-    const toggleButton = document.getElementById('toggleVisibility');
-    if (toggleButton) {
-      toggleButton.disabled = false;
-      toggleButton.textContent = 'Hide'; // 初期状態は表示中なのでHide
-    }
+    const voxelButton = document.getElementById('toggleVoxels');
+    if (voxelButton) voxelButton.disabled = false;
+    updateLayerButton('toggleVoxels', isHeatmapVisible);
+    if (!isHeatmapVisible) setHeatmapVisibility(false);
     
     updateStatus(`Heatmap created successfully with ${currentEntities.length} entities`, 'success');
 
     // 自動カメラ位置調整（postRenderで一回だけ実行して競合回避）
     try {
       if (autoCamera && viewer && viewer.scene && !_qsFitOnceHandler) {
-        _qsFitViewOptions = { headingDegrees: 0, pitchDegrees: -35, paddingPercent: 0.1 };
+        _qsFitViewOptions = heroCapture
+          ? { headingDegrees: -12, pitchDegrees: -30, rangeMultiplier: 1.45 }
+          : { headingDegrees: 0, pitchDegrees: -35, rangeMultiplier: 2.2 };
         let fired = false;
         _qsFitOnceHandler = async () => {
           if (fired) return;
@@ -762,7 +771,7 @@ async function qsZoomToHeatboxBounds() {
         const bs = Cesium.BoundingSphere.fromRectangle3D(rect, Cesium.Ellipsoid.WGS84, Math.max(0, bounds.minAlt || 0));
         const heading = Cesium.Math.toRadians(_qsFitViewOptions?.headingDegrees ?? 0);
         const pitch = Cesium.Math.toRadians(_qsFitViewOptions?.pitchDegrees ?? -35);
-        const range = Math.max(bs.radius * 2.2, 1000.0);
+        const range = Math.max(bs.radius * (_qsFitViewOptions?.rangeMultiplier ?? 2.2), 1000.0);
         await viewer.camera.flyToBoundingSphere(bs, { duration: 1.2, offset: new Cesium.HeadingPitchRange(heading, pitch, range) });
         return;
       }
@@ -843,25 +852,28 @@ function adjustEmulationByDensity() {
 function clearHeatmap() {
   try {
     if (heatboxInstance) {
-      heatboxInstance.clear();
-      // Fully reset instance so next create uses fresh options
+      if (typeof heatboxInstance.destroy === 'function') heatboxInstance.destroy();
+      else heatboxInstance.clear();
       heatboxInstance = null;
       isHeatmapVisible = true; // 表示状態もリセット
       updateStatus('Heatmap cleared', 'success');
       
       // Update statistics - より完全なリセット
-      document.getElementById('voxelCount').textContent = '0';
-      document.getElementById('emptyVoxelCount').textContent = '0';
-      document.getElementById('autoSizeInfo').style.display = 'none';
-      document.getElementById('v019Stats').style.display = 'none';
+      setTextContent('voxelCount', '0');
+      setTextContent('emptyVoxelCount', '0');
+      hideElement('autoSizeInfo');
+      hideElement('v019Stats');
+      document.getElementById('quickLegend')?.replaceChildren();
+      currentEntities.forEach((entity) => { entity.show = true; });
+      arePointsVisible = true;
+      updateLayerButton('togglePoints', true);
       
       // Disable controls and reset button text
-      document.getElementById('clearHeatmap').disabled = true;
-      const toggleButton = document.getElementById('toggleVisibility');
-      if (toggleButton) {
-        toggleButton.disabled = true;
-        toggleButton.textContent = 'Toggle Visibility'; // デフォルトに戻す
-      }
+      const clearBtn = document.getElementById('clearHeatmap');
+      if (clearBtn) clearBtn.disabled = true;
+      const voxelButton = document.getElementById('toggleVoxels');
+      if (voxelButton) voxelButton.disabled = true;
+      updateLayerButton('toggleVoxels', true);
       
       // 重要: 画面の即座な更新を要求
       if (viewer && viewer.scene) {
@@ -874,45 +886,57 @@ function clearHeatmap() {
   }
 }
 
-// Toggle heatmap visibility
-function toggleVisibility() {
+function updateLayerButton(id, visible) {
+  const button = document.getElementById(id);
+  if (!button) return;
+  button.classList.toggle('is-selected', visible);
+  button.setAttribute('aria-pressed', String(visible));
+}
+
+function togglePointsVisibility() {
+  arePointsVisible = !arePointsVisible;
+  currentEntities.forEach((entity) => { entity.show = arePointsVisible; });
+  updateLayerButton('togglePoints', arePointsVisible);
+  viewer?.scene?.requestRender();
+}
+
+function setHeatmapVisibility(visible) {
+  isHeatmapVisible = visible;
+  if (!heatboxInstance) return;
+  if (typeof heatboxInstance.setVisible === 'function') heatboxInstance.setVisible(visible);
+  else heatboxInstance.visible = visible;
+  updateLayerButton('toggleVoxels', visible);
+  viewer?.scene?.requestRender();
+}
+
+// Toggle voxel visibility
+function toggleVoxelsVisibility() {
   try {
     if (heatboxInstance) {
-      // ADR-0009 Phase 5: 新しいAPI使用 - setVisible()で状態を手動管理
-      isHeatmapVisible = !isHeatmapVisible;
-      
-      if (typeof heatboxInstance.setVisible === 'function') {
-        heatboxInstance.setVisible(isHeatmapVisible);
-      } else {
-        // フォールバック: visible プロパティを直接設定
-        heatboxInstance.visible = isHeatmapVisible;
-      }
-      
-      const statusText = isHeatmapVisible ? 'Heatmap shown' : 'Heatmap hidden';
-      updateStatus(statusText, 'success');
-      
-      // ボタンのテキストを状態に応じて更新
-      const toggleButton = document.getElementById('toggleVisibility');
-      if (toggleButton) {
-        toggleButton.textContent = isHeatmapVisible ? 'Hide' : 'Show';
-      }
-      
-      // 重要: 表示切替後の即座な画面更新を要求
-      if (viewer && viewer.scene) {
-        viewer.scene.requestRender();
-      }
+      setHeatmapVisibility(!isHeatmapVisible);
     }
   } catch (error) {
-    console.error('Error toggling visibility:', error);
-    updateStatus('Error toggling visibility: ' + error.message, 'error');
+    console.error('Error toggling voxel visibility:', error);
+    updateStatus('Error toggling voxel visibility: ' + error.message, 'error');
   }
 }
 
 // Update statistics display
 function updateStatistics() {
   if (!currentEntities) return;
-  
-  const values = currentEntities.map(e => e.properties.value || 0);
+
+  const time = viewer?.clock?.currentTime || Cesium.JulianDate.now();
+  const values = currentEntities.map((entity) => {
+    const properties = entity?.properties;
+    if (!properties) return 0;
+    if (typeof properties.getValue === 'function') {
+      const resolved = properties.getValue(time) || {};
+      return Number(resolved.value ?? resolved.weight ?? resolved.intensity ?? 0) || 0;
+    }
+    const candidate = properties.value ?? properties.weight ?? properties.intensity ?? 0;
+    const resolved = candidate && typeof candidate.getValue === 'function' ? candidate.getValue(time) : candidate;
+    return Number(resolved) || 0;
+  });
   const count = values.length;
   const maxValue = count > 0 ? Math.max(...values) : 0;
   const minValue = count > 0 ? Math.min(...values) : 0;
@@ -926,27 +950,30 @@ function updateStatistics() {
 function updateStatisticsWithHeatmap(options) {
   try {
     // ADR-0009 Phase 5: 新しい統計API利用
-    if (heatboxInstance && typeof heatboxInstance.getStats === 'function') {
-      const stats = heatboxInstance.getStats();
+    if (heatboxInstance && typeof heatboxInstance.getStatistics === 'function') {
+      const stats = heatboxInstance.getStatistics();
       if (stats) {
-        document.getElementById('voxelCount').textContent = stats.totalVoxels?.toLocaleString() || '0';
+        setTextContent('voxelCount', stats.totalVoxels?.toLocaleString() || '0');
         if (stats.emptyVoxels !== undefined) {
-          document.getElementById('emptyVoxelCount').textContent = stats.emptyVoxels.toLocaleString();
+          setTextContent('emptyVoxelCount', stats.emptyVoxels.toLocaleString());
         }
         
         // VoxelSelector統計 (v0.1.11-alpha対応)
-        if (stats.selectionStats && document.getElementById('v019Stats')) {
-          document.getElementById('selectionStrategy').textContent = stats.selectionStats.strategy || '-';
-          document.getElementById('renderedVoxels').textContent = stats.selectionStats.selectedCount?.toLocaleString() || '0';
-          document.getElementById('coverageRatio').textContent = (stats.selectionStats.coverageRatio * 100).toFixed(1) || '0';
-          document.getElementById('v019Stats').style.display = 'block';
+        if (stats.selectionStats && showElement('v019Stats')) {
+          setTextContent('selectionStrategy', stats.selectionStats.strategy || '-');
+          setTextContent('renderedVoxels', stats.selectionStats.selectedCount?.toLocaleString() || '0');
+          const coverage = stats.selectionStats.coverageRatio;
+          if (typeof coverage === 'number' && isFinite(coverage)) {
+            setTextContent('coverageRatio', (coverage * 100).toFixed(1));
+          }
         }
         
         // 自動サイズ情報表示
-        if (stats.autoSizeInfo && document.getElementById('autoSizeInfo')) {
-          document.getElementById('autoAdjusted').textContent = stats.autoSizeInfo.adjusted ? 'Yes' : 'No';
-          document.getElementById('sizeInfo').textContent = `${stats.autoSizeInfo.voxelSize}m`;
-          document.getElementById('autoSizeInfo').style.display = 'block';
+        if (stats.autoSizeInfo && showElement('autoSizeInfo')) {
+          setTextContent('autoAdjusted', stats.autoSizeInfo.adjusted ? 'Yes' : 'No');
+          if (stats.autoSizeInfo.voxelSize !== undefined) {
+            setTextContent('sizeInfo', `${stats.autoSizeInfo.voxelSize}m`);
+          }
         }
         return; // 新API使用時は以下の推定処理をスキップ
       }
@@ -959,8 +986,8 @@ function updateStatisticsWithHeatmap(options) {
     
     if (autoVoxelSize) {
       // Show auto size information
-      document.getElementById('autoSizeInfo').style.display = 'block';
-      document.getElementById('autoAdjusted').textContent = options.autoVoxelSizeMode || 'basic';
+      showElement('autoSizeInfo');
+      setTextContent('autoAdjusted', options.autoVoxelSizeMode || 'basic');
       
       // Estimate based on data density
       const dataCount = currentEntities.length;
@@ -972,15 +999,15 @@ function updateStatisticsWithHeatmap(options) {
         finalSize = 'Balanced performance';
       }
       
-      document.getElementById('sizeInfo').textContent = finalSize;
+      setTextContent('sizeInfo', finalSize);
     } else {
-      document.getElementById('autoSizeInfo').style.display = 'none';
+      hideElement('autoSizeInfo');
       // Manual size calculation
       const gridSize = options.gridSize || 20;
       estimatedVoxels = Math.pow(gridSize, 3);
     }
     
-    document.getElementById('voxelCount').textContent = estimatedVoxels.toLocaleString();
+    setTextContent('voxelCount', estimatedVoxels.toLocaleString());
     
   } catch (error) {
     console.error('Error updating heatmap statistics:', error);
