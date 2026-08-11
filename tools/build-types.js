@@ -17,6 +17,7 @@ export type RenderLimitStrategy = 'density' | 'coverage' | 'hybrid';
 export type AutoVoxelSizeMode = 'basic' | 'occupancy';
 export type RenderBudgetMode = 'manual' | 'auto';
 export type PerformanceOverlayPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+export type ClassificationScheme = 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold' | 'quantile' | 'jenks';
 
 export interface HeatboxPerformanceOverlayOptions {
   enabled?: boolean;
@@ -25,6 +26,60 @@ export interface HeatboxPerformanceOverlayOptions {
   autoUpdate?: boolean;
   updateIntervalMs?: number;
   fpsAveragingWindowMs?: number;
+}
+
+export interface HeatboxClassificationColorStop {
+  position: number;
+  color: string;
+}
+
+export interface HeatboxClassificationOptions {
+  enabled?: boolean;
+  scheme?: ClassificationScheme;
+  classes?: number;
+  thresholds?: number[] | null;
+  colorMap?: Array<string | HeatboxClassificationColorStop> | null;
+  domain?: [number, number] | null;
+  classificationTargets?: {
+    color?: boolean;
+    opacity?: boolean;
+    width?: boolean;
+  };
+}
+
+export interface HeatboxTemporalDataEntry {
+  start: any;
+  stop: any;
+  data: any[];
+}
+
+export interface HeatboxTemporalOptions {
+  enabled?: boolean;
+  data?: HeatboxTemporalDataEntry[];
+  classificationScope?: 'global' | 'per-time';
+  updateInterval?: 'frame' | number;
+  outOfRangeBehavior?: 'clear' | 'hold';
+  overlapResolution?: 'skip' | 'prefer-earlier' | 'prefer-later';
+  interpolate?: boolean;
+  dataSource?: ((currentTime: any, context: any) => Promise<HeatboxTemporalDataEntry[] | HeatboxTemporalDataEntry | null> | HeatboxTemporalDataEntry[] | HeatboxTemporalDataEntry | null) | null;
+  useWorker?: boolean;
+}
+
+export interface HeatboxSpatialIdOptions {
+  enabled?: boolean;
+  mode?: 'tile-grid';
+  provider?: 'ouranos-gex';
+  zoom?: number | 'auto';
+  zoomControl?: 'auto' | 'manual';
+  zoomTolerancePct?: number;
+}
+
+export interface HeatboxAggregationOptions {
+  enabled?: boolean;
+  byProperty?: string | null;
+  keyResolver?: ((entity: any) => string | number | null | undefined) | null;
+  showInDescription?: boolean;
+  topN?: number;
 }
 
 export type HeatboxRange = [number, number] | null;
@@ -71,6 +126,15 @@ export interface HeatboxStatistics {
   renderBudgetTier?: string;
   autoMaxRenderVoxels?: number;
   occupancyRatio?: number | null;
+  layers?: Array<{ key: string; total: number }>;
+  spatialId?: {
+    enabled: boolean;
+    provider: string | null;
+    zoom: number | null;
+    zoomControl: 'auto' | 'manual' | null;
+    edgeCaseMetrics?: Record<string, number> | null;
+  };
+  classification?: Record<string, any> | null;
 }
 
 export interface HeatboxOutlineWidthResolverParams {
@@ -146,6 +210,11 @@ export interface HeatboxOptions {
   fitViewOptions?: HeatboxFitViewOptions;
   performanceOverlay?: HeatboxPerformanceOverlayOptions | null;
   adaptiveParams?: HeatboxAdaptiveParams | null;
+  classification?: HeatboxClassificationOptions | ClassificationScheme | false | null;
+  temporal?: HeatboxTemporalOptions | null;
+  spatialId?: HeatboxSpatialIdOptions;
+  aggregation?: HeatboxAggregationOptions;
+  valueProperty?: string;
   [key: string]: any;
 }
 
@@ -206,6 +275,19 @@ export interface HeatboxEnvironmentInfo {
   timestamp: string;
 }
 
+export interface HeatboxLegendOptions {
+  container?: HTMLElement | null;
+  documentRef?: Document | null;
+}
+
+export class Legend {
+  constructor(options?: HeatboxLegendOptions);
+  container: HTMLElement | null;
+  render(classifier: any, classificationOptions?: HeatboxClassificationOptions): HTMLElement | null;
+  update(classifier?: any, classificationOptions?: HeatboxClassificationOptions): HTMLElement | null;
+  destroy(): void;
+}
+
 export default class Heatbox {
   constructor(viewer: any, options?: HeatboxOptions);
 
@@ -213,13 +295,14 @@ export default class Heatbox {
   static getProfileDetails(profileName: HeatboxProfileName): HeatboxProfileDefinition | null;
   static filterEntities<T = any>(entities: T[], predicate: (entity: T) => boolean): T[];
 
-  setData(entities: any[]): Promise<void>;
+  setData(entities: any[], runtimeOptions?: Record<string, any>): Promise<void>;
+  updateValues(entities: any[], runtimeOptions?: Record<string, any>): Promise<void>;
   createFromEntities(entities: any[]): Promise<HeatboxStatistics | null>;
   setVisible(show: boolean): void;
   clear(): void;
   destroy(): void;
   dispose(): void;
-  updateOptions(newOptions: HeatboxOptions): void;
+  updateOptions(newOptions: Partial<HeatboxOptions>): void;
   getOptions(): HeatboxOptions;
   getEffectiveOptions(): HeatboxOptions;
   getStatistics(): HeatboxStatistics | null;
@@ -230,6 +313,9 @@ export default class Heatbox {
   showPerformanceOverlay(): void;
   hidePerformanceOverlay(): void;
   setPerformanceOverlayEnabled(enabled: boolean, options?: HeatboxPerformanceOverlayOptions): boolean;
+  createLegend(container?: HTMLElement | null): HTMLElement | null;
+  updateLegend(): void;
+  destroyLegend(): void;
 }
 
 export { Heatbox };

@@ -278,4 +278,49 @@ describe('TimeController', () => {
             expect.objectContaining({ _skipAutoView: true })
         );
     });
+
+    test('should serialize async Heatbox updates and keep only the latest queued entry', async () => {
+        options.data = [
+            {
+                start: '2025-01-01T00:00:00Z',
+                stop: '2025-01-01T01:00:00Z',
+                data: [{ id: 'first' }]
+            },
+            {
+                start: '2025-01-01T01:00:00Z',
+                stop: '2025-01-01T02:00:00Z',
+                data: [{ id: 'second' }]
+            },
+            {
+                start: '2025-01-01T02:00:00Z',
+                stop: '2025-01-01T03:00:00Z',
+                data: [{ id: 'latest' }]
+            }
+        ];
+
+        let resolveFirst;
+        heatbox.setData = jest.fn()
+            .mockImplementationOnce(() => new Promise((resolve) => {
+                resolveFirst = resolve;
+            }))
+            .mockResolvedValue(undefined);
+        controller = new TimeController(viewer, heatbox, options);
+        controller.activate();
+
+        viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2025-01-01T01:30:00Z');
+        controller._onTick(viewer.clock);
+        viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2025-01-01T02:30:00Z');
+        controller._onTick(viewer.clock);
+
+        expect(heatbox.setData).toHaveBeenCalledTimes(1);
+        resolveFirst();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(heatbox.setData).toHaveBeenCalledTimes(2);
+        expect(heatbox.setData).toHaveBeenLastCalledWith(
+            [{ id: 'latest' }],
+            expect.objectContaining({ _skipAutoView: true })
+        );
+    });
 });

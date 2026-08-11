@@ -254,7 +254,10 @@ export function validateAndNormalizeOptions(options = {}) {
   }
   
   if (normalized.outlineOpacity !== undefined) {
-    normalized.outlineOpacity = Math.max(0, Math.min(1, parseFloat(normalized.outlineOpacity) || 1));
+    const opacity = parseFloat(normalized.outlineOpacity);
+    normalized.outlineOpacity = Number.isFinite(opacity)
+      ? Math.max(0, Math.min(1, opacity))
+      : DEFAULT_OPTIONS.outlineOpacity;
   }
   
   if (normalized.outlineWidth !== undefined) {
@@ -651,6 +654,9 @@ export function validateAndNormalizeOptions(options = {}) {
   
   // v1.0.0: Classification options validation
   normalized.classification = normalizeClassificationOptions(normalized.classification);
+
+  // v1.2.0: Temporal options validation and documented defaults
+  normalized.temporal = normalizeTemporalOptions(normalized.temporal);
   
   // v0.1.18: Aggregation options validation (ADR-0014)
   if (normalized.aggregation !== undefined) {
@@ -659,6 +665,52 @@ export function validateAndNormalizeOptions(options = {}) {
     normalized.aggregation = { ...DEFAULT_OPTIONS.aggregation };
   }
   
+  return normalized;
+}
+
+function normalizeTemporalOptions(temporal) {
+  if (temporal === undefined || temporal === null) {
+    return null;
+  }
+
+  if (typeof temporal !== 'object' || Array.isArray(temporal)) {
+    Logger.warn('Invalid temporal options. Temporal mode has been disabled.');
+    return null;
+  }
+
+  const normalized = {
+    enabled: false,
+    data: [],
+    classificationScope: 'global',
+    updateInterval: 100,
+    outOfRangeBehavior: 'hold',
+    overlapResolution: 'prefer-earlier',
+    interpolate: false,
+    dataSource: null,
+    useWorker: false,
+    ...temporal
+  };
+
+  normalized.enabled = coerceBoolean(normalized.enabled, false);
+  normalized.data = Array.isArray(normalized.data) ? normalized.data : [];
+  normalized.classificationScope = ['global', 'per-time'].includes(normalized.classificationScope)
+    ? normalized.classificationScope
+    : 'global';
+  normalized.outOfRangeBehavior = ['clear', 'hold'].includes(normalized.outOfRangeBehavior)
+    ? normalized.outOfRangeBehavior
+    : 'hold';
+  normalized.overlapResolution = ['skip', 'prefer-earlier', 'prefer-later'].includes(normalized.overlapResolution)
+    ? normalized.overlapResolution
+    : 'prefer-earlier';
+  normalized.interpolate = coerceBoolean(normalized.interpolate, false);
+  normalized.useWorker = coerceBoolean(normalized.useWorker, false);
+  normalized.dataSource = typeof normalized.dataSource === 'function' ? normalized.dataSource : null;
+
+  if (normalized.updateInterval !== 'frame') {
+    const interval = Number(normalized.updateInterval);
+    normalized.updateInterval = Number.isFinite(interval) && interval >= 0 ? interval : 100;
+  }
+
   return normalized;
 }
 

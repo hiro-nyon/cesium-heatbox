@@ -25,6 +25,7 @@ import { VoxelSelector } from './selection/VoxelSelector.js';
 import { AdaptiveController } from './adaptive/AdaptiveController.js';
 import { GeometryRenderer } from './geometry/GeometryRenderer.js';
 import { RenderPlanner } from './render/RenderPlanner.js';
+import { buildDisplayVoxels } from './render/buildDisplayVoxels.js';
 import { createClassifier } from '../utils/classification.js';
 
 // v0.1.11: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
@@ -188,6 +189,7 @@ export class VoxelRenderer {
     this.geometryRenderer.beginFrame();
     this.geometryRenderer.clearDebugEntities();
     this.renderPlanner.updateOptions(this.options);
+    this._selectionStats = null;
     Logger.debug('VoxelRenderer.render - Starting render with simplified approach', {
       voxelDataSize: voxelData.size,
       bounds,
@@ -204,57 +206,24 @@ export class VoxelRenderer {
       this.geometryRenderer.renderBoundingBox(bounds);
     }
 
-    // 表示するボクセルのリスト
-    let displayVoxels = [];
+    // 表示するボクセルのリスト。実データを空セルより優先する。
+    const displayResult = buildDisplayVoxels(
+      voxelData,
+      grid,
+      this.options,
+      (voxels, limit) => this._selectVoxelsForRendering(voxels, limit, bounds, grid)
+    );
+    let displayVoxels = displayResult.voxels;
     const topNVoxels = new Set(); // v0.1.5: TopN強調表示用
 
-    // 空ボクセルのフィルタリング
-    if (this.options.showEmptyVoxels) {
-      // 全ボクセルを生成（これは上限値が大きいとメモリ消費とパフォーマンスに影響する）
-      const maxVoxels = Math.min(grid.totalVoxels, this.options.maxRenderVoxels || 10000);
-      Logger.debug(`Generating grid for up to ${maxVoxels} voxels`);
-      
-      // 空のボクセルも含めて全ボクセルを追加
-      for (let x = 0; x < grid.numVoxelsX; x++) {
-        for (let y = 0; y < grid.numVoxelsY; y++) {
-          for (let z = 0; z < grid.numVoxelsZ; z++) {
-            const voxelKey = `${x},${y},${z}`;
-            const voxelInfo = voxelData.get(voxelKey) || { x, y, z, count: 0 };
-            
-            displayVoxels.push({
-              key: voxelKey,
-              info: voxelInfo
-            });
-            
-            if (displayVoxels.length >= maxVoxels) {
-              Logger.debug(`Reached maximum voxel limit of ${maxVoxels}`);
-              break;
-            }
-          }
-          if (displayVoxels.length >= maxVoxels) break;
-        }
-        if (displayVoxels.length >= maxVoxels) break;
-      }
-    } else {
-      // データがあるボクセルのみ表示
-      displayVoxels = Array.from(voxelData.entries()).map(([key, info]) => {
-        return { key, info };
-      });
-      
-      // v0.1.9: 適応的レンダリング制限の適用
-      if (this.options.maxRenderVoxels && displayVoxels.length > this.options.maxRenderVoxels) {
-        const selectionResult = this._selectVoxelsForRendering(displayVoxels, this.options.maxRenderVoxels, bounds, grid);
-        displayVoxels = selectionResult.selectedVoxels;
-        
-        // 統計情報の更新
-        this._selectionStats = {
-          strategy: selectionResult.strategy,
-          clippedNonEmpty: selectionResult.clippedNonEmpty,
-          coverageRatio: selectionResult.coverageRatio || 0
-        };
-        
-        Logger.debug(`Applied ${selectionResult.strategy} strategy: ${displayVoxels.length} voxels selected, ${selectionResult.clippedNonEmpty} clipped`);
-      }
+    if (displayResult.selectionResult) {
+      const { strategy, clippedNonEmpty, coverageRatio } = displayResult.selectionResult;
+      this._selectionStats = {
+        strategy,
+        clippedNonEmpty,
+        coverageRatio: coverageRatio || 0
+      };
+      Logger.debug(`Applied ${strategy} strategy: ${displayVoxels.length} voxels selected, ${clippedNonEmpty} clipped`);
     }
 
     // v0.1.5: TopN強調表示の前処理

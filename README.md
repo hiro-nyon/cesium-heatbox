@@ -63,7 +63,7 @@ npm run build
 import { Heatbox } from 'cesium-heatbox';
 
 const heatbox = new Heatbox(viewer, {
-  voxelSize: { x: 1000, y: 1000, z: 100 },
+  voxelSize: 100,
   opacity: 0.8
 });
 
@@ -76,6 +76,15 @@ await heatbox.fitView(null, { paddingPercent: 0.1, pitchDegrees: -35 });
 // Inspect results
 console.log(heatbox.getStatistics());
 ```
+
+### Advanced runtime controls
+
+The v0.1.12 runtime controls remain available for compatibility:
+
+- `fitViewOptions.headingDegrees` and `fitViewOptions.pitchDegrees` control camera orientation.
+- `outlineRenderMode` and `emulationScope` replace the deprecated `outlineEmulation` option.
+- `performanceOverlay` can be changed later with `togglePerformanceOverlay()` or `setPerformanceOverlayEnabled()`.
+- `getEffectiveOptions()` returns the normalized configuration currently in use.
 
 ## Key Capabilities
 

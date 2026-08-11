@@ -4,12 +4,8 @@
  * Phase 4: Quality assurance - browser compatibility validation
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const fs = require('fs');
+const path = require('path');
 
 // Browser compatibility targets
 const BROWSER_TARGETS = {
@@ -141,6 +137,8 @@ const POLYFILLS = [
   }
 ];
 
+const OPTIONAL_FEATURES = new Set(['WebGL2']);
+
 /**
  * Parse version string to number for comparison
  * @param {string} version - Version string like "90+" or "15.2"
@@ -200,7 +198,9 @@ function generateCompatibilityReport() {
       
       console.log(`  ${status} ${browser.replace('_', ' ')}: requires ${required}, target ${target}`);
       
-      if (!compatible) {
+      if (!compatible && OPTIONAL_FEATURES.has(feature)) {
+        warnings.push({ feature, browser, required, target });
+      } else if (!compatible) {
         incompatibleFeatures.push({ feature, browser, required, target });
       }
     });
@@ -217,6 +217,13 @@ function generateCompatibilityReport() {
     console.log('⚠️  Compatibility Issues Found:');
     incompatibleFeatures.forEach(({ feature, browser, required, target }) => {
       console.log(`  ❌ ${feature} requires ${browser} ${required}, but targeting ${target}`);
+    });
+  }
+
+  if (warnings.length > 0) {
+    console.log('ℹ️  Optional feature limitations:');
+    warnings.forEach(({ feature, browser, required, target }) => {
+      console.log(`  • ${feature}: ${browser} ${required} required (target ${target}); WebGL fallback remains available`);
     });
   }
 
@@ -277,7 +284,12 @@ function generateBrowserTestPage() {
         const tests = [
             {
                 name: 'ES6 Modules',
-                test: () => typeof import !== 'undefined'
+                test: () => {
+                    try {
+                        new Function('return import(\"data:text/javascript,export default 1\")');
+                        return true;
+                    } catch (e) { return false; }
+                }
             },
             {
                 name: 'ES6 Classes', 
@@ -301,7 +313,7 @@ function generateBrowserTestPage() {
                 name: 'Template Literals',
                 test: () => {
                     try {
-                        eval('`test`');
+                        eval(String.fromCharCode(96) + 'test' + String.fromCharCode(96));
                         return true;
                     } catch (e) { return false; }
                 }
@@ -334,6 +346,7 @@ function generateBrowserTestPage() {
             },
             {
                 name: 'WebGL2',
+                required: false,
                 test: () => {
                     try {
                         const canvas = document.createElement('canvas');
@@ -346,9 +359,9 @@ function generateBrowserTestPage() {
         const resultsDiv = document.getElementById('testResults');
         let allPassed = true;
 
-        tests.forEach(({ name, test }) => {
+        tests.forEach(({ name, test, required = true }) => {
             const passed = test();
-            allPassed = allPassed && passed;
+            allPassed = allPassed && (passed || !required);
             
             const testDiv = document.createElement('div');
             testDiv.className = 'test ' + (passed ? 'pass' : 'fail');
@@ -373,7 +386,9 @@ function generateBrowserTestPage() {
 </body>
 </html>`;
 
-  const outputPath = path.join(__dirname, '../test/browser-compatibility.html');
+  const outputDirectory = path.join(__dirname, '../coverage');
+  const outputPath = path.join(outputDirectory, 'browser-compatibility.html');
+  fs.mkdirSync(outputDirectory, { recursive: true });
   fs.writeFileSync(outputPath, testHtml);
   
   console.log(`\n📄 Browser test page generated: ${outputPath}`);
@@ -400,8 +415,8 @@ function main() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   main();
 }
 
-export { generateCompatibilityReport, BROWSER_TARGETS, FEATURE_COMPATIBILITY };
+module.exports = { generateCompatibilityReport, BROWSER_TARGETS, FEATURE_COMPATIBILITY };

@@ -235,19 +235,19 @@ export class AdaptiveController {
         // v0.1.12-alpha.10: 最小値を1.0に設定してRangeError防止
         adaptiveWidth = Math.max(1.0, baseOptions.outlineWidth * 0.8);
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 0.8;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 0.8;
         break;
 
       case 'medium':
         adaptiveWidth = baseOptions.outlineWidth;
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 1.0;
         break;
 
       case 'thick':
         adaptiveWidth = Math.max(1, baseOptions.outlineWidth * 1.5);
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 1.0;
         break;
 
       case 'adaptive':
@@ -284,7 +284,7 @@ export class AdaptiveController {
       default:
         adaptiveWidth = baseOptions.outlineWidth;
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 1.0;
         break;
     }
 
