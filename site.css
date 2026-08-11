@@ -106,6 +106,8 @@ a { color: inherit; }
 }
 
 .hero-actions { display: flex; align-items: center; gap: 10px; margin-top: 34px; }
+.hero-playground-link { display: inline-block; margin-top: 14px; color: #74797b; font-size: 11px; text-decoration: none; }
+.hero-playground-link:hover { color: var(--accent-dark); text-decoration: underline; text-underline-offset: 3px; }
 
 .button {
   min-height: 46px;
@@ -166,13 +168,22 @@ a { color: inherit; }
 .product-frame-bar a { color: #aeb4b7; text-decoration: none; letter-spacing: 0; text-transform: none; }
 .product-frame-bar a:hover { color: #fff; }
 
-.product-frame iframe {
-  width: 100%;
-  height: 474px;
+.product-shot {
   display: block;
-  border: 0;
+  overflow: hidden;
   background: #dce2e3;
 }
+
+.product-shot img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: center;
+  transition: transform .25s ease;
+}
+
+.product-shot:hover img { transform: scale(1.01); }
 
 .release { color: #f5f2ed; background: var(--ink); }
 
@@ -227,6 +238,8 @@ pre { margin: 0; padding: 38px; overflow-x: auto; color: #d8dedf; background: va
 .closing h2 { margin: 0; max-width: 700px; font-size: clamp(42px, 5vw, 70px); font-weight: 620; letter-spacing: -.06em; line-height: 1; }
 .closing .button-primary { white-space: nowrap; }
 .closing p { margin: 12px 0 0; color: #ffddd0; font-size: 12px; }
+.closing p a { color: inherit; text-underline-offset: 3px; }
+.closing p a:hover { color: #fff; }
 
 .site-footer { min-height: 105px; display: flex; align-items: center; justify-content: space-between; color: #6b7072; font-size: 12px; }
 .site-footer div { display: flex; gap: 24px; }
@@ -236,7 +249,6 @@ pre { margin: 0; padding: 38px; overflow-x: auto; color: #d8dedf; background: va
 @media (max-width: 1040px) {
   .hero { grid-template-columns: 1fr; gap: 56px; padding-top: 64px; }
   .hero-copy { max-width: 730px; }
-  .product-frame iframe { height: 540px; }
   .release-grid, .code-grid { gap: 56px; }
 }
 
@@ -244,7 +256,7 @@ pre { margin: 0; padding: 38px; overflow-x: auto; color: #d8dedf; background: va
   .shell, .site-header { width: min(calc(100% - 36px), var(--shell)); }
   .site-header { height: 64px; }
   .site-nav a { display: none; }
-  .site-nav a:nth-last-child(2), .site-nav a:last-child { display: inline; }
+  .site-nav .nav-quick-start, .site-nav a:last-child { display: inline; }
   .site-nav { gap: 16px; }
   .hero { min-height: 0; padding: 54px 0 70px; grid-template-columns: minmax(0, 1fr); }
   .hero h1 { font-size: clamp(52px, 17vw, 76px); }
@@ -252,7 +264,6 @@ pre { margin: 0; padding: 38px; overflow-x: auto; color: #d8dedf; background: va
   .hero-actions { align-items: stretch; flex-direction: column; }
   .button { width: 100%; }
   .product-frame { box-shadow: 8px 8px 0 var(--paper-deep); }
-  .product-frame iframe { height: 520px; }
   .release-grid, .code-grid { grid-template-columns: 1fr; gap: 54px; padding-block: 72px; }
   .workflow, .capabilities { padding-block: 82px; }
   .steps { grid-template-columns: 1fr; }

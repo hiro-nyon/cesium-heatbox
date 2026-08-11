@@ -213,6 +213,76 @@
       </div>
     </details>
 
+    <!-- Current 1.3.x API surface -->
+    <details class="section latest-api-section" open>
+      <summary data-i18n="sum_current_api">Current API</summary>
+      <div class="controls section-content">
+        <p class="control-note" data-i18n="current_api_note">Exercise the v1.x classification, temporal, Spatial ID, aggregation, and Legend APIs.</p>
+
+        <div class="control-group">
+          <label for="classificationScheme" data-i18n="label_classification_scheme">Classification</label>
+          <select id="classificationScheme">
+            <option value="off" data-i18n="opt_classification_off">Off (legacy colors)</option>
+            <option value="linear">linear</option>
+            <option value="log">log</option>
+            <option value="equal-interval">equal-interval</option>
+            <option value="quantize">quantize</option>
+            <option value="threshold">threshold</option>
+            <option value="quantile" selected>quantile</option>
+            <option value="jenks">jenks</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="classificationClasses"><span data-i18n="label_classification_classes">Classes</span>: <span id="classificationClassesValue">5</span></label>
+          <input type="range" id="classificationClasses" min="2" max="9" step="1" value="5">
+        </div>
+        <div class="control-group">
+          <label for="classificationPalette" data-i18n="label_classification_palette">Palette</label>
+          <select id="classificationPalette">
+            <option value="viridis" selected>Viridis</option>
+            <option value="inferno">Inferno</option>
+            <option value="heat">Heat</option>
+          </select>
+        </div>
+        <div class="control-group current-api-checks">
+          <label><input type="checkbox" id="classificationOpacity"> <span data-i18n="label_target_opacity">Classify opacity</span></label>
+          <label><input type="checkbox" id="classificationWidth"> <span data-i18n="label_target_width">Classify width</span></label>
+          <label><input type="checkbox" id="classificationLegend" checked> <span data-i18n="label_show_legend">Show legend</span></label>
+        </div>
+
+        <div class="control-divider"></div>
+
+        <div class="control-group">
+          <label><input type="checkbox" id="aggregationEnabled"> <span data-i18n="label_aggregation">Layer aggregation</span></label>
+          <select id="aggregationProperty">
+            <option value="clusterId">clusterId</option>
+            <option value="category">category</option>
+            <option value="type">type</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label><input type="checkbox" id="spatialIdEnabled"> <span data-i18n="label_spatial_id">Spatial ID grid</span></label>
+          <select id="spatialIdZoom">
+            <option value="auto" selected>zoom: auto</option>
+            <option value="22">zoom: 22</option>
+            <option value="24">zoom: 24</option>
+            <option value="25">zoom: 25</option>
+            <option value="27">zoom: 27</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label><input type="checkbox" id="temporalDemo"> <span data-i18n="label_temporal_demo">Temporal demo</span></label>
+          <select id="temporalClassificationScope">
+            <option value="global" selected>global</option>
+            <option value="per-time">per-time</option>
+          </select>
+        </div>
+        <p class="control-note" data-i18n="temporal_demo_note">Temporal demo derives four animated slices from the loaded data.</p>
+        <div id="latestLegend" class="latest-legend" aria-live="polite"></div>
+        <div id="latestFeatureStats" class="latest-feature-stats" aria-live="polite"></div>
+      </div>
+    </details>
+
     <!-- 3. Basic Configuration -->
     <details class="section" open>
       <summary data-i18n="sum_basic">Basic Configuration</summary>
@@ -466,16 +536,6 @@
             </select>
           </div>
           <div class="control-group">
-            <label data-i18n="label_legacyEmulation">⚠️ Legacy outlineEmulation (Deprecated)</label>
-            <select id="outlineEmulationMode">
-              <option value="" data-i18n="opt_legacy_none">Use emulationScope above</option>
-              <option value="off" data-i18n="opt_emul_off">Disabled</option>
-              <option value="topn" data-i18n="opt_emul_topn">Top-N Only</option>
-              <option value="non-topn" data-i18n="opt_emul_non_topn">Non-TopN Only</option>
-              <option value="all" data-i18n="opt_emul_all">All Voxels</option>
-            </select>
-          </div>
-          <div class="control-group">
             <label data-i18n="label_outlineRenderMode">Render Mode</label>
             <select id="outlineRenderMode">
               <option value="standard" selected data-i18n="opt_render_standard">Standard</option>
@@ -638,6 +698,7 @@
   <!-- i18n dictionaries (externalized) -->
   <script src="i18n/en.js"></script>
   <script src="i18n/ja.js"></script>
+  <script src="latest-features.js"></script>
   <script src="app.js"></script>
   <script src="v012-features.js"></script>
   <script>

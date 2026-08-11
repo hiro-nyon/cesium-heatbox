@@ -21,7 +21,7 @@
     </a>
     <nav class="site-nav" aria-label="Primary navigation">
       <a href="#release">Alpha.3</a>
-      <a href="./playground/simple.html">Quick start</a>
+      <a class="nav-quick-start" href="./playground/simple.html">Quick start</a>
       <a href="./playground/">Playground</a>
       <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki">Docs</a>
       <a href="https://github.com/hiro-nyon/cesium-heatbox">GitHub</a>
@@ -35,9 +35,10 @@
         <h1>Point data,<br>given volume.</h1>
         <p class="hero-lede">Turn entities already in your Cesium scene into legible 3D voxel heatmaps. Keep the globe, camera, and data pipeline you have.</p>
         <div class="hero-actions">
-          <a class="button button-primary" href="./playground/">Open playground <span aria-hidden="true">↗</span></a>
+          <a class="button button-primary" href="./playground/simple.html">Open Quick Start <span aria-hidden="true">↗</span></a>
           <a class="button button-quiet" href="https://github.com/hiro-nyon/cesium-heatbox/wiki">Read the docs</a>
         </div>
+        <a class="hero-playground-link" href="./playground/">Need every control? Open the full Playground →</a>
         <div class="install-line" aria-label="Install command">
           <span>npm</span>
           <code>install cesium-heatbox@1.3.7-alpha.3</code>
@@ -46,10 +47,12 @@
 
       <div class="product-frame">
         <div class="product-frame-bar">
-          <span><b></b> LIVE PLAYGROUND</span>
+          <span><b></b> QUICK START · JENKS / VIRIDIS</span>
           <a href="./playground/simple.html">Open full size</a>
         </div>
-        <iframe src="./playground/simple.html" title="Interactive Cesium Heatbox quick start" loading="eager"></iframe>
+        <a class="product-shot" href="./playground/simple.html" aria-label="Open the interactive Quick Start">
+          <img src="./assets/quick-start-alpha3.png" width="1440" height="900" alt="Cesium Heatbox Quick Start showing Jenks-classified Viridis voxels over Tokyo">
+        </a>
       </div>
     </section>
 
@@ -118,10 +121,10 @@ heatbox.<span class="code-name">createFromEntities</span>(entities);</pre>
 
     <section class="closing">
       <div class="shell closing-inner">
-        <h2>Inspect it with your own data.</h2>
+        <h2>See your first result in one step.</h2>
         <div>
-          <a class="button button-primary" href="./playground/">Launch playground <span aria-hidden="true">↗</span></a>
-          <p>Load GeoJSON, CZML, or generated sample data.</p>
+          <a class="button button-primary" href="./playground/simple.html">Open Quick Start <span aria-hidden="true">↗</span></a>
+          <p>Starts with a completed sample. <a href="./playground/">Full Playground →</a></p>
         </div>
       </div>
     </section>

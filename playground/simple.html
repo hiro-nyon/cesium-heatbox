@@ -75,66 +75,68 @@
   <button id="mobileMenuToggle" class="liquid-glass-hamburger" aria-label="メニューを開く">☰</button>
   
   <div id="toolbar" class="liquid-glass-dark">
-    <div class="section">
+    <header class="section quick-start-intro">
+      <p class="quick-start-kicker">GET A RESULT FIRST</p>
       <h3>Quick Start</h3>
-      <p style="font-size: 11px; margin: 5px 0;">Load data and generate a heatmap in two clicks</p>
-    </div>
-    
+      <p>The sample runs automatically. Replace it with your own point data when you are ready.</p>
+      <div class="quick-start-defaults" aria-label="Quick Start defaults">
+        <span>JENKS</span><span>VIRIDIS</span><span>AUTO-FIT</span>
+      </div>
+      <button id="runSampleDemo" class="quick-start-primary">Run sample again</button>
+    </header>
+
     <details class="section" open>
-      <summary>Step 1: Load Data</summary>
+      <summary>Use your data</summary>
       <div class="section-content">
+        <p class="control-note">GeoJSON, JSON, or CZML point data. A numeric <code>value</code>, <code>weight</code>, or <code>intensity</code> property is used automatically.</p>
         <input type="file" id="fileInput" accept=".json,.geojson,.czml" />
-        <button id="loadSampleData">Load Sample Data</button>
-        <button id="generateTestData">Generate Test Data</button>
-        <div id="dataStatus" style="font-size: 10px; color: #aaa; margin-top: 5px;">
-          Ready to load data. Choose a file or use sample data to get started.
-        </div>
+        <div id="dataStatus" class="quick-start-status">Preparing the sample…</div>
       </div>
     </details>
-    
+
     <details class="section" open>
-      <summary>Step 2: Configure</summary>
-      <div class="controls section-content">
-        <!-- Quick Start keeps imagery fixed to Carto Light; auto voxel sizing enforced -->
-        <!-- Height-based visualization is not supported in QS; removed for clarity -->
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="autoCamera" checked />
-            <span>Auto-adjust camera view</span>
-          </label>
-        </div>
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="wireframeOnly" />
+      <summary>Display</summary>
+      <div class="section-content">
+        <div class="quick-start-display-label">Voxel style</div>
+        <div class="quick-start-view-toggle" role="group" aria-label="Voxel display style">
+          <button id="viewStyleSolid" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>
+            <span>Solid</span>
+          </button>
+          <button id="viewStyleWireframe" type="button" class="is-selected" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9" fill="none"/></svg>
             <span>Wireframe</span>
-          </label>
+          </button>
+        </div>
+        <input type="checkbox" id="wireframeOnly" checked hidden>
+
+        <div class="quick-start-display-label">Layers</div>
+        <div class="quick-start-layer-toggle" role="group" aria-label="Visible layers">
+          <button id="togglePoints" type="button" class="is-selected" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="2"/><circle cx="16.5" cy="6.5" r="1.5"/><circle cx="17" cy="16" r="2.5"/><circle cx="7.5" cy="17" r="1.5"/></svg>
+            <span>Points</span>
+          </button>
+          <button id="toggleVoxels" type="button" class="is-selected" aria-pressed="true" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>
+            <span>Voxels</span>
+          </button>
         </div>
       </div>
     </details>
-    
+
     <details class="section" open>
-      <summary>Step 3: Generate</summary>
+      <summary>Result</summary>
       <div class="controls section-content">
-        <button id="createHeatmap" disabled>Create Heatmap</button>
-        <button id="clearHeatmap" disabled>Clear Heatmap</button>
-        <button id="toggleVisibility" disabled>Toggle Visibility</button>
-        <div id="heatmapStatus" style="font-size: 10px; color: #aaa; margin-top: 5px;">
-          Load data first to enable heatmap generation.
-        </div>
-        <!-- Inline statistics on the left UI -->
-        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1);">
-          <h4 style="margin:6px 0; font-size:12px; color:#e0e0e0;">Statistics</h4>
-          <div id="statistics" style="font-size:12px; color:#b0bec5;">
-            <p><span>Data Points:</span> <span id="dataCount">0</span></p>
-            <p><span>Voxel Count:</span> <span id="voxelCount">0</span></p>
-            <p><span>Max Value:</span> <span id="maxValue">-</span></p>
-            <p><span>Min Value:</span> <span id="minValue">-</span></p>
-            <div id="autoSizeInfo" style="font-size: 10px; color: #aaa; margin-top: 5px; display: none;">
-              <p><span>Auto Adjusted:</span> <span id="autoAdjusted">-</span></p>
-              <p><span>Final Size:</span> <span id="sizeInfo">-</span></p>
-            </div>
-          </div>
-        </div>
+        <button id="clearHeatmap" disabled>Reset voxels</button>
+        <div id="heatmapStatus" class="quick-start-status">Building the first view…</div>
+        <div id="quickLegend" class="latest-legend quick-start-legend" aria-live="polite"></div>
+        <dl id="statistics" class="quick-start-stats">
+          <div><dt>Points</dt><dd id="dataCount">0</dd></div>
+          <div><dt>Voxels</dt><dd id="voxelCount">0</dd></div>
+          <div><dt>Range</dt><dd><span id="minValue">-</span>–<span id="maxValue">-</span></dd></div>
+          <div id="autoSizeInfo" style="display:none;"><dt>Voxel size</dt><dd id="sizeInfo">-</dd><span id="autoAdjusted" hidden>-</span></div>
+        </dl>
+        <a class="quick-start-code-link" href="https://github.com/hiro-nyon/cesium-heatbox#quick-start" target="_blank">View the equivalent code <span aria-hidden="true">↗</span></a>
       </div>
     </details>
   </div>
@@ -142,6 +144,7 @@
 
   <!-- Heatbox library (pinned to the release represented by this branch) -->
   <script src="https://unpkg.com/cesium-heatbox@1.3.7-alpha.3/dist/cesium-heatbox.umd.min.js?v=1.3.7-alpha.3"></script>
+  <script src="latest-features.js"></script>
   <script src="simple-app.js"></script>
   <script>
     // Mobile nav dropdown

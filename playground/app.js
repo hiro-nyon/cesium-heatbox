@@ -609,6 +609,19 @@ class HeatboxPlayground {
         // Section summaries
         sum_rendering: '描画制御',
         sum_actions: '操作・実行',
+        sum_current_api: '現行API',
+        current_api_note: 'v1.xの分類・時系列・空間ID・レイヤ集約・凡例APIを試せます。',
+        label_classification_scheme: '分類方式',
+        opt_classification_off: '無効（従来の色設定）',
+        label_classification_classes: 'クラス数',
+        label_classification_palette: 'パレット',
+        label_target_opacity: '透明度も分類',
+        label_target_width: '線幅も分類',
+        label_show_legend: '凡例を表示',
+        label_aggregation: 'レイヤ集約',
+        label_spatial_id: '空間IDグリッド',
+        label_temporal_demo: '時系列デモ',
+        temporal_demo_note: '読み込んだデータから4時点のアニメーションを生成します。',
         // Language selector
         label_language: '言語',
         lang_ja: '日本語',
@@ -767,6 +780,19 @@ class HeatboxPlayground {
         // Section summaries
         sum_rendering: 'Rendering Control',
         sum_actions: 'Actions',
+        sum_current_api: 'Current API',
+        current_api_note: 'Exercise the v1.x classification, temporal, Spatial ID, aggregation, and Legend APIs.',
+        label_classification_scheme: 'Classification',
+        opt_classification_off: 'Off (legacy colors)',
+        label_classification_classes: 'Classes',
+        label_classification_palette: 'Palette',
+        label_target_opacity: 'Classify opacity',
+        label_target_width: 'Classify width',
+        label_show_legend: 'Show legend',
+        label_aggregation: 'Layer aggregation',
+        label_spatial_id: 'Spatial ID grid',
+        label_temporal_demo: 'Temporal demo',
+        temporal_demo_note: 'Temporal demo derives four animated slices from the loaded data.',
         // Language selector
         label_language: 'Language',
         lang_ja: 'Japanese',
@@ -1235,6 +1261,16 @@ class HeatboxPlayground {
     const effBtn = document.getElementById('getEffectiveOptions');
     if (effBtn && typeof this.showEffectiveOptions === 'function') {
       effBtn.addEventListener('click', this.showEffectiveOptions.bind(this));
+    }
+
+    const classificationClasses = document.getElementById('classificationClasses');
+    const classificationClassesValue = document.getElementById('classificationClassesValue');
+    if (classificationClasses && classificationClassesValue) {
+      const syncClassificationClasses = () => {
+        classificationClassesValue.textContent = classificationClasses.value;
+      };
+      classificationClasses.addEventListener('input', syncClassificationClasses);
+      syncClassificationClasses();
     }
     
     // 空ボクセル表示チェックボックス
@@ -1786,6 +1822,9 @@ class HeatboxPlayground {
       
       // 設定を取得
       const options = this.getHeatmapOptions();
+      if (window.HeatboxLatestPlayground) {
+        window.HeatboxLatestPlayground.prepareTemporalViewer(this.viewer, options.temporal);
+      }
       // 統計リセット（adaptiveモード時にカウントを見やすく）
       try {
         if (document.getElementById('outlineMode')?.value === 'adaptive') {
@@ -1806,14 +1845,16 @@ class HeatboxPlayground {
       this.heatbox = new HB(this.viewer, options);
       console.log('Heatboxインスタンス作成完了:', this.heatbox);
       console.log('Heatboxインスタンスのメソッド:', Object.getOwnPropertyNames(this.heatbox));
-      // NOTE: main系の正規化でboxOpacityResolverは削除されるため、生成後に再設定して密度→不透明度を適用
+      // Legacy density opacity remains available unless classification owns opacity.
       try {
         const wireframeOnly = document.getElementById('wireframeOnly')?.checked || false;
-        this.heatbox.options.boxOpacityResolver = wireframeOnly ? (() => 0) : ((ctx) => {
-          const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
-          // Range: 0.2 → 0.9 (linear)
-          return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
-        });
+        const classificationOwnsOpacity = Boolean(options.classification?.classificationTargets?.opacity);
+        if (!classificationOwnsOpacity) {
+          this.heatbox.options.boxOpacityResolver = wireframeOnly ? (() => 0) : ((ctx) => {
+            const d = Math.max(0, Math.min(1, Number(ctx?.normalizedDensity) || 0));
+            return Math.max(0.2, Math.min(0.9, 0.2 + d * 0.7));
+          });
+        }
       } catch (_) {}
       
       // ヒートマップを生成 - createFromEntitiesメソッドを使用
@@ -1862,6 +1903,17 @@ class HeatboxPlayground {
         // 統計情報の取得
         const stats = this.heatbox.getStatistics();
         console.log('ヒートマップ統計情報:', stats);
+
+        if (window.HeatboxLatestPlayground) {
+          const legendContainer = document.getElementById('latestLegend');
+          const showLegend = document.getElementById('classificationLegend')?.checked !== false;
+          window.HeatboxLatestPlayground.renderLegend(
+            this.heatbox,
+            legendContainer,
+            Boolean(options.classification && showLegend)
+          );
+          window.HeatboxLatestPlayground.renderFeatureStats(document, stats, options);
+        }
         
         // デバッグ情報の出力
         if (typeof this.heatbox.getDebugInfo === 'function') {
@@ -2743,8 +2795,8 @@ class HeatboxPlayground {
     const outlineMode = document.getElementById('outlineMode')?.value || 'adaptive';
     const viewMode = document.getElementById('viewModePreset')?.value || this._currentViewMode || 'boxes';
     const outlineWidthManual = parseInt(document.getElementById('outlineWidth')?.value || '2', 10);
-    const outlineEmulationMode = document.getElementById('outlineEmulationMode')?.value || 'off';
     const emulationScope = document.getElementById('emulationScope')?.value || 'off';
+    const outlineEmulationMode = emulationScope;
     const outlineInset = parseFloat(document.getElementById('outlineInset')?.value || '0');
     const outlineInsetModeSel = document.getElementById('outlineInsetMode')?.value || 'all';
     const enableThickFrames = document.getElementById('enableThickFrames')?.checked || false;
@@ -2770,26 +2822,7 @@ class HeatboxPlayground {
     let outlineWidthResolver = null;
     let outlineWidthValue = 2;
     if (outlineMode === 'adaptive') {
-      outlineWidthResolver = (params) => {
-        const { isTopN, normalizedDensity } = params || {};
-        // densityベースの連続マッピング（simple.html相当の挙動に近づける）
-        const d = Math.max(0, Math.min(1, Number(normalizedDensity) || 0));
-        const nd = Math.pow(d, 0.5); // ガンマ補正（コントラスト強化）
-        const minW = 1.5;
-        const maxW = 10.0;
-        let width;
-        if (outlineEmulationMode === 'all') {
-          // すべて太線モードでは最低太さを確保しつつTopNをわずかに強調
-          width = minW + nd * (maxW - minW);
-          if (isTopN) width = Math.min(maxW, width + 2);
-          width = Math.max(3, width); // すべて太線らしく下限を上げる
-        } else {
-          width = minW + nd * (maxW - minW);
-          if (isTopN) width = Math.min(maxW, width + 2);
-        }
-        try { self._recordOutlineResolver(width, params); } catch (_) {}
-        return width;
-      };
+      outlineWidthResolver = null;
       outlineWidthValue = 2; // ベースライン
     } else {
       outlineWidthResolver = null;
@@ -2836,13 +2869,11 @@ class HeatboxPlayground {
       voxelGap: isNaN(voxelGap) ? 0 : voxelGap,
       outlineOpacity: isNaN(outlineOpacity) ? 1.0 : outlineOpacity,
       outlineWidthResolver: outlineWidthResolver,
-      // v0.1.6+: 太線エミュレーション（WebGL制約の回避）
-      outlineEmulation: outlineEmulationMode,
       emulationScope: emulationScope,
       // v0.1.7 additions
       outlineRenderMode: outlineRenderMode,
-      adaptiveOutlines: adaptiveOutlines,
-      outlineWidthPreset: outlineWidthPreset
+      adaptiveOutlines: outlineMode === 'adaptive' || adaptiveOutlines,
+      outlineWidthPreset: outlineMode === 'adaptive' ? 'adaptive' : outlineWidthPreset
     };
 
     // View Mode semantic overrides (preserve per-mode parameters via _viewModeStates)
@@ -2976,6 +3007,21 @@ class HeatboxPlayground {
         updateIntervalMs: perfOverlayInterval,
         autoShow: true
       };
+    }
+
+    if (window.HeatboxLatestPlayground) {
+      const latestOptions = window.HeatboxLatestPlayground.buildOptions(
+        document,
+        this.viewer,
+        this.currentData
+      );
+      Object.assign(options, latestOptions);
+      if (latestOptions.classification?.classificationTargets?.opacity) {
+        options.boxOpacityResolver = null;
+      }
+      if (latestOptions.classification?.classificationTargets?.width) {
+        options.outlineWidthResolver = null;
+      }
     }
     
     console.log('Heatbox options:', options);
@@ -3114,9 +3160,14 @@ class HeatboxPlayground {
    */
   clearHeatmap() {
     if (this.heatbox) {
-      this.heatbox.clear();
+      if (typeof this.heatbox.destroy === 'function') this.heatbox.destroy();
+      else this.heatbox.clear();
       this.heatbox = null;
     }
+    const latestLegend = document.getElementById('latestLegend');
+    if (latestLegend) latestLegend.replaceChildren();
+    const latestStats = document.getElementById('latestFeatureStats');
+    if (latestStats) latestStats.replaceChildren();
     
     // 統計情報をリセット
     this.resetStatistics();
