@@ -42,16 +42,7 @@ export class TimeController {
         // Global scope: calculate stats once
         if (this._options.classificationScope === 'global') {
             const heatboxOptions = this._heatbox.options || {};
-            const valueProperty = heatboxOptions.valueProperty || 'weight';
-            if (this._options.useWorker) {
-                void this._activateWithAsyncStats(valueProperty, heatboxOptions.classification || null);
-                return;
-            }
-
-            this._heatbox._globalStats = this._slicer.calculateGlobalStats(
-                valueProperty,
-                heatboxOptions.classification || null
-            );
+            return this._activateWithAsyncStats(heatboxOptions.classification || null);
         }
 
         this._bindClockListener();
@@ -61,14 +52,15 @@ export class TimeController {
         this._onTick(this._viewer.clock);
     }
 
-    async _activateWithAsyncStats(valueProperty, classificationOptions) {
+    async _activateWithAsyncStats(classificationOptions) {
         let isCancelled = false;
 
         try {
-            this._heatbox._globalStats = await this._slicer.calculateGlobalStatsAsync(
-                valueProperty,
-                classificationOptions
-            );
+            const heatboxOptions = this._heatbox.options || {};
+            this._heatbox._globalStats = await this._slicer.calculateGlobalVoxelStats({
+                ...heatboxOptions,
+                classification: classificationOptions
+            });
         } finally {
             isCancelled = !this._isActive;
         }
@@ -78,6 +70,7 @@ export class TimeController {
         }
 
         this._bindClockListener();
+        this._bindCameraListener();
         this._onTick(this._viewer.clock);
     }
 

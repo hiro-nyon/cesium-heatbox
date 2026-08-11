@@ -4,6 +4,8 @@
 /* global document */
 
 import { Heatbox } from '../src/Heatbox.js';
+import { Logger } from '../src/utils/logger.js';
+import * as Cesium from 'cesium';
 
 describe('Heatbox', () => {
   let viewer;
@@ -126,6 +128,21 @@ describe('Heatbox', () => {
     });
   });
 
+  describe('クリック選択', () => {
+    test('Cesium PropertyBag のボクセルをInfoBoxへ選択できる', () => {
+      const voxel = new Cesium.Entity({
+        properties: { type: 'voxel', key: '1,2,3', x: 1, y: 2, z: 3, count: 7 }
+      });
+      viewer.scene.pick = jest.fn(() => ({ id: voxel }));
+      const handler = heatbox._eventHandler.setInputAction.mock.calls[0][0];
+
+      handler({ position: { x: 10, y: 20 } });
+
+      expect(viewer.selectedEntity.id).toBe('voxel-1,2,3');
+      expect(viewer.selectedEntity.description).toContain('7');
+    });
+  });
+
   describe('カメラ制御', () => {
     test('fitViewはpostRender後にBoundingSphereへ移動する', async () => {
       viewer.camera.flyToBoundingSphere = jest.fn().mockResolvedValue(undefined);
@@ -141,6 +158,19 @@ describe('Heatbox', () => {
 
       expect(viewer.camera.flyToBoundingSphere).toHaveBeenCalledTimes(1);
       expect(viewer.scene.postRender.removeEventListener).toHaveBeenCalledTimes(1);
+    });
+
+    test('fitViewのpaddingPercentとaltitudeStrategyを距離へ反映する', async () => {
+      viewer.camera.flyToBoundingSphere = jest.fn().mockResolvedValue(undefined);
+      const bounds = { ...testUtils.createMockBounds(), maxAlt: 2000 };
+
+      await heatbox._fitByBoundingSphere(bounds, { paddingPercent: 0, altitudeStrategy: 'manual' });
+      const manualRange = viewer.camera.flyToBoundingSphere.mock.calls[0][1].offset.range;
+      await heatbox._fitByBoundingSphere(bounds, { paddingPercent: 0.5, altitudeStrategy: 'auto' });
+      const autoRange = viewer.camera.flyToBoundingSphere.mock.calls[1][1].offset.range;
+
+      expect(manualRange).toBeCloseTo(1100);
+      expect(autoRange).toBeGreaterThan(manualRange);
     });
 
     test('fitViewは境界がない場合と無効な場合に安全に終了する', async () => {
@@ -177,9 +207,12 @@ describe('Heatbox', () => {
     });
     
     test('updateOptionsでオプションを更新できる', () => {
+      const logLevelSpy = jest.spyOn(Logger, 'setLogLevel');
       heatbox.updateOptions({ voxelSize: 50 });
       const options = heatbox.getOptions();
       expect(options.voxelSize).toBe(50);
+      expect(logLevelSpy).toHaveBeenCalledWith(expect.objectContaining({ voxelSize: 50 }));
+      logLevelSpy.mockRestore();
     });
 
     test('autoVoxelSizeはvoxelSize未指定時に推定値を使用する', async () => {

@@ -280,14 +280,17 @@ export class GeometryRenderer {
     this.entities.push(insetEntity);
     
     // 枠線の厚み部分を視覚化（WebGL 1px制限の回避）
+    let frameEntities = [];
     if (this.options.enableThickFrames && (effectiveInsetX > 0.1 || effectiveInsetY > 0.1 || effectiveInsetZ > 0.1)) {
-      this.createThickOutlineFrames({
+      frameEntities = this.createThickOutlineFrames({
         centerLon: safeCenterLon, centerLat: safeCenterLat, centerAlt: safeCenterAlt,
         outerX: safeBaseSizeX, outerY: safeBaseSizeY, outerZ: safeBaseSizeZ,
         innerX: insetSizeX, innerY: insetSizeY, innerZ: insetSizeZ,
         frameColor: outlineColor, voxelKey
       });
     }
+    // Cesium PropertyBag を走査せず、生成元から所有エンティティを直接引き渡す。
+    insetEntity._heatboxFrameEntities = frameEntities;
     
     Logger.debug(`Inset outline created for voxel ${voxelKey}:`, {
       originalSize: { x: baseSizeX, y: baseSizeY, z: baseSizeZ },
@@ -754,10 +757,7 @@ export class GeometryRenderer {
       voxelKey: config.voxelKey,
       insetAmount: this.options.outlineInset > 0 ? this.options.outlineInset : 1
     });
-
-    if (this.options.enableThickFrames) {
-      record.frameEntities = this.entities.filter(entity => entity?.properties?.parentKey === config.voxelKey && String(entity?.properties?.type || '').startsWith('voxel-thick-frame-'));
-    }
+    record.frameEntities = record.insetEntity?._heatboxFrameEntities || [];
   }
 
   _syncPolylineRecord(record, config) {

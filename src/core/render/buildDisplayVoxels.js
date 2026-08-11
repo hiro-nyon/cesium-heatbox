@@ -13,7 +13,7 @@ export function buildDisplayVoxels(voxelData, grid, options, selectVoxels) {
   const gridVoxelCount = getGridVoxelCount(grid);
   const configuredLimit = Number.isFinite(options.maxRenderVoxels) && options.maxRenderVoxels > 0
     ? Math.floor(options.maxRenderVoxels)
-    : 10000;
+    : 50000;
   const canSynthesizeEmptyVoxels = options.showEmptyVoxels && !options.spatialId?.enabled;
   const renderLimit = canSynthesizeEmptyVoxels
     ? Math.min(gridVoxelCount, configuredLimit)

@@ -206,7 +206,7 @@ export function validateAndNormalizeOptions(options = {}) {
   
   // v0.1.5: batchMode非推奨化警告（debug時のみ）
   if (normalized.batchMode && normalized.debug) {
-    Logger.warn('batchMode option is deprecated and will be removed in v1.0.0. It is currently ignored.');
+    Logger.warn('batchMode option is deprecated and will be removed in v2.0.0. It is currently ignored.');
   }
   
   // ボクセルサイズのバリデーション
@@ -245,6 +245,36 @@ export function validateAndNormalizeOptions(options = {}) {
     if (typeof normalized.highlightTopN !== 'number' || normalized.highlightTopN <= 0) {
       Logger.warn(`Invalid highlightTopN: ${normalized.highlightTopN}. Must be a positive number.`);
       normalized.highlightTopN = null;
+    }
+  }
+
+  const highlightStyle = normalized.highlightStyle && typeof normalized.highlightStyle === 'object'
+    ? normalized.highlightStyle
+    : {};
+  normalized.highlightStyle = {
+    ...DEFAULT_OPTIONS.highlightStyle,
+    ...highlightStyle
+  };
+  const highlightOutlineWidth = parseFloat(normalized.highlightStyle.outlineWidth);
+  normalized.highlightStyle.outlineWidth = Number.isFinite(highlightOutlineWidth)
+    ? Math.max(0.5, Math.min(20, highlightOutlineWidth))
+    : DEFAULT_OPTIONS.highlightStyle.outlineWidth;
+  const boostOpacity = parseFloat(normalized.highlightStyle.boostOpacity);
+  normalized.highlightStyle.boostOpacity = Number.isFinite(boostOpacity)
+    ? Math.max(0, Math.min(1, boostOpacity))
+    : DEFAULT_OPTIONS.highlightStyle.boostOpacity;
+  const boostOutlineWidth = parseFloat(normalized.highlightStyle.boostOutlineWidth);
+  normalized.highlightStyle.boostOutlineWidth = Number.isFinite(boostOutlineWidth)
+    ? Math.max(0, Math.min(20, boostOutlineWidth))
+    : DEFAULT_OPTIONS.highlightStyle.boostOutlineWidth;
+
+  if (normalized.maxRenderVoxels !== undefined && normalized.maxRenderVoxels !== 'auto') {
+    const maxRenderVoxels = Number(normalized.maxRenderVoxels);
+    if (!Number.isFinite(maxRenderVoxels) || maxRenderVoxels <= 0) {
+      Logger.warn(`Invalid maxRenderVoxels: ${normalized.maxRenderVoxels}. Using ${DEFAULT_OPTIONS.maxRenderVoxels}.`);
+      normalized.maxRenderVoxels = DEFAULT_OPTIONS.maxRenderVoxels;
+    } else {
+      normalized.maxRenderVoxels = Math.max(1, Math.floor(maxRenderVoxels));
     }
   }
   

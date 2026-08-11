@@ -82,10 +82,9 @@ ls -la dist/
 **Expected output:**
 ```
 dist/
-├── cesium-heatbox.js
 ├── cesium-heatbox.min.mjs
 ├── cesium-heatbox.cjs
-└── cesium-heatbox.umd.js
+└── cesium-heatbox.umd.min.js
 ```
 
 #### Sample Execution (2 minutes)
@@ -280,7 +279,7 @@ Experience v0.1.9 features with the comprehensive demo:
 
 ```bash
 # Open advanced demo
-open examples/selection-limits/adaptive-rendering-demo.html
+open examples/selection-limits/adaptive-rendering/index.html
 ```
 
 The demo includes:
@@ -488,10 +487,9 @@ ls -la dist/
 **期待される出力**:
 ```
 dist/
-├── cesium-heatbox.js
 ├── cesium-heatbox.min.mjs
 ├── cesium-heatbox.cjs
-└── cesium-heatbox.umd.js
+└── cesium-heatbox.umd.min.js
 ```
 
 ---

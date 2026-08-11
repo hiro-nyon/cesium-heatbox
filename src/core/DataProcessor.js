@@ -294,8 +294,17 @@ export class DataProcessor {
       return emptyStats;
     }
 
-    const counts = Array.from(voxelData.values()).map(voxel => voxel.count);
-    const totalEntities = counts.reduce((sum, count) => sum + count, 0);
+    const counts = [];
+    let totalEntities = 0;
+    let minCount = Infinity;
+    let maxCount = -Infinity;
+    for (const voxel of voxelData.values()) {
+      const count = voxel.count;
+      counts.push(count);
+      totalEntities += count;
+      minCount = Math.min(minCount, count);
+      maxCount = Math.max(maxCount, count);
+    }
 
     // v0.1.17: Spatial ID mode can exceed grid.totalVoxels, clamp emptyVoxels to non-negative
     // 空間IDモードではgrid.totalVoxelsを超える可能性があるため、emptyVoxelsを非負にクランプ
@@ -307,8 +316,8 @@ export class DataProcessor {
       nonEmptyVoxels: voxelData.size,
       emptyVoxels: emptyVoxels,
       totalEntities: totalEntities,
-      minCount: Math.min(...counts),
-      maxCount: Math.max(...counts),
+      minCount,
+      maxCount,
       averageCount: totalEntities / voxelData.size,
       // v0.1.4: 自動調整情報の初期化
       autoAdjusted: false,
@@ -434,6 +443,7 @@ export class DataProcessor {
     // Store zoom level and provider info for statistics / 統計情報用にズームレベルとプロバイダー情報を保存
     options._resolvedZoom = zoom;
     options._spatialIdProvider = adapter.fallbackMode ? null : options.spatialId.provider;
+    options._spatialIdAdapter = adapter;
 
     // v0.1.18: Layer aggregation setup (ADR-0014)
     const aggregationOptions = options.aggregation || {};

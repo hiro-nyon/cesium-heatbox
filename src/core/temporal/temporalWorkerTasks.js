@@ -79,10 +79,6 @@ export function calculateTemporalQuantiles(sortedValues, quantiles) {
 }
 
 export function calculateTemporalStats(entries = [], valueProperty = 'weight') {
-  let min = Infinity;
-  let max = -Infinity;
-  let sum = 0;
-  let count = 0;
   const allValues = [];
 
   for (const entry of entries) {
@@ -92,19 +88,24 @@ export function calculateTemporalStats(entries = [], valueProperty = 'weight') {
       const value = point?.[valueProperty] ?? 1;
       if (typeof value !== 'number') continue;
 
-      min = Math.min(min, value);
-      max = Math.max(max, value);
-      sum += value;
-      count++;
       allValues.push(value);
     }
   }
 
-  if (count === 0) {
+  return calculateTemporalValueStats(allValues);
+}
+
+export function calculateTemporalValueStats(values = []) {
+  if (values.length === 0) {
     return null;
   }
 
-  allValues.sort((a, b) => a - b);
+  const allValues = [...values].sort((a, b) => a - b);
+  let sum = 0;
+  for (const value of allValues) sum += value;
+  const count = allValues.length;
+  const min = allValues[0];
+  const max = allValues[count - 1];
 
   return {
     min,

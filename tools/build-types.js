@@ -4,7 +4,11 @@ const fs = require('fs');
 const path = require('path');
 
 const outDir = path.join(__dirname, '..', 'types');
-const outFile = path.join(outDir, 'index.d.ts');
+const outFiles = [
+  path.join(outDir, 'index.d.ts'),
+  path.join(outDir, 'index.d.mts')
+];
+const cjsOutFile = path.join(outDir, 'index.d.cts');
 
 const dts = `
 // Type definitions for cesium-heatbox
@@ -332,5 +336,8 @@ export const REPOSITORY: string;
 `;
 
 fs.mkdirSync(outDir, { recursive: true });
-fs.writeFileSync(outFile, dts, 'utf8');
-console.log(`Types written to ${outFile}`);
+for (const outFile of outFiles) {
+  fs.writeFileSync(outFile, dts, 'utf8');
+}
+fs.writeFileSync(cjsOutFile, `import Heatbox from './index.mjs';\nexport = Heatbox;\n`, 'utf8');
+console.log(`Types written to ${outDir}`);

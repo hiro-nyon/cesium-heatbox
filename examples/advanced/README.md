@@ -6,11 +6,11 @@
 
 | Category / カテゴリ | Directory | 主なファイル / Key Files |
 | --- | --- | --- |
-| Observability（観測可能性・メトリクス） | `../observability/` | `performance-overlay-demo.html`, `adaptive-phase3-demo.html` |
-| Rendering（描画モード・高さ表現） | `../rendering/` | `wireframe-height-demo-umd.html`, `wireframe-height-demo.js`, `v0.1.12-features-demo.html` |
+| Observability（観測可能性・メトリクス） | `../observability/` | `performance-overlay/index.html`, `adaptive-phase3/index.html` |
+| Rendering（描画モード・高さ表現） | `../rendering/` | `wireframe-height/index.html`, `v0.1.12-features/index.html` |
 | Classification（分類エンジン） | `.` | `classification-demo.html` (v1.0.0), `classification-extension-demo.html` *(v1.1.0 追加)* |
-| Outlines（枠線・エミュレーション） | `../outlines/` | `outline-overlap-demo-umd.html`, `emulation-scope-demo.html`, `../advanced/emulation-opacity-demo.html` *(v1.1.0)* |
-| Selection & Limits（選択戦略・描画上限） | `../selection-limits/` | `adaptive-rendering-demo.html`, `adaptive-rendering-demo.js`, `performance-optimization.js`, `selection-strategy-demo.html` *(new)* |
+| Outlines（枠線・エミュレーション） | `../outlines/` | `outline-overlap/index.html`, `emulation-scope/index.html`, `emulation-opacity-demo.html` |
+| Selection & Limits（選択戦略・描画上限） | `../selection-limits/` | `adaptive-rendering/index.html`, `performance-optimization/performance-optimization.js`, `selection-strategy/index.html` |
 | Data（データ生成・フィルタリング） | `../data/` | `entity-filtering.js` |
 
 ## Usage Notes / 利用時の注意

@@ -19,6 +19,7 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: cesium-heatbox
     steps:
       # next の柔軟なチェックアウト戦略を採用
       - name: Checkout (event ref)

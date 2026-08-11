@@ -390,7 +390,7 @@ import { generateTestEntities } from 'cesium-heatbox';
 ##### UMD（レガシー対応）
 ```html
 <!-- ブラウザ直接読み込み -->
-<script src="cesium-heatbox.umd.js"></script>
+<script src="cesium-heatbox.umd.min.js"></script>
 <script>
   const heatbox = new CesiumHeatbox(viewer);
 </script>
@@ -523,7 +523,7 @@ module.exports = (env, argv) => {
       path: path.resolve(__dirname, 'dist'),
       filename: isProduction ? 
         'cesium-heatbox.umd.min.js' :
-        'cesium-heatbox.umd.js',
+        'cesium-heatbox.umd.min.js',
       library: {
         name: 'CesiumHeatbox',
         type: 'umd',
@@ -918,13 +918,13 @@ cesium-heatbox/
 │       ├── validation.js
 │       └── constants.js
 ├── dist/                      # ビルド出力
-│   ├── cesium-heatbox.js
 │   ├── cesium-heatbox.min.mjs
 │   ├── cesium-heatbox.cjs
-│   ├── cesium-heatbox.umd.js
-│   └── cesium-heatbox.d.ts
+│   └── cesium-heatbox.umd.min.js
 ├── types/                     # TypeScript型定義
-│   └── index.d.ts
+│   ├── index.d.ts
+│   ├── index.d.mts
+│   └── index.d.cts
 ├── test/                      # テストコード
 │   ├── Heatbox.test.js
 │   ├── integration/
@@ -1013,7 +1013,7 @@ npm run benchmark
       "types": "./types/index.d.ts",
       "import": "./dist/cesium-heatbox.min.mjs",
       "require": "./dist/cesium-heatbox.cjs",
-      "default": "./dist/cesium-heatbox.min.mjs"
+      "default": "./dist/cesium-heatbox.cjs"
     }
   }
 }
