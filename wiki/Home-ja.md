@@ -180,16 +180,9 @@ const heatbox = new Heatbox(viewer, {
 });
 ```
 
-#### インストールオプション
+#### プロバイダー
 
-**オプション1: 内蔵フォールバック（推奨）** — 追加インストール不要。Ouranosが利用できない場合、内蔵のWeb Mercatorベース変換が自動的に使用されます。
-
-**オプション2: Ouranos公式ライブラリ（高精度）**
-
-```bash
-npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript#5742889f20645fb0451c4870e5c54b5d34ab5c31 --no-save
-npx cesium-heatbox-install-ouranos
-```
+Ouranos公式プロバイダーは配布物の遅延チャンクに同梱されるため、追加パッケージのインストールは不要です。チャンクを読み込めない場合は、内蔵Web Mercatorフォールバックへ自動的に切り替わります。
 
 #### ズームレベルとセルサイズの関係
 
@@ -209,8 +202,8 @@ console.log(stats.spatialId.provider); // 公式provider利用時は "ouranos-ge
 
 #### トラブルシューティング
 
-- `node_modules/ouranos-gex-lib-for-javascript/dist/index.js`が存在しない場合は`npx cesium-heatbox-install-ouranos`を実行してください。
-- webpackの警告`Module not found: Can't resolve 'ouranos-gex-lib-for-javascript'`はオプショナル依存のため正常です。
+- `dist/`をコピーまたはセルフホストする場合は、番号付き遅延チャンクもESM・CJS・UMD本体と一緒に配置してください。
+- 統計の`provider`が`null`の場合はブラウザーのネットワークログを確認してください。遅延チャンクが見つからないと内蔵フォールバックへ切り替わります。
 
 #### 制限事項
 

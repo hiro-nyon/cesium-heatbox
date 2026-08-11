@@ -1,4 +1,8 @@
-const { findClassPageLink, rewriteLinksForWiki } = require('../../tools/wiki-sync.js');
+const {
+  findClassPageLink,
+  isStaleGeneratedApiPage,
+  rewriteLinksForWiki
+} = require('../../tools/wiki-sync.js');
 
 describe('wiki-sync link rewriting', () => {
   test('maps canonical Markdown pages to Wiki page names', () => {
@@ -40,5 +44,13 @@ describe('wiki-sync link rewriting', () => {
       'PerformanceOverlay.html'
     ])).toBe('PerformanceOverlay');
     expect(findClassPageLink('sampleData', ['utils_sampleData.js.html'])).toBe('');
+  });
+
+  test('identifies generated API pages whose HTML source no longer exists', () => {
+    const generated = '<!-- Generated from docs/api/Removed.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->';
+
+    expect(isStaleGeneratedApiPage(generated, ['Current.html'])).toBe(true);
+    expect(isStaleGeneratedApiPage(generated, ['Removed.html'])).toBe(false);
+    expect(isStaleGeneratedApiPage('# Hand-authored page', [])).toBe(false);
   });
 });

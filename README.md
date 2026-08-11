@@ -178,16 +178,9 @@ const heatbox = new Heatbox(viewer, {
 });
 ```
 
-#### Installation Options
+#### Provider
 
-**Option 1: Built-in fallback (recommended)** — no extra install needed. The built-in Web Mercator converter is used automatically when Ouranos is unavailable.
-
-**Option 2: Official Ouranos library (high accuracy)**
-
-```bash
-npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript#5742889f20645fb0451c4870e5c54b5d34ab5c31 --no-save
-npx cesium-heatbox-install-ouranos
-```
+The official Ouranos-GEX provider is included in the distributed lazy chunks; no extra package installation is required. If a chunk cannot be loaded, Heatbox automatically uses its built-in Web Mercator fallback.
 
 #### Zoom Level Reference
 
@@ -207,8 +200,8 @@ console.log(stats.spatialId.provider); // "ouranos-gex" with the official provid
 
 #### Troubleshooting
 
-- If `node_modules/ouranos-gex-lib-for-javascript/dist/index.js` is missing, run `npx cesium-heatbox-install-ouranos`.
-- The webpack warning `Module not found: Can't resolve 'ouranos-gex-lib-for-javascript'` is normal for the optional dependency.
+- When copying or self-hosting `dist/`, deploy the numbered lazy chunks together with the main ESM, CJS, or UMD bundle.
+- Check the browser network log if statistics report `provider: null`; a missing lazy chunk triggers the built-in fallback.
 
 #### Limitations
 

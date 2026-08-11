@@ -1,6 +1,6 @@
 <!-- Generated from docs/API.md by npm run wiki:sync. Edit the canonical source, not this page. -->
 
-# API Reference (APIリファレンス) - v1.3.7-alpha.4
+# API Reference (APIリファレンス) - v1.3.7-alpha.5
 
 [English](#english) | [日本語](#日本語)
 
