@@ -7,6 +7,15 @@
 // UMDバージョンを使用するため、グローバルのHeatboxを使用
 // import { Heatbox, createHeatbox, getEnvironmentInfo } from '../cesium-heatbox/src/index.js';
 
+function createInputPointStyle() {
+  return {
+    pixelSize: 5,
+    color: Cesium.Color.fromCssColorString('#263238').withAlpha(0.58),
+    outlineWidth: 0,
+    disableDepthTestDistance: Number.POSITIVE_INFINITY
+  };
+}
+
 class HeatboxPlayground {
   constructor() {
     console.log('=== HeatboxPlayground 初期化開始 ===');
@@ -621,6 +630,7 @@ class HeatboxPlayground {
         label_aggregation: 'レイヤ集約',
         label_spatial_id: '空間IDグリッド',
         label_temporal_demo: '時系列デモ',
+        label_temporal_speed: '再生速度',
         temporal_demo_note: '読み込んだデータから4時点のアニメーションを生成します。',
         // Language selector
         label_language: '言語',
@@ -792,6 +802,7 @@ class HeatboxPlayground {
         label_aggregation: 'Layer aggregation',
         label_spatial_id: 'Spatial ID grid',
         label_temporal_demo: 'Temporal demo',
+        label_temporal_speed: 'Speed',
         temporal_demo_note: 'Temporal demo derives four animated slices from the loaded data.',
         // Language selector
         label_language: 'Language',
@@ -1570,10 +1581,7 @@ class HeatboxPlayground {
           id: `geojson-${index}`,
           position: Cesium.Cartesian3.fromDegrees(coords[0], coords[1], coords[2] || 0),
           point: {
-            pixelSize: 4,
-            color: Cesium.Color.CYAN,
-            outlineColor: Cesium.Color.WHITE,
-            outlineWidth: 1
+            ...createInputPointStyle()
           },
           properties: {
             weight: weight,
@@ -1614,10 +1622,7 @@ class HeatboxPlayground {
           id: `data-${index}`,
           position: position,
           point: {
-            pixelSize: 4,
-            color: Cesium.Color.MAGENTA,
-            outlineColor: Cesium.Color.WHITE,
-            outlineWidth: 1
+            ...createInputPointStyle()
           },
           properties: {
             weight: item.weight || 1,
@@ -1686,9 +1691,7 @@ class HeatboxPlayground {
             id: `sample-${idx++}`,
             position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
             point: {
-              pixelSize: 5,
-              color: Cesium.Color.fromCssColorString('#1976D2').withAlpha(0.85),
-              outlineWidth: 0
+              ...createInputPointStyle()
             },
             properties: {
               weight: Math.random() * 100,
@@ -1753,9 +1756,7 @@ class HeatboxPlayground {
           id: `test-${i}`,
           position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
           point: {
-            pixelSize: 5,
-            color: Cesium.Color.fromCssColorString('#1976D2').withAlpha(0.85),
-            outlineWidth: 0
+            ...createInputPointStyle()
           },
           properties: {
             weight: Math.random() * 100,
@@ -1823,7 +1824,7 @@ class HeatboxPlayground {
       // 設定を取得
       const options = this.getHeatmapOptions();
       if (window.HeatboxLatestPlayground) {
-        window.HeatboxLatestPlayground.prepareTemporalViewer(this.viewer, options.temporal);
+        window.HeatboxLatestPlayground.prepareTemporalViewer(this.viewer, options.temporal, document);
       }
       // 統計リセット（adaptiveモード時にカウントを見やすく）
       try {

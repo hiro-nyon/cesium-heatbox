@@ -74,11 +74,15 @@
     const start = Cesium.JulianDate.fromIso8601('2026-08-11T00:00:00Z');
     const data = [];
 
+    const activity = [0.38, 0.68, 1, 0.56];
     for (let sliceIndex = 0; sliceIndex < 4; sliceIndex += 1) {
       const sliceStart = Cesium.JulianDate.addHours(start, sliceIndex, new Cesium.JulianDate());
       const sliceStop = Cesium.JulianDate.addHours(start, sliceIndex + 1, new Cesium.JulianDate());
       const factor = [0.62, 1, 1.35, 0.82][sliceIndex];
-      const sliceEntities = entities.map((entity, index) => {
+      const sliceEntities = entities.filter((entity, index) => {
+        const bucket = ((index * 37) % 100) / 100;
+        return bucket < activity[sliceIndex];
+      }).map((entity, index) => {
         const position = getPropertyValue(entity.position, referenceTime) || entity.position;
         const properties = readEntityProperties(entity, referenceTime);
         const baseValue = Number(properties.value ?? properties.weight ?? properties.intensity ?? 1) || 1;
@@ -95,6 +99,7 @@
       data.push({
         start: Cesium.JulianDate.toIso8601(sliceStart),
         stop: Cesium.JulianDate.toIso8601(sliceStop),
+        label: `${String(sliceIndex).padStart(2, '0')}:00–${String(sliceIndex + 1).padStart(2, '0')}:00 UTC`,
         data: sliceEntities
       });
     }
@@ -103,11 +108,11 @@
       enabled: true,
       data,
       classificationScope: getElementValue(doc, 'temporalClassificationScope', 'global'),
-      updateInterval: 150,
+      updateInterval: 100,
       outOfRangeBehavior: 'hold',
       overlapResolution: 'prefer-later',
-      interpolate: true,
-      useWorker: true
+      interpolate: false,
+      useWorker: false
     };
   }
 
@@ -145,18 +150,68 @@
     };
   }
 
-  function prepareTemporalViewer(viewer, temporal) {
+  function prepareTemporalViewer(viewer, temporal, doc = global.document) {
     const Cesium = global.Cesium;
-    if (!Cesium || !viewer || !temporal?.enabled || !temporal.data?.length) return;
+    if (!Cesium || !viewer) return;
+
+    const playButton = doc?.getElementById('temporalPlayPause');
+    const speedSelect = doc?.getElementById('temporalSpeed');
+    const status = doc?.getElementById('temporalStatus');
+    viewer.__heatboxTemporalData = temporal?.enabled ? temporal.data : null;
+
+    const updatePlaybackUi = () => {
+      const slices = viewer.__heatboxTemporalData;
+      const enabled = Array.isArray(slices) && slices.length > 0;
+      if (playButton) {
+        playButton.disabled = !enabled;
+        playButton.textContent = viewer.clock.shouldAnimate ? '❚❚' : '▶';
+        playButton.setAttribute('aria-label', viewer.clock.shouldAnimate ? 'Pause temporal data' : 'Play temporal data');
+        playButton.title = playButton.getAttribute('aria-label');
+      }
+      if (!status) return;
+      if (!enabled) {
+        status.textContent = 'off';
+        return;
+      }
+      const current = viewer.clock.currentTime;
+      let activeIndex = slices.findIndex((slice) => {
+        const sliceStart = Cesium.JulianDate.fromIso8601(slice.start);
+        const sliceStop = Cesium.JulianDate.fromIso8601(slice.stop);
+        return Cesium.JulianDate.greaterThanOrEquals(current, sliceStart)
+          && Cesium.JulianDate.lessThan(current, sliceStop);
+      });
+      if (activeIndex < 0) activeIndex = slices.length - 1;
+      status.textContent = `${activeIndex + 1} / ${slices.length} · ${slices[activeIndex].label || ''}`;
+    };
+
+    if (!viewer.__heatboxTemporalUiBound) {
+      playButton?.addEventListener('click', () => {
+        if (!viewer.__heatboxTemporalData?.length) return;
+        viewer.clock.shouldAnimate = !viewer.clock.shouldAnimate;
+        updatePlaybackUi();
+      });
+      speedSelect?.addEventListener('change', () => {
+        viewer.clock.multiplier = Number(speedSelect.value) || 240;
+      });
+      viewer.clock.onTick.addEventListener(updatePlaybackUi);
+      viewer.__heatboxTemporalUiBound = true;
+    }
+
+    if (!temporal?.enabled || !temporal.data?.length) {
+      viewer.clock.shouldAnimate = false;
+      updatePlaybackUi();
+      return;
+    }
     const start = Cesium.JulianDate.fromIso8601(temporal.data[0].start);
     const stop = Cesium.JulianDate.fromIso8601(temporal.data[temporal.data.length - 1].stop);
     viewer.clock.startTime = start.clone();
     viewer.clock.stopTime = stop.clone();
     viewer.clock.currentTime = start.clone();
     viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP;
-    viewer.clock.multiplier = 240;
+    viewer.clock.multiplier = Number(speedSelect?.value) || 240;
     viewer.clock.shouldAnimate = true;
     if (viewer.timeline && typeof viewer.timeline.zoomTo === 'function') viewer.timeline.zoomTo(start, stop);
+    updatePlaybackUi();
   }
 
   function renderLegend(heatbox, container, enabled) {

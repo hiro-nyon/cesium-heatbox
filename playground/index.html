@@ -36,14 +36,14 @@
   <nav class="hb-nav">
     <div class="hb-nav-content">
       <div class="hb-nav-left">
-        <a href="../" class="hb-nav-logo">
+        <a href="../index.html" class="hb-nav-logo">
           <span class="hb-nav-title">Cesium Heatbox</span>
           <span class="hb-nav-version">1.3.7-alpha.3</span>
         </a>
       </div>
       
       <div class="hb-nav-center">
-        <a href="../" class="hb-nav-link">Home</a>
+        <a href="../index.html" class="hb-nav-link">Home</a>
         <a href="./simple.html" class="hb-nav-link">Quick Start</a>
         <a href="./index.html" class="hb-nav-link active">Playground</a>
         <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" class="hb-nav-link" target="_blank">Docs</a>
@@ -56,7 +56,7 @@
           <span id="navCaret" style="margin-left: 4px;">▾</span>
         </button>
         <div id="navDropdownMenu" class="hb-dropdown liquid-glass-dark">
-          <a href="../">Home</a>
+          <a href="../index.html">Home</a>
           <a href="./simple.html">Quick Start</a>
           <a href="./index.html">Playground</a>
           <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki" target="_blank">Docs</a>
@@ -268,6 +268,14 @@
             <option value="24">zoom: 24</option>
             <option value="25">zoom: 25</option>
             <option value="27">zoom: 27</option>
+            <option value="28">zoom: 28</option>
+            <option value="29">zoom: 29</option>
+            <option value="30">zoom: 30</option>
+            <option value="31">zoom: 31</option>
+            <option value="32">zoom: 32</option>
+            <option value="33">zoom: 33</option>
+            <option value="34">zoom: 34</option>
+            <option value="35">zoom: 35</option>
           </select>
         </div>
         <div class="control-group">
@@ -276,6 +284,16 @@
             <option value="global" selected>global</option>
             <option value="per-time">per-time</option>
           </select>
+        </div>
+        <div class="control-group temporal-runtime-controls" aria-label="Temporal playback">
+          <label for="temporalSpeed" data-i18n="label_temporal_speed">Speed</label>
+          <select id="temporalSpeed">
+            <option value="60">1×</option>
+            <option value="240" selected>4×</option>
+            <option value="600">10×</option>
+          </select>
+          <button type="button" id="temporalPlayPause" disabled aria-label="Play temporal data" title="Play temporal data">▶</button>
+          <output id="temporalStatus" aria-live="polite">off</output>
         </div>
         <p class="control-note" data-i18n="temporal_demo_note">Temporal demo derives four animated slices from the loaded data.</p>
         <div id="latestLegend" class="latest-legend" aria-live="polite"></div>
