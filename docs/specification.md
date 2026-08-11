@@ -1698,12 +1698,11 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
       - run: npm ci
       - run: npm run build:all
       - run: npm test:all
-      - run: npm publish
+      - run: npm publish --provenance
       - uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
