@@ -53,7 +53,7 @@ npm run build
 
 ## 互換性
 
-- minimum supported Cesium: `^1.120.0`
+- 対応する最小Cesiumバージョン: `^1.120.0`
 - CI では `cesium@^1.120.0` と `cesium@latest` の両方を検証
 
 ## クイックスタート
@@ -180,7 +180,7 @@ const heatbox = new Heatbox(viewer, {
 
 #### インストールオプション
 
-**オプション1: 内蔵フォールバック（推奨）** — 追加インストール不要。Ouranoscが利用できない場合、内蔵のWeb Mercatorベース変換が自動的に使用されます。
+**オプション1: 内蔵フォールバック（推奨）** — 追加インストール不要。Ouranosが利用できない場合、内蔵のWeb Mercatorベース変換が自動的に使用されます。
 
 **オプション2: Ouranos公式ライブラリ（高精度）**
 
