@@ -238,6 +238,69 @@
       <div class="controls section-content">
         <p class="control-note" data-i18n="current_api_note">Exercise the v1.x classification, temporal, Spatial ID, aggregation, and Legend APIs.</p>
 
+        <div id="decisionTree" class="decision-tree" aria-label="Playground setup path">
+          <div class="decision-path-summary">
+            <span data-i18n="decision_path">Current path</span>
+            <output id="decisionPathSummary">Metric · Snapshot · Classes · Solid</output>
+          </div>
+
+          <section class="decision-node" data-decision-node="grid">
+            <div class="decision-node-heading">
+              <span class="decision-node-index">1</span>
+              <div><strong data-i18n="decision_grid">Grid system</strong><small data-i18n="decision_grid_help">How should space be divided?</small></div>
+            </div>
+            <div class="decision-choices" role="group" aria-label="Grid system">
+              <button type="button" class="decision-choice" data-decision="grid" data-value="metric" aria-pressed="true"><span data-i18n="decision_metric">Metric grid</span></button>
+              <button type="button" class="decision-choice" data-decision="grid" data-value="spatial" aria-pressed="false"><span data-i18n="decision_spatial">Spatial ID</span></button>
+            </div>
+            <p class="decision-note" data-decision-note="grid:metric" data-i18n="decision_metric_note">Choose the cell size in Grid. Spatial ID zoom is unavailable.</p>
+            <p class="decision-note" data-decision-note="grid:spatial" data-i18n="decision_spatial_note" hidden>Choose auto or z15–25. Metric sizing is used only as the auto target.</p>
+          </section>
+
+          <section class="decision-node" data-decision-node="time">
+            <div class="decision-node-heading">
+              <span class="decision-node-index">2</span>
+              <div><strong data-i18n="decision_time">Time</strong><small data-i18n="decision_time_help">One state or a sequence?</small></div>
+            </div>
+            <div class="decision-choices" role="group" aria-label="Time mode">
+              <button type="button" class="decision-choice" data-decision="time" data-value="snapshot" aria-pressed="true"><span data-i18n="decision_snapshot">Snapshot</span></button>
+              <button type="button" class="decision-choice" data-decision="time" data-value="timeline" aria-pressed="false"><span data-i18n="decision_timeline">Timeline</span></button>
+            </div>
+            <p class="decision-note" data-decision-note="time:snapshot" data-i18n="decision_snapshot_note">Renders the loaded points once. Playback is unavailable.</p>
+            <p class="decision-note" data-decision-note="time:timeline" data-i18n="decision_timeline_note" hidden>Creates four synchronized point and voxel slices with playback.</p>
+          </section>
+
+          <section class="decision-node" data-decision-node="values">
+            <div class="decision-node-heading">
+              <span class="decision-node-index">3</span>
+              <div><strong data-i18n="decision_values">Value mapping</strong><small data-i18n="decision_values_help">Continuous colors or explicit classes?</small></div>
+            </div>
+            <div class="decision-choices" role="group" aria-label="Value mapping">
+              <button type="button" class="decision-choice" data-decision="values" data-value="gradient" aria-pressed="false"><span data-i18n="decision_gradient">Gradient</span></button>
+              <button type="button" class="decision-choice" data-decision="values" data-value="classes" aria-pressed="true"><span data-i18n="decision_classes">Classes</span></button>
+            </div>
+            <p class="decision-note" data-decision-note="values:gradient" data-i18n="decision_gradient_note" hidden>Uses legacy continuous colors. Class count and classification targets are unavailable.</p>
+            <p class="decision-note" data-decision-note="values:classes" data-i18n="decision_classes_note">Choose a scheme, class count, palette, and classification targets.</p>
+          </section>
+
+          <section class="decision-node" data-decision-node="surface">
+            <div class="decision-node-heading">
+              <span class="decision-node-index">4</span>
+              <div><strong data-i18n="decision_surface">Voxel surface</strong><small data-i18n="decision_surface_help">Fill or structure?</small></div>
+            </div>
+            <div class="decision-choices" role="group" aria-label="Voxel surface">
+              <button type="button" class="decision-choice" data-decision="surface" data-value="solid" aria-pressed="true"><span data-i18n="decision_solid">Solid</span></button>
+              <button type="button" class="decision-choice" data-decision="surface" data-value="wireframe" aria-pressed="false"><span data-i18n="decision_wireframe">Wireframe</span></button>
+            </div>
+            <p class="decision-note" data-decision-note="surface:solid" data-i18n="decision_solid_note">Filled voxels. Opacity and outlines remain available.</p>
+            <p class="decision-note" data-decision-note="surface:wireframe" data-i18n="decision_wireframe_note" hidden>Outline-only voxels. Fill opacity controls are unavailable.</p>
+          </section>
+        </div>
+
+        <details class="decision-parameters">
+          <summary data-i18n="decision_tune">Fine-tune this path</summary>
+          <div class="decision-parameters-content">
+
         <p class="control-subhead" data-i18n="group_classification">Color & classification</p>
         <div class="control-group">
           <label for="classificationScheme" data-i18n="label_classification_scheme">Classification</label>
@@ -318,6 +381,8 @@
           <output id="temporalStatus" aria-live="polite">off</output>
         </div>
         <p class="control-note" data-i18n="temporal_demo_note">Temporal demo derives four animated slices from the loaded data.</p>
+          </div>
+        </details>
         <div id="latestLegend" class="latest-legend" aria-live="polite"></div>
         <div id="latestFeatureStats" class="latest-feature-stats" aria-live="polite"></div>
       </div>
@@ -728,6 +793,7 @@
   <script src="i18n/ja.js"></script>
   <script src="latest-features.js"></script>
   <script src="app.js"></script>
+  <script src="decision-tree.js"></script>
   <script src="v012-features.js"></script>
   <script>
     // Mobile nav dropdown (caret only; label is provided by i18n)
