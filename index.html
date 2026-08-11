@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cesium Heatbox — 3D voxel heatmaps for CesiumJS</title>
-  <meta name="description" content="Turn existing CesiumJS entities into readable 3D voxel heatmaps. Explore the 1.3.7-alpha.3 playground and API.">
+  <meta name="description" content="Turn existing CesiumJS entities into readable 3D voxel heatmaps. Explore the stable 1.3.7 playground and API.">
   <meta name="theme-color" content="#f3f1ec">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Cesium Heatbox">
@@ -20,7 +20,7 @@
       <span>Cesium Heatbox</span>
     </a>
     <nav class="site-nav" aria-label="Primary navigation">
-      <a href="#release">Alpha.3</a>
+      <a href="#release">1.3.7</a>
       <a class="nav-quick-start" href="./playground/simple.html">Quick start</a>
       <a href="./playground/index.html">Playground</a>
       <a href="https://github.com/hiro-nyon/cesium-heatbox/wiki">Docs</a>
@@ -31,7 +31,7 @@
   <main>
     <section class="hero shell">
       <div class="hero-copy">
-        <p class="kicker">CesiumJS plugin <span>1.3.7-alpha.3</span></p>
+        <p class="kicker">CesiumJS plugin <span>1.3.7 stable</span></p>
         <h1>Point data,<br>given volume.</h1>
         <p class="hero-lede">Turn entities already in your Cesium scene into legible 3D voxel heatmaps. Keep the globe, camera, and data pipeline you have.</p>
         <div class="hero-actions">
@@ -41,13 +41,13 @@
         <a class="hero-playground-link" href="./playground/index.html">Need every control? Open the full Playground →</a>
         <div class="install-line" aria-label="Install command">
           <span>npm</span>
-          <code>install cesium-heatbox@1.3.7-alpha.3</code>
+          <code>install cesium-heatbox@1.3.7</code>
         </div>
       </div>
 
       <figure class="product-frame">
         <a class="product-shot" href="./playground/simple.html" aria-label="Open the interactive Quick Start">
-          <img src="./assets/quick-start-alpha3.png" width="1440" height="900" alt="Jenks-classified Viridis voxel volume and source points rendered in CesiumJS">
+          <img src="./assets/quick-start.png" width="1440" height="900" alt="Jenks-classified Viridis voxel volume and source points rendered in CesiumJS">
         </a>
         <figcaption>
           <span>ACTUAL CESIUMJS OUTPUT</span>
@@ -60,15 +60,15 @@
     <section class="release" id="release">
       <div class="shell release-grid">
         <div class="release-heading">
-          <p class="kicker">Current prerelease</p>
-          <h2>1.3.7-alpha.3</h2>
-          <p>Focused on correctness at the edges: selection, temporal data, rendering limits, and package output.</p>
+          <p class="kicker">Current release</p>
+          <h2>1.3.7</h2>
+          <p>An audited stable release with reproducible packages, synchronized documentation, and the official Spatial ID provider included.</p>
         </div>
         <ul class="release-list">
-          <li><span>01</span><p><strong>Reliable interaction</strong>Property-backed picking and thick-outline cleanup now follow the rendered voxel.</p></li>
-          <li><span>02</span><p><strong>Consistent time series</strong>Temporal global classification uses the real voxel-count domain.</p></li>
-          <li><span>03</span><p><strong>Safer rendering</strong>Render limits, Top-N styling, coverage selection, and fit-view boundaries are hardened.</p></li>
-          <li><span>04</span><p><strong>Predictable packages</strong>CommonJS, ESM, type declarations, and runtime exports stay aligned.</p></li>
+          <li><span>01</span><p><strong>Spatial ID included</strong>The official Ouranos-GEX provider ships in lazy chunks with no extra consumer setup.</p></li>
+          <li><span>02</span><p><strong>Expressive classification</strong>Quantile, Jenks, threshold, color, opacity, width, and legends share one model.</p></li>
+          <li><span>03</span><p><strong>Time-aware analysis</strong>Temporal slices, interpolation, lazy sources, and worker preprocessing are built in.</p></li>
+          <li><span>04</span><p><strong>Verified delivery</strong>CommonJS, ESM, UMD, types, provenance, and third-party notices are audited together.</p></li>
         </ul>
       </div>
     </section>
@@ -118,6 +118,21 @@ heatbox.<span class="code-name">createFromEntities</span>(entities);</pre>
         <div><h3>Temporal data</h3><p>Time slices, interpolation, lazy data sources, and worker preprocessing.</p><span>TIME SERIES</span></div>
         <div><h3>Spatial structure</h3><p>Spatial ID input, layer aggregation, diagnostics, and QA metrics.</p><span>ANALYSIS</span></div>
       </div>
+    </section>
+
+    <section class="evolution shell" aria-labelledby="evolution-title">
+      <div class="section-heading">
+        <p class="kicker">Project evolution</p>
+        <h2 id="evolution-title">Built in layers, kept compatible.</h2>
+        <p>From voxel aggregation to production-ready analysis, each release has extended the same compatible core.</p>
+      </div>
+      <div class="milestone-grid">
+        <article><span>0.x</span><h3>Voxel foundation</h3><p>Entity aggregation, adaptive display, Spatial IDs, and layer-aware statistics established the core.</p></article>
+        <article><span>1.0</span><h3>Classification engine</h3><p>Declarative schemes, palettes, statistics, and performance gates became a stable public API.</p></article>
+        <article><span>1.2</span><h3>Time-aware data</h3><p>Temporal slices, interpolation, lazy loading, and worker preprocessing extended the analysis model.</p></article>
+        <article><span>1.3</span><h3>Production scale</h3><p>Camera-aware rendering, bounded updates, reproducible packages, and release audits hardened delivery.</p></article>
+      </div>
+      <p class="evolution-links"><a href="https://github.com/hiro-nyon/cesium-heatbox/releases">Releases</a><a href="https://github.com/hiro-nyon/cesium-heatbox/blob/main/CHANGELOG.md">Full changelog</a></p>
     </section>
 
     <section class="closing">

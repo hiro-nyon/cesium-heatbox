@@ -1,30 +1,30 @@
 # Cesium Heatbox – GitHub Pages
 
-このブランチ（`gh-pages-alpha`）は、デモ/ドキュメント公開サイトのプレビュー環境です。軽量に運用できるよう、静的ファイルのみで構成しています。
+このブランチ（`gh-pages-alpha`）は、安定版デモ/ドキュメント公開サイトのステージング環境です。軽量に運用できるよう、静的ファイルのみで構成しています。
 
 ## Live
 - Site: https://hiro-nyon.github.io/cesium-heatbox/
 - Playground: https://hiro-nyon.github.io/cesium-heatbox/playground/
 - Quick Start: https://hiro-nyon.github.io/cesium-heatbox/playground/simple.html
 
-現在のデモは Heatbox `1.3.7-alpha.3` を CDN から読み込みます。
-- Heatbox CDN: https://unpkg.com/cesium-heatbox@1.3.7-alpha.3/dist/cesium-heatbox.umd.min.js
+現在のデモは正式版 Heatbox `1.3.7` を CDN から読み込みます。
+- Heatbox CDN: https://unpkg.com/cesium-heatbox@1.3.7/dist/cesium-heatbox.umd.min.js
 
 ## 構成（主要ファイル）
 - `index.html` … Home（概要・リンク）
 - `site.css` … Home のビジュアルシステム
 - `playground/index.html` … Playground（全機能）
 - `playground/simple.html` … Quick Start（最小構成）
-- `playground/latest-features.js` … alpha.3 の classification / temporal / spatial ID / aggregation 設定
+- `playground/latest-features.js` … 1.3.7 の classification / temporal / spatial ID / aggregation 設定
 - `playground/styles.css` … 既存レイアウトとレスポンシブ動作
-- `playground/theme-alpha.css` … alpha.3 のフラットな操作UIテーマ
+- `playground/theme.css` … フラットな操作UIテーマ
 - `playground/app.js` … Playground ロジック
 - `playground/simple-app.js` … Quick Start ロジック
-- `assets/quick-start-alpha3.png` … Home に掲載する実画面
+- `assets/quick-start.png` … Home に掲載する実画面
 
 ## 主要な仕様メモ
 - CesiumJS 1.120 を CDN から読込。Cesium Ion は未使用。
-- Heatbox は unpkg CDN（`cesium-heatbox@1.3.7-alpha.3`）から読込。
+- Heatbox は unpkg CDN（`cesium-heatbox@1.3.7`）から読込。
 
 
 - 背景地図は UrlTemplateImageryProvider（Carto/OSM）。地形は `EllipsoidTerrainProvider`。
@@ -35,7 +35,7 @@
   - Auto-fit 完了後にボクセルを構築し、初回からカメラ依存の描画選択を安定させる
   - 統計は左 UI に内蔵（モバイルはサイドドロワー UI）
 - Playground:
-  - alpha.3 の classification / Legend / temporal / spatial ID / aggregation を操作可能
+  - 1.3.7 の classification / Legend / temporal / spatial ID / aggregation を操作可能
   - Base Map / Voxel / Colors / Outlines / Adaptive / View / Highlight / Advanced も継続提供
   - デスクトップは右統計パネル、モバイル/タブレットはナビのプルダウン内に統計を表示
   - チャコール基調のフラットUI（低彩度、角丸・透過・ブラーを抑制）

@@ -1,7 +1,7 @@
 (function exposeLatestPlaygroundFeatures(global) {
   'use strict';
 
-  const VERSION = '1.3.7-alpha.3';
+  const VERSION = '1.3.7';
 
   const PALETTES = {
     viridis: ['#440154', '#3b528b', '#21918c', '#5ec962', '#fde725'],

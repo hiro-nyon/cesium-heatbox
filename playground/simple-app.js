@@ -685,7 +685,7 @@ async function createHeatmap() {
       heatboxInstance = new HB(viewer, options);
       // Update heatbox version info
       const hv = document.getElementById('heatboxVersion');
-      if (hv) hv.textContent = window.HeatboxLatestPlayground?.VERSION || '1.3.7-alpha.3';
+      if (hv) hv.textContent = window.HeatboxLatestPlayground?.VERSION || '1.3.7';
       try {
         const eff = typeof heatboxInstance.getEffectiveOptions === 'function' ? heatboxInstance.getEffectiveOptions() : null;
         console.log('[Heatbox] Effective adaptive params after init:', eff?.adaptiveParams, 'opacity:', eff?.opacity);
