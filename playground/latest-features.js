@@ -88,6 +88,7 @@
         const baseValue = Number(properties.value ?? properties.weight ?? properties.intensity ?? 1) || 1;
         return {
           id: `temporal-${sliceIndex}-${entity.id || index}`,
+          sourceEntityId: String(entity.id || index),
           position,
           properties: {
             ...properties,
@@ -150,7 +151,7 @@
     };
   }
 
-  function prepareTemporalViewer(viewer, temporal, doc = global.document) {
+  function prepareTemporalViewer(viewer, temporal, doc = global.document, sourceEntities = []) {
     const Cesium = global.Cesium;
     if (!Cesium || !viewer) return;
 
@@ -158,6 +159,27 @@
     const speedSelect = doc?.getElementById('temporalSpeed');
     const status = doc?.getElementById('temporalStatus');
     viewer.__heatboxTemporalData = temporal?.enabled ? temporal.data : null;
+    viewer.__heatboxTemporalSourceEntities = Array.isArray(sourceEntities) ? sourceEntities.slice() : [];
+    viewer.__heatboxTemporalPointSlice = -1;
+
+    const syncSourcePoints = (activeIndex) => {
+      const sources = viewer.__heatboxTemporalSourceEntities || [];
+      const slices = viewer.__heatboxTemporalData;
+      if (!Array.isArray(slices) || !slices.length) {
+        sources.forEach((entity) => {
+          if (entity) entity.show = true;
+        });
+        viewer.__heatboxTemporalPointSlice = -1;
+        return;
+      }
+      if (viewer.__heatboxTemporalPointSlice === activeIndex) return;
+      const visibleIds = new Set(slices[activeIndex].data.map((entry) => String(entry.sourceEntityId)));
+      sources.forEach((entity, index) => {
+        if (!entity) return;
+        entity.show = visibleIds.has(String(entity.id || index));
+      });
+      viewer.__heatboxTemporalPointSlice = activeIndex;
+    };
 
     const updatePlaybackUi = () => {
       const slices = viewer.__heatboxTemporalData;
@@ -171,6 +193,7 @@
       if (!status) return;
       if (!enabled) {
         status.textContent = 'off';
+        syncSourcePoints(-1);
         return;
       }
       const current = viewer.clock.currentTime;
@@ -181,6 +204,7 @@
           && Cesium.JulianDate.lessThan(current, sliceStop);
       });
       if (activeIndex < 0) activeIndex = slices.length - 1;
+      syncSourcePoints(activeIndex);
       status.textContent = `${activeIndex + 1} / ${slices.length} · ${slices[activeIndex].label || ''}`;
     };
 

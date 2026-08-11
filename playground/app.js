@@ -1826,7 +1826,12 @@ class HeatboxPlayground {
       // 設定を取得
       const options = this.getHeatmapOptions();
       if (window.HeatboxLatestPlayground) {
-        window.HeatboxLatestPlayground.prepareTemporalViewer(this.viewer, options.temporal, document);
+        window.HeatboxLatestPlayground.prepareTemporalViewer(
+          this.viewer,
+          options.temporal,
+          document,
+          this.currentData
+        );
       }
       // 統計リセット（adaptiveモード時にカウントを見やすく）
       try {
