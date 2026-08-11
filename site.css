@@ -240,6 +240,16 @@ pre { margin: 0; padding: 38px; overflow-x: auto; color: #d8dedf; background: va
 .capability-table p { margin: 0; color: var(--muted); font-size: 14px; }
 .capability-table span { color: #777c7e; font: 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .1em; text-align: right; }
 
+.evolution { padding: 0 0 120px; }
+.milestone-grid { margin-top: 64px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; border: 1px solid var(--line); background: var(--line); }
+.milestone-grid article { min-height: 245px; padding: 28px; background: var(--paper); }
+.milestone-grid span { color: var(--accent-dark); font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em; }
+.milestone-grid h3 { margin: 54px 0 12px; font-size: 18px; font-weight: 650; letter-spacing: -.025em; }
+.milestone-grid p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.evolution-links { margin: 22px 0 0; display: flex; gap: 24px; font-size: 12px; }
+.evolution-links a { color: var(--accent-dark); text-decoration: none; }
+.evolution-links a:hover { text-decoration: underline; text-underline-offset: 4px; }
+
 .closing { padding-block: 90px; color: #fff; background: var(--accent); }
 .closing-inner { display: flex; align-items: center; justify-content: space-between; gap: 48px; }
 .closing h2 { margin: 0; max-width: 700px; font-size: clamp(42px, 5vw, 70px); font-weight: 620; letter-spacing: -.06em; line-height: 1; }
@@ -257,6 +267,7 @@ pre { margin: 0; padding: 38px; overflow-x: auto; color: #d8dedf; background: va
   .hero { grid-template-columns: 1fr; gap: 56px; padding-top: 64px; }
   .hero-copy { max-width: 730px; }
   .release-grid, .code-grid { gap: 56px; }
+  .milestone-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 760px) {
@@ -274,11 +285,15 @@ pre { margin: 0; padding: 38px; overflow-x: auto; color: #d8dedf; background: va
   .product-frame figcaption { grid-template-columns: 1fr; gap: 5px; }
   .release-grid, .code-grid { grid-template-columns: 1fr; gap: 54px; padding-block: 72px; }
   .workflow, .capabilities { padding-block: 82px; }
+  .evolution { padding-bottom: 82px; }
   .steps { grid-template-columns: 1fr; }
   .steps li, .steps li + li { min-height: 0; padding: 22px 0 28px; border-right: 0; border-bottom: 1px solid var(--line); }
   .steps h3 { margin-top: 22px; }
   .capability-table > div { padding: 25px 0; grid-template-columns: 1fr; gap: 8px; }
   .capability-table span { text-align: left; }
+  .milestone-grid { margin-top: 46px; grid-template-columns: 1fr; }
+  .milestone-grid article { min-height: 0; }
+  .milestone-grid h3 { margin-top: 30px; }
   .closing-inner { align-items: stretch; flex-direction: column; }
   .site-footer { padding-block: 28px; align-items: flex-start; flex-direction: column; gap: 14px; }
 }

@@ -1,5 +1,5 @@
 /**
- * Alpha playground theme
+ * Cesium Heatbox playground theme
  * A restrained, tool-first skin layered over the legacy layout rules.
  */
 
@@ -611,7 +611,7 @@ details.section > summary::before {
 }
 
 .latest-api-section > summary::after {
-  content: '1.3.7-alpha.3';
+  content: '1.3.7';
   float: right;
   color: #7e878a;
   font: 9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
