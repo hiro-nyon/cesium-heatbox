@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - temporal global classification を実際のボクセル件数ドメインに統一し、Spatial ID QA metrics を統計へ自動反映しました。
 - `maxRenderVoxels`、TopN style、coverage/hybrid 選択、`fitView` オプションの境界処理を修正しました。
 - CommonJS/ESM の条件付き型定義と実行時 export を一致させ、ビルド生成物とサンプルリンクを整理しました。
-- npm Trusted Publishing 用に release job の GitHub Environment を `cesium-heatbox` へ設定しました。
+- npm Trusted Publishing 用に release job の GitHub Environment と registry を設定し、対応 npm CLI バージョンを保証しました。
 
 ## [1.3.6] - 2026-04-13
 
