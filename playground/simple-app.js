@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize Cesium viewer
 function initializeCesium() {
   try {
+    const cartoStyle = 'light_all';
     viewer = new Cesium.Viewer('cesiumContainer', {
       // UI components
       animation: false,
@@ -71,7 +72,7 @@ function initializeCesium() {
       // Terrain and imagery (no Ion dependency)
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
       imageryProvider: new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        url: `https://{s}.basemaps.cartocdn.com/${cartoStyle}/{z}/{x}/{y}.png`,
         subdomains: 'abcd',
         maximumLevel: 19,
         credit: '© OpenStreetMap contributors © CARTO'
@@ -94,7 +95,7 @@ function initializeCesium() {
       if (!layers || layers.length === 0 || !layers.get(0)) {
         console.warn('No imagery layer detected at init. Forcing Carto Light add.');
         layers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-          url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+          url: `https://{s}.basemaps.cartocdn.com/${cartoStyle}/{z}/{x}/{y}.png`,
           subdomains: 'abcd',
           maximumLevel: 19,
           credit: '© OpenStreetMap contributors © CARTO'
@@ -355,17 +356,36 @@ async function loadSampleData() {
   updateStatus('Loading sample data...', 'loading');
   try {
     // Z範囲を拡張しつつ体積密度を維持する（Playground と整合）
-    const baseCount = 800;
+    const heroCapture = document.documentElement.classList.contains('hero-capture');
+    const baseCount = heroCapture ? 450 : 800;
     const oldZMax = 200;
     const newZMax = 400; // より立体的に（400m）
     const zScale = newZMax / oldZMax;
     const count = Math.round(baseCount * zScale);
-    const data = generateTokyoClusterGeoJSON(count, 0.02, 0, newZMax);
+    const data = generateTokyoClusterGeoJSON(
+      count,
+      heroCapture ? 0.018 : 0.02,
+      0,
+      newZMax,
+      heroCapture ? 1 : 3,
+      createSeededRandom(1373)
+    );
     await processLoadedData(data, 'Playground-style Sample Data');
   } catch (error) {
     console.error('Error generating sample data:', error);
     updateStatus('Error loading sample data: ' + error.message, 'error');
   }
+}
+
+function createSeededRandom(seed) {
+  let state = seed >>> 0;
+  return function seededRandom() {
+    state += 0x6D2B79F5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 // Generate test data (align with Playground)
@@ -381,7 +401,7 @@ async function generateTestData() {
 }
 
 // Generate Tokyo cluster GeoJSON (like Playground sample)
-function generateTokyoClusterGeoJSON(count = 800, radius = 0.02, minAlt = 0, maxAlt = 200, centerCount) {
+function generateTokyoClusterGeoJSON(count = 800, radius = 0.02, minAlt = 0, maxAlt = 200, centerCount, random = Math.random) {
   const features = [];
   const centerLon = 139.6917;
   const centerLat = 35.6895;
@@ -390,37 +410,37 @@ function generateTokyoClusterGeoJSON(count = 800, radius = 0.02, minAlt = 0, max
   if (typeof centerCount !== 'number' || centerCount < 1) {
     const minCenters = 1;
     const maxCenters = 5;
-    centerCount = Math.floor(Math.random() * (maxCenters - minCenters + 1)) + minCenters;
+    centerCount = Math.floor(random() * (maxCenters - minCenters + 1)) + minCenters;
   }
 
   // クラスター中心を東京中心周辺にばらまく
   // 全体を少し寄せる（中心分布の広がりを縮小）
-  const lonSpan = 0.06;  // ±0.03度
-  const latSpan = 0.048; // ±0.024度
+  const lonSpan = 0.042;
+  const latSpan = 0.034;
   const centers = Array.from({ length: centerCount }, () => ({
-    lon: centerLon + (Math.random() - 0.5) * lonSpan,
-    lat: centerLat + (Math.random() - 0.5) * latSpan,
+    lon: centerLon + (random() - 0.5) * lonSpan,
+    lat: centerLat + (random() - 0.5) * latSpan,
   }));
 
   // クラスター半径は 1/sqrt(N) で縮小（少しゆらぎ）し、全体の面積感を維持
   // クラスター半径もわずかに縮小
-  const clusterRadii = centers.map(() => radius / Math.sqrt(centerCount) * (0.80 + Math.random() * 0.25));
+  const clusterRadii = centers.map(() => radius / Math.sqrt(centerCount) * (0.80 + random() * 0.25));
 
   // 点数を各クラスターに割当（均等＋余りランダム）
   const counts = new Array(centerCount).fill(Math.floor(count / centerCount));
   let rem = count - counts.reduce((a, b) => a + b, 0);
-  while (rem-- > 0) counts[Math.floor(Math.random() * centerCount)]++;
+  while (rem-- > 0) counts[Math.floor(random() * centerCount)]++;
 
   let idx = 0;
   centers.forEach((c, ci) => {
     const cr = clusterRadii[ci];
     for (let k = 0; k < counts[ci]; k++) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = Math.random() * cr;
+      const angle = random() * Math.PI * 2;
+      const dist = random() * cr;
       const lon = c.lon + Math.cos(angle) * dist;
       const lat = c.lat + Math.sin(angle) * dist;
-      const alt = minAlt + Math.random() * (maxAlt - minAlt);
-      const value = Math.random() * 100;
+      const alt = minAlt + random() * (maxAlt - minAlt);
+      const value = random() * 100;
       features.push({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [lon, lat, alt] },
@@ -525,6 +545,7 @@ function convertGeoJSONToEntities(geojson) {
     
     // Extract value for heatmap
     const value = props.value || props.intensity || props.weight || 1;
+    const heroCapture = document.documentElement.classList.contains('hero-capture');
     
     const entity = {
       position: position,
@@ -533,8 +554,8 @@ function convertGeoJSONToEntities(geojson) {
         originalProperties: props
       },
       point: {
-        pixelSize: 5,
-        color: Cesium.Color.fromCssColorString('#263238').withAlpha(0.58),
+        pixelSize: heroCapture ? 4 : 5,
+        color: Cesium.Color.fromCssColorString('#263238').withAlpha(heroCapture ? 0.5 : 0.58),
         outlineWidth: 0,
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       }
@@ -562,6 +583,7 @@ function convertCZMLToEntities(czml) {
       const position = Cesium.Cartesian3.fromDegrees(coords[0], coords[1], coords[2] || 0);
       
       const value = packet.properties?.value || 1;
+      const heroCapture = document.documentElement.classList.contains('hero-capture');
       
       const entity = {
         position: position,
@@ -570,8 +592,8 @@ function convertCZMLToEntities(czml) {
           originalProperties: packet.properties || {}
         },
         point: {
-          pixelSize: 5,
-          color: Cesium.Color.fromCssColorString('#263238').withAlpha(0.58),
+          pixelSize: heroCapture ? 4 : 5,
+          color: Cesium.Color.fromCssColorString('#263238').withAlpha(heroCapture ? 0.5 : 0.58),
           outlineWidth: 0,
           disableDepthTestDistance: Number.POSITIVE_INFINITY
         }
@@ -597,7 +619,8 @@ async function createHeatmap() {
     // Quick Start: fixed auto settings (Safe fallback)
     const autoCamera = true;
 
-  const wireframe = document.getElementById('wireframeOnly')?.checked || false;
+    const wireframe = document.getElementById('wireframeOnly')?.checked || false;
+    const heroCapture = document.documentElement.classList.contains('hero-capture');
     const classification = {
       enabled: true,
       scheme: 'jenks',
@@ -605,14 +628,14 @@ async function createHeatmap() {
       colorMap: (window.HeatboxLatestPlayground?.PALETTES.viridis || [
         '#440154', '#3b528b', '#21918c', '#5ec962', '#fde725'
       ]).slice(),
-      classificationTargets: { color: true, opacity: false, width: false }
+      classificationTargets: { color: true, opacity: true, width: false }
     };
     const options = {
       autoVoxelSize: true,
       autoVoxelSizeMode: 'basic',
       voxelSize: undefined,
       maxVoxelSize: 10,
-      targetCells: 3000,
+      targetCells: heroCapture ? 350 : 3000,
       maxRenderVoxels: 'auto', 
       renderLimitStrategy: 'hybrid', // バランス重視の戦略
       classification,
@@ -633,9 +656,9 @@ async function createHeatmap() {
       adaptiveOutlines: true,
       outlineWidthPreset: 'adaptive',
       adaptiveParams: {
-        boxOpacityRange: wireframe ? [0, 0] : [0.2, 0.9],
-        outlineOpacityRange: wireframe ? [0.15, 1] : null,
-        outlineWidthRange: wireframe ? [1.5, 8] : [1, 5],
+        boxOpacityRange: wireframe ? [0, 0] : (heroCapture ? [0.04, 0.92] : [0.08, 0.92]),
+        outlineOpacityRange: wireframe ? (heroCapture ? [0.12, 0.82] : [0.15, 1]) : null,
+        outlineWidthRange: wireframe ? (heroCapture ? [1, 4] : [1.5, 8]) : [1, 5],
         adaptiveOpacityEnabled: true
       },
       // Quick Start用設定（ライブラリfitViewは使わず、後段でpostRender一回に集約）
@@ -711,7 +734,9 @@ async function createHeatmap() {
     // 自動カメラ位置調整（postRenderで一回だけ実行して競合回避）
     try {
       if (autoCamera && viewer && viewer.scene && !_qsFitOnceHandler) {
-        _qsFitViewOptions = { headingDegrees: 0, pitchDegrees: -35, paddingPercent: 0.1 };
+        _qsFitViewOptions = heroCapture
+          ? { headingDegrees: -12, pitchDegrees: -30, rangeMultiplier: 1.45 }
+          : { headingDegrees: 0, pitchDegrees: -35, rangeMultiplier: 2.2 };
         let fired = false;
         _qsFitOnceHandler = async () => {
           if (fired) return;
@@ -746,7 +771,7 @@ async function qsZoomToHeatboxBounds() {
         const bs = Cesium.BoundingSphere.fromRectangle3D(rect, Cesium.Ellipsoid.WGS84, Math.max(0, bounds.minAlt || 0));
         const heading = Cesium.Math.toRadians(_qsFitViewOptions?.headingDegrees ?? 0);
         const pitch = Cesium.Math.toRadians(_qsFitViewOptions?.pitchDegrees ?? -35);
-        const range = Math.max(bs.radius * 2.2, 1000.0);
+        const range = Math.max(bs.radius * (_qsFitViewOptions?.rangeMultiplier ?? 2.2), 1000.0);
         await viewer.camera.flyToBoundingSphere(bs, { duration: 1.2, offset: new Cesium.HeadingPitchRange(heading, pitch, range) });
         return;
       }

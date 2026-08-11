@@ -4,7 +4,7 @@
 
 ## 画面
 
-- `simple.html` — Quick Start。Jenks / Viridis / Auto-fit 固定、Wireframe が既定です。入力点とボクセルの表示を個別に切り替えられます。
+- `simple.html` — Quick Start。Jenks / Viridis / Auto-fit 固定、Solid が既定です。Jenks を色と透明度へ適用し、入力点とボクセルの表示を個別に切り替えられます。
 - `index.html` — Full Playground。alpha.3 の主要機能を比較・検証するための画面です。
 
 ## alpha.3 対応
@@ -27,7 +27,8 @@ Quick Start は初見で結果と入力データの関係が分かることを�
 - ページ読み込み時にサンプルを自動生成
 - 入力点へのAuto-fit完了後にボクセルを構築
 - Jenks 5クラス + Viridis を固定
-- Wireframe を既定にして、入力点も同時表示
+- Solid を既定にして、Jenks を色と透明度へ適用
+- 入力点も同時表示し、Wireframeへ切り替え可能
 - 操作はファイル読込、Solid / Wireframe、Points / Voxels に限定
 
 ## ローカル確認

@@ -143,35 +143,26 @@ a { color: inherit; }
 .install-line code { padding: 7px 10px; }
 
 .product-frame {
+  position: relative;
   min-width: 0;
-  border: 1px solid #aaa69f;
-  background: #25292c;
-  box-shadow: 18px 18px 0 var(--paper-deep);
+  margin: 0;
 }
 
-.product-frame-bar {
-  height: 38px;
-  padding: 0 13px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #d9dcdd;
-  background: #25292c;
-  border-bottom: 1px solid #42474a;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 9px;
-  letter-spacing: .11em;
+.product-frame::before {
+  content: '';
+  position: absolute;
+  inset: -8px auto auto -8px;
+  width: 52px;
+  height: 4px;
+  background: var(--accent);
 }
-
-.product-frame-bar span { display: inline-flex; align-items: center; gap: 8px; }
-.product-frame-bar b { width: 6px; height: 6px; background: #67bc78; border-radius: 50%; }
-.product-frame-bar a { color: #aeb4b7; text-decoration: none; letter-spacing: 0; text-transform: none; }
-.product-frame-bar a:hover { color: #fff; }
 
 .product-shot {
   display: block;
   overflow: hidden;
   background: #dce2e3;
+  border: 1px solid #aaa69f;
+  box-shadow: 16px 16px 0 var(--paper-deep);
 }
 
 .product-shot img {
@@ -180,10 +171,26 @@ a { color: inherit; }
   aspect-ratio: 16 / 10;
   object-fit: cover;
   object-position: center;
+  transform: scale(1.1);
   transition: transform .25s ease;
 }
 
-.product-shot:hover img { transform: scale(1.01); }
+.product-shot:hover img { transform: scale(1.12); }
+
+.product-frame figcaption {
+  margin-top: 20px;
+  padding-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 18px;
+  border-top: 1px solid var(--ink);
+  color: #666c6e;
+  font: 9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .09em;
+}
+
+.product-frame figcaption a { color: var(--ink); text-decoration: none; letter-spacing: 0; }
+.product-frame figcaption a:hover { color: var(--accent-dark); }
 
 .release { color: #f5f2ed; background: var(--ink); }
 
@@ -263,7 +270,8 @@ pre { margin: 0; padding: 38px; overflow-x: auto; color: #d8dedf; background: va
   .hero-lede { font-size: 16px; }
   .hero-actions { align-items: stretch; flex-direction: column; }
   .button { width: 100%; }
-  .product-frame { box-shadow: 8px 8px 0 var(--paper-deep); }
+  .product-shot { box-shadow: 8px 8px 0 var(--paper-deep); }
+  .product-frame figcaption { grid-template-columns: 1fr; gap: 5px; }
   .release-grid, .code-grid { grid-template-columns: 1fr; gap: 54px; padding-block: 72px; }
   .workflow, .capabilities { padding-block: 82px; }
   .steps { grid-template-columns: 1fr; }

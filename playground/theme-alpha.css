@@ -25,6 +25,25 @@ body,
   background: #dce1df !important;
 }
 
+html.hero-capture .hb-nav,
+html.hero-capture #toolbar,
+html.hero-capture #mobileMenuToggle,
+html.hero-capture .cesium-viewer-toolbar,
+html.hero-capture .cesium-viewer-fullscreenContainer,
+html.hero-capture .cesium-viewer-vrContainer,
+html.hero-capture .cesium-widget-credits {
+  display: none !important;
+}
+
+html.hero-capture #cesiumContainer {
+  inset: 0;
+  height: 100vh;
+}
+
+html.hero-capture #cesiumContainer canvas {
+  filter: contrast(1.06) saturate(.92) brightness(.98);
+}
+
 .hb-nav {
   height: var(--hb-nav-height);
   background: #15191b;

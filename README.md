@@ -30,7 +30,7 @@
 - 背景地図は UrlTemplateImageryProvider（Carto/OSM）。地形は `EllipsoidTerrainProvider`。
 - Quick Start:
   - Jenks / Viridis / Auto-fit を固定し、設定項目を増やさない
-  - 既定は Wireframe。入力点とボクセルを同時表示する
+  - 既定は Solid。Jenks を色と透明度に適用し、入力点とボクセルを同時表示する
   - Points / Voxels は個別に表示・非表示を切り替え可能
   - Auto-fit 完了後にボクセルを構築し、初回からカメラ依存の描画選択を安定させる
   - 統計は左 UI に内蔵（モバイルはサイドドロワー UI）

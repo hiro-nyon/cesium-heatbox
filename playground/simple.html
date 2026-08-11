@@ -32,6 +32,11 @@
       --hb-nav-offset: 55px;
     }
   </style>
+  <script>
+    if (new URLSearchParams(window.location.search).get('capture') === 'hero') {
+      document.documentElement.classList.add('hero-capture');
+    }
+  </script>
 </head>
 <body>
   <!-- 統一されたナビゲーションバー -->
@@ -99,16 +104,16 @@
       <div class="section-content">
         <div class="quick-start-display-label">Voxel style</div>
         <div class="quick-start-view-toggle" role="group" aria-label="Voxel display style">
-          <button id="viewStyleSolid" type="button" aria-pressed="false">
+          <button id="viewStyleSolid" type="button" class="is-selected" aria-pressed="true">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>
             <span>Solid</span>
           </button>
-          <button id="viewStyleWireframe" type="button" class="is-selected" aria-pressed="true">
+          <button id="viewStyleWireframe" type="button" aria-pressed="false">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9" fill="none"/></svg>
             <span>Wireframe</span>
           </button>
         </div>
-        <input type="checkbox" id="wireframeOnly" checked hidden>
+        <input type="checkbox" id="wireframeOnly" hidden>
 
         <div class="quick-start-display-label">Layers</div>
         <div class="quick-start-layer-toggle" role="group" aria-label="Visible layers">
