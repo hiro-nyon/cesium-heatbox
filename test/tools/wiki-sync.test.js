@@ -1,4 +1,4 @@
-const { rewriteLinksForWiki } = require('../../tools/wiki-sync.js');
+const { findClassPageLink, rewriteLinksForWiki } = require('../../tools/wiki-sync.js');
 
 describe('wiki-sync link rewriting', () => {
   test('maps canonical Markdown pages to Wiki page names', () => {
@@ -32,5 +32,13 @@ describe('wiki-sync link rewriting', () => {
     );
     expect(rewritten).toContain('[External](https://example.com)');
     expect(rewritten).toContain('[Anchor](#local)');
+  });
+
+  test('preserves the exact class-page filename casing', () => {
+    expect(findClassPageLink('performanceOverlay', [
+      'utils_performanceOverlay.js.html',
+      'PerformanceOverlay.html'
+    ])).toBe('PerformanceOverlay');
+    expect(findClassPageLink('sampleData', ['utils_sampleData.js.html'])).toBe('');
   });
 });

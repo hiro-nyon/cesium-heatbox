@@ -6,7 +6,7 @@
 
 ## English
 
-See also: [Class: performanceOverlay](performanceOverlay)
+See also: [Class: PerformanceOverlay](PerformanceOverlay)
 
 ```javascript
 /**
@@ -348,7 +348,7 @@ export class PerformanceOverlay {
 
 ## 日本語
 
-関連: [performanceOverlayクラス](performanceOverlay)
+関連: [PerformanceOverlayクラス](PerformanceOverlay)
 
 ```javascript
 /**

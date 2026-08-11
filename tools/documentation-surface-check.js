@@ -175,6 +175,7 @@ for (const relativePath of markdownFiles) {
 
 const wikiDirectory = path.join(ROOT, 'wiki');
 if (fs.existsSync(wikiDirectory)) {
+  const exactWikiFilenames = new Set(fs.readdirSync(wikiDirectory));
   const generatedWikiFiles = fs.readdirSync(wikiDirectory)
     .filter((name) => name.endsWith('.md'))
     .filter((name) => read(path.join('wiki', name)).startsWith('<!-- Generated from '));
@@ -193,7 +194,7 @@ if (fs.existsSync(wikiDirectory)) {
         failures.push(`${relativePath}: non-Wiki relative link ${rawTarget}`);
         continue;
       }
-      if (!fs.existsSync(path.join(wikiDirectory, `${pageTarget}.md`))) {
+      if (!exactWikiFilenames.has(`${pageTarget}.md`)) {
         failures.push(`${relativePath}: missing Wiki page ${rawTarget}`);
       }
     }

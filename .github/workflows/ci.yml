@@ -56,8 +56,13 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Install Cesium compatibility target
-        run: npm install --no-save cesium@${{ matrix.cesium-version }}
+      - name: Install minimum Cesium compatibility snapshot
+        if: ${{ matrix.cesium-version == '1.120.0' }}
+        run: npm install --no-save --package-lock=false cesium@1.120.0 @cesium/engine@10.1.0 @cesium/widgets@7.1.0 @zip.js/zip.js@2.7.34
+
+      - name: Install latest Cesium compatibility target
+        if: ${{ matrix.cesium-version == 'latest' }}
+        run: npm install --no-save --package-lock=false cesium@latest
 
       - name: Smoke test
         run: npm test --silent -- --runTestsByPath test/Heatbox.test.js test/core/VoxelRenderer.test.js test/core/geometry/GeometryRenderer.test.js test/integration/sample-code-validation.test.js --bail=1

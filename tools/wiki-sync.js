@@ -40,6 +40,12 @@ function cleanGeneratedMarkdown(content) {
   return content.replace(/[ \t]+$/gm, '');
 }
 
+function findClassPageLink(sourceName, htmlFiles = fs.readdirSync(API_DOCS_DIR)) {
+  const expectedPage = `${sourceName}.html`.toLowerCase();
+  const exactClassPage = htmlFiles.find((file) => file.toLowerCase() === expectedPage);
+  return exactClassPage ? path.basename(exactClassPage, '.html') : '';
+}
+
 /**
  * 日本語判定
  * @param {string} text
@@ -98,8 +104,8 @@ function convertHtmlToMarkdown(htmlContent, filename) {
     let classLink = '';
     try {
       const m = pageTitle.match(/Source:\s*.+\/(.+?)\.js/i);
-      if (m && m[1] && fs.existsSync(path.join(API_DOCS_DIR, `${m[1]}.html`))) {
-        classLink = m[1];
+      if (m && m[1]) {
+        classLink = findClassPageLink(m[1]);
       }
     } catch (_) {}
     let md = `# ${makeBilingualTitle(pageTitle)}\n\n`;
@@ -628,4 +634,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { convertHtmlToMarkdown, convertTableToMarkdown, rewriteLinksForWiki };
+module.exports = { convertHtmlToMarkdown, convertTableToMarkdown, findClassPageLink, rewriteLinksForWiki };
