@@ -243,6 +243,19 @@
             <span data-i18n="decision_path">Current path</span>
             <output id="decisionPathSummary">Metric · Snapshot · Classes · Solid</output>
           </div>
+          <div class="decision-route-graph" aria-hidden="true">
+            <span class="decision-route-terminal" data-i18n="decision_data">Data</span>
+            <i></i>
+            <span class="decision-route-step" data-route-step="grid">Metric</span>
+            <i></i>
+            <span class="decision-route-step" data-route-step="time">Snapshot</span>
+            <i></i>
+            <span class="decision-route-step" data-route-step="values">Classes</span>
+            <i></i>
+            <span class="decision-route-step" data-route-step="surface">Solid</span>
+            <i></i>
+            <span class="decision-route-terminal" data-i18n="decision_render">Render</span>
+          </div>
 
           <section class="decision-node" data-decision-node="grid">
             <div class="decision-node-heading">
@@ -253,8 +266,14 @@
               <button type="button" class="decision-choice" data-decision="grid" data-value="metric" aria-pressed="true"><span data-i18n="decision_metric">Metric grid</span></button>
               <button type="button" class="decision-choice" data-decision="grid" data-value="spatial" aria-pressed="false"><span data-i18n="decision_spatial">Spatial ID</span></button>
             </div>
-            <p class="decision-note" data-decision-note="grid:metric" data-i18n="decision_metric_note">Choose the cell size in Grid. Spatial ID zoom is unavailable.</p>
-            <p class="decision-note" data-decision-note="grid:spatial" data-i18n="decision_spatial_note" hidden>Choose auto or z15–25. Metric sizing is used only as the auto target.</p>
+            <div class="model-branch-panel" data-branch-panel="grid:metric">
+              <p class="decision-note" data-decision-note="grid:metric" data-i18n="decision_metric_note">Choose the cell size in Grid. Spatial ID zoom is unavailable.</p>
+              <div class="model-branch-controls" data-branch-controls="grid:metric"></div>
+            </div>
+            <div class="model-branch-panel" data-branch-panel="grid:spatial" hidden>
+              <p class="decision-note" data-decision-note="grid:spatial" data-i18n="decision_spatial_note">Choose auto or z15–25. Metric sizing is used only as the auto target.</p>
+              <div class="model-branch-controls" data-branch-controls="grid:spatial"></div>
+            </div>
           </section>
 
           <section class="decision-node" data-decision-node="time">
@@ -266,8 +285,14 @@
               <button type="button" class="decision-choice" data-decision="time" data-value="snapshot" aria-pressed="true"><span data-i18n="decision_snapshot">Snapshot</span></button>
               <button type="button" class="decision-choice" data-decision="time" data-value="timeline" aria-pressed="false"><span data-i18n="decision_timeline">Timeline</span></button>
             </div>
-            <p class="decision-note" data-decision-note="time:snapshot" data-i18n="decision_snapshot_note">Renders the loaded points once. Playback is unavailable.</p>
-            <p class="decision-note" data-decision-note="time:timeline" data-i18n="decision_timeline_note" hidden>Creates four synchronized point and voxel slices with playback.</p>
+            <div class="model-branch-panel" data-branch-panel="time:snapshot">
+              <p class="decision-note" data-decision-note="time:snapshot" data-i18n="decision_snapshot_note">Renders the loaded points once. Playback is unavailable.</p>
+              <div class="model-branch-controls" data-branch-controls="time:snapshot"></div>
+            </div>
+            <div class="model-branch-panel" data-branch-panel="time:timeline" hidden>
+              <p class="decision-note" data-decision-note="time:timeline" data-i18n="decision_timeline_note">Creates four synchronized point and voxel slices with playback.</p>
+              <div class="model-branch-controls" data-branch-controls="time:timeline"></div>
+            </div>
           </section>
 
           <section class="decision-node" data-decision-node="values">
@@ -279,8 +304,14 @@
               <button type="button" class="decision-choice" data-decision="values" data-value="gradient" aria-pressed="false"><span data-i18n="decision_gradient">Gradient</span></button>
               <button type="button" class="decision-choice" data-decision="values" data-value="classes" aria-pressed="true"><span data-i18n="decision_classes">Classes</span></button>
             </div>
-            <p class="decision-note" data-decision-note="values:gradient" data-i18n="decision_gradient_note" hidden>Uses legacy continuous colors. Class count and classification targets are unavailable.</p>
-            <p class="decision-note" data-decision-note="values:classes" data-i18n="decision_classes_note">Choose a scheme, class count, palette, and classification targets.</p>
+            <div class="model-branch-panel" data-branch-panel="values:gradient" hidden>
+              <p class="decision-note" data-decision-note="values:gradient" data-i18n="decision_gradient_note">Uses legacy continuous colors. Class count and classification targets are unavailable.</p>
+              <div class="model-branch-controls" data-branch-controls="values:gradient"></div>
+            </div>
+            <div class="model-branch-panel" data-branch-panel="values:classes">
+              <p class="decision-note" data-decision-note="values:classes" data-i18n="decision_classes_note">Choose a scheme, class count, palette, and classification targets.</p>
+              <div class="model-branch-controls" data-branch-controls="values:classes"></div>
+            </div>
           </section>
 
           <section class="decision-node" data-decision-node="surface">
@@ -291,13 +322,29 @@
             <div class="decision-choices" role="group" aria-label="Voxel surface">
               <button type="button" class="decision-choice" data-decision="surface" data-value="solid" aria-pressed="true"><span data-i18n="decision_solid">Solid</span></button>
               <button type="button" class="decision-choice" data-decision="surface" data-value="wireframe" aria-pressed="false"><span data-i18n="decision_wireframe">Wireframe</span></button>
+              <button type="button" class="decision-choice" data-decision="surface" data-value="inset" aria-pressed="false"><span data-i18n="decision_inset">Inset</span></button>
+              <button type="button" class="decision-choice" data-decision="surface" data-value="emulation" aria-pressed="false"><span data-i18n="decision_emulation">Emulation</span></button>
             </div>
-            <p class="decision-note" data-decision-note="surface:solid" data-i18n="decision_solid_note">Filled voxels. Opacity and outlines remain available.</p>
-            <p class="decision-note" data-decision-note="surface:wireframe" data-i18n="decision_wireframe_note" hidden>Outline-only voxels. Fill opacity controls are unavailable.</p>
+            <div class="model-branch-panel" data-branch-panel="surface:solid">
+              <p class="decision-note" data-decision-note="surface:solid" data-i18n="decision_solid_note">Filled voxels. Opacity and outlines remain available.</p>
+              <div class="model-branch-controls" data-branch-controls="surface:solid"></div>
+            </div>
+            <div class="model-branch-panel" data-branch-panel="surface:wireframe" hidden>
+              <p class="decision-note" data-decision-note="surface:wireframe" data-i18n="decision_wireframe_note">Outline-only voxels. Fill opacity controls are unavailable.</p>
+              <div class="model-branch-controls" data-branch-controls="surface:wireframe"></div>
+            </div>
+            <div class="model-branch-panel" data-branch-panel="surface:inset" hidden>
+              <p class="decision-note" data-decision-note="surface:inset" data-i18n="decision_inset_note">Inset outlines expose distance and target settings.</p>
+              <div class="model-branch-controls" data-branch-controls="surface:inset"></div>
+            </div>
+            <div class="model-branch-panel" data-branch-panel="surface:emulation" hidden>
+              <p class="decision-note" data-decision-note="surface:emulation" data-i18n="decision_emulation_note">Emulated frames expose scope and rendering mode.</p>
+              <div class="model-branch-controls" data-branch-controls="surface:emulation"></div>
+            </div>
           </section>
         </div>
 
-        <details class="decision-parameters">
+        <details id="decisionControlDepot" class="decision-parameters">
           <summary data-i18n="decision_tune">Fine-tune this path</summary>
           <div class="decision-parameters-content">
 
@@ -424,7 +471,7 @@
     </details>
 
     <!-- 4. View Mode (Display Preset) -->
-    <details class="section secondary-section">
+    <details class="section secondary-section model-source-section" data-model-source="view">
       <summary data-i18n="sum_viewmode">View Mode</summary>
       <div class="controls section-content">
         <div class="control-group">
@@ -467,7 +514,7 @@
     </details>
 
     <!-- 6. Voxel Configuration -->
-    <details class="section workflow-section" open>
+    <details class="section workflow-section model-source-section" data-model-source="grid" open>
       <summary data-i18n="sum_voxel">Voxel Configuration</summary>
       <div class="controls section-content">
         <div class="control-group">
@@ -510,7 +557,7 @@
     </details>
 
     <!-- 4. Color & Appearance -->
-    <details class="section">
+    <details class="section model-source-section" data-model-source="color">
       <summary data-i18n="sum_color">Color & Appearance</summary>
       <div class="controls section-content">
         <div class="control-group">
@@ -577,7 +624,7 @@
     </details>
 
     <!-- 6. Outline & Visual Effects -->
-    <details class="section">
+    <details class="section model-source-section" data-model-source="outline">
       <summary data-i18n="sum_outline">Outline & Visual Effects</summary>
       <div class="controls section-content">
         

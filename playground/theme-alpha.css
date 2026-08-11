@@ -243,6 +243,47 @@ html.hero-capture #cesiumContainer canvas {
   white-space: nowrap;
 }
 
+.decision-route-graph {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 7px 8px;
+  overflow: hidden;
+  background: #1d2224;
+  border: 1px solid #3b4346;
+  border-radius: 3px;
+}
+
+.decision-route-graph span {
+  min-width: 0;
+  padding: 4px 5px;
+  overflow: hidden;
+  border: 1px solid #4a5356;
+  border-radius: 2px;
+  font: 7px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.decision-route-terminal {
+  flex: 0 1 auto;
+  color: #9ba2a4;
+  background: #272d2f;
+}
+
+.decision-route-step {
+  flex: 1 1 auto;
+  color: #f4f1e9;
+  background: #343b3d;
+  border-color: #aa6d3c !important;
+}
+
+.decision-route-graph i {
+  flex: 0 0 8px;
+  height: 1px;
+  background: var(--hb-accent);
+}
+
 .decision-node {
   position: relative;
   padding: 10px 0 13px 30px;
@@ -281,6 +322,12 @@ html.hero-capture #cesiumContainer canvas {
   font: 9px ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+.decision-node.is-ready .decision-node-index {
+  color: #f9f4e8;
+  background: #394238;
+  border-color: #6e8d69;
+}
+
 .decision-node-heading strong {
   display: block;
   color: #eef0ee;
@@ -296,10 +343,20 @@ html.hero-capture #cesiumContainer canvas {
 }
 
 .decision-choices {
+  position: relative;
   margin-top: 9px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 5px;
+}
+
+.decision-choices::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  height: 9px;
+  border-left: 1px solid #4a5255;
 }
 
 #toolbar .decision-choice,
@@ -322,6 +379,81 @@ html.hero-capture #cesiumContainer canvas {
   background: #363e41;
   border-color: var(--hb-accent);
   box-shadow: inset 2px 0 var(--hb-accent);
+}
+
+#toolbar .decision-choice.is-selected {
+  position: relative;
+}
+
+#toolbar .decision-choice.is-selected::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  height: 8px;
+  border-left: 1px solid var(--hb-accent);
+}
+
+.model-branch-panel {
+  position: relative;
+  min-width: 0;
+  margin-top: 7px;
+  padding: 9px 10px 10px;
+  background: #202628;
+  border: 1px solid #41494c;
+  border-left: 2px solid var(--hb-accent);
+  border-radius: 3px;
+}
+
+.model-branch-panel[hidden] { display: none; }
+
+.model-branch-panel::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  height: 8px;
+  border-left: 1px solid var(--hb-accent);
+}
+
+.model-branch-controls {
+  min-width: 0;
+  margin-top: 8px;
+  display: grid;
+  gap: 9px;
+}
+
+.model-branch-controls:empty { display: none; }
+
+.model-branch-controls .control-group {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding-top: 8px;
+  box-sizing: border-box;
+  border-top: 1px solid #363e41;
+}
+
+.model-branch-controls .control-group > label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.model-branch-controls .control-group > input:not([type='checkbox']),
+.model-branch-controls .control-group > select,
+.model-branch-controls .control-group > output {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.model-branch-controls .control-group > small {
+  flex: 1 0 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.model-branch-controls .branch-state-toggle {
+  display: none;
 }
 
 .decision-note {
