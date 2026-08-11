@@ -138,6 +138,95 @@ html.hero-capture #cesiumContainer canvas {
 
 #toolbar > .section:first-child p { color: var(--hb-text-muted); }
 
+.playground-panel-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  align-items: end;
+  gap: 14px;
+}
+
+.playground-panel-header .control-group { margin: 0; }
+.playground-panel-header .control-group label { display: none; }
+.playground-panel-header select { width: 100%; }
+
+.playground-eyebrow {
+  margin: 0 0 5px !important;
+  color: var(--hb-accent) !important;
+  font: 8px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .12em;
+}
+
+.playground-subtitle { margin: 4px 0 0 !important; font-size: 10px; }
+
+.playground-action-dock {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, 34px);
+  gap: 6px;
+  padding: 9px 12px;
+  background: #202527;
+  border-top: 1px solid #424a4e;
+  border-bottom: 1px solid #111416;
+}
+
+#toolbar .playground-action-dock button,
+#toolbar .playground-action-dock button:hover {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  margin: 0;
+  padding: 6px 8px;
+}
+
+#toolbar .playground-action-dock .playground-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: var(--hb-accent);
+  border-color: var(--hb-accent);
+}
+
+#toolbar .playground-action-dock .playground-primary-action:hover {
+  background: var(--hb-accent-hover);
+  border-color: var(--hb-accent-hover);
+}
+
+.playground-action-dock svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.playground-icon-action { display: grid; place-items: center; }
+
+.control-subhead {
+  margin: 15px 0 8px;
+  color: #e2e5e3;
+  font-size: 9px;
+  font-weight: 680;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.control-note + .control-subhead { margin-top: 16px; }
+
+.secondary-section > summary { color: #b1b7b8; font-weight: 560; }
+
+.info-details { padding-block: 10px; }
+.info-details > summary { cursor: pointer; list-style: none; }
+.info-details > summary::-webkit-details-marker { display: none; }
+.info-details > summary::after {
+  content: '+';
+  float: right;
+  color: #8d9698;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.info-details[open] > summary::after { content: '−'; }
+.info-details > div { margin-top: 10px; }
+
 #info {
   top: var(--hb-nav-offset);
   right: 10px;

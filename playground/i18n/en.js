@@ -10,7 +10,7 @@ if (typeof window !== 'undefined') {
     profile_desc_sparse: 'Optimized for sparse datasets with fewer data points',
     
     // Extended UI labels
-    sum_profiles: 'Configuration Profiles',
+    sum_profiles: 'Presets',
     label_profile: 'Profile',
     opt_profile_custom: 'Custom (No Profile)',
     opt_profile_mobile: 'Mobile Fast',
@@ -18,7 +18,7 @@ if (typeof window !== 'undefined') {
     opt_profile_dense: 'Dense Data',
     opt_profile_sparse: 'Sparse Data',
     
-    sum_performance: 'Performance Overlay',
+    sum_performance: 'Performance',
     chk_performanceOverlay: 'Enable Performance Overlay',
     label_overlayPosition: 'Overlay Position',
     opt_pos_topleft: 'Top Left',
@@ -43,7 +43,7 @@ if (typeof window !== 'undefined') {
     opt_preset_topn_legacy: '⚠️ Top-N Focus (Deprecated → Thick)'
     ,
     // View Mode (Playground)
-    sum_viewmode: 'View Mode',
+    sum_viewmode: 'Voxel style',
     label_viewmode_preset: 'Preset',
     opt_view_boxes: 'Boxes Only',
     opt_view_outline: 'Outline Only',

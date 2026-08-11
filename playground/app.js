@@ -607,19 +607,16 @@ class HeatboxPlayground {
    * 翻訳辞書
    */
   _getTranslations() {
-    // Externalized dictionaries take precedence (see playground/i18n/*.js)
-    try {
-      if (typeof window !== 'undefined' && window.HEATBOX_I18N) {
-        return window.HEATBOX_I18N;
-      }
-    } catch (_) {}
-    return {
+    const translations = {
       ja: {
         // Section summaries
-        sum_rendering: '描画制御',
+        sum_rendering: '描画上限',
         sum_actions: '操作・実行',
-        sum_current_api: '現行API',
-        current_api_note: 'v1.xの分類・時系列・空間ID・レイヤ集約・凡例APIを試せます。',
+        sum_current_api: '2 · マッピング',
+        current_api_note: '分類・空間ID・時系列を組み合わせます。',
+        group_classification: '色と分類',
+        group_structure: '空間集約',
+        group_time: '時系列',
         label_classification_scheme: '分類方式',
         opt_classification_off: '無効（従来の色設定）',
         label_classification_classes: 'クラス数',
@@ -650,18 +647,19 @@ class HeatboxPlayground {
         aria_collapse_left: '左パネルの表示/非表示',
         aria_collapse_right: '右パネルの表示/非表示',
         title_main: 'Cesium Heatbox Playground',
-        subtitle: '高度なコントロール',
-        sum_data: 'データ読み込み',
+        subtitle: 'すべての機能を、必要なときだけ',
+        sum_data: '1 · データ',
+        sum_basic: '地図とカメラ',
         sum_display: '表示設定',
         sum_basemap: '背景地図',
-        sum_voxel: 'ボクセルと描画',
-        sum_color: '色設定',
-        sum_outline: '枠線・見た目',
+        sum_voxel: '3 · グリッド',
+        sum_color: 'カラー（レガシー）',
+        sum_outline: 'アウトライン',
         sum_adaptive: '適応表示',
         sum_view: 'ビュー',
         sum_legacy_adaptive: '適応表示（レガシー）',
         sum_highlight: '強調表示',
-        sum_advanced: '詳細設定',
+        sum_advanced: '診断・詳細',
         ops_title: '操作',
         btn_create: 'ヒートマップ作成',
         btn_clear: 'クリア',
@@ -789,10 +787,13 @@ class HeatboxPlayground {
       },
       en: {
         // Section summaries
-        sum_rendering: 'Rendering Control',
+        sum_rendering: 'Render budget',
         sum_actions: 'Actions',
-        sum_current_api: 'Current API',
-        current_api_note: 'Exercise the v1.x classification, temporal, Spatial ID, aggregation, and Legend APIs.',
+        sum_current_api: '2 · Mapping',
+        current_api_note: 'Combine classification, Spatial ID, and temporal data.',
+        group_classification: 'Color & classification',
+        group_structure: 'Spatial grouping',
+        group_time: 'Time',
         label_classification_scheme: 'Classification',
         opt_classification_off: 'Off (legacy colors)',
         label_classification_classes: 'Classes',
@@ -823,18 +824,19 @@ class HeatboxPlayground {
         aria_collapse_left: 'Toggle left panel',
         aria_collapse_right: 'Toggle right panel',
         title_main: 'Cesium Heatbox Playground',
-        subtitle: 'Advanced controls',
-        sum_data: 'Data',
+        subtitle: 'Every feature, only when you need it',
+        sum_data: '1 · Data',
+        sum_basic: 'Map & camera',
         sum_display: 'Display',
         sum_basemap: 'Base Map',
-        sum_voxel: 'Voxel Sizing & Rendering',
-        sum_color: 'Colors',
-        sum_outline: 'Outlines & Look',
+        sum_voxel: '3 · Grid',
+        sum_color: 'Color (legacy)',
+        sum_outline: 'Outlines',
         sum_adaptive: 'Adaptive',
         sum_view: 'View',
         sum_legacy_adaptive: 'Adaptive (Legacy)',
         sum_highlight: 'Highlight',
-        sum_advanced: 'Advanced',
+        sum_advanced: 'Diagnostics & details',
         ops_title: 'Actions',
         btn_create: 'Create Heatmap',
         btn_clear: 'Clear',
@@ -961,6 +963,17 @@ class HeatboxPlayground {
         loading: 'Processing...'
       }
     };
+    try {
+      const external = typeof window !== 'undefined'
+        ? (window.HeatboxI18N || window.HEATBOX_I18N)
+        : null;
+      if (external) {
+        Object.keys(translations).forEach((lang) => {
+          translations[lang] = { ...translations[lang], ...(external[lang] || {}) };
+        });
+      }
+    } catch (_) {}
+    return translations;
   }
   
   /**

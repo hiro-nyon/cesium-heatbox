@@ -10,7 +10,7 @@ if (typeof window !== 'undefined') {
     profile_desc_sparse: '疎データセット（少データポイント）最適化',
     
     // Extended UI labels
-    sum_profiles: '設定プロファイル',
+    sum_profiles: 'プリセット',
     label_profile: 'プロファイル',
     opt_profile_custom: 'カスタム（プロファイルなし）',
     opt_profile_mobile: 'モバイル高速',
@@ -18,7 +18,7 @@ if (typeof window !== 'undefined') {
     opt_profile_dense: '高密度データ',
     opt_profile_sparse: '疎データ',
     
-    sum_performance: 'パフォーマンス表示',
+    sum_performance: 'パフォーマンス',
     chk_performanceOverlay: 'パフォーマンス表示を有効化',
     label_overlayPosition: '表示位置',
     opt_pos_topleft: '左上',
@@ -43,7 +43,7 @@ if (typeof window !== 'undefined') {
     opt_preset_topn_legacy: '⚠️ TopN重視（廃止予定 → 太い）'
     ,
     // View Mode (Playground)
-    sum_viewmode: '表示モード',
+    sum_viewmode: 'ボクセル表示',
     label_viewmode_preset: 'プリセット',
     opt_view_boxes: 'ボックスのみ',
     opt_view_outline: '枠線のみ',
