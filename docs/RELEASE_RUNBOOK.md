@@ -146,9 +146,10 @@ Workflow は npm publish が成功した後に GitHub Release を作成し、安
 ```bash
 npm view cesium-heatbox dist-tags --json
 npm view cesium-heatbox@1.3.7 version gitHead dist.attestations --json
+gh release view v1.3.7 --json tagName,isDraft,isPrerelease,body,url
 ```
 
-`latest=1.3.7`、provenanceあり、`gitHead`がmain/next共通コミットと一致することを確認します。続けて、新規ディレクトリで `npm install cesium-heatbox` を実行し、既定インストールが `1.3.7` になることを確認します。
+`latest=1.3.7`、provenanceあり、`gitHead`がmain/next共通コミットと一致することを確認します。GitHub Releaseは`isDraft=false`、`isPrerelease=false`、`body`が空でなく、`What's Changed`と前版からの`Full Changelog`を含むことを確認します。続けて、公開Wikiの更新と、新規ディレクトリでの`npm install cesium-heatbox`を確認し、既定インストールが`1.3.7`になることを検証します。
 
 ## 7. 失敗時の扱い
 
@@ -178,4 +179,6 @@ Gitタグの削除はnpmパッケージを削除せず、dist-tagも変更しま
 - [ ] alphaタグはnext先端、安定版タグはmain/next共通先端に付いている。
 - [ ] `git push origin <exact-tag>` で1タグだけpushした。
 - [ ] npm dist-tag、gitHead、provenanceを確認した。
+- [ ] GitHub Release notesが非空で、正式版属性と比較リンクが正しい。
+- [ ] 公開Wikiがstableタグの内容へ更新されている。
 - [ ] 安定版では `latest` のインストールとGitHub Release、Wikiを確認した。
