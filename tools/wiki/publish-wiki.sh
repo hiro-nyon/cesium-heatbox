@@ -14,13 +14,15 @@ if [[ -z "$OWNER" || -z "$REPO" ]]; then
 fi
 
 WIKI_URL="https://github.com/${OWNER}/${REPO}.wiki.git"
-WORKDIR=".wiki-tmp"
+WORKDIR="$(mktemp -d)"
+trap 'rm -rf "$WORKDIR"' EXIT
 
 echo "Cloning: ${WIKI_URL} ..."
-rm -rf "$WORKDIR"
 git clone "$WIKI_URL" "$WORKDIR"
+git -C "$WORKDIR" checkout "$BRANCH"
 
-echo "Copying wiki/*.md -> ${WORKDIR}/ ..."
+echo "Mirroring wiki/*.md -> ${WORKDIR}/ ..."
+find "$WORKDIR" -maxdepth 1 -type f -name '*.md' -delete
 cp -f wiki/*.md "$WORKDIR"/
 
 pushd "$WORKDIR" >/dev/null
@@ -43,7 +45,6 @@ else
   echo "Warning: No WIKI_TOKEN/GH_TOKEN/GITHUB_TOKEN provided; push may fail due to auth" >&2
 fi
 
-git checkout "$BRANCH" || true
 git add .
 if git diff --cached --quiet; then
   echo "No changes to commit."
