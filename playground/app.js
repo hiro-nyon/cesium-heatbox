@@ -1667,7 +1667,7 @@ class HeatboxPlayground {
       const newZMax = 400;        // 拡張後のZ最大値（より立体的に）
       const zScale = newZMax / oldZMax;
       const sampleCount = Math.round(baseCount * zScale); // 体積増分に応じて点数を増やす
-      
+
       // 複数クラスター（2〜5個）をランダムに生成
       const minCenters = 1;
       const maxCenters = 5;
