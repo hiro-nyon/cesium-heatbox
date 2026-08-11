@@ -471,7 +471,7 @@ export class VoxelRenderer {
       
       // TopN highlight adjustment 
       if (this.options.highlightTopN && !isTopN) {
-        opacity *= (1 - (this.options.highlightStyle?.boostOpacity || 0.2));
+        opacity *= (1 - (this.options.highlightStyle?.boostOpacity ?? 0.2));
       }
     }
     
@@ -542,9 +542,10 @@ export class VoxelRenderer {
       if (adaptiveParams.outlineWidth !== null && adaptiveParams.outlineWidth !== undefined) {
         finalOutlineWidth = adaptiveParams.outlineWidth;
       } else {
-        finalOutlineWidth = isTopN && this.options.highlightTopN ? 
-          (this.options.highlightStyle?.outlineWidth || this.options.outlineWidth) : 
-          this.options.outlineWidth;
+        finalOutlineWidth = isTopN && this.options.highlightTopN
+          ? (this.options.highlightStyle?.outlineWidth ?? this.options.outlineWidth) +
+            (this.options.highlightStyle?.boostOutlineWidth ?? 0)
+          : this.options.outlineWidth;
       }
     }
 

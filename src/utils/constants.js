@@ -29,7 +29,8 @@ export const DEFAULT_OPTIONS = {
   highlightTopN: null, // トップN強調表示（null: 無効）
   highlightStyle: {
     outlineWidth: 4,
-    boostOpacity: 0.2
+    boostOpacity: 0.2,
+    boostOutlineWidth: 0
   },
   // v0.1.6: 枠線重なり対策・柔軟化
   voxelGap: 0, // ボクセル間ギャップ（メートル）

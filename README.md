@@ -155,7 +155,7 @@ const heatbox = new Heatbox(viewer, {
 - `dataSource(currentTime, context)` can lazily provide additional temporal slices
 - `useWorker: true` offloads interpolation and temporal stats preprocessing when workers are available
 - Demos cover baseline playback, global/per-time comparison, scenario simulation, and advanced interpolation/lazy-loading flows
-- Demos: `examples/temporal/`
+- Demos: `examples/temporal/README.md`
 
 See [API Reference — Temporal](docs/API.md) for full details.
 
@@ -216,7 +216,7 @@ console.log(stats.spatialIdProvider); // "ouranos-gex" or "fallback"
 - Operates within ±85.0511° latitude (Web Mercator limit)
 - Antimeridian crossing: planned for a future release
 
-See [Spatial ID Examples](examples/spatial-id/) for details.
+See [Spatial ID Examples](examples/spatial-id/README.md) for details.
 
 </details>
 
@@ -263,7 +263,7 @@ aggregation: {
 - Memory: ~8–16 bytes per unique layer per voxel
 - Processing: ≤ +10% overhead when enabled; zero overhead when disabled
 
-See [Aggregation Examples](examples/aggregation/) for details.
+See [Aggregation Examples](examples/aggregation/README.md) for details.
 
 </details>
 
@@ -304,13 +304,13 @@ See [API Reference](docs/API.md) for complete options and method documentation.
 
 | Category | Description | Location |
 |----------|-------------|----------|
-| Basic | Getting started | `examples/basic/` |
-| Classification | Color scheme demos | `examples/advanced/` |
-| Temporal | Time-dependent data | `examples/temporal/` |
-| Spatial ID | Tile-grid mode | `examples/spatial-id/` |
-| Aggregation | Layer breakdown | `examples/aggregation/` |
-| Rendering | Wireframe, height-based | `examples/rendering/` |
-| Performance | Adaptive, overlay | `examples/observability/` |
+| Basic | Getting started | `examples/basic/index.html` |
+| Classification | Color scheme demos | `examples/advanced/README.md` |
+| Temporal | Time-dependent data | `examples/temporal/README.md` |
+| Spatial ID | Tile-grid mode | `examples/spatial-id/README.md` |
+| Aggregation | Layer breakdown | `examples/aggregation/README.md` |
+| Rendering | Wireframe, height-based | `examples/rendering/README.md` |
+| Performance | Adaptive, overlay | `examples/observability/README.md` |
 
 ## Documentation
 

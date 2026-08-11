@@ -722,7 +722,7 @@ describe('String coercion', () => {
         voxelKey: '1-2-3'
       });
 
-      expect(entity.properties.layerTop).toBe('residential');
+      expect(entity.properties.layerTop.getValue()).toBe('residential');
       expect(entity.description).toContain('レイヤ内訳');
       expect(colorStub.withAlpha).toHaveBeenCalledWith(0.8);
     });

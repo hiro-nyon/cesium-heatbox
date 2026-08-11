@@ -183,6 +183,25 @@ describe('validation.js', () => {
           expect.stringContaining('Invalid colorMap')
         );
       });
+
+      test('highlightStyleを既定値と深くマージして範囲を正規化する', () => {
+        const normalized = validateAndNormalizeOptions({
+          highlightStyle: { boostOutlineWidth: 1.5 }
+        });
+
+        expect(normalized.highlightStyle).toEqual({
+          outlineWidth: 4,
+          boostOpacity: 0.2,
+          boostOutlineWidth: 1.5
+        });
+      });
+
+      test.each([0, -1, NaN, Infinity])(
+        'maxRenderVoxels=%s は既定値へフォールバックする',
+        value => {
+          expect(validateAndNormalizeOptions({ maxRenderVoxels: value }).maxRenderVoxels).toBe(50000);
+        }
+      );
     });
   });
 });

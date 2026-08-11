@@ -1,5 +1,3 @@
-const isCoverageRun = process.argv.includes('--coverage');
-
 module.exports = {
   testEnvironment: 'jsdom',
   setupFiles: ['<rootDir>/test/setup.js'],
@@ -15,11 +13,9 @@ module.exports = {
     '/test/performance/heatbox-v0.1.9-performance.test.js',
     // Long-running performance regression smoke test remains opt-in.
     '/test/performance/performance-regression.test.js',
-    // Istanbul instrumentation distorts wall-clock microbenchmarks.
-    ...(isCoverageRun ? [
-      '/test/performance/classification-performance.test.js',
-      '/test/performance/aggregation-performance.test.js'
-    ] : [])
+    // Wall-clock microbenchmarks are opt-in and excluded consistently from test/coverage.
+    '/test/performance/classification-performance.test.js',
+    '/test/performance/aggregation-performance.test.js'
   ],
   collectCoverageFrom: [
     'src/**/*.js',

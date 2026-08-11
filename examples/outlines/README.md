@@ -6,8 +6,8 @@
 
 | File | 概要 |
 | --- | --- |
-| `outline-overlap-demo-umd.html` | `voxelGap` / `outlineOpacity` / 適応枠線プリセットの比較デモ。ブラウザで直接実行可能。 |
-| `emulation-scope-demo.html` *(new)* | `outlineRenderMode` と `emulationScope` の組み合わせ比較（TopN/Non-TopN/All）。 |
+| `outline-overlap/index.html` | `voxelGap` / `outlineOpacity` / 適応枠線プリセットの比較デモ。 |
+| `emulation-scope/index.html` | `outlineRenderMode` と `emulationScope` の組み合わせ比較（TopN/Non-TopN/All）。 |
 
 ## Cesium Setup / Cesium 初期化
 
@@ -17,8 +17,7 @@
 
 ## Usage / 使い方
 
-- `outline-overlap-demo-umd.html` はブラウザで直接実行できます。
-- `emulation-scope-demo.html` も UMD 版として実装されているため、同様にローカルで開くだけで比較が可能です。
+- `outline-overlap/index.html` と `emulation-scope/index.html` をローカルサーバー経由で開いてください。
 - UI から `outlineRenderMode` や `emulationScope` を切り替え、密度や TopN ハイライトとの相互作用を観察してください。
 
 ## Notes / 補足

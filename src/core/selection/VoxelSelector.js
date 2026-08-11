@@ -104,7 +104,7 @@ export class VoxelSelector {
       this._lastSelectionStats = {
         strategy: result.strategy,
         clippedNonEmpty: result.clippedNonEmpty,
-        coverageRatio: result.coverageRatio || null,
+        coverageRatio: result.coverageRatio ?? null,
         selectedCount: result.selectedVoxels.length,
         totalCount: allVoxels.length
       };
@@ -233,31 +233,26 @@ export class VoxelSelector {
     });
     
     // 各ビンから代表ボクセルを選択
-    const binKeys = Array.from(bins.keys());
+    const binQueues = Array.from(bins.values(), binVoxels =>
+      binVoxels.sort((a, b) => b.info.count - a.info.count)
+    );
     let binIndex = 0;
-    
-    while (selected.length < maxCount && binIndex < binKeys.length * 10) { // 最大10周
-      const binKey = binKeys[binIndex % binKeys.length];
-      const binVoxels = bins.get(binKey);
-      
-      if (binVoxels && binVoxels.length > 0) {
-        // ビン内で最高密度のボクセルを選択
-        binVoxels.sort((a, b) => b.info.count - a.info.count);
-        const voxel = binVoxels.shift();
-        
-        if (!included.has(voxel.key)) {
-          selected.push(voxel);
-          included.add(voxel.key);
-        }
-        
-        // 空になったビンを削除
-        if (binVoxels.length === 0) {
-          bins.delete(binKey);
-          binKeys.splice(binKeys.indexOf(binKey), 1);
-        }
+
+    while (selected.length < maxCount && binQueues.length > 0) {
+      const binVoxels = binQueues[binIndex];
+      const voxel = binVoxels.shift();
+
+      if (voxel && !included.has(voxel.key)) {
+        selected.push(voxel);
+        included.add(voxel.key);
       }
-      
-      binIndex++;
+
+      if (binVoxels.length === 0) {
+        binQueues.splice(binIndex, 1);
+        if (binIndex >= binQueues.length) binIndex = 0;
+      } else {
+        binIndex = (binIndex + 1) % binQueues.length;
+      }
     }
     
     const clippedCount = allVoxels.length - selected.length;
@@ -290,8 +285,10 @@ export class VoxelSelector {
     });
     
     const remainingCount = maxCount - selected.length;
-    const adjustedCoverageCount = Math.floor(remainingCount * minCoverageRatio);
+    const adjustedCoverageCount = Math.ceil(remainingCount * minCoverageRatio);
     const adjustedDensityCount = remainingCount - adjustedCoverageCount;
+    let coverageAdded = 0;
+    let densityAdded = 0;
     
     // カバレッジ選択（層化抽出）
     if (adjustedCoverageCount > 0) {
@@ -306,6 +303,7 @@ export class VoxelSelector {
         if (selected.length < maxCount && !included.has(voxel.key)) {
           selected.push(voxel);
           included.add(voxel.key);
+          coverageAdded++;
         }
       });
     }
@@ -322,13 +320,29 @@ export class VoxelSelector {
         if (selected.length < maxCount && !included.has(voxel.key)) {
           selected.push(voxel);
           included.add(voxel.key);
+          densityAdded++;
         }
+      });
+    }
+
+    if (selected.length < maxCount) {
+      const fillResult = this._selectByDensityStrategy(
+        allVoxels.filter(voxel => !included.has(voxel.key)),
+        maxCount - selected.length,
+        new Set()
+      );
+      fillResult.selectedVoxels.forEach(voxel => {
+        selected.push(voxel);
+        included.add(voxel.key);
+        densityAdded++;
       });
     }
     
     // 実際のカバレッジ比率を計算
-    const actualCoverageRatio = adjustedCoverageCount > 0 ? 
-      (selected.length - forceInclude.size - adjustedDensityCount) / (selected.length - forceInclude.size) : 0;
+    const strategySelectedCount = coverageAdded + densityAdded;
+    const actualCoverageRatio = strategySelectedCount > 0
+      ? coverageAdded / strategySelectedCount
+      : 0;
     
     const clippedCount = allVoxels.length - selected.length;
     return this._createResult(selected, 'hybrid', selected.length, clippedCount, actualCoverageRatio);

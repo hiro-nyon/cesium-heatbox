@@ -381,14 +381,14 @@ describe('VoxelRenderer', () => {
         renderer = new VoxelRenderer(viewer, {
             outlineWidth: 2,
             highlightTopN: 1,
-            highlightStyle: { outlineWidth: 4 }
+            highlightStyle: { outlineWidth: 4, boostOutlineWidth: 1.5 }
         });
         renderer.render(voxelData, bounds, grid, statistics);
 
         const topNVoxelCall = mockAdd.mock.calls.find(call => call[0].properties.key === '0,0,0');
         const otherVoxelCall = mockAdd.mock.calls.find(call => call[0].properties.key === '1,1,1');
 
-        expect(topNVoxelCall[0].box.outlineWidth).toBe(4);
+        expect(topNVoxelCall[0].box.outlineWidth).toBe(5.5);
         expect(otherVoxelCall[0].box.outlineWidth).toBe(2);
     });
   });

@@ -353,7 +353,8 @@ Closes #123
   "name": "cesium-heatbox",           // パッケージ名
   "version": "0.1.0",                // バージョン
   "description": "3D heatmap library", // 説明
-  "main": "dist/cesium-heatbox.js",  // メインファイル
+  "main": "dist/cesium-heatbox.cjs", // CommonJSメインファイル
+  "module": "dist/cesium-heatbox.min.mjs",
   "scripts": {                        // 実行可能コマンド
     "dev": "webpack serve --mode development",
     "build": "webpack --mode production",
@@ -645,11 +646,10 @@ ls -la dist/
 du -h dist/*
 
 # 生成されたファイル
-# - cesium-heatbox.js      (開発版)
 # - cesium-heatbox.min.mjs  (ESM本番版・最適化済み)
 # - cesium-heatbox.cjs     (CommonJS本番版)
-# - cesium-heatbox.umd.js  (UMD版)
-# - cesium-heatbox.d.ts    (TypeScript型定義)
+# - cesium-heatbox.umd.min.js (UMD本番版)
+# 型定義は types/index.d.* に生成
 ```
 
 ---

@@ -236,6 +236,35 @@ describe('TimeSlicer', () => {
     });
 
     describe('calculateGlobalStats', () => {
+        test('calculateGlobalVoxelStats uses rendered voxel counts instead of point weights', async () => {
+            const data = [
+                {
+                    start: '2025-01-01T00:00:00Z',
+                    stop: '2025-01-01T01:00:00Z',
+                    data: [
+                        { position: { x: 139.7, y: 35.6, z: 10 }, weight: 1000 },
+                        { position: { x: 139.7, y: 35.6, z: 10 }, weight: 2000 },
+                        { position: { x: 139.71, y: 35.61, z: 10 }, weight: 3000 }
+                    ]
+                },
+                {
+                    start: '2025-01-01T01:00:00Z',
+                    stop: '2025-01-01T02:00:00Z',
+                    data: Array.from({ length: 4 }, () => ({
+                        position: { x: 139.72, y: 35.62, z: 20 },
+                        weight: 9999
+                    }))
+                }
+            ];
+            const slicer = new TimeSlicer(data);
+
+            const stats = await slicer.calculateGlobalVoxelStats({ voxelSize: 20 });
+
+            expect(stats.domain).toEqual([1, 4]);
+            expect(stats.minCount).toBe(1);
+            expect(stats.maxCount).toBe(4);
+        });
+
         test('uses provided valueProperty and caches results', () => {
             const data = [
                 {

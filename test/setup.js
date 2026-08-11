@@ -12,7 +12,7 @@ global.window = dom.window;
 // これにより、各テストファイルでCesiumのグローバルオブジェクトを拡張できます
 global.Cesium = {};
 
-const { Cartesian3 } = require('cesium');
+const { Cartesian3, Entity } = require('cesium');
 
 // テストユーティリティ
 global.testUtils = {
@@ -29,10 +29,11 @@ global.testUtils = {
       }
     },
     entities: {
-      add: jest.fn(entity => ({
-        ...entity,
-        isDestroyed: () => false
-      })),
+      add: jest.fn(entity => {
+        const result = new Entity(entity);
+        result.isDestroyed = () => false;
+        return result;
+      }),
       remove: jest.fn(),
       removeAll: jest.fn()
     },

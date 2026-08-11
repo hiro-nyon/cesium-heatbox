@@ -22,6 +22,8 @@ import { getProfileNames, getProfile, applyProfile } from './utils/profiles.js';
 import { PerformanceOverlay } from './utils/performanceOverlay.js';
 import { Legend } from './ui/Legend.js';
 import { TimeController } from './core/temporal/TimeController.js';
+import { resolvePropertyValue } from './utils/cesiumProperty.js';
+import { computeSpatialIdEdgeCaseMetrics } from './core/spatial/SpatialIdQaMetrics.js';
 
 /**
  * @typedef {('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data')} ProfileName
@@ -326,8 +328,6 @@ export class Heatbox {
     this._performanceOverlay = null;
     this._lastRenderTime = null;
     this._overlayLastUpdate = 0;
-    this._postRenderListener = null;
-    this._prevFrameTimestamp = null;
     this._postRenderListener = null;
     this._prevFrameTimestamp = null;
     this._legend = null;
@@ -783,6 +783,15 @@ export class Heatbox {
     }
 
     if (classificationOptions.spatialId?.enabled) {
+      if (!this._spatialIdEdgeCaseMetrics && classificationOptions._spatialIdAdapter) {
+        try {
+          this._spatialIdEdgeCaseMetrics = computeSpatialIdEdgeCaseMetrics(
+            classificationOptions._spatialIdAdapter
+          );
+        } catch (error) {
+          Logger.warn('Spatial ID edge-case metrics calculation failed:', error);
+        }
+      }
       this._statistics.spatialIdEnabled = true;
       this._statistics.spatialIdMode = classificationOptions.spatialId.mode;
       this._statistics.spatialIdProvider = classificationOptions._spatialIdProvider || null;
@@ -942,7 +951,12 @@ export class Heatbox {
     }
 
     this.options = validateAndNormalizeOptions({ ...this.options, ...newOptions });
+    Logger.setLogLevel(this.options);
     this.renderer.options = this.options;
+
+    if (newOptions && Object.prototype.hasOwnProperty.call(newOptions, 'spatialId')) {
+      this._spatialIdEdgeCaseMetrics = null;
+    }
 
     if (this.renderer.adaptiveController && typeof this.renderer.adaptiveController.updateOptions === 'function') {
       this.renderer.adaptiveController.updateOptions(this.options);
@@ -975,22 +989,23 @@ export class Heatbox {
     // クリックイベントでInfoBoxを更新
     this._eventHandler.setInputAction(movement => {
       const pickedObject = this.viewer.scene.pick(movement.position);
-      if (Cesium.defined(pickedObject) && pickedObject.id &&
-        pickedObject.id.properties &&
-        pickedObject.id.properties.type === 'voxel') {
+      const currentTime = this.viewer.clock?.currentTime || Cesium.JulianDate.now();
+      const properties = pickedObject?.id?.properties;
+      if (Cesium.defined(pickedObject) && pickedObject.id && properties &&
+        resolvePropertyValue(properties.type, currentTime) === 'voxel') {
         // プロパティからキー値を取得
-        const voxelKey = pickedObject.id.properties.key;
+        const voxelKey = resolvePropertyValue(properties.key, currentTime);
         const voxelInfo = {
-          x: pickedObject.id.properties.x,
-          y: pickedObject.id.properties.y,
-          z: pickedObject.id.properties.z,
-          count: pickedObject.id.properties.count
+          x: resolvePropertyValue(properties.x, currentTime),
+          y: resolvePropertyValue(properties.y, currentTime),
+          z: resolvePropertyValue(properties.z, currentTime),
+          count: resolvePropertyValue(properties.count, currentTime)
         };
 
         // InfoBoxに表示するためのダミーエンティティを作成
         const dummyEntity = new Cesium.Entity({
           id: `voxel-${voxelKey}`,
-          description: this.renderer.createVoxelDescription(voxelInfo, voxelKey)
+          description: this.renderer.geometryRenderer.createVoxelDescription(voxelInfo, voxelKey)
         });
         this.viewer.selectedEntity = dummyEntity;
       }
@@ -1249,7 +1264,15 @@ export class Heatbox {
     const heading = Cesium.Math.toRadians(fitOptions.headingDegrees ?? 0);
     const pitchDeg = Math.max(-85, Math.min(-10, fitOptions.pitchDegrees ?? -35));
     const pitch = Cesium.Math.toRadians(pitchDeg);
-    const range = Math.max(bs.radius * 2.2, 1000.0);
+    const paddingPercent = Number.isFinite(fitOptions.paddingPercent)
+      ? Math.max(0, Math.min(1, fitOptions.paddingPercent))
+      : 0.1;
+    const paddedRadius = bs.radius * (1 + (paddingPercent * 2));
+    const altitudeSpan = Math.max(0, (bounds.maxAlt || 0) - (bounds.minAlt || 0));
+    const baseRange = fitOptions.altitudeStrategy === 'manual'
+      ? paddedRadius * 2.2
+      : Math.max(paddedRadius * 2.2, altitudeSpan * 2.2);
+    const range = Math.max(baseRange, 1000.0);
     await this.viewer.camera.flyToBoundingSphere(bs, {
       duration: 1.2,
       offset: new Cesium.HeadingPitchRange(heading, pitch, range)

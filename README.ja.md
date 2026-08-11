@@ -155,7 +155,7 @@ const heatbox = new Heatbox(viewer, {
 - `dataSource(currentTime, context)` で lazy loading を追加可能
 - `useWorker: true` で補間と時系列統計の前処理を worker に逃がせます
 - デモは baseline 再生、Global/Per-Time 比較、シナリオ切替、補間/lazy loading の拡張フローまで含みます
-- デモ: `examples/temporal/`
+- デモ: `examples/temporal/README.md`
 
 詳細は[APIリファレンス — 時系列](docs/API.md)を参照してください。
 
@@ -216,7 +216,7 @@ console.log(stats.spatialIdProvider); // "ouranos-gex" または "fallback"
 - ±85.0511°（Web Mercator限界）内で正常動作
 - 日付変更線対応: 将来バージョンで実装予定
 
-詳細は[空間ID使用例](examples/spatial-id/)を参照してください。
+詳細は[空間ID使用例](examples/spatial-id/README.md)を参照してください。
 
 </details>
 
@@ -263,7 +263,7 @@ aggregation: {
 - メモリ: ボクセルあたりのユニークレイヤあたり ~8–16バイト
 - 処理時間: 有効時 ≤ +10%オーバーヘッド、無効時オーバーヘッドなし
 
-詳細は[集約使用例](examples/aggregation/)を参照してください。
+詳細は[集約使用例](examples/aggregation/README.md)を参照してください。
 
 </details>
 
@@ -304,13 +304,13 @@ aggregation: {
 
 | カテゴリ | 説明 | 場所 |
 |----------|------|------|
-| Basic | はじめに | `examples/basic/` |
-| Classification | 色分けスキームデモ | `examples/advanced/` |
-| Temporal | 時系列データ | `examples/temporal/` |
-| Spatial ID | タイルグリッドモード | `examples/spatial-id/` |
-| Aggregation | レイヤ内訳 | `examples/aggregation/` |
-| Rendering | ワイヤーフレーム、高さベース | `examples/rendering/` |
-| Performance | 適応制御、オーバーレイ | `examples/observability/` |
+| Basic | はじめに | `examples/basic/index.html` |
+| Classification | 色分けスキームデモ | `examples/advanced/README.md` |
+| Temporal | 時系列データ | `examples/temporal/README.md` |
+| Spatial ID | タイルグリッドモード | `examples/spatial-id/README.md` |
+| Aggregation | レイヤ内訳 | `examples/aggregation/README.md` |
+| Rendering | ワイヤーフレーム、高さベース | `examples/rendering/README.md` |
+| Performance | 適応制御、オーバーレイ | `examples/observability/README.md` |
 
 ## ドキュメント
 

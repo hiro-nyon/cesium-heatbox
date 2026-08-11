@@ -179,9 +179,45 @@ const MathUtil = {
 // definedユーティリティ
 const defined = (v) => v !== undefined && v !== null;
 
-// Entityの軽量モック
+class ConstantProperty {
+  constructor(value) {
+    this._value = value;
+  }
+
+  getValue() {
+    return this._value;
+  }
+
+  setValue(value) {
+    this._value = value;
+  }
+}
+
+class PropertyBag {
+  constructor(properties = {}) {
+    Object.entries(properties).forEach(([key, value]) => {
+      this[key] = value && typeof value.getValue === 'function'
+        ? value
+        : new ConstantProperty(value);
+    });
+  }
+
+  getValue() {
+    return Object.fromEntries(Object.entries(this).map(([key, property]) => [
+      key,
+      property && typeof property.getValue === 'function' ? property.getValue() : property
+    ]));
+  }
+}
+
+// Entityの軽量モック（Cesium同様、propertiesはPropertyBagへ変換）
 class Entity {
-  constructor(options) { Object.assign(this, options); }
+  constructor(options = {}) {
+    Object.assign(this, options);
+    if (options.properties && !(options.properties instanceof PropertyBag)) {
+      this.properties = new PropertyBag(options.properties);
+    }
+  }
 }
 
 class Rectangle {
@@ -219,6 +255,8 @@ module.exports = {
   ScreenSpaceEventType,
   defined,
   Entity,
+  ConstantProperty,
+  PropertyBag,
   Rectangle,
   BoundingSphere,
   HeadingPitchRange,

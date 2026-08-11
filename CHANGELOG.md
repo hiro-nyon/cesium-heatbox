@@ -41,6 +41,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Cesium `PropertyBag` を使うクリック選択と差分描画時の太枠エンティティ回収を修正しました。
+- temporal global classification を実際のボクセル件数ドメインに統一し、Spatial ID QA metrics を統計へ自動反映しました。
+- `maxRenderVoxels`、TopN style、coverage/hybrid 選択、`fitView` オプションの境界処理を修正しました。
+- CommonJS/ESM の条件付き型定義と実行時 export を一致させ、ビルド生成物とサンプルリンクを整理しました。
+- npm Trusted Publishing 用に release job の GitHub Environment を `cesium-heatbox` へ設定しました。
+
 ## [1.3.6] - 2026-04-13
 
 ### Changed
@@ -560,7 +567,7 @@ v0.1系における適応的可視化機能の仕上げバージョン。Phase 0
 - **TopN強調表示**: `highlightTopN` オプションで密度上位Nボクセルのみを強調表示。`highlightStyle` でアウトライン幅や不透明度の調整が可能。
 
 ### Deprecated
-- **batchMode非推奨化**: `batchMode: 'auto'` オプションは非推奨化され、`debug` 時に警告を表示。v1.0.0で削除予定。
+- **batchMode非推奨化**: `batchMode: 'auto'` オプションは非推奨化され、`debug` 時に警告を表示。互換性維持のため v2.0.0 まで保持予定。
 
 ### Changed
 - **Logger拡張**: `Logger.setLogLevel()` が `debug` オプションのオブジェクト形式に対応。互換性を保ちつつ拡張。
