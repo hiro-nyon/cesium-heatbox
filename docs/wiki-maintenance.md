@@ -6,7 +6,7 @@
 
 ### Overview
 
-GitHub Wiki synchronization is driven by `npm run wiki:sync`. The sync process regenerates API reference pages from JSDoc and mirrors the main Markdown entry pages used by the Wiki.
+GitHub Wiki synchronization is driven by `npm run wiki:sync`. The sync process regenerates API reference pages from JSDoc and mirrors the main Markdown entry pages used by the Wiki. Publishing treats the tracked `wiki/*.md` set as authoritative, so pages removed from the repository are also removed from the public Wiki while remaining recoverable from Wiki Git history.
 
 ### Automation Configuration
 
@@ -175,7 +175,7 @@ npm run wiki:update
 
 ## 概要
 
-GitHub Wiki の同期は `npm run wiki:sync` を中心に行います。JSDoc から生成した API リファレンスに加え、Wiki の主要エントリページとして使う Markdown も同じ処理で `wiki/` に反映されます。
+GitHub Wiki の同期は `npm run wiki:sync` を中心に行います。JSDoc から生成した API リファレンスに加え、Wiki の主要エントリページとして使う Markdown も同じ処理で `wiki/` に反映されます。公開時は追跡中の`wiki/*.md`を正本としてミラーし、リポジトリから削除されたページは公開Wikiからも削除します。削除内容はWikiのGit履歴から復元できます。
 
 ## 自動化の構成
 
