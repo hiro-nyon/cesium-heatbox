@@ -63,10 +63,11 @@ git push origin --tags
 
 ファイル: `.github/workflows/release.yml`
 - `push.tags: [ 'v*' ]` で `v0.1.10` や `v0.1.10-alpha.0` の push をトリガに実行。
-- 版文字列に `-alpha.`/`-beta.`/`-rc.` を含む場合は `npm publish --tag next`、それ以外は `npm publish`。
+- 版文字列に `-alpha.`/`-beta.`/`-rc.` を含む場合は `npm publish --provenance --tag next`、それ以外は `npm publish --provenance`。
 - npm Trusted Publishing を使用するため、長期保存する `NPM_TOKEN` は不要。
 - npm 側の Trusted Publisher は `hiro-nyon/cesium-heatbox` の `release.yml` に限定する。
 - Workflow の `id-token: write` 権限により、公開時だけ有効な OIDC 資格情報を取得する。
+- `actions/setup-node` では `registry-url` を指定しない。従来認証用 `.npmrc` とダミー `NODE_AUTH_TOKEN` が OIDC より優先されるのを防ぐ。
 
 通常 CI: `.github/workflows/ci.yml`
 - `main`/`next` への push と PR で、Install→Test→Build→`npm pack --dry-run` まで実施。
