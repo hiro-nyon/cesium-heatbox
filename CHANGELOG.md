@@ -41,6 +41,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.7] - 2026-08-11
+
+### Added
+- 公開API、Markdownアンカー、リポジトリ/Wikiリンク、生成Wikiの再現性を検査するドキュメント品質ゲートと、配布物の第三者ライセンス表示を追加しました。
+
+### Changed
+- Ouranos-GEX公式providerを固定commit・integrity・upstream lockfileから再現可能にbuildし、ESM、CJS、UMDの遅延chunkとして同梱する方式へ変更しました。利用者側の追加インストールは不要です。
+- npm公開workflowをタグpush専用にし、版番号・ブランチレーン・未公開版・Release notes本文をfail-closedで検証するよう強化しました。
+
+### Fixed
+- 公開APIと型定義、Spatial IDフォールバック説明、Quick Start、開発/リリース手順、Wikiリンクの不一致を修正しました。
+- GitHub ActionsでOuranosのbuild依存が欠落し、公式providerの遅延chunkを含まないパッケージが生成される問題を修正しました。
+
+## [1.3.7-alpha.5] - 2026-08-11
+
+### Fixed
+- Ouranosを実行時optional dependencyではなく固定commitのbuild dependencyとして扱い、build前に公式ソースを再現可能な形で準備するよう修正しました。利用者側の追加インストールは不要です。
+- package smoke testでESM、CJS、UMDのOuranos遅延chunkを必須化し、公式providerが欠落したパッケージの公開を防止しました。
+
+## [1.3.7-alpha.4] - 2026-08-11
+
+### Added
+- 公開API、Markdownアンカー、リポジトリ/Wikiリンク、生成Wikiの再現性を検査するドキュメント品質ゲートをCIに追加しました。
+- bundleへ同梱する依存コードの許諾表示を `THIRD_PARTY_NOTICES` に追加しました。
+
+### Changed
+- Quick Startを実利用者向けの導入に再構成し、APIリファレンス、README、開発環境ガイド、生成Wikiを現行APIとリリース運用に同期しました。
+- npm配布対象を実行時生成物、型定義、Ouranos導入bin、必要文書に絞り、Ouranos依存と導入binを同一commitへ固定しました。
+- 公開workflowをタグpush専用にし、タグ・package・lockfile・実行時版番の一致、`next`/`main` の公開レーン、npm未公開版をpublish前に検証するよう強化しました。
+- Cesium互換CIで最低対応版 `1.120.0` を完全固定で検証するようにしました。
+
+### Fixed
+- `setData()` の `Promise<void>`、`maxRenderVoxels: 'auto'`、Spatial IDフォールバック統計など、公開文書と実装/型定義の不一致を修正しました。
+- Wiki同期時にリポジトリ相対リンクが壊れる問題と、存在しないクラスページへの生成リンクを修正しました。
+- Cesiumの推移依存を更新し、公開前の本番依存監査で検出された脆弱性を解消しました。
+
+## [1.3.7-alpha.3] - 2026-08-11
+
+### Fixed
+- Cesium `PropertyBag` を使うクリック選択と差分描画時の太枠エンティティ回収を修正しました。
+- temporal global classification を実際のボクセル件数ドメインに統一し、Spatial ID QA metrics を統計へ自動反映しました。
+- `maxRenderVoxels`、TopN style、coverage/hybrid 選択、`fitView` オプションの境界処理を修正しました。
+- CommonJS/ESM の条件付き型定義と実行時 export を一致させ、ビルド生成物とサンプルリンクを整理しました。
+- npm Trusted Publishing 用に release job の GitHub Environment と registry を設定し、対応 npm CLI バージョンを保証しました。
+
 ## [1.3.6] - 2026-04-13
 
 ### Changed
@@ -560,7 +605,7 @@ v0.1系における適応的可視化機能の仕上げバージョン。Phase 0
 - **TopN強調表示**: `highlightTopN` オプションで密度上位Nボクセルのみを強調表示。`highlightStyle` でアウトライン幅や不透明度の調整が可能。
 
 ### Deprecated
-- **batchMode非推奨化**: `batchMode: 'auto'` オプションは非推奨化され、`debug` 時に警告を表示。v1.0.0で削除予定。
+- **batchMode非推奨化**: `batchMode: 'auto'` オプションは非推奨化され、`debug` 時に警告を表示。互換性維持のため v2.0.0 まで保持予定。
 
 ### Changed
 - **Logger拡張**: `Logger.setLogLevel()` が `debug` オプションのオブジェクト形式に対応。互換性を保ちつつ拡張。

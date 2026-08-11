@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/ColorCalculator.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Class: ColorCalculator（ColorCalculatorクラス）
 
 **日本語** | [English](#english)

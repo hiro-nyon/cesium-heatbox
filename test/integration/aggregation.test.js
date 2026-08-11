@@ -5,6 +5,8 @@
 import { Heatbox } from '../../src/Heatbox.js';
 import { createMockViewer } from '../helpers/testHelpers.js';
 
+const entityType = entity => entity.properties?.getValue?.().type ?? entity.properties?.type;
+
 describe('Layer Aggregation Integration (ADR-0014)', () => {
   let viewer;
   let heatbox;
@@ -137,9 +139,7 @@ describe('Layer Aggregation Integration (ADR-0014)', () => {
 
       // Check rendered entities
       const allEntities = Array.from(viewer.entities.values);
-      const renderedEntities = allEntities.filter(e => 
-        e.properties && e.properties.type === 'voxel'
-      );
+      const renderedEntities = allEntities.filter(e => entityType(e) === 'voxel');
 
       expect(renderedEntities.length).toBeGreaterThan(0);
 
@@ -181,9 +181,7 @@ describe('Layer Aggregation Integration (ADR-0014)', () => {
       await heatbox.createFromEntities(entities);
 
       const allEntities = Array.from(viewer.entities.values);
-      const renderedEntities = allEntities.filter(e => 
-        e.properties && e.properties.type === 'voxel'
-      );
+      const renderedEntities = allEntities.filter(e => entityType(e) === 'voxel');
 
       const voxelEntity = renderedEntities[0];
       expect(voxelEntity.description).toBeDefined();
@@ -219,9 +217,7 @@ describe('Layer Aggregation Integration (ADR-0014)', () => {
       await heatbox.createFromEntities(entities);
 
       const allEntities = Array.from(viewer.entities.values);
-      const renderedEntities = allEntities.filter(e => 
-        e.properties && e.properties.type === 'voxel'
-      );
+      const renderedEntities = allEntities.filter(e => entityType(e) === 'voxel');
 
       const voxelEntity = renderedEntities[0];
       const description = voxelEntity.description;
@@ -337,9 +333,7 @@ describe('Layer Aggregation Integration (ADR-0014)', () => {
       await heatbox.createFromEntities(entities);
 
       const allEntities = Array.from(viewer.entities.values);
-      const renderedEntities = allEntities.filter(e => 
-        e.properties && e.properties.type === 'voxel'
-      );
+      const renderedEntities = allEntities.filter(e => entityType(e) === 'voxel');
 
       const voxelEntity = renderedEntities[0];
       const description = voxelEntity.description;
@@ -385,4 +379,3 @@ describe('Layer Aggregation Integration (ADR-0014)', () => {
     });
   });
 });
-

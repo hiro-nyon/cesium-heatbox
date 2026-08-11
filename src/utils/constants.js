@@ -29,18 +29,14 @@ export const DEFAULT_OPTIONS = {
   highlightTopN: null, // トップN強調表示（null: 無効）
   highlightStyle: {
     outlineWidth: 4,
-    boostOpacity: 0.2
+    boostOpacity: 0.2,
+    boostOutlineWidth: 0
   },
   // v0.1.6: 枠線重なり対策・柔軟化
   voxelGap: 0, // ボクセル間ギャップ（メートル）
   outlineOpacity: 1.0, // 枠線透明度（0-1）
   outlineWidthResolver: null, // 関数: (params) => number で動的太さ制御
   // 実質的な太さ表現のための代替描画（WebGLの線幅制限回避用）
-  /**
-   * @deprecated v0.1.12 — Use `outlineRenderMode` and `emulationScope` instead.
-   * 'off' | 'topn' | 'non-topn' | 'all'
-   */
-  outlineEmulation: 'off',
   // v0.1.6.1: インセット枠線（ADR-0004）
   outlineInset: 0, // インセット枠線のオフセット距離（メートル、0で無効）
   outlineInsetMode: 'all', // インセット枠線の適用範囲：'all'（全体） | 'topn'（TopNのみ）
@@ -127,7 +123,10 @@ export const DEFAULT_OPTIONS = {
       opacity: false,
       width: false
     }
-  }
+  },
+
+  // v1.2.0: Cesium Clock synchronization (opt-in)
+  temporal: null
 };
 
 /**

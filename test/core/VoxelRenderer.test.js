@@ -223,6 +223,81 @@ describe('VoxelRenderer', () => {
     expect(viewer.entities.add).toHaveBeenCalled();
     expect(renderer.voxelEntities.length).toBeGreaterThan(0);
   });
+
+  test('空セル表示の上限内では実データを空セルより優先する', () => {
+    const viewer = testUtils.createMockViewer();
+    const renderer = new VoxelRenderer(viewer, {
+      maxRenderVoxels: 1,
+      showEmptyVoxels: true
+    });
+    const voxelData = new Map([
+      ['1,0,0', { x: 1, y: 0, z: 0, count: 5 }]
+    ]);
+    const grid = {
+      numVoxelsX: 2,
+      numVoxelsY: 1,
+      numVoxelsZ: 1,
+      voxelSizeMeters: 10,
+      totalVoxels: 2
+    };
+
+    renderer.render(
+      voxelData,
+      { minLon: 0, maxLon: 2, minLat: 0, maxLat: 1, minAlt: 0, maxAlt: 1 },
+      grid,
+      { minCount: 5, maxCount: 5 }
+    );
+
+    expect(viewer.entities.add).toHaveBeenCalledTimes(1);
+    expect(viewer.entities.add.mock.calls[0][0].properties.key).toBe('1,0,0');
+  });
+
+  test('空間IDモードの空セル表示でも実データを保持する', () => {
+    const viewer = testUtils.createMockViewer();
+    const renderer = new VoxelRenderer(viewer, {
+      maxRenderVoxels: 10,
+      showEmptyVoxels: true,
+      spatialId: { enabled: true }
+    });
+    const voxelData = new Map([
+      ['/25/0/1/2', {
+        x: 1,
+        y: 2,
+        z: 0,
+        count: 3,
+        spatialId: { id: '/25/0/1/2', z: 25, f: 0, x: 1, y: 2 }
+      }]
+    ]);
+
+    renderer.render(
+      voxelData,
+      { minLon: 0, maxLon: 1, minLat: 0, maxLat: 1, minAlt: 0, maxAlt: 1 },
+      { numVoxelsX: 1, numVoxelsY: 1, numVoxelsZ: 1, voxelSizeMeters: 10, totalVoxels: 1 },
+      { minCount: 3, maxCount: 3 }
+    );
+
+    expect(viewer.entities.add).toHaveBeenCalledTimes(1);
+    expect(viewer.entities.add.mock.calls[0][0].properties.key).toBe('/25/0/1/2');
+  });
+
+  test('選択統計を描画フレームごとにリセットする', () => {
+    const viewer = testUtils.createMockViewer();
+    const renderer = new VoxelRenderer(viewer, { maxRenderVoxels: 1 });
+    const voxelData = new Map([
+      ['0,0,0', { x: 0, y: 0, z: 0, count: 1 }],
+      ['1,0,0', { x: 1, y: 0, z: 0, count: 2 }]
+    ]);
+    const bounds = { minLon: 0, maxLon: 2, minLat: 0, maxLat: 1, minAlt: 0, maxAlt: 1 };
+    const grid = { numVoxelsX: 2, numVoxelsY: 1, numVoxelsZ: 1, voxelSizeMeters: 10, totalVoxels: 2 };
+    const statistics = { minCount: 1, maxCount: 2 };
+
+    renderer.render(voxelData, bounds, grid, statistics);
+    expect(renderer.getSelectionStats()).not.toBeNull();
+
+    renderer.options.maxRenderVoxels = 10;
+    renderer.render(voxelData, bounds, grid, statistics);
+    expect(renderer.getSelectionStats()).toBeNull();
+  });
   
   // v0.1.6: 枠線重なり対策の基本テスト
   describe('枠線重なり対策', () => {
@@ -306,14 +381,14 @@ describe('VoxelRenderer', () => {
         renderer = new VoxelRenderer(viewer, {
             outlineWidth: 2,
             highlightTopN: 1,
-            highlightStyle: { outlineWidth: 4 }
+            highlightStyle: { outlineWidth: 4, boostOutlineWidth: 1.5 }
         });
         renderer.render(voxelData, bounds, grid, statistics);
 
         const topNVoxelCall = mockAdd.mock.calls.find(call => call[0].properties.key === '0,0,0');
         const otherVoxelCall = mockAdd.mock.calls.find(call => call[0].properties.key === '1,1,1');
 
-        expect(topNVoxelCall[0].box.outlineWidth).toBe(4);
+        expect(topNVoxelCall[0].box.outlineWidth).toBe(5.5);
         expect(otherVoxelCall[0].box.outlineWidth).toBe(2);
     });
   });

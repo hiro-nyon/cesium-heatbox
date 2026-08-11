@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/VoxelRenderer.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Class: VoxelRenderer（VoxelRendererクラス）
 
 **日本語** | [English](#english)

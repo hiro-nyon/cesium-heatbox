@@ -8,6 +8,8 @@
 **Last Updated**: September 2025  
 **Author**: hiro-nyon  
 
+> Historical design baseline: this specification describes the v0.1.9 architecture and is retained for design context. For the current v1.3.7 public API and behavior, see [API Reference](API.md), [Quick Start](quick-start.md), and the source code.
+
 ### Table of Contents
 
 1. [Project Overview](#project-overview)
@@ -275,6 +277,8 @@ For detailed specifications, constraints, and implementation guidelines, see the
 **最終更新**: 2025年9月  
 **作成者**: hiro-nyon  
 
+> 歴史的な設計基準: この仕様書はv0.1.9時点のアーキテクチャを記録したものです。現在のv1.3.7の公開APIと動作は、[APIリファレンス](API.md)、[クイックスタート](quick-start.md)、ソースコードを参照してください。
+
 ## 目次
 
 1. [プロジェクト概要](#プロジェクト概要)
@@ -390,7 +394,7 @@ import { generateTestEntities } from 'cesium-heatbox';
 ##### UMD（レガシー対応）
 ```html
 <!-- ブラウザ直接読み込み -->
-<script src="cesium-heatbox.umd.js"></script>
+<script src="cesium-heatbox.umd.min.js"></script>
 <script>
   const heatbox = new CesiumHeatbox(viewer);
 </script>
@@ -522,8 +526,8 @@ module.exports = (env, argv) => {
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: isProduction ? 
-        'cesium-heatbox.min.js' : 
-        'cesium-heatbox.js',
+        'cesium-heatbox.umd.min.js' :
+        'cesium-heatbox.umd.min.js',
       library: {
         name: 'CesiumHeatbox',
         type: 'umd',
@@ -918,12 +922,13 @@ cesium-heatbox/
 │       ├── validation.js
 │       └── constants.js
 ├── dist/                      # ビルド出力
-│   ├── cesium-heatbox.js
-│   ├── cesium-heatbox.min.js
-│   ├── cesium-heatbox.umd.js
-│   └── cesium-heatbox.d.ts
+│   ├── cesium-heatbox.min.mjs
+│   ├── cesium-heatbox.cjs
+│   └── cesium-heatbox.umd.min.js
 ├── types/                     # TypeScript型定義
-│   └── index.d.ts
+│   ├── index.d.ts
+│   ├── index.d.mts
+│   └── index.d.cts
 ├── test/                      # テストコード
 │   ├── Heatbox.test.js
 │   ├── integration/
@@ -936,7 +941,7 @@ cesium-heatbox/
 │   └── performance/
 ├── docs/                      # ドキュメント
 │   ├── API.md
-│   ├── getting-started.md
+│   ├── development-setup.md
 │   ├── examples.md
 │   └── contributing.md
 └── tools/                     # 開発ツール
@@ -996,8 +1001,8 @@ npm run benchmark
 {
   "name": "cesium-heatbox",
   "version": "0.1.4",
-  "main": "dist/cesium-heatbox.umd.min.js",
-  "module": "dist/cesium-heatbox.min.js",
+  "main": "dist/cesium-heatbox.cjs",
+  "module": "dist/cesium-heatbox.min.mjs",
   "types": "types/index.d.ts",
   "browser": "dist/cesium-heatbox.umd.min.js",
   "files": [
@@ -1010,9 +1015,9 @@ npm run benchmark
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "import": "./dist/cesium-heatbox.min.js",
-      "require": "./dist/cesium-heatbox.umd.min.js",
-      "default": "./dist/cesium-heatbox.umd.min.js"
+      "import": "./dist/cesium-heatbox.min.mjs",
+      "require": "./dist/cesium-heatbox.cjs",
+      "default": "./dist/cesium-heatbox.cjs"
     }
   }
 }
@@ -1021,10 +1026,10 @@ npm run benchmark
 #### CDN配布
 ```html
 <!-- jsDelivr CDN -->
-<script src="https://cdn.jsdelivr.net/npm/cesium-heatbox@latest/dist/cesium-heatbox.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
 
 <!-- unpkg CDN -->
-<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.min.js"></script>
+<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
 ```
 
 ### クラス構造
@@ -1685,18 +1690,23 @@ on:
   push:
     tags: ['v*']
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
       - run: npm ci
       - run: npm run build:all
       - run: npm test:all
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --provenance
       - uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

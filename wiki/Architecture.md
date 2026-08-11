@@ -1,12 +1,16 @@
+<!-- Generated from docs/specification.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
 # CesiumJS Heatbox Library Specification (CesiumJS Heatbox ライブラリ仕様書)
 
 [English](#english) | [日本語](#日本語)
 
 ## English
 
-**Version**: 0.1.9  
-**Last Updated**: September 2025  
-**Author**: hiro-nyon  
+**Version**: 0.1.9
+**Last Updated**: September 2025
+**Author**: hiro-nyon
+
+> Historical design baseline: this specification describes the v0.1.9 architecture and is retained for design context. For the current v1.3.7 public API and behavior, see [API Reference](API), [Quick Start](Quick-Start), and the source code.
 
 ### Table of Contents
 
@@ -271,9 +275,11 @@ For detailed specifications, constraints, and implementation guidelines, see the
 
 ## 日本語
 
-**バージョン**: 0.1.9  
-**最終更新**: 2025年9月  
-**作成者**: hiro-nyon  
+**バージョン**: 0.1.9
+**最終更新**: 2025年9月
+**作成者**: hiro-nyon
+
+> 歴史的な設計基準: この仕様書はv0.1.9時点のアーキテクチャを記録したものです。現在のv1.3.7の公開APIと動作は、[APIリファレンス](API)、[クイックスタート](Quick-Start)、ソースコードを参照してください。
 
 ## 目次
 
@@ -390,7 +396,7 @@ import { generateTestEntities } from 'cesium-heatbox';
 ##### UMD（レガシー対応）
 ```html
 <!-- ブラウザ直接読み込み -->
-<script src="cesium-heatbox.umd.js"></script>
+<script src="cesium-heatbox.umd.min.js"></script>
 <script>
   const heatbox = new CesiumHeatbox(viewer);
 </script>
@@ -515,15 +521,15 @@ const ESLintPlugin = require('eslint-webpack-plugin');
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
-  
+
   return {
     entry: './src/index.js',
-    
+
     output: {
       path: path.resolve(__dirname, 'dist'),
-      filename: isProduction ? 
-        'cesium-heatbox.min.js' : 
-        'cesium-heatbox.js',
+      filename: isProduction ?
+        'cesium-heatbox.umd.min.js' :
+        'cesium-heatbox.umd.min.js',
       library: {
         name: 'CesiumHeatbox',
         type: 'umd',
@@ -532,7 +538,7 @@ module.exports = (env, argv) => {
       globalObject: 'this',
       clean: true
     },
-    
+
     externals: {
       cesium: {
         commonjs: 'cesium',
@@ -541,7 +547,7 @@ module.exports = (env, argv) => {
         root: 'Cesium'
       }
     },
-    
+
     module: {
       rules: [
         {
@@ -562,7 +568,7 @@ module.exports = (env, argv) => {
         }
       ]
     },
-    
+
     plugins: [
       new ESLintPlugin({
         extensions: ['js'],
@@ -570,17 +576,17 @@ module.exports = (env, argv) => {
         fix: true
       })
     ],
-    
+
     resolve: {
       extensions: ['.js']
     },
-    
+
     devtool: isProduction ? 'source-map' : 'eval-source-map',
-    
+
     optimization: {
       minimize: isProduction
     },
-    
+
     devServer: {
       static: {
         directory: path.join(__dirname, 'examples'),
@@ -784,19 +790,19 @@ const voxelZ = Math.floor(
 1. **Entity範囲計算**: `CoordinateTransformer.calculateBounds(entities)`
    - 全エンティティの3D Bounding Boxを計算
    - 有効な位置情報を持つエンティティのみを対象
-   
+
 2. **ボクセルグリッド生成**: `VoxelGrid.createGrid(bounds, voxelSize)`
    - 範囲を内包する最小のボクセルグリッドを生成
    - ボクセル数 = ceil(範囲_メートル / ボクセルサイズ_メートル)
-   
+
 3. **エンティティ分類**: `DataProcessor.classifyEntitiesIntoVoxels(entities, bounds, grid)`
    - 各エンティティのボクセルインデックスを計算
    - Map構造でボクセルごとのエンティティリストを管理
-   
+
 4. **統計計算**: `DataProcessor.calculateStatistics(voxelData, grid)`
    - 密度の最小値・最大値・平均値を計算
    - 空ボクセル数もカウント
-   
+
 5. **可視化**: `VoxelRenderer.render(voxelData, bounds, grid, stats)`
    - **描画はCesium.Entity.BoxをGeometryInstance + Primitiveでバッチ化して行う**
    - 密度に応じた色分けを適用
@@ -820,7 +826,7 @@ const voxelZ = Math.floor(
 
 #### 色分けアルゴリズム
 - **カラーマップ**: HSV補間による線形色分け
-- **デフォルト色範囲**: 
+- **デフォルト色範囲**:
   - minColor: [0, 32, 255] （青系）
   - maxColor: [255, 64, 0] （赤系）
 - **正規化**: 密度の最小値・最大値から相対的色分け
@@ -833,16 +839,16 @@ class VoxelRenderer {
   createBatchedVoxels(voxelData, options) {
     const instances = [];
     const { minCount, maxCount } = this.statistics;
-    
+
     voxelData.forEach((voxel) => {
       // HSV補間による色計算
       const normalizedDensity = (voxel.count - minCount) / (maxCount - minCount);
       const hue = (1.0 - normalizedDensity) * 240; // 青(240°) → 赤(0°)
       const saturation = 0.8 + normalizedDensity * 0.2; // 彩度調整
       const brightness = 0.7 + normalizedDensity * 0.3; // 明度調整
-      
+
       const color = Cesium.Color.fromHsl(hue / 360, saturation, brightness);
-      
+
       // GeometryInstance作成
       const instance = new Cesium.GeometryInstance({
         geometry: new Cesium.BoxGeometry({
@@ -864,10 +870,10 @@ class VoxelRenderer {
           )
         }
       });
-      
+
       instances.push(instance);
     });
-    
+
     // Primitive作成（バッチ描画）
     const primitive = new Cesium.Primitive({
       geometryInstances: instances,
@@ -877,7 +883,7 @@ class VoxelRenderer {
       }),
       allowPicking: true
     });
-    
+
     return primitive;
   }
 }
@@ -918,12 +924,13 @@ cesium-heatbox/
 │       ├── validation.js
 │       └── constants.js
 ├── dist/                      # ビルド出力
-│   ├── cesium-heatbox.js
-│   ├── cesium-heatbox.min.js
-│   ├── cesium-heatbox.umd.js
-│   └── cesium-heatbox.d.ts
+│   ├── cesium-heatbox.min.mjs
+│   ├── cesium-heatbox.cjs
+│   └── cesium-heatbox.umd.min.js
 ├── types/                     # TypeScript型定義
-│   └── index.d.ts
+│   ├── index.d.ts
+│   ├── index.d.mts
+│   └── index.d.cts
 ├── test/                      # テストコード
 │   ├── Heatbox.test.js
 │   ├── integration/
@@ -936,7 +943,7 @@ cesium-heatbox/
 │   └── performance/
 ├── docs/                      # ドキュメント
 │   ├── API.md
-│   ├── getting-started.md
+│   ├── development-setup.md
 │   ├── examples.md
 │   └── contributing.md
 └── tools/                     # 開発ツール
@@ -968,7 +975,7 @@ npm run build
 # ESM版のみ
 npm run build:esm
 
-# UMD版のみ  
+# UMD版のみ
 npm run build:umd
 
 # 型定義生成
@@ -996,8 +1003,8 @@ npm run benchmark
 {
   "name": "cesium-heatbox",
   "version": "0.1.4",
-  "main": "dist/cesium-heatbox.umd.min.js",
-  "module": "dist/cesium-heatbox.min.js",
+  "main": "dist/cesium-heatbox.cjs",
+  "module": "dist/cesium-heatbox.min.mjs",
   "types": "types/index.d.ts",
   "browser": "dist/cesium-heatbox.umd.min.js",
   "files": [
@@ -1010,9 +1017,9 @@ npm run benchmark
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "import": "./dist/cesium-heatbox.min.js",
-      "require": "./dist/cesium-heatbox.umd.min.js",
-      "default": "./dist/cesium-heatbox.umd.min.js"
+      "import": "./dist/cesium-heatbox.min.mjs",
+      "require": "./dist/cesium-heatbox.cjs",
+      "default": "./dist/cesium-heatbox.cjs"
     }
   }
 }
@@ -1021,10 +1028,10 @@ npm run benchmark
 #### CDN配布
 ```html
 <!-- jsDelivr CDN -->
-<script src="https://cdn.jsdelivr.net/npm/cesium-heatbox@latest/dist/cesium-heatbox.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
 
 <!-- unpkg CDN -->
-<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.min.js"></script>
+<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
 ```
 
 ### クラス構造
@@ -1080,7 +1087,7 @@ const voxelData = new Map(); // Key: "x,y,z", Value: VoxelInfo
 
 const voxelInfo = {
     x: number,              // ボクセルX座標
-    y: number,              // ボクセルY座標  
+    y: number,              // ボクセルY座標
     z: number,              // ボクセルZ座標
     entities: Entity[],     // 含まれるエンティティ配列
     count: number          // エンティティ数
@@ -1301,15 +1308,15 @@ const defaultSettings = {
 
 ```javascript
 const controlRanges = {
-    voxelSize: { 
+    voxelSize: {
         min: 10, max: 100, step: 5,
         sliderRange: [10, 50]    // UIスライダーの推奨範囲
     },
-    entityCount: { 
+    entityCount: {
         min: 50, max: 3000, step: 50,
         recommended: [200, 1500]  // 推奨範囲
     },
-    opacity: { 
+    opacity: {
         min: 0.1, max: 1.0, step: 0.1,
         dataVoxel: [0.5, 1.0],   // データボクセル推奨
         emptyVoxel: [0.01, 0.2]  // 空ボクセル推奨
@@ -1363,7 +1370,7 @@ describe('Heatbox', () => {
     test('基本的なヒートマップ作成', () => {});
     test('異なるボクセルサイズでの動作', () => {});
     test('空ボクセル表示の切り替え', () => {});
-    
+
     // 異常系テスト
     test('エンティティなしでのエラー処理', () => {});
     test('無効な位置情報の処理', () => {});
@@ -1425,11 +1432,11 @@ describe('極値ケーステスト', () => {
     const bounds = { /* 500m × 500m range */ };
     const options = { voxelSize: 100 };
     const entities = generateTestEntities(viewer, bounds, 1000);
-    
+
     const startTime = performance.now();
     await heatmap.createFromEntities(entities);
     const endTime = performance.now();
-    
+
     expect(endTime - startTime).toBeLessThan(3000); // 3秒以内
     expect(heatmap.getStatistics().renderedVoxels).toBeLessThan(125); // 5×5×5
   });
@@ -1481,7 +1488,7 @@ module.exports = {
 // 3D空間の均等分割
 const voxelIndex = {
     x: Math.floor((position.x - minX) / voxelSize),
-    y: Math.floor((position.y - minY) / voxelSize), 
+    y: Math.floor((position.y - minY) / voxelSize),
     z: Math.floor((position.z - minZ) / voxelSize)
 };
 ```
@@ -1631,7 +1638,7 @@ jobs:
       - run: npm run type-check
       - run: npm test
       - run: npm run build
-      
+
   coverage:
     runs-on: ubuntu-latest
     steps:
@@ -1685,18 +1692,23 @@ on:
   push:
     tags: ['v*']
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
       - run: npm ci
       - run: npm run build:all
       - run: npm test:all
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --provenance
       - uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -1747,7 +1759,7 @@ const buildingLevelConfig = {
 ```javascript
 const blockLevelConfig = {
     voxelSize: 25,
-    area: "500m × 500m", 
+    area: "500m × 500m",
     entities: 1500,
     useCase: "商業地区分析"
 };

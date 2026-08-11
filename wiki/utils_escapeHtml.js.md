@@ -1,10 +1,10 @@
+<!-- Generated from docs/api/utils_escapeHtml.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: utils/escapeHtml.js
 
 **日本語** | [English](#english)
 
 ## English
-
-See also: [Class: escapeHtml](escapeHtml)
 
 ```javascript
 const ESCAPE_MAP = {
@@ -35,8 +35,6 @@ export function escapeHtml(value) {
 ```
 
 ## 日本語
-
-関連: [escapeHtmlクラス](escapeHtml)
 
 ```javascript
 const ESCAPE_MAP = {

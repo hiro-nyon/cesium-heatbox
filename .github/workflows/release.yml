@@ -1,119 +1,193 @@
 name: Release
+
 on:
   push:
     tags:
       - 'v*'
-  release:
-    types: [published]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to build (e.g. v0.1.11-alpha.1)'
-        required: false
-        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-cesium-heatbox
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: cesium-heatbox
     steps:
-      # next の柔軟なチェックアウト戦略を採用
-      - name: Checkout (event ref)
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.tag == '' }}
+      - name: Checkout release tag
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-      - name: Checkout (specified tag)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.tag != '' }}
-        uses: actions/checkout@v4
-        with:
-          ref: refs/tags/${{ inputs.tag }}
-      
-      # 基本セットアップ
+          fetch-depth: 0
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      # main の構造化されたビルドプロセス
-      - name: Build all formats
-        run: npm run build
-      
-      - name: Run tests
-        run: npm test
-      
-      # main のメタデータ処理を採用
-      - name: Read package version
+          package-manager-cache: false
+
+      - name: Validate release identity and branch lane
         id: meta
         shell: bash
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
 
-      - name: Determine release tag
-        id: release_tag
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.tag }}" ]; then
-            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "release" ]; then
-            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
-          else
-            ref_name="${GITHUB_REF##*/}"
-            if [ -n "$ref_name" ]; then
-              echo "tag=$ref_name" >> "$GITHUB_OUTPUT"
-            else
-              echo "tag=v${{ steps.meta.outputs.version }}" >> "$GITHUB_OUTPUT"
+          VERSION=$(node -p "require('./package.json').version")
+          LOCK_VERSION=$(node -p "require('./package-lock.json').version")
+          LOCK_ROOT_VERSION=$(node -p "require('./package-lock.json').packages[''].version")
+          SOURCE_VERSION=$(node -e "const fs=require('fs'); const source=fs.readFileSync('src/index.js','utf8'); const match=source.match(/export const VERSION\\s*=\\s*['\"]([^'\"]+)['\"]/); if (!match) process.exit(1); process.stdout.write(match[1]);")
+          EXPECTED_TAG="v${VERSION}"
+
+          if [ "$TAG_NAME" != "$EXPECTED_TAG" ]; then
+            echo "Tag/package mismatch: tag=$TAG_NAME package=$VERSION" >&2
+            exit 1
+          fi
+
+          if [ "$LOCK_VERSION" != "$VERSION" ] || [ "$LOCK_ROOT_VERSION" != "$VERSION" ]; then
+            echo "package-lock.json version does not match package.json: package=$VERSION lock=$LOCK_VERSION lock-root=$LOCK_ROOT_VERSION" >&2
+            exit 1
+          fi
+
+          if [ "$SOURCE_VERSION" != "$VERSION" ]; then
+            echo "src/index.js VERSION does not match package.json: package=$VERSION source=$SOURCE_VERSION" >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin \
+            +refs/heads/main:refs/remotes/origin/main \
+            +refs/heads/next:refs/remotes/origin/next
+
+          TAG_COMMIT=$(git rev-list -n 1 "refs/tags/$TAG_NAME")
+          MAIN_COMMIT=$(git rev-parse refs/remotes/origin/main)
+          NEXT_COMMIT=$(git rev-parse refs/remotes/origin/next)
+
+          if [[ "$VERSION" == *-* ]]; then
+            case "$VERSION" in
+              *-alpha.*|*-beta.*|*-rc.*) ;;
+              *)
+                echo "Unsupported prerelease identifier: $VERSION" >&2
+                exit 1
+                ;;
+            esac
+
+            if [ "$TAG_COMMIT" != "$NEXT_COMMIT" ]; then
+              echo "Prerelease tags must point to the current next head: tag=$TAG_COMMIT next=$NEXT_COMMIT" >&2
+              exit 1
             fi
+            CHANNEL=next
+            IS_PRERELEASE=true
+          else
+            if [ "$MAIN_COMMIT" != "$NEXT_COMMIT" ]; then
+              echo "Stable release requires main and next to point to the same commit: main=$MAIN_COMMIT next=$NEXT_COMMIT" >&2
+              exit 1
+            fi
+            if [ "$TAG_COMMIT" != "$MAIN_COMMIT" ]; then
+              echo "Stable tags must point to the current main head: tag=$TAG_COMMIT main=$MAIN_COMMIT" >&2
+              exit 1
+            fi
+            CHANNEL=latest
+            IS_PRERELEASE=false
+          fi
+
+          {
+            echo "version=$VERSION"
+            echo "tag=$TAG_NAME"
+            echo "channel=$CHANNEL"
+            echo "is_prerelease=$IS_PRERELEASE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Ensure npm supports trusted publishing
+        run: |
+          npm install --global "npm@^11.15.0"
+          npm --version
+
+      - name: Reject an already published version
+        shell: bash
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          PUBLISHED_VERSIONS=$(npm view "$PACKAGE_NAME" versions --json)
+          if node -e "const versions=JSON.parse(process.argv[1]); const list=Array.isArray(versions) ? versions : [versions]; process.exit(list.includes(process.argv[2]) ? 0 : 1);" "$PUBLISHED_VERSIONS" "$VERSION"; then
+            echo "$PACKAGE_NAME@$VERSION is already published and cannot be reused." >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all formats
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Dry run package contents
+        run: npm pack --dry-run
+
+      - name: Publish to npm
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          CHANNEL: ${{ steps.meta.outputs.channel }}
+        run: |
+          echo "Publishing version $VERSION to @$CHANNEL"
+          if [ "$CHANNEL" = "next" ]; then
+            npm publish --provenance --tag next
+          else
+            npm publish --provenance
           fi
 
       - name: Generate release notes
         id: release_notes
         uses: actions/github-script@v7
         env:
-          RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
+          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
         with:
           result-encoding: string
           script: |
-            const tag = process.env.RELEASE_TAG || `v${{ steps.meta.outputs.version }}`;
+            const tag = process.env.RELEASE_TAG;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            try {
-              const notes = await github.rest.repos.generateReleaseNotes({
-                owner,
-                repo,
-                tag_name: tag,
-                target_commitish: context.sha
-              });
-              core.setOutput('body', notes.data.body || '');
-              core.setOutput('name', notes.data.name || tag);
-              core.setOutput('tag', tag);
-            } catch (error) {
-              core.warning(`Failed to generate release notes: ${error.message}`);
-              core.setOutput('body', '');
-              core.setOutput('name', tag);
-              core.setOutput('tag', tag);
+            const notes = await github.rest.repos.generateReleaseNotes({
+              owner,
+              repo,
+              tag_name: tag,
+              target_commitish: context.sha
+            });
+            const body = (notes.data.body || '').trim();
+            if (!body) {
+              throw new Error(`Generated release notes for ${tag} are empty`);
             }
+            core.setOutput('body', body);
+            core.setOutput('name', notes.data.name || tag);
 
-      - name: Create or update GitHub release (non-release event)
-        if: ${{ github.event_name != 'release' }}
+      - name: Create or update GitHub release
         uses: actions/github-script@v7
         env:
           RELEASE_BODY: ${{ steps.release_notes.outputs.body }}
           RELEASE_NAME: ${{ steps.release_notes.outputs.name }}
-          RELEASE_TAG: ${{ steps.release_notes.outputs.tag }}
-          VERSION: ${{ steps.meta.outputs.version }}
+          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
+          IS_PRERELEASE: ${{ steps.meta.outputs.is_prerelease }}
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const tag = process.env.RELEASE_TAG || `v${process.env.VERSION}`;
+            const tag = process.env.RELEASE_TAG;
             const name = process.env.RELEASE_NAME || tag;
-            const body = process.env.RELEASE_BODY || '';
-            const prerelease = process.env.VERSION.includes('-');
+            const body = (process.env.RELEASE_BODY || '').trim();
+            const prerelease = process.env.IS_PRERELEASE === 'true';
+
+            if (!body) {
+              throw new Error(`Refusing to publish ${tag} with empty release notes`);
+            }
 
             try {
               const existing = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
@@ -143,54 +217,16 @@ jobs:
               }
             }
 
-      - name: Update GitHub release notes (release event)
-        if: ${{ github.event_name == 'release' }}
-        uses: actions/github-script@v7
-        env:
-          RELEASE_BODY: ${{ steps.release_notes.outputs.body }}
-          RELEASE_NAME: ${{ steps.release_notes.outputs.name }}
-        with:
-          script: |
-            const releaseId = context.payload.release.id;
-            const body = process.env.RELEASE_BODY || context.payload.release.body || '';
-            const name = process.env.RELEASE_NAME || context.payload.release.name || context.payload.release.tag_name;
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: releaseId,
-              body,
-              name
-            });
-      
-      # main の追加機能（ドキュメント生成）
       - name: Generate docs and sync wiki (stable only)
-        if: ${{ !contains(steps.meta.outputs.version, '-') }}
+        if: ${{ steps.meta.outputs.is_prerelease == 'false' }}
         run: |
           npm run docs
           npm run wiki:sync
-      
+
       - name: Publish Wiki (stable only)
-        if: ${{ !contains(steps.meta.outputs.version, '-') }}
+        if: ${{ steps.meta.outputs.is_prerelease == 'false' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
-        run: |
-          bash tools/wiki/publish-wiki.sh "$OWNER" "$REPO"
-      
-      # next の dry run check（デバッグに有用）
-      - name: Dry run (what will be published)
-        run: npm pack --dry-run
-      
-      # 統合されたパブリッシュ処理
-      - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          VERSION=${{ steps.meta.outputs.version }}
-          echo "Publishing version $VERSION"
-          if [[ "$VERSION" == *-alpha.* || "$VERSION" == *-beta.* || "$VERSION" == *-rc.* ]]; then
-            npm publish --tag next
-          else
-            npm publish
-          fi
+        run: bash tools/wiki/publish-wiki.sh "$OWNER" "$REPO"

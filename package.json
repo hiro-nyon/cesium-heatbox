@@ -1,29 +1,29 @@
 {
   "name": "cesium-heatbox",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "description": "3D voxel-based heatmap visualization library for CesiumJS",
-  "main": "dist/cesium-heatbox.umd.min.js",
-  "module": "dist/cesium-heatbox.min.js",
+  "main": "dist/cesium-heatbox.cjs",
+  "module": "dist/cesium-heatbox.min.mjs",
   "types": "types/index.d.ts",
   "browser": "dist/cesium-heatbox.umd.min.js",
   "sideEffects": false,
-  "bin": {
-    "cesium-heatbox-install-ouranos": "./tools/install-ouranos.js"
-  },
   "files": [
     "dist/",
     "types/",
-    "tools/",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES"
   ],
   "scripts": {
     "dev": "webpack serve --mode development",
-    "build": "npm run build:esm && npm run build:umd && npm run build:types",
-    "build:esm": "webpack --mode production --env target=esm",
+    "build": "npm run build:ouranos && npm run clean && npm run build:esm && npm run build:cjs && npm run build:umd && npm run build:types && npm run test:package",
+    "build:ouranos": "node tools/build-ouranos.js",
+    "build:esm": "webpack --mode production --env target=esm-package",
+    "build:cjs": "webpack --mode production --env target=cjs",
     "build:umd": "webpack --mode production --env target=umd",
     "build:types": "node tools/build-types.js",
+    "test:package": "node tools/package-smoke-test.js",
     "build:watch": "webpack --mode development --watch",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -32,19 +32,25 @@
     "lint:fix": "eslint \"src/**/*.{js,ts}\" \"test/**/*.{js,ts}\" --fix",
     "type-check": "tsc --noEmit",
     "benchmark": "node tools/benchmark.js",
-    "docs": "jsdoc src/ -d docs/api -c jsdoc.config.json",
+    "docs": "node tools/clean-api-docs.js && jsdoc src/ -d docs/api -c jsdoc.config.json",
+    "test:docs": "node tools/documentation-surface-check.js",
     "wiki:sync": "node tools/wiki-sync.js",
     "wiki:publish": "bash tools/wiki/publish-wiki.sh hiro-nyon cesium-heatbox",
     "wiki:update": "npm run docs && npm run wiki:sync && npm run wiki:publish",
     "clean": "rm -rf dist/ types/ coverage/",
-    "prepublishOnly": "npm run clean && npm run build && npm test"
+    "prepublishOnly": "npm run clean && npm run build && npm test && npm run test:docs"
   },
   "exports": {
     ".": {
-      "types": "./types/index.d.ts",
-      "import": "./dist/cesium-heatbox.min.js",
-      "require": "./dist/cesium-heatbox.umd.min.js",
-      "default": "./dist/cesium-heatbox.umd.min.js"
+      "import": {
+        "types": "./types/index.d.mts",
+        "default": "./dist/cesium-heatbox.min.mjs"
+      },
+      "require": {
+        "types": "./types/index.d.cts",
+        "default": "./dist/cesium-heatbox.cjs"
+      },
+      "default": "./dist/cesium-heatbox.cjs"
     }
   },
   "keywords": [
@@ -61,7 +67,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hiro-nyon/cesium-heatbox.git"
+    "url": "git+https://github.com/hiro-nyon/cesium-heatbox.git"
   },
   "bugs": {
     "url": "https://github.com/hiro-nyon/cesium-heatbox/issues"
@@ -91,6 +97,7 @@
     "jest-environment-jsdom": "^30.0.0",
     "jsdoc": "^4.0.4",
     "jsdom": "^22.0.0",
+    "ouranos-gex-lib-for-javascript": "https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript/archive/5742889f20645fb0451c4870e5c54b5d34ab5c31.tar.gz",
     "typescript": "^5.7.0",
     "webpack": "^5.97.0",
     "webpack-cli": "^6.0.0",
@@ -102,9 +109,6 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "optionalDependencies": {
-    "ouranos-gex-lib-for-javascript": "github:ouranos-gex/ouranos-gex-lib-for-JavaScript"
   },
   "dependencies": {
     "simple-statistics": "^7.8.8"

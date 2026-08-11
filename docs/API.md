@@ -1,4 +1,4 @@
-# API Reference (APIリファレンス) - v1.3.4
+# API Reference (APIリファレンス) - v1.3.7
 
 [English](#english) | [日本語](#日本語)
 
@@ -31,22 +31,57 @@ Creates a new Heatbox instance.
 - **`debug` (boolean | { showBounds?: boolean }, default: false) - Log control and bounds display (v0.1.5 expanded to object format)**
 - **`autoVoxelSize` (boolean, default: false) - v0.1.4: Auto-determine voxel size. Effective when `voxelSize` is not specified**
 - **`autoVoxelSizeMode` ('basic'|'occupancy', default: 'basic') - v0.1.9: Auto voxel size calculation method. 'occupancy' uses occupancy-based estimation**
+- **`autoVoxelTargetFill` (number, default: 0.6) - Target occupancy ratio used by `autoVoxelSizeMode: 'occupancy'`**
 - **`colorMap` ('custom'|'viridis'|'inferno', default: 'custom') - v0.1.5: Perceptually uniform color maps**
 - **`diverging` (boolean, default: false) / `divergingPivot` (number, default: 0) - v0.1.5: Diverging color scheme for bipolar data**
-- **`highlightTopN` (number|null, default: null) / `highlightStyle` ({ outlineWidth?: number; boostOpacity?: number }) - v0.1.5: Highlight top N voxels**
+- **`highlightTopN` (number|null, default: null) / `highlightStyle` ({ outlineWidth?: number; boostOpacity?: number; boostOutlineWidth?: number }) - Highlight top N voxels. `boostOutlineWidth` is added to the highlighted outline width**
+- **`profile` ('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data') - Start from a predefined configuration profile; explicitly supplied options take precedence**
+- **`voxelGap` (number, default: 0) - Gap between voxel dimensions in meters**
+- **`outlineOpacity` (number, default: 1.0) - Outline opacity from 0 to 1**
+- **`outlineWidthResolver` ((params) => number|null, default: null) - Per-voxel outline-width resolver**
+- **`outlineInset` (number, default: 0) / `outlineInsetMode` ('all'|'topn'|'none', default: 'all') - Inset outline offset and target scope**
+- **`outlineRenderMode` ('standard'|'inset'|'emulation-only', default: 'standard') / `emulationScope` ('off'|'topn'|'non-topn'|'all', default: 'off') - Outline rendering mode and emulation scope**
+- **`adaptiveOutlines` (boolean, default: false) / `outlineWidthPreset` ('thin'|'medium'|'thick'|'adaptive', default: 'medium') - Adaptive outline controls**
+- **`performanceOverlay` (Object|null, default: null) - Optional FPS/render-time/memory overlay configuration**
+- **`enableThickFrames` (boolean, default: false) - Fill the space between standard and inset outlines to emulate thick frames**
 - **`renderLimitStrategy` ('density'|'coverage'|'hybrid', default: 'density') - v0.1.9: Adaptive rendering strategy for voxel selection when exceeding maxRenderVoxels**
 - **`minCoverageRatio` (number, default: 0.2) - v0.1.9: Minimum coverage ratio for hybrid strategy**
 - **`coverageBinsXY` (number|'auto', default: 'auto') - v0.1.9: Number of XY bins for stratified coverage sampling**
 - **`renderBudgetMode` ('manual'|'auto', default: 'manual') - v0.1.9: Use Auto Render Budget when 'auto'**
 - **`autoView` (boolean, default: false) - v0.1.9: Automatically execute fitView after data loading**
 - **`fitViewOptions` (Object) - v0.1.9: Default options for fitView method**
-  - `heading` (number, default: 0) - Camera heading (degrees)
-  - `pitch` (number, default: -30) - Camera pitch (degrees)
+  - `headingDegrees` (number, default: 0) - Camera heading (degrees)
+  - `pitchDegrees` (number, default: -30) - Camera pitch (degrees)
   - `paddingPercent` (number, default: 0.1) - Padding ratio around data bounds
+  - `altitudeStrategy` ('auto'|'manual', default: 'auto') - In `auto`, include the altitude span when determining camera range; `manual` uses the padded horizontal bounds only
+- **`adaptiveParams` (Object) - Adaptive outline and opacity controls**
+  - `neighborhoodRadius` (number, default: 30) - Neighbor sampling radius in meters
+  - `densityThreshold` (number, default: 3) - Density threshold in entities per voxel
+  - `cameraDistanceFactor` (number, default: 0.8) - Camera-distance compensation factor
+  - `overlapRiskFactor` (number, default: 0.4) - Overlap-risk factor used by diagnostics
+  - `minOutlineWidth` / `maxOutlineWidth` (number, defaults: 1 / 5) - Compatibility aliases normalized to `outlineWidthRange` when both are supplied
+  - `outlineWidthRange` ([number, number]|null, default: null) - Min/max adaptive outline width
+  - `boxOpacityRange` / `outlineOpacityRange` ([number, number]|null, default: null) - Min/max adaptive opacity ranges
+  - `adaptiveOpacityEnabled` (boolean, default: false) - Reserved compatibility flag; resolver APIs continue to work until adaptive opacity is fully provided
+  - `zScaleCompensation` (boolean, default: true) - Enable Z-scale compensation
+  - `overlapDetection` (boolean, default: false) - Enable overlap diagnostics
+- **`spatialId` (Object) - Spatial ID tile-grid configuration**
+  - `enabled` (boolean, default: false) - Enable Spatial ID mode
+  - `mode` ('tile-grid', default: 'tile-grid') - Spatial grid mode
+  - `provider` ('ouranos-gex', default: 'ouranos-gex') - Spatial ID provider
+  - `zoom` (number|'auto', default: 25) - Zoom level from 0 to 35, or automatic selection
+  - `zoomControl` ('auto'|'manual', default: 'auto') - Automatic or explicit zoom control
+  - `zoomTolerancePct` (number, default: 10) - Allowed size error for automatic zoom selection
+- **`aggregation` (Object) - Per-layer aggregation configuration**
+  - `enabled` (boolean, default: false) - Enable layer aggregation
+  - `byProperty` (string|null, default: null) - Entity property used as the layer key
+  - `keyResolver` ((entity) => string|null, default: null) - Custom key resolver; takes precedence over `byProperty`
+  - `showInDescription` (boolean, default: true) - Include layer breakdown in voxel descriptions
+  - `topN` (number, default: 10) - Maximum number of layers returned by `getStatistics()`
 - **`classification` (string | ClassificationOptions | false) - v1.1.0: Declarative classification engine (`linear`/`log`/`equal-interval`/`quantize`/`threshold`/`quantile`/`jenks`) with multi-target control (color / opacity / width). When `false`, the legacy min/max interpolation is used. See [ClassificationOptions](#classificationoptions-v110).**
 - **`temporal` (TemporalOptions|null) - v1.2.0/v1.3.x: Built-in Cesium clock synchronisation. Supports `classificationScope`, throttling, overlap policies, numeric interpolation across gaps, and optional lazy loading via `dataSource`.**
 
-For brevity, see the Japanese section below for complete option details and examples.
+The deprecated `boxOpacityResolver` and `outlineOpacityResolver` APIs still execute for compatibility. Prefer `adaptiveParams.*Range` for declarative ranges, but do not remove resolver usage until an equivalent adaptive-opacity path is available and documented.
 
 #### Methods
 
@@ -66,6 +101,14 @@ Creates heatmap data from entity array and renders it.
 
 **Parameters:**
 - `entities` (Array<Cesium.Entity>) - Target entity array
+
+**Returns:**
+- `Promise<void>` - Resolves after rendering completes; invalid or empty input clears the heatmap
+
+**Example:**
+```javascript
+await heatbox.setData(viewer.entities.values);
+```
 
 ##### `updateValues(entities, runtimeOptions?)` (v1.3.x)
 
@@ -97,12 +140,50 @@ Clears heatmap and resets related resources.
 
 Destroys Heatbox instance and releases allocated resources.
 
+##### `dispose()`
+
+Compatibility alias for `destroy()`. It releases the same renderer, event-listener, overlay, legend, and temporal-controller resources.
+
 ##### `getStatistics()`
 
 Gets current heatmap statistics.
 
 **Returns:**
 - `HeatboxStatistics|null` - Statistics object or null if data not created.
+
+When `aggregation.enabled` is true, the result includes `layers`, sorted by total entity count and limited by `aggregation.topN`. The `spatialId` object reports whether Spatial ID mode is active, the provider, resolved zoom, zoom-control mode, and optional edge-case QA metrics.
+
+##### `getOptions()`
+
+Returns a shallow snapshot of the current normalized options.
+
+**Returns:** `HeatboxOptions`
+
+##### `getEffectiveOptions()`
+
+Returns a serialization-safe snapshot of the normalized options currently used by the renderer. Functions or other non-JSON values fall back to a shallow copy.
+
+**Returns:** `HeatboxOptions`
+
+##### `getDebugInfo()`
+
+Returns current options, bounds, grid information, statistics, and auto-voxel-size diagnostics when enabled.
+
+**Returns:** `HeatboxDebugInfo`
+
+##### `togglePerformanceOverlay()` / `showPerformanceOverlay()` / `hidePerformanceOverlay()`
+
+Controls the optional runtime performance overlay. `togglePerformanceOverlay()` returns the new visibility state, or `false` when the overlay is not initialized.
+
+##### `setPerformanceOverlayEnabled(enabled, options?)`
+
+Creates, shows, hides, or reconfigures the performance overlay at runtime.
+
+**Parameters:**
+- `enabled` (boolean) - Desired enabled state
+- `options` (PerformanceOverlayConfig, optional) - Overlay configuration updates
+
+**Returns:** `boolean` - Current enabled state
 
 ##### `fitView(bounds, options)` (v0.1.9, updated v0.1.12)
 
@@ -146,7 +227,34 @@ Gets current heatmap bounds information (latitude/longitude).
 **Returns:**
 - `Object|null` - Bounds information object or null if data not created.
 
+##### `createLegend(container?)`
+
+Creates or reuses a classification legend and renders the current classifier state.
+
+**Parameters:**
+- `container` (HTMLElement, optional) - Parent container; defaults to the document body
+
+**Returns:** `HTMLElement|null`
+
+##### `updateLegend()`
+
+Refreshes an existing legend from the current classifier and classification options.
+
+##### `destroyLegend()`
+
+Removes the legend DOM and releases its internal resources.
+
 #### Static Methods
+
+##### `Heatbox.listProfiles()`
+
+Returns the names of available configuration profiles.
+
+**Returns:** `Array<'mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data'>`
+
+##### `Heatbox.getProfileDetails(name)`
+
+Returns a profile configuration and description, or `null` for an unknown name.
 
 ##### `Heatbox.filterEntities(entities, predicate)`
 
@@ -181,7 +289,36 @@ interface HeatboxStatistics {
   renderBudgetTier?: 'low'|'mid'|'high';
   autoMaxRenderVoxels?: number; // Auto budget decided maxRenderVoxels
   occupancyRatio?: number | null; // renderedVoxels / maxRenderVoxels (if numeric)
+  layers?: Array<{ key: string; total: number }>;
+  spatialId?: {
+    enabled: boolean;
+    provider: string | null;
+    zoom: number | null;
+    zoomControl: 'auto' | 'manual' | null;
+    edgeCaseMetrics: object | null;
+  };
 }
+```
+
+#### Spatial ID and Aggregation Examples
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  spatialId: {
+    enabled: true,
+    mode: 'tile-grid',
+    zoom: 'auto',
+    zoomControl: 'auto'
+  },
+  aggregation: {
+    enabled: true,
+    byProperty: 'layer',
+    topN: 5
+  }
+});
+
+await heatbox.setData(entities);
+const { spatialId, layers } = heatbox.getStatistics();
 ```
 
 #### TemporalDataEntry (v1.2.0)
@@ -262,15 +399,17 @@ See Japanese section for complete performance optimization tips.
 - `showEmptyVoxels` (boolean, default: false) - 空ボクセル表示の有無
 - `minColor` (Array, default: [0, 32, 255]) - 最小密度の色 (RGB)
 - `maxColor` (Array, default: [255, 64, 0]) - 最大密度の色 (RGB)
-- `maxRenderVoxels` (number, default: 50000) - 最大描画ボクセル数
+- `maxRenderVoxels` (number|'auto', default: 50000) - 最大描画ボクセル数。`'auto'` で端末別の自動レンダリング予算を有効化
 - **`wireframeOnly` (boolean, default: false) - 枠線のみ表示（v0.1.2新機能）**
 - **`heightBased` (boolean, default: false) - 密度を高さで表現（v0.1.2新機能）**
 - **`outlineWidth` (number, default: 2) - 枠線の太さ（v0.1.2新機能）**
 - **`debug` (boolean | { showBounds?: boolean }, default: false) - ログ制御と境界表示（v0.1.5でオブジェクト形式に拡張）**
 - **`autoVoxelSize` (boolean, default: false) - v0.1.4: ボクセルサイズを自動決定。`voxelSize` 未指定時に有効**
+- **`autoVoxelSizeMode` ('basic'|'occupancy', default: 'basic') - 自動ボクセルサイズの計算方式**
+- **`autoVoxelTargetFill` (number, default: 0.6) - `occupancy` モードで目標とする占有率**
 - **`colorMap` ('custom'|'viridis'|'inferno', default: 'custom') - v0.1.5: 知覚均等カラーマップ**
 - **`diverging` (boolean, default: false) / `divergingPivot` (number, default: 0) - v0.1.5: 二極性データ向け発散配色**
-- **`highlightTopN` (number|null, default: null) / `highlightStyle` ({ outlineWidth?: number; boostOpacity?: number }) - v0.1.5: 上位Nボクセルの強調表示**
+- **`highlightTopN` (number|null, default: null) / `highlightStyle` ({ outlineWidth?: number; boostOpacity?: number; boostOutlineWidth?: number }) - 上位Nボクセルの強調表示。`boostOutlineWidth` は強調時の枠線幅へ加算されます**
 // v0.1.6 追加
 - **`voxelGap` (number, default: 0) - v0.1.6: ボクセル間にギャップ（メートル）を設けて枠線重なりを軽減**
 - **`outlineOpacity` (number, default: 1.0) - v0.1.6: 枠線の透明度（0-1）を制御**
@@ -278,6 +417,7 @@ See Japanese section for complete performance optimization tips.
 // v0.1.6.1 追加
 - **`outlineInset` (number, default: 0) - v0.1.6.1: インセット枠線のオフセット距離（メートル）**
 - **`outlineInsetMode` ('all'|'topn', default: 'all') - v0.1.6.1: インセット枠線の適用範囲**
+- **`enableThickFrames` (boolean, default: false) - 標準枠線とインセット枠線の間を埋め、太いフレームを表現**
   - 制約: 各軸のインセットは片側最大20%（両側合計40%）にクランプされ、最終寸法は元の60%以上を保証します。
 // v0.1.7 追加
 - **`outlineRenderMode` ('standard'|'inset'|'emulation-only', default: 'standard') - v0.1.7: 表示モード切替**
@@ -289,6 +429,41 @@ See Japanese section for complete performance optimization tips.
 // v0.1.12 追加
 - **`profile` ('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data') - v0.1.12: 環境別の事前定義プロファイル**
 - **`performanceOverlay` ({ enabled?: boolean; position?: 'top-left'|'top-right'|'bottom-left'|'bottom-right'; autoShow?: boolean; updateIntervalMs?: number }) - v0.1.12: パフォーマンスオーバーレイ**
+- **`renderLimitStrategy` ('density'|'coverage'|'hybrid', default: 'density') - 描画上限超過時のボクセル選択戦略**
+- **`minCoverageRatio` (number, default: 0.2) / `coverageBinsXY` (number|'auto', default: 'auto') - coverage/hybrid選択の設定**
+- **`renderBudgetMode` ('manual'|'auto', default: 'manual') - 端末別の自動描画予算を有効化**
+- **`autoView` (boolean, default: false) - データ描画後に `fitView()` を自動実行**
+- **`fitViewOptions` (Object) - `fitView()` と `autoView` の既定設定**
+  - `headingDegrees` (number, default: 0) - カメラ方位角（度）
+  - `pitchDegrees` (number, default: -30) - カメラ俯角（度）
+  - `paddingPercent` (number, default: 0.1) - 境界周囲のパディング率
+  - `altitudeStrategy` ('auto'|'manual', default: 'auto') - `auto` は高度幅をカメラ距離へ反映し、`manual` は水平方向の境界とパディングのみを使用
+- **`adaptiveParams` (Object) - 適応枠線・透明度の制御**
+  - `neighborhoodRadius` (number, default: 30) - 近傍サンプリング半径（メートル）
+  - `densityThreshold` (number, default: 3) - 密度しきい値（エンティティ/ボクセル）
+  - `cameraDistanceFactor` (number, default: 0.8) - カメラ距離補正係数
+  - `overlapRiskFactor` (number, default: 0.4) - 診断用の重なりリスク係数
+  - `minOutlineWidth` / `maxOutlineWidth` (number, defaults: 1 / 5) - 両方指定時に `outlineWidthRange` へ正規化される互換エイリアス
+  - `outlineWidthRange` ([number, number]|null, default: null) - 適応枠線幅の最小・最大値
+  - `boxOpacityRange` / `outlineOpacityRange` ([number, number]|null, default: null) - 適応透明度の最小・最大値
+  - `adaptiveOpacityEnabled` (boolean, default: false) - 互換性のための予約フラグ。適応透明度の代替実装が完成するまでresolver APIは動作を維持します
+  - `zScaleCompensation` (boolean, default: true) - Z軸スケール補正
+  - `overlapDetection` (boolean, default: false) - 重なり診断を有効化
+- **`spatialId` (Object) - 空間IDタイルグリッド設定**
+  - `enabled` (boolean, default: false) - 空間IDモードを有効化
+  - `mode` ('tile-grid', default: 'tile-grid') - 空間グリッド方式
+  - `provider` ('ouranos-gex', default: 'ouranos-gex') - 空間IDプロバイダー
+  - `zoom` (number|'auto', default: 25) - 0〜35のズーム値または自動選択
+  - `zoomControl` ('auto'|'manual', default: 'auto') - ズーム制御方式
+  - `zoomTolerancePct` (number, default: 10) - 自動選択時に許容するサイズ誤差率
+- **`aggregation` (Object) - レイヤ別集約設定**
+  - `enabled` (boolean, default: false) - レイヤ集約を有効化
+  - `byProperty` (string|null, default: null) - レイヤキーに使うエンティティプロパティ
+  - `keyResolver` ((entity) => string|null, default: null) - 独自キー解決関数。`byProperty` より優先
+  - `showInDescription` (boolean, default: true) - ボクセル説明にレイヤ内訳を表示
+  - `topN` (number, default: 10) - `getStatistics()` が返す最大レイヤ数
+- **`classification` (string | ClassificationOptions | false) - linear/log/equal-interval/quantize/threshold/quantile/jenks を選択できる分類エンジン**
+- **`temporal` (TemporalOptions|null) - Cesium Clock同期、分類スコープ、スロットル、補間、遅延ロードを含む時系列設定**
 - // v0.1.6+ 追加（強調表示向け）
 - ~~`outlineEmulation` ('off'|'topn'|...)~~ - Deprecated in v0.1.12: `outlineRenderMode` + `emulationScope` に統合
   - 太線の表現は引き続き利用可能です。`outlineRenderMode: 'emulation-only'` と `emulationScope` を使用してください。
@@ -381,14 +556,24 @@ v0.1.4 から `autoVoxelSize: true` の場合、`voxelSize` を省略すると�
 - `entities` (Array<Cesium.Entity>) - 対象エンティティ配列
 
 **戻り値:**
-- `void`
+- `Promise<void>` - 描画完了後に解決。無効または空の入力はヒートマップをクリア
 
 **例:**
 ```javascript
 const entities = viewer.entities.values;
-heatbox.setData(entities);
-console.log('ヒートマップ作成が実行されました。');
+await heatbox.setData(entities);
+console.log('ヒートマップ作成が完了しました。');
 ```
+
+#### `updateValues(entities, runtimeOptions?)` (v1.3.x)
+
+新しいデータが現在の空間範囲に収まる場合、既存の bounds/grid を再利用してボクセル値を更新します。再利用できない場合は `setData()` にフォールバックします。
+
+**パラメータ:**
+- `entities` (Array<Cesium.Entity>) - 対象エンティティ配列
+- `runtimeOptions` (Object, optional) - 内部実行時オーバーライド
+
+**戻り値:** `Promise<void>`
 
 #### `updateOptions(newOptions)`
 
@@ -436,6 +621,10 @@ Heatboxインスタンスを破棄し、確保したリソース（イベント�
 heatbox.destroy();
 ```
 
+#### `dispose()`
+
+`destroy()` の互換エイリアスです。レンダラー、イベントリスナー、オーバーレイ、凡例、時系列コントローラーを同様に解放します。
+
 #### `getStatistics()`
 
 現在のヒートマップの統計情報を取得します。
@@ -452,6 +641,27 @@ if (stats) {
 }
 ```
 
+`aggregation.enabled` が有効な場合は、エンティティ総数の降順で `aggregation.topN` 件に制限した `layers` を含みます。`spatialId` には有効状態、プロバイダー、解決済みズーム、ズーム制御方式、端ケースQAメトリクスが含まれます。
+
+#### `fitView(bounds?, options?)`
+
+データ境界または指定した境界へカメラを移動します。
+
+**パラメータ:**
+- `bounds` (Object|null, optional) - `minLon`, `maxLon`, `minLat`, `maxLat`, `minAlt`, `maxAlt`。省略時は現在のデータ境界
+- `options` (Object, optional) - `headingDegrees`, `pitchDegrees`, `paddingPercent`, `altitudeStrategy`
+
+**戻り値:** `Promise<void>`
+
+```javascript
+await heatbox.fitView(null, {
+  headingDegrees: 0,
+  pitchDegrees: -35,
+  paddingPercent: 0.1,
+  altitudeStrategy: 'auto'
+});
+```
+
 #### `getBounds()`
 
 現在のヒートマップの境界情報（緯度経度）を取得します。
@@ -466,6 +676,16 @@ if (bounds) {
   console.log('最大緯度:', bounds.maxLat);
 }
 ```
+
+#### `createLegend(container?)`
+
+現在の分類状態から凡例DOMを作成します。`container` 省略時は `document.body` に追加します。
+
+**戻り値:** `HTMLElement|null`
+
+#### `updateLegend()` / `destroyLegend()`
+
+`updateLegend()` は作成済みの凡例を最新の分類状態で更新し、`destroyLegend()` は凡例DOMと内部リソースを破棄します。
 
 #### `getOptions()`
 
@@ -546,6 +766,14 @@ interface HeatboxStatistics {
   finalVoxelSize?: number | null;
   adjustmentReason?: string | null;
   classification?: ClassificationStatistics | null; // v1.1.0: 分類メタデータ
+  layers?: Array<{ key: string; total: number }>;
+  spatialId?: {
+    enabled: boolean;
+    provider: string | null;
+    zoom: number | null;
+    zoomControl: 'auto' | 'manual' | null;
+    edgeCaseMetrics: object | null;
+  };
 }
 
 interface ClassificationStatistics {
@@ -579,7 +807,7 @@ interface HeatboxOptions {
   showEmptyVoxels?: boolean;
   minColor?: [number, number, number];
   maxColor?: [number, number, number];
-  maxRenderVoxels?: number; // レンダリング上限（非空ボクセルが上限超過時は高密度トップNのみ描画）
+  maxRenderVoxels?: number | 'auto'; // レンダリング上限（`auto` は端末性能に応じて自動設定）
   batchMode?: 'auto' | 'primitive' | 'entity';
   classification?: ClassificationOptions | 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold' | 'quantile' | 'jenks' | false;
   temporal?: TemporalOptions | null; // v1.2.0: 時系列データ再生

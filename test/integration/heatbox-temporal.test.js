@@ -83,7 +83,16 @@ describe('Heatbox Temporal Integration', () => {
         const heatbox = new Heatbox(viewer, options);
 
         expect(TimeController).toHaveBeenCalledTimes(1);
-        expect(TimeController).toHaveBeenCalledWith(viewer, heatbox, options.temporal);
+        expect(TimeController).toHaveBeenCalledWith(
+            viewer,
+            heatbox,
+            expect.objectContaining({
+                ...options.temporal,
+                classificationScope: 'global',
+                updateInterval: 100,
+                outOfRangeBehavior: 'hold'
+            })
+        );
         expect(controllerInstances[0].activate).toHaveBeenCalledTimes(1);
     });
 

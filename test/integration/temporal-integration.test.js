@@ -39,12 +39,18 @@ describe('Temporal Integration', () => {
         {
             start: '2025-01-01T00:00:00Z',
             stop: '2025-01-01T01:00:00Z',
-            data: [{ weight: 10 }]
+            data: Array.from({ length: 2 }, () => ({
+                position: { x: 139.7, y: 35.6, z: 10 },
+                weight: 10
+            }))
         },
         {
             start: '2025-01-01T01:00:00Z',
             stop: '2025-01-01T02:00:00Z',
-            data: [{ weight: 100 }]
+            data: Array.from({ length: 4 }, () => ({
+                position: { x: 139.8, y: 35.7, z: 20 },
+                weight: 100
+            }))
         }
     ];
 
@@ -56,19 +62,19 @@ describe('Temporal Integration', () => {
         heatbox = new MockHeatbox();
     });
 
-    test('Global Scope: should calculate and pass global stats', () => {
+    test('Global Scope: should calculate and pass global voxel-count stats', async () => {
         const options = {
             data: mockData,
             classificationScope: 'global'
         };
 
         controller = new TimeController(viewer, heatbox, options);
-        controller.activate();
+        await controller.activate();
 
         // Check if global stats were calculated and stored
         expect(heatbox._globalStats).toBeDefined();
-        expect(heatbox._globalStats.min).toBe(10);
-        expect(heatbox._globalStats.max).toBe(100);
+        expect(heatbox._globalStats.min).toBe(2);
+        expect(heatbox._globalStats.max).toBe(4);
 
         // Check if stats were passed to setData
         expect(heatbox.options._externalStats).toBeDefined();
@@ -91,7 +97,7 @@ describe('Temporal Integration', () => {
         expect(heatbox.options._externalStats).toBeUndefined();
     });
 
-    test('Global Scope uses heatbox valueProperty when computing stats', () => {
+    test('Global Scope classifies voxel counts independently of valueProperty', async () => {
         heatbox.options.valueProperty = 'intensity';
         heatbox.options.classification = {
             enabled: true,
@@ -104,26 +110,34 @@ describe('Temporal Integration', () => {
                 {
                     start: '2025-01-01T00:00:00Z',
                     stop: '2025-01-01T01:00:00Z',
-                    data: [{ weight: 5, intensity: 100 }]
+                    data: Array.from({ length: 2 }, () => ({
+                        position: { x: 139.7, y: 35.6, z: 10 },
+                        weight: 5,
+                        intensity: 100
+                    }))
                 },
                 {
                     start: '2025-01-01T01:00:00Z',
                     stop: '2025-01-01T02:00:00Z',
-                    data: [{ weight: 10, intensity: 300 }]
+                    data: Array.from({ length: 4 }, () => ({
+                        position: { x: 139.8, y: 35.7, z: 20 },
+                        weight: 10,
+                        intensity: 300
+                    }))
                 }
             ],
             classificationScope: 'global'
         };
 
         controller = new TimeController(viewer, heatbox, options);
-        controller.activate();
+        await controller.activate();
 
         expect(heatbox._globalStats).toBeDefined();
-        expect(heatbox._globalStats.min).toBe(100);
-        expect(heatbox._globalStats.max).toBe(300);
-        expect(heatbox._globalStats.minCount).toBe(100);
-        expect(heatbox._globalStats.maxCount).toBe(300);
-        expect(heatbox._globalStats.classification.breaks).toEqual([100, 200, 300]);
+        expect(heatbox._globalStats.min).toBe(2);
+        expect(heatbox._globalStats.max).toBe(4);
+        expect(heatbox._globalStats.minCount).toBe(2);
+        expect(heatbox._globalStats.maxCount).toBe(4);
+        expect(heatbox._globalStats.classification.breaks).toEqual([2, 3, 4]);
         expect(heatbox.options._externalStats).toBe(heatbox._globalStats);
     });
 });

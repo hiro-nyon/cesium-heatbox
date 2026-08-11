@@ -1,124 +1,184 @@
-# Codex 実行用・公開運用指示書（cesium-heatbox｜v0.1.10 を含む）
+# Release Runbook（v1.3.7）
 
-本書は、初心者開発者でも「タグを打つだけで公開」が安全に回ることを目的とした運用手順書です。プリリリースは `@next`、安定版は `@latest` で配信します。
+この文書は、`1.3.7-alpha.5` を `@next` で検証した後、`1.3.7` を `@latest` として公開する手順を定義します。npm 公開は GitHub Actions の `.github/workflows/release.yml` だけが行い、ローカルでは `npm publish` を実行しません。
 
----
+## 1. 公開レーン
 
-## 0) 目的（必ず理解）
-- main＝@latest、next＝@next の二車線を確立して安全運用。
-- Git タグの push だけを公開トリガにする（Actions が build→test→publish）。
-- SemVer のプリリリース（-alpha.N/-beta.N/-rc.N）は安定版より下位。`@next` にのみ配信。
+- プレリリース: `next` ブランチの先端に `v<version>-alpha.N`、`-beta.N`、`-rc.N` のいずれかを付け、npm の `next` dist-tag へ公開します。
+- 安定版: `main` と `next` が同じコミットを指す状態で、そのコミットに `v<version>` を付け、npm の `latest` dist-tag へ公開します。
+- 公開トリガは `v*` タグの個別 push だけです。GitHub Release の手動公開や `workflow_dispatch` は npm 公開を起動しません。
+- タグは必ず対象ブランチへマージした後に作成します。feature branch のコミットには付けません。
 
----
+Release Workflow は公開前に次を fail-fast で検証します。
 
-## 1) 現状の v0.1.10（未コミット）を安全に受け入れる
-1. 統合ブランチ作成（未作成なら）
+1. Git タグが `v${package.json.version}` と完全一致すること。
+2. `package.json`、`package-lock.json` の2箇所、`src/index.js` の `VERSION` が一致すること。
+3. プレリリースのタグ先が `origin/next` の先端と一致すること。
+4. 安定版では `origin/main` と `origin/next` が同じコミットで、タグ先もそのコミットであること。
+5. 同じ `package@version` が npm に未公開であること。
+
+## 2. Trusted Publishing の前提
+
+npm の Trusted Publisher は次の値と完全一致させます。
+
+- Organization or user: `hiro-nyon`
+- Repository: `cesium-heatbox`
+- Workflow filename: `release.yml`
+- Environment name: `cesium-heatbox`
+- Allowed action: `npm publish`
+
+Workflow は GitHub-hosted runner、Node.js 24、npm 11.5.1 以上、`id-token: write` を使用します。`actions/setup-node` の `registry-url` は `https://registry.npmjs.org` に設定します。これは現在の npm Trusted Publishing の推奨構成です。
+
+長期保存する `NPM_TOKEN` や公開用 `NODE_AUTH_TOKEN` は設定しません。npm の Trusted Publisher 設定、GitHub Environment の保護ルール、不要な旧 npm publish token が残っていないことをリリース前に確認します。
+
+## 3. `1.3.7-alpha.5` の準備
+
+### 3.1 変更を `next` 向けに準備
+
+ドキュメントや実装変更は作業ブランチでコミットし、base を `next` とする PR でレビューします。タグを作る前に、以下の版番号更新も `next` へ取り込みます。
 
 ```bash
-git checkout -b next
-git push -u origin next
+npm version 1.3.7-alpha.5 --no-git-tag-version
 ```
 
-2. 作業差分を一時ブランチで受け止め、next に PR で載せる
+このコマンドが更新するのは主に `package.json` と `package-lock.json` です。次のファイルは同じPR内で明示的に更新します。
+
+- `package.json` の `version`
+- `package-lock.json` のトップレベル `version`
+- `package-lock.json` の `packages[""].version`
+- `src/index.js` の `VERSION`
+- `docs/API.md` など、現在バージョンを明示するユーザー向け文書
+- `CHANGELOG.md` の `1.3.7-alpha.5` エントリ
+
+`npm version` だけでは `src/index.js` の `VERSION` は更新されないため、それだけでリリースコミットを完成扱いにしないでください。
+
+### 3.2 ローカル検証
+
+各コマンドを個別に実行し、すべて成功することを確認します。
 
 ```bash
-git checkout -b feat/0.1.10-bundle
-git add -A
-git commit -m "feat: prepare 0.1.10 (tests/docs/bugfixes)"
-git push -u origin feat/0.1.10-bundle
-# → GitHub で base=next へ PR
-```
-
-- Conventional Commits 形式推奨（後の自動生成などで有利）。
-
----
-
-## 2) まずはプリリリースとして v0.1.10 を出す（@next）
-- α 期間に試用者へ先行配布。タグでのみ公開が走る。
-
-```bash
-# v0.1.10-alpha.0 を作成（package.json 更新＋Git タグ作成）
-npm version prerelease --preid=alpha
-# タグを push（Actions が起動し、--tag next で publish）
-git push origin --tags
-```
-
-- 反復配信は `npm version prerelease --preid=alpha` → `git push --tags`（.1, .2 …）。
-
----
-
-## 3) 安定版 v0.1.10 を “@latest” で公開
-- 仕上げ完了後、プリリリース表記なしの 0.1.10 をタグに.
-
-```bash
-npm version 0.1.10
-git push origin --tags
-```
-
-- `npm publish` は引数なしだと `@latest` へ。一般ユーザーは `npm i cesium-heatbox` で取得。
-
----
-
-## 4) GitHub Actions（タグ push でのみ公開）
-
-ファイル: `.github/workflows/release.yml`
-- `push.tags: [ 'v*' ]` で `v0.1.10` や `v0.1.10-alpha.0` の push をトリガに実行。
-- 版文字列に `-alpha.`/`-beta.`/`-rc.` を含む場合は `npm publish --tag next`、それ以外は `npm publish`。
-- 公開にはリポジトリの `NPM_TOKEN` シークレットが必要。
-
-通常 CI: `.github/workflows/ci.yml`
-- `main`/`next` への push と PR で、Install→Test→Build→`npm pack --dry-run` まで実施。
-
----
-
-## 5) package.json の配布設定（このリポジトリの現状で安全）
-- すでに `files` は `dist/` と `types/` に限定、`exports` と `types` も設定済み。
-- 現在のビルドは webpack、テストは jest。変更不要。
-- 追加で配布内容を確認する場合：
-
-```bash
+npm run -s lint
+npm run -s type-check
+npm test --silent -- --reporters=summary
+npm run -s test:docs
 npm run build
 npm pack --dry-run
 ```
 
----
+CI では最低対応版の `cesium@1.120.0` と `cesium@latest` を個別に smoke test します。PR の必須チェックがすべて成功するまでマージしません。
 
-## 6) デモ用ブランチ
-- npm 公開は Actions のみ担当。`gh-pages` 系はデモ配信専用のままで OK（npm とは無関係）。
-- 必要なら `gh-pages-alpha` を「next 用デモ」に割り当て、README に用途を明記。
+### 3.3 `next` へマージして個別タグをpush
 
----
+PR マージ後、ローカルの `next` をリモート先端へ fast-forward し、そのコミットにだけタグを付けます。
 
-## 7) ロールバック
-
-dist-tag の調整:
 ```bash
-# 誤って付けた next を外す例
-npm dist-tag rm cesium-heatbox next
-# 正しい版に再付与
-npm dist-tag add cesium-heatbox@0.1.10 next
+git switch next
+git pull --ff-only origin next
+git tag -a v1.3.7-alpha.5 -m "release: 1.3.7-alpha.5"
+git push origin v1.3.7-alpha.5
 ```
 
-タグの取り消し:
+`git push origin --tags` は使用しません。ローカルに残った無関係な `v*` タグまでpushされ、複数の公開処理を起動する危険があるためです。
+
+## 4. alpha.5 公開後の確認
+
+GitHub Actions の Release Workflow が成功した後に確認します。
+
 ```bash
-git tag -d v0.1.10-alpha.0
-git push origin :refs/tags/v0.1.10-alpha.0
+npm view cesium-heatbox dist-tags --json
+npm view cesium-heatbox@1.3.7-alpha.5 version gitHead dist.attestations --json
 ```
 
----
+期待値は次のとおりです。
 
-## 8) 完了条件（Codex が保証すべきこと）
-- `next` が存在し、`feat/0.1.10-bundle` → PR → `next` へ統合。
-- `.github/workflows/release.yml` がタグ push で起動し、pre→`@next`／安定→`@latest` を切り分けて公開。
-- `.github/workflows/ci.yml` が `main` / `next` / PR で build・test・pack を実行。
-- `package.json` の `files`/`exports`/`types`/`prepublishOnly` が設定済み（現状 OK）。
-- 0.1.10 の配信手順:
-  - α 配信: `npm version prerelease --preid=alpha` → `git push --tags`（＝@next）
-  - 安定版: `npm version 0.1.10` → `git push --tags`（＝@latest）
+- `next` が `1.3.7-alpha.5` を指す。
+- `latest` は正式公開まで `1.3.6` のまま。
+- provenance attestation が存在する。
+- `gitHead` が `next` のリリースコミットと一致する。
 
----
+利用者側の確認では、`npm install cesium-heatbox@next` を使用します。ESM、CommonJS、型定義、Cesium `1.120.0` と最新版、代表的なブラウザデモを確認します。
 
-## 参考: 運用上の注意
-- SemVer: `1.2.3-alpha.1` のようなプリリリースは安定より下位。通常の `^` 範囲には自動では入らない。
-- dist-tag と Git タグは別物。インストールレーンの切替は dist-tag（`latest`/`next`/…）。ワークフロートリガは Git タグ（`v*`）。
+## 5. `1.3.7` 安定版への昇格
 
+### 5.1 `next` で安定版番号を準備
+
+alpha.5 の検証が完了したら、`next` から作業ブランチを作り、正式版へ更新します。
+
+```bash
+npm version 1.3.7 --no-git-tag-version
+```
+
+alpha.5 と同様に `package.json`、`package-lock.json` の2箇所、`src/index.js`、現在バージョンを記載する文書を `1.3.7` に揃えます。`CHANGELOG.md` は `Unreleased` の内容を正式な `1.3.7` セクションへ確定し、alpha期間で確認した内容と公開日を記録します。
+
+ローカル検証とCIをすべて通し、まず base=`next` のPRへマージします。その後、`next` から `main` へのPRを作成してレビューします。
+
+### 5.2 `main` と `next` を同一コミットにする
+
+安定版タグを付ける時点では、リモートの `main` と `next` が完全に同じコミットを指している必要があります。
+
+next→main PR は、`next` を後から同じコミットへ fast-forward できるマージ方式を使用します。GitHub 上のマージで main に merge commit が作成された場合は、`next` をその main へ fast-forward します。履歴が書き換わる squash/rebase merge は、このリリース同期では使用しません。
+
+```bash
+git fetch origin main next
+git switch next
+git merge --ff-only origin/main
+git push origin next
+git fetch origin main next
+git rev-parse origin/main
+git rev-parse origin/next
+```
+
+最後の2つのSHAが一致しない場合、タグを付けてはいけません。fast-forward できない場合は履歴を上書きせず、差分を確認して通常のPRで統合します。その統合コミットをもう一方のブランチにもfast-forwardして、両SHAが一致してからタグ付けへ進みます。
+
+### 5.3 安定版タグを個別push
+
+```bash
+git switch main
+git pull --ff-only origin main
+git tag -a v1.3.7 -m "release: 1.3.7"
+git push origin v1.3.7
+```
+
+Workflow は npm publish が成功した後に GitHub Release を作成し、安定版だけ JSDoc とWikiを同期します。npm 公開が失敗した段階では、GitHub ReleaseやWikiを先行公開しません。
+
+## 6. 安定版公開後の確認
+
+```bash
+npm view cesium-heatbox dist-tags --json
+npm view cesium-heatbox@1.3.7 version gitHead dist.attestations --json
+gh release view v1.3.7 --json tagName,isDraft,isPrerelease,body,url
+```
+
+`latest=1.3.7`、provenanceあり、`gitHead`がmain/next共通コミットと一致することを確認します。GitHub Releaseは`isDraft=false`、`isPrerelease=false`、`body`が空でなく、`What's Changed`と前版からの`Full Changelog`を含むことを確認します。続けて、公開Wikiの更新と、新規ディレクトリでの`npm install cesium-heatbox`を確認し、既定インストールが`1.3.7`になることを検証します。
+
+## 7. 失敗時の扱い
+
+### npm publish 前に失敗した場合
+
+原因を修正し、新しいコミットで版番号を上げます。公開済みか不明な状態では同じ版番号を再利用せず、最初に `npm view` で確認します。まだnpm未公開で、誤ったGitタグだけが存在する場合に限り、タグを削除して正しいコミットへ付け直せます。
+
+### npm publish 後に GitHub Release またはWikiだけ失敗した場合
+
+npm の同一バージョンは再公開できないため、Release Workflow 全体を再実行して publish を繰り返しません。npm上の版とprovenanceを確認したうえで、GitHub ReleaseまたはWikiの失敗した後処理だけを修復します。
+
+### 誤公開した場合
+
+npm の `package@version` は、unpublishしても同じ版番号を再利用できません。影響に応じて誤版を `npm deprecate` し、修正版を新しいプレリリース番号またはpatch番号で公開します。dist-tagだけが誤っている場合は、正しい既存バージョンへ付け替えます。
+
+```bash
+npm dist-tag add cesium-heatbox@1.3.7-alpha.5 next
+```
+
+Gitタグの削除はnpmパッケージを削除せず、dist-tagも変更しません。各操作を別の状態変更として扱ってください。
+
+## 8. 最終チェックリスト
+
+- [ ] version対象ファイルとCHANGELOGが一致している。
+- [ ] lint、type-check、test、test:docs、build、pack dry-runが成功した。
+- [ ] PRのCIとCesium互換smoke testが成功した。
+- [ ] alphaタグはnext先端、安定版タグはmain/next共通先端に付いている。
+- [ ] `git push origin <exact-tag>` で1タグだけpushした。
+- [ ] npm dist-tag、gitHead、provenanceを確認した。
+- [ ] GitHub Release notesが非空で、正式版属性と比較リンクが正しい。
+- [ ] 公開Wikiがstableタグの内容へ更新されている。
+- [ ] 安定版では `latest` のインストールとGitHub Release、Wikiを確認した。

@@ -483,6 +483,45 @@ describe('GeometryRenderer', () => {
       expect(mockViewer.entities.remove).toHaveBeenCalled();
       expect(geometryRenderer.entities).toHaveLength(0);
     });
+
+    test('Should track and remove thick frame entities across diff updates', () => {
+      let entityId = 0;
+      mockViewer.entities.add.mockImplementation(config => ({
+        id: `frame-entity-${entityId++}`,
+        ...config,
+        isDestroyed: jest.fn(() => false)
+      }));
+      geometryRenderer.updateOptions({ enableThickFrames: true, outlineInset: 1 });
+      const config = {
+        centerLon: 139.7, centerLat: 35.6, centerAlt: 100,
+        cellSizeX: 10, cellSizeY: 10, boxHeight: 10,
+        color: { withAlpha: jest.fn(alpha => ({ alpha })) },
+        opacity: 0.5,
+        shouldShowOutline: true,
+        outlineColor: { withAlpha: jest.fn(alpha => ({ alpha })) },
+        outlineWidth: 2,
+        voxelInfo: { x: 0, y: 0, z: 0, count: 1 },
+        voxelKey: 'thick-record',
+        emulateThick: false,
+        shouldShowInsetOutline: true,
+        adaptiveParams: {}
+      };
+
+      geometryRenderer.beginFrame();
+      geometryRenderer.syncVoxel(config);
+      geometryRenderer.endFrame();
+      const oldFrames = [...geometryRenderer._records.get('thick-record').frameEntities];
+      expect(oldFrames).toHaveLength(12);
+
+      geometryRenderer.beginFrame();
+      geometryRenderer.syncVoxel(config);
+      geometryRenderer.endFrame();
+
+      oldFrames.forEach(entity => {
+        expect(mockViewer.entities.remove).toHaveBeenCalledWith(entity);
+      });
+      expect(geometryRenderer._records.get('thick-record').frameEntities).toHaveLength(12);
+    });
   });
 
   describe('Configuration Management', () => {

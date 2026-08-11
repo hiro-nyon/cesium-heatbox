@@ -6,9 +6,9 @@
 
 | File | 概要 |
 | --- | --- |
-| `wireframe-height-demo-umd.html` | UMD 版。`wireframeOnly` / `heightBased` を組み合わせた視覚比較。 |
-| `wireframe-height-demo.js` | モジュール版。複数モードを切り替えるユーティリティクラス。 |
-| `v0.1.12-features-demo.html` | v0.1.12 で追加された `outlineRenderMode` / `emulationScope` / `profile` 等をまとめて確認。 |
+| `wireframe-height/index.html` | UMD 版。`wireframeOnly` / `heightBased` を組み合わせた視覚比較。 |
+| `wireframe-height/wireframe-height-demo.js` | 複数モードを切り替えるユーティリティクラス。 |
+| `v0.1.12-features/index.html` | v0.1.12 で追加された `outlineRenderMode` / `emulationScope` / `profile` 等をまとめて確認。 |
 
 ## Cesium Setup / Cesium 初期化
 
@@ -18,9 +18,9 @@
 
 ## Usage / 使い方
 
-- `wireframe-height-demo-umd.html` はダブルクリックでブラウザにドラッグ＆ドロップするだけで動作します。
-- モジュール版 (`wireframe-height-demo.js`) を試す場合は簡易サーバーを立て、`<script type="module">` からクラスをインポートしてください。
-- `v0.1.12-features-demo.html` では UI から `outlineRenderMode`／`emulationScope`／`profile` を変更し、描画差分を確認できます。
+- `wireframe-height/index.html` はローカルサーバー経由で実行できます。
+- `wireframe-height/wireframe-height-demo.js` を試す場合は簡易サーバーを立ててください。
+- `v0.1.12-features/index.html` では UI から `outlineRenderMode`／`emulationScope`／`profile` を変更し、描画差分を確認できます。
 
 ## Tips / ヒント
 

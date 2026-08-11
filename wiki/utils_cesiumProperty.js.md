@@ -1,10 +1,10 @@
+<!-- Generated from docs/api/utils_cesiumProperty.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: utils/cesiumProperty.js
 
 **日本語** | [English](#english)
 
 ## English
-
-See also: [Class: cesiumProperty](cesiumProperty)
 
 ```javascript
 import * as Cesium from 'cesium';
@@ -39,8 +39,6 @@ export function resolvePropertyValue(property, time = Cesium.JulianDate.now()) {
 ```
 
 ## 日本語
-
-関連: [cesiumPropertyクラス](cesiumProperty)
 
 ```javascript
 import * as Cesium from 'cesium';

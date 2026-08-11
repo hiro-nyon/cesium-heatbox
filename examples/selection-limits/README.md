@@ -6,9 +6,9 @@
 
 | File | 概要 |
 | --- | --- |
-| `adaptive-rendering-demo.html` + `adaptive-rendering-demo.js` | v0.1.9 の適応的レンダリング制限。戦略切替・レンダリング上限・自動ボクセルサイズをUIで体験。 |
-| `performance-optimization.js` | 段階的ロード・品質調整・メモリ計測などパフォーマンス最適化のユーティリティ。 |
-| `selection-strategy-demo.html` *(new)* | density / coverage / hybrid を並列比較する UMD デモ。 |
+| `adaptive-rendering/index.html` | 適応的レンダリング制限、戦略切替、自動ボクセルサイズをUIで体験。 |
+| `performance-optimization/performance-optimization.js` | 段階的ロード・品質調整・メモリ計測のユーティリティ。 |
+| `selection-strategy/index.html` | density / coverage / hybrid を比較する UMD デモ。 |
 
 ## Cesium Setup / Cesium 初期化
 
@@ -19,10 +19,10 @@
 ## Usage / 使い方
 
 1. `npm install` 後に `npx http-server examples/selection-limits` を実行するか、任意の静的サーバーで公開します。
-2. ブラウザで `adaptive-rendering-demo.html` などにアクセスし、UI から戦略や描画上限を変更します。
+2. ブラウザで `adaptive-rendering/index.html` などにアクセスし、UI から戦略や描画上限を変更します。
 3. `performance-optimization.js` を利用する場合はアプリ側でインポートし、`new PerformanceOptimizationDemo(viewer)` を呼び出してください。
 
 ## Tips / ヒント
 
-- `adaptive-rendering-demo.js` 内の `generateSampleData` を差し替えることで独自データでの試験が可能です。
+- `adaptive-rendering/adaptive-rendering-demo.js` 内の `generateSampleData` を差し替えることで独自データでの試験が可能です。
 - Auto Render Budget の挙動を確認する際はブラウザ開発者ツールでログ (`console.log`) を参照してください。

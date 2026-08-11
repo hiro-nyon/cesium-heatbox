@@ -1,10 +1,10 @@
+<!-- Generated from docs/api/utils_validation.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: utils/validation.js
 
 **日本語** | [English](#english)
 
 ## English
-
-See also: [Class: validation](validation)
 
 ```javascript
 /**
@@ -73,19 +73,19 @@ export function isValidViewer(viewer) {
   if (!viewer) {
     return false;
   }
-  
+
   // 必要なプロパティが存在するかチェック
   if (!viewer.scene || !viewer.entities || !viewer.scene.canvas) {
     return false;
   }
-  
+
   // WebGL対応チェック（WebGL2 も許容）
   const canvas = viewer.scene.canvas;
   const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
   if (!gl) {
     return false;
   }
-  
+
   return true;
 }
 
@@ -99,15 +99,15 @@ export function isValidEntities(entities) {
   if (!Array.isArray(entities)) {
     return false;
   }
-  
+
   if (entities.length === 0) {
     return false;
   }
-  
+
   if (entities.length > PERFORMANCE_LIMITS.maxEntities) {
     Logger.warn(`エンティティ数が推奨値(${PERFORMANCE_LIMITS.maxEntities})を超えています: ${entities.length}`);
   }
-  
+
   return true;
 }
 
@@ -121,11 +121,11 @@ export function isValidVoxelSize(voxelSize) {
   if (typeof voxelSize !== 'number' || isNaN(voxelSize)) {
     return false;
   }
-  
+
   if (voxelSize < PERFORMANCE_LIMITS.minVoxelSize || voxelSize > PERFORMANCE_LIMITS.maxVoxelSize) {
     return false;
   }
-  
+
   return true;
 }
 
@@ -139,18 +139,18 @@ export function hasValidPosition(entity) {
   if (!entity || !entity.position) {
     return false;
   }
-  
+
   // Propertyベースの位置情報の場合
   if (typeof entity.position.getValue === 'function') {
     const position = entity.position.getValue(Cesium.JulianDate.now());
     return position && !isNaN(position.x) && !isNaN(position.y) && !isNaN(position.z);
   }
-  
+
   // 直接Cartesian3の場合
   if (entity.position.x !== undefined) {
     return !isNaN(entity.position.x) && !isNaN(entity.position.y) && !isNaN(entity.position.z);
   }
-  
+
   return false;
 }
 
@@ -168,25 +168,25 @@ export function validateVoxelCount(totalVoxels, voxelSize) {
     error: null,
     recommendedSize: null
   };
-  
+
   if (totalVoxels > PERFORMANCE_LIMITS.maxVoxels) {
     result.valid = false;
     result.error = ERROR_MESSAGES.VOXEL_LIMIT_EXCEEDED;
-    
+
     // Safe calculation with bounds checking
     const ratio = totalVoxels / PERFORMANCE_LIMITS.maxVoxels;
     const scaleFactor = Math.pow(Math.max(1, Math.min(1000, ratio)), 1/3);
     const calculatedSize = voxelSize * scaleFactor;
-    
+
     result.recommendedSize = Math.ceil(
-      Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+      Math.max(PERFORMANCE_LIMITS.minVoxelSize,
                Math.min(PERFORMANCE_LIMITS.maxVoxelSize, calculatedSize))
     );
   } else if (totalVoxels > PERFORMANCE_LIMITS.warningThreshold) {
     result.warning = true;
     result.error = ERROR_MESSAGES.MEMORY_WARNING;
   }
-  
+
   return result;
 }
 
@@ -212,35 +212,35 @@ export function validateAndNormalizeOptions(options = {}) {
   }
 
   const normalized = { ...mergedOptions };
-  
+
   // v0.1.5: batchMode非推奨化警告（debug時のみ）
   if (normalized.batchMode && normalized.debug) {
-    Logger.warn('batchMode option is deprecated and will be removed in v1.0.0. It is currently ignored.');
+    Logger.warn('batchMode option is deprecated and will be removed in v2.0.0. It is currently ignored.');
   }
-  
+
   // ボクセルサイズのバリデーション
   if (normalized.voxelSize !== undefined && !isValidVoxelSize(normalized.voxelSize)) {
     throw new Error(`${ERROR_MESSAGES.INVALID_VOXEL_SIZE}: ${normalized.voxelSize}`);
   }
-  
+
   // 透明度のバリデーション
   if (normalized.opacity !== undefined) {
     normalized.opacity = Math.max(0, Math.min(1, normalized.opacity));
   }
-  
+
   if (normalized.emptyOpacity !== undefined) {
     normalized.emptyOpacity = Math.max(0, Math.min(1, normalized.emptyOpacity));
   }
-  
+
   // 色のバリデーション
   if (normalized.minColor && Array.isArray(normalized.minColor) && normalized.minColor.length === 3) {
     normalized.minColor = normalized.minColor.map(c => Math.max(0, Math.min(255, Math.floor(c))));
   }
-  
+
   if (normalized.maxColor && Array.isArray(normalized.maxColor) && normalized.maxColor.length === 3) {
     normalized.maxColor = normalized.maxColor.map(c => Math.max(0, Math.min(255, Math.floor(c))));
   }
-  
+
   // v0.1.5: 新機能のバリデーション
   if (normalized.colorMap !== undefined) {
     const validColorMaps = ['custom', 'viridis', 'inferno'];
@@ -249,38 +249,71 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.colorMap = 'custom';
     }
   }
-  
+
   if (normalized.highlightTopN !== undefined && normalized.highlightTopN !== null) {
     if (typeof normalized.highlightTopN !== 'number' || normalized.highlightTopN <= 0) {
       Logger.warn(`Invalid highlightTopN: ${normalized.highlightTopN}. Must be a positive number.`);
       normalized.highlightTopN = null;
     }
   }
-  
+
+  const highlightStyle = normalized.highlightStyle && typeof normalized.highlightStyle === 'object'
+    ? normalized.highlightStyle
+    : {};
+  normalized.highlightStyle = {
+    ...DEFAULT_OPTIONS.highlightStyle,
+    ...highlightStyle
+  };
+  const highlightOutlineWidth = parseFloat(normalized.highlightStyle.outlineWidth);
+  normalized.highlightStyle.outlineWidth = Number.isFinite(highlightOutlineWidth)
+    ? Math.max(0.5, Math.min(20, highlightOutlineWidth))
+    : DEFAULT_OPTIONS.highlightStyle.outlineWidth;
+  const boostOpacity = parseFloat(normalized.highlightStyle.boostOpacity);
+  normalized.highlightStyle.boostOpacity = Number.isFinite(boostOpacity)
+    ? Math.max(0, Math.min(1, boostOpacity))
+    : DEFAULT_OPTIONS.highlightStyle.boostOpacity;
+  const boostOutlineWidth = parseFloat(normalized.highlightStyle.boostOutlineWidth);
+  normalized.highlightStyle.boostOutlineWidth = Number.isFinite(boostOutlineWidth)
+    ? Math.max(0, Math.min(20, boostOutlineWidth))
+    : DEFAULT_OPTIONS.highlightStyle.boostOutlineWidth;
+
+  if (normalized.maxRenderVoxels !== undefined && normalized.maxRenderVoxels !== 'auto') {
+    const maxRenderVoxels = Number(normalized.maxRenderVoxels);
+    if (!Number.isFinite(maxRenderVoxels) || maxRenderVoxels <= 0) {
+      Logger.warn(`Invalid maxRenderVoxels: ${normalized.maxRenderVoxels}. Using ${DEFAULT_OPTIONS.maxRenderVoxels}.`);
+      normalized.maxRenderVoxels = DEFAULT_OPTIONS.maxRenderVoxels;
+    } else {
+      normalized.maxRenderVoxels = Math.max(1, Math.floor(maxRenderVoxels));
+    }
+  }
+
   // v0.1.6: 枠線重なり対策のバリデーション
   if (normalized.voxelGap !== undefined) {
     normalized.voxelGap = Math.max(0, Math.min(100, parseFloat(normalized.voxelGap) || 0));
   }
-  
+
   if (normalized.outlineOpacity !== undefined) {
-    normalized.outlineOpacity = Math.max(0, Math.min(1, parseFloat(normalized.outlineOpacity) || 1));
+    const opacity = parseFloat(normalized.outlineOpacity);
+    normalized.outlineOpacity = Number.isFinite(opacity)
+      ? Math.max(0, Math.min(1, opacity))
+      : DEFAULT_OPTIONS.outlineOpacity;
   }
-  
+
   if (normalized.outlineWidth !== undefined) {
     const width = parseFloat(normalized.outlineWidth);
     normalized.outlineWidth = Number.isFinite(width)
       ? Math.max(0.5, Math.min(20, width))
       : DEFAULT_OPTIONS.outlineWidth;
   }
-  
+
   if (normalized.wireframeOnly !== undefined) {
     normalized.wireframeOnly = coerceBoolean(normalized.wireframeOnly);
   }
-  
+
   if (normalized.heightBased !== undefined) {
     normalized.heightBased = coerceBoolean(normalized.heightBased);
   }
-  
+
   // v0.1.12: Deprecated Resolver systems - show warnings and remove
   if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
     warnOnce('outlineWidthResolver',
@@ -290,7 +323,7 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.outlineWidthResolver = null;
     }
   }
-  
+
   // v1.0.0 planned: Resolver deprecation. For now, warn but keep for compatibility.
   if (normalized.outlineOpacityResolver !== undefined && normalized.outlineOpacityResolver !== null) {
     warnOnce('outlineOpacityResolver',
@@ -300,7 +333,7 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.outlineOpacityResolver = null;
     }
   }
-  
+
   if (normalized.boxOpacityResolver !== undefined && normalized.boxOpacityResolver !== null) {
     warnOnce('boxOpacityResolver',
       '[Heatbox][DEPRECATION][v1.0.0] boxOpacityResolver is deprecated; prefer adaptiveOutlines with adaptiveParams.boxOpacityRange.');
@@ -310,11 +343,11 @@ export function validateAndNormalizeOptions(options = {}) {
     }
   }
 
-  // v0.1.12: outlineEmulation deprecation and migration to outlineRenderMode  
+  // v0.1.12: outlineEmulation deprecation and migration to outlineRenderMode
   if (normalized.outlineEmulation !== undefined && (normalized.outlineRenderMode === undefined || normalized.outlineRenderMode === 'standard')) {
     warnOnce('outlineEmulation',
       '[Heatbox][DEPRECATION][v1.0.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.');
-    
+
     const v = normalized.outlineEmulation;
     if (v === false || v === 'off') {
       // outlineEmulation: false/off → standard mode + explicit off scope
@@ -336,16 +369,16 @@ export function validateAndNormalizeOptions(options = {}) {
       Logger.warn(`Invalid outlineEmulation: ${v}. Using 'standard' mode.`);
       normalized.outlineRenderMode = 'standard';
     }
-    
+
     // Remove old property
     delete normalized.outlineEmulation;
   }
-  
+
   // v0.1.12: outlineWidthPreset legacy name mapping
   if (normalized.outlineWidthPreset !== undefined) {
     const preset = normalized.outlineWidthPreset;
     const legacyMap = { 'uniform': 'medium', 'adaptive-density': 'adaptive', 'topn-focus': 'thick' };
-    
+
     if (legacyMap[preset]) {
       warnOnce(`outlineWidthPreset.${preset}`,
         `[Heatbox][DEPRECATION][v1.0.0] outlineWidthPreset "${preset}" is deprecated; use "${legacyMap[preset]}".`);
@@ -376,7 +409,7 @@ export function validateAndNormalizeOptions(options = {}) {
     const inset = parseFloat(normalized.outlineInset);
     normalized.outlineInset = Math.max(0, Math.min(100, isNaN(inset) ? 0 : inset));
   }
-  
+
   if (normalized.outlineInsetMode !== undefined) {
     let mode2 = normalized.outlineInsetMode;
     if (mode2 === 'off') mode2 = 'none'; // legacy alias
@@ -388,12 +421,12 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.outlineInsetMode = mode2;
     }
   }
-  
+
   // 厚い枠線表示
   if (normalized.enableThickFrames !== undefined) {
     normalized.enableThickFrames = coerceBoolean(normalized.enableThickFrames);
   }
-  
+
   // v0.1.9: 適応的レンダリング制限のバリデーション
   if (normalized.renderLimitStrategy !== undefined) {
     const validStrategies = ['density', 'coverage', 'hybrid'];
@@ -418,7 +451,7 @@ export function validateAndNormalizeOptions(options = {}) {
       }
     }
   }
-  
+
   // v0.1.9: 自動ボクセルサイズ決定の強化
   if (normalized.autoVoxelSizeMode !== undefined) {
     const validModes = ['basic', 'occupancy'];
@@ -431,7 +464,7 @@ export function validateAndNormalizeOptions(options = {}) {
     const v = parseFloat(normalized.autoVoxelTargetFill);
     normalized.autoVoxelTargetFill = isNaN(v) ? 0.6 : Math.max(0, Math.min(1, v));
   }
-  
+
   // v0.1.9: Auto Render Budget
   if (normalized.renderBudgetMode !== undefined) {
     const validModes = ['manual', 'auto'];
@@ -440,11 +473,11 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.renderBudgetMode = 'manual';
     }
   }
-  
+
   // v0.1.9: 自動視点調整 fitView オプション
   if (normalized.fitViewOptions !== undefined) {
     const f = normalized.fitViewOptions || {};
-    
+
     // v0.1.12: Deprecation warnings for old naming
     if (f.pitch !== undefined && f.pitchDegrees === undefined) {
       warnOnce('fitViewOptions.pitch',
@@ -454,13 +487,13 @@ export function validateAndNormalizeOptions(options = {}) {
       warnOnce('fitViewOptions.heading',
         '[Heatbox][DEPRECATION][v1.0.0] fitViewOptions.heading is deprecated; use fitViewOptions.headingDegrees.');
     }
-    
+
     const padding = parseFloat(f.paddingPercent);
     // Prioritize new names, fallback to old names
     const pitch = f.pitchDegrees !== undefined ? parseFloat(f.pitchDegrees) : parseFloat(f.pitch);
     const heading = f.headingDegrees !== undefined ? parseFloat(f.headingDegrees) : parseFloat(f.heading);
     const altitudeStrategy = f.altitudeStrategy;
-    
+
     normalized.fitViewOptions = {
       paddingPercent: Number.isFinite(padding) ? Math.max(0, Math.min(1, padding)) : 0.1,
       pitchDegrees: Number.isFinite(pitch) ? Math.max(-90, Math.min(0, pitch)) : -30,
@@ -468,19 +501,19 @@ export function validateAndNormalizeOptions(options = {}) {
       altitudeStrategy: altitudeStrategy === 'manual' ? 'manual' : 'auto'
     };
   }
-  
+
   // v0.1.15: Phase 0 - adaptiveParams の正規化と範囲統一（ADR-0011）
   // ユーザー指定の adaptiveParams を保持
   const userAdaptiveParams = normalized.adaptiveParams ? { ...normalized.adaptiveParams } : {};
-  
+
   // デフォルト値とマージ（ユーザー指定を優先）
   normalized.adaptiveParams = {
     ...DEFAULT_OPTIONS.adaptiveParams,
     ...userAdaptiveParams
   };
-  
+
   const ap = normalized.adaptiveParams;
-  
+
   // min/max → range への統一（rangeが優先）
   if (userAdaptiveParams.minOutlineWidth !== undefined && userAdaptiveParams.maxOutlineWidth !== undefined && userAdaptiveParams.outlineWidthRange === undefined) {
     ap.outlineWidthRange = [
@@ -489,7 +522,7 @@ export function validateAndNormalizeOptions(options = {}) {
     ];
     Logger.debug('adaptiveParams: minOutlineWidth/maxOutlineWidth normalized to outlineWidthRange');
   }
-  
+
   // range の検証とクランプ
   if (ap.outlineWidthRange !== undefined && Array.isArray(ap.outlineWidthRange)) {
     const [min, max] = ap.outlineWidthRange;
@@ -503,7 +536,7 @@ export function validateAndNormalizeOptions(options = {}) {
       Logger.warn('adaptiveParams.outlineWidthRange: min > max detected, swapped values');
     }
   }
-  
+
   if (ap.boxOpacityRange !== undefined && Array.isArray(ap.boxOpacityRange)) {
     const [min, max] = ap.boxOpacityRange;
     ap.boxOpacityRange = [
@@ -515,7 +548,7 @@ export function validateAndNormalizeOptions(options = {}) {
       Logger.warn('adaptiveParams.boxOpacityRange: min > max detected, swapped values');
     }
   }
-  
+
   if (ap.outlineOpacityRange !== undefined && Array.isArray(ap.outlineOpacityRange)) {
     const [min, max] = ap.outlineOpacityRange;
     ap.outlineOpacityRange = [
@@ -527,41 +560,41 @@ export function validateAndNormalizeOptions(options = {}) {
       Logger.warn('adaptiveParams.outlineOpacityRange: min > max detected, swapped values');
     }
   }
-  
+
   // 既定値の検証
   if (ap.overlapDetection !== undefined) {
     ap.overlapDetection = coerceBoolean(ap.overlapDetection);
   }
-  
+
   if (ap.zScaleCompensation !== undefined) {
     ap.zScaleCompensation = coerceBoolean(ap.zScaleCompensation);
   }
-  
+
   if (ap.adaptiveOpacityEnabled !== undefined) {
     ap.adaptiveOpacityEnabled = coerceBoolean(ap.adaptiveOpacityEnabled);
   }
-  
+
   // 数値パラメータの検証
   if (ap.neighborhoodRadius !== undefined) {
     const v = parseFloat(ap.neighborhoodRadius);
     ap.neighborhoodRadius = Number.isFinite(v) && v > 0 ? v : 30;
   }
-  
+
   if (ap.densityThreshold !== undefined) {
     const v = parseFloat(ap.densityThreshold);
     ap.densityThreshold = Number.isFinite(v) && v > 0 ? v : 3;
   }
-  
+
   if (ap.cameraDistanceFactor !== undefined) {
     const v = parseFloat(ap.cameraDistanceFactor);
     ap.cameraDistanceFactor = Number.isFinite(v) && v > 0 ? v : 0.8;
   }
-  
+
   if (ap.overlapRiskFactor !== undefined) {
     const v = parseFloat(ap.overlapRiskFactor);
     ap.overlapRiskFactor = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.4;
   }
-  
+
   normalized.adaptiveParams = ap;
 
   if (normalized.performanceOverlay) {
@@ -582,16 +615,16 @@ export function validateAndNormalizeOptions(options = {}) {
     }
     normalized.performanceOverlay = overlay;
   }
-  
+
   // v0.1.17: Spatial ID validation (ADR-0013)
   if (mergedOptions.spatialId !== undefined) {
     const spatialId = typeof mergedOptions.spatialId === 'object' && mergedOptions.spatialId !== null
       ? { ...mergedOptions.spatialId }
       : {};
-    
+
     // enabled
     spatialId.enabled = coerceBoolean(spatialId.enabled, false);
-    
+
     // mode (v0.1.17: tile-grid only)
     if (spatialId.mode !== undefined) {
       if (spatialId.mode !== 'tile-grid') {
@@ -601,7 +634,7 @@ export function validateAndNormalizeOptions(options = {}) {
     } else {
       spatialId.mode = 'tile-grid';
     }
-    
+
     // provider
     if (spatialId.provider !== undefined) {
       if (spatialId.provider !== 'ouranos-gex') {
@@ -611,7 +644,7 @@ export function validateAndNormalizeOptions(options = {}) {
     } else {
       spatialId.provider = 'ouranos-gex';
     }
-    
+
     // zoom (number or 'auto')
     if (spatialId.zoom !== undefined) {
       if (spatialId.zoom === 'auto') {
@@ -628,7 +661,7 @@ export function validateAndNormalizeOptions(options = {}) {
     } else {
       spatialId.zoom = 25;
     }
-    
+
     // zoomControl
     if (spatialId.zoomControl !== undefined) {
       if (!['auto', 'manual'].includes(spatialId.zoomControl)) {
@@ -638,7 +671,7 @@ export function validateAndNormalizeOptions(options = {}) {
     } else {
       spatialId.zoomControl = 'auto';
     }
-    
+
     // zoomTolerancePct
     if (spatialId.zoomTolerancePct !== undefined) {
       const tolerance = parseFloat(spatialId.zoomTolerancePct);
@@ -651,23 +684,72 @@ export function validateAndNormalizeOptions(options = {}) {
     } else {
       spatialId.zoomTolerancePct = 10;
     }
-    
+
     normalized.spatialId = spatialId;
   } else {
     // Use defaults from constants
     normalized.spatialId = { ...DEFAULT_OPTIONS.spatialId };
   }
-  
+
   // v1.0.0: Classification options validation
   normalized.classification = normalizeClassificationOptions(normalized.classification);
-  
+
+  // v1.2.0: Temporal options validation and documented defaults
+  normalized.temporal = normalizeTemporalOptions(normalized.temporal);
+
   // v0.1.18: Aggregation options validation (ADR-0014)
   if (normalized.aggregation !== undefined) {
     normalized.aggregation = validateAggregationOptions(normalized.aggregation);
   } else {
     normalized.aggregation = { ...DEFAULT_OPTIONS.aggregation };
   }
-  
+
+  return normalized;
+}
+
+function normalizeTemporalOptions(temporal) {
+  if (temporal === undefined || temporal === null) {
+    return null;
+  }
+
+  if (typeof temporal !== 'object' || Array.isArray(temporal)) {
+    Logger.warn('Invalid temporal options. Temporal mode has been disabled.');
+    return null;
+  }
+
+  const normalized = {
+    enabled: false,
+    data: [],
+    classificationScope: 'global',
+    updateInterval: 100,
+    outOfRangeBehavior: 'hold',
+    overlapResolution: 'prefer-earlier',
+    interpolate: false,
+    dataSource: null,
+    useWorker: false,
+    ...temporal
+  };
+
+  normalized.enabled = coerceBoolean(normalized.enabled, false);
+  normalized.data = Array.isArray(normalized.data) ? normalized.data : [];
+  normalized.classificationScope = ['global', 'per-time'].includes(normalized.classificationScope)
+    ? normalized.classificationScope
+    : 'global';
+  normalized.outOfRangeBehavior = ['clear', 'hold'].includes(normalized.outOfRangeBehavior)
+    ? normalized.outOfRangeBehavior
+    : 'hold';
+  normalized.overlapResolution = ['skip', 'prefer-earlier', 'prefer-later'].includes(normalized.overlapResolution)
+    ? normalized.overlapResolution
+    : 'prefer-earlier';
+  normalized.interpolate = coerceBoolean(normalized.interpolate, false);
+  normalized.useWorker = coerceBoolean(normalized.useWorker, false);
+  normalized.dataSource = typeof normalized.dataSource === 'function' ? normalized.dataSource : null;
+
+  if (normalized.updateInterval !== 'frame') {
+    const interval = Number(normalized.updateInterval);
+    normalized.updateInterval = Number.isFinite(interval) && interval >= 0 ? interval : 100;
+  }
+
   return normalized;
 }
 
@@ -682,7 +764,7 @@ export function validateAndNormalizeOptions(options = {}) {
 export function estimateInitialVoxelSize(bounds, entityCount, options = {}) {
   try {
     const mode = options.autoVoxelSizeMode || 'basic';
-    
+
     if (mode === 'occupancy') {
       return estimateVoxelSizeByOccupancy(bounds, entityCount, options);
     } else {
@@ -704,17 +786,17 @@ export function estimateInitialVoxelSize(bounds, entityCount, options = {}) {
 function estimateVoxelSizeBasic(bounds, entityCount) {
   // 1. データ範囲（X/Y/Z軸の物理的範囲）を計算
   const dataRange = calculateDataRange(bounds);
-  
+
   // 2. エンティティ密度を推定
   const volume = dataRange.x * dataRange.y * Math.max(dataRange.z, 10); // 最小高度差10m
   const density = entityCount / volume; // エンティティ/立方メートル
-  
+
   // 3. 密度に応じて適切なボクセルサイズを推定
   // - 高密度: 細かいサイズ（10-20m）
   // - 中密度: 標準サイズ（20-50m）
   // - 低密度: 粗いサイズ（50-100m）
   let estimatedSize;
-  
+
   if (density > 0.001) {
     // 高密度：細かいサイズ
     estimatedSize = Math.max(10, Math.min(20, 20 / Math.sqrt(density * 1000)));
@@ -725,11 +807,11 @@ function estimateVoxelSizeBasic(bounds, entityCount) {
     // 低密度：粗いサイズ
     estimatedSize = Math.max(50, Math.min(100, 100 / Math.sqrt(density * 100000)));
   }
-  
+
   // 制限値内に収める
-  estimatedSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+  estimatedSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize,
                           Math.min(PERFORMANCE_LIMITS.maxVoxelSize, estimatedSize));
-  
+
   Logger.debug(`Basic voxel size estimated: ${estimatedSize}m (density: ${density}, volume: ${volume})`);
   return Math.round(estimatedSize);
 }
@@ -748,12 +830,12 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
   const targetFill = options.autoVoxelTargetFill || 0.6;
   const maxIterations = 10;
   const tolerance = 0.05; // 5%の許容誤差
-  
+
   // 初期推定値（基本アルゴリズムから）
   let currentSize = estimateVoxelSizeBasic(bounds, entityCount);
-  
+
   Logger.debug(`Starting occupancy-based estimation: N=${entityCount}, target=${targetFill}, maxVoxels=${maxRenderVoxels}`);
-  
+
   for (let iteration = 0; iteration < maxIterations; iteration++) {
     // Safe bounds checking for currentSize
     if (!Number.isFinite(currentSize) || currentSize <= 0) {
@@ -763,38 +845,38 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
         currentSize = PERFORMANCE_LIMITS.minVoxelSize;
       }
     }
-    
+
     // 現在のサイズでの総ボクセル数を計算（安全性チェック付き）
     const numVoxelsX = Math.max(1, Math.ceil(Math.max(0, dataRange.x) / currentSize));
     const numVoxelsY = Math.max(1, Math.ceil(Math.max(0, dataRange.y) / currentSize));
     const numVoxelsZ = Math.max(1, Math.ceil(Math.max(0, dataRange.z) / currentSize));
     const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
-    
+
     // Safeguard against overflow
     if (!Number.isFinite(totalVoxels) || totalVoxels <= 0 || totalVoxels > 1e9) {
       Logger.warn(`Invalid totalVoxels calculated: ${totalVoxels}, breaking iteration`);
       break;
     }
-    
+
     // 期待占有セル数の計算: E[occupied] ≈ M × (1 - exp(-N/M))
     const expectedOccupied = totalVoxels * (1 - Math.exp(-entityCount / totalVoxels));
-    
+
     // 現在の占有率
     const currentFill = Math.min(expectedOccupied / maxRenderVoxels, 1.0);
-    
+
     Logger.debug(`Iteration ${iteration}: size=${currentSize.toFixed(1)}m, totalVoxels=${totalVoxels}, expectedOccupied=${expectedOccupied.toFixed(0)}, fill=${currentFill.toFixed(3)}`);
-    
+
     // 収束判定
     const fillError = Math.abs(currentFill - targetFill);
     if (fillError < tolerance) {
       Logger.debug(`Converged at iteration ${iteration}: size=${currentSize.toFixed(1)}m, fill=${currentFill.toFixed(3)}`);
       break;
     }
-    
+
     // サイズ調整（Newton法的なアプローチ）- 安全な計算
     const fillRatio = Math.max(0.1, Math.min(10.0, currentFill / targetFill));
     const adjustmentFactor = Math.pow(fillRatio, 0.3);
-    
+
     if (currentFill > targetFill) {
       // 占有率が高すぎる → サイズを大きくしてボクセル数を減らす
       currentSize *= adjustmentFactor;
@@ -802,15 +884,15 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
       // 占有率が低すぎる → サイズを小さくしてボクセル数を増やす
       currentSize *= adjustmentFactor;
     }
-    
+
     // 制限値内に収める
-    currentSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+    currentSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize,
                           Math.min(PERFORMANCE_LIMITS.maxVoxelSize, currentSize));
   }
-  
+
   const finalSize = Math.round(currentSize);
   Logger.info(`Occupancy-based voxel size: ${finalSize}m (target fill: ${targetFill})`);
-  
+
   return finalSize;
 }
 
@@ -831,7 +913,7 @@ export function calculateDataRange(bounds) {
       minAlt: Number.isFinite(bounds.minAlt) ? bounds.minAlt : 0,
       maxAlt: Number.isFinite(bounds.maxAlt) ? bounds.maxAlt : 100
     };
-    
+
     // Ensure valid ranges
     if (validBounds.maxLat <= validBounds.minLat) {
       validBounds.maxLat = validBounds.minLat + 0.001; // ~100m
@@ -842,21 +924,21 @@ export function calculateDataRange(bounds) {
     if (validBounds.maxAlt <= validBounds.minAlt) {
       validBounds.maxAlt = validBounds.minAlt + 1; // 1m minimum
     }
-    
+
     // 緯度経度をメートルに変換（簡易変換）- 安全な計算
     const centerLat = (validBounds.minLat + validBounds.maxLat) / 2;
     const cosLat = Math.cos(Math.max(-Math.PI/2, Math.min(Math.PI/2, centerLat * Math.PI / 180)));
-    
+
     const lonRangeMeters = Math.abs(validBounds.maxLon - validBounds.minLon) * 111000 * Math.abs(cosLat);
     const latRangeMeters = Math.abs(validBounds.maxLat - validBounds.minLat) * 111000;
     const altRangeMeters = Math.abs(validBounds.maxAlt - validBounds.minAlt);
-    
+
     return {
       x: Math.max(1, Math.min(1e6, lonRangeMeters)), // 1m to 1000km bounds
-      y: Math.max(1, Math.min(1e6, latRangeMeters)), 
+      y: Math.max(1, Math.min(1e6, latRangeMeters)),
       z: Math.max(1, Math.min(1e4, altRangeMeters))  // 1m to 10km altitude range
     };
-    
+
   } catch (error) {
     Logger.warn('Data range calculation failed:', error);
     // フォールバック値
@@ -872,16 +954,16 @@ export function calculateDataRange(bounds) {
  */
 export function validateAggregationOptions(aggregation) {
   const normalized = { ...DEFAULT_OPTIONS.aggregation };
-  
+
   if (!aggregation || typeof aggregation !== 'object') {
     return normalized;
   }
-  
+
   // enabled
   if (aggregation.enabled !== undefined) {
     normalized.enabled = coerceBoolean(aggregation.enabled, false);
   }
-  
+
   // byProperty
   if (aggregation.byProperty !== undefined && aggregation.byProperty !== null) {
     if (typeof aggregation.byProperty === 'string' && aggregation.byProperty.trim() !== '') {
@@ -891,7 +973,7 @@ export function validateAggregationOptions(aggregation) {
       normalized.byProperty = null;
     }
   }
-  
+
   // keyResolver
   if (aggregation.keyResolver !== undefined && aggregation.keyResolver !== null) {
     if (typeof aggregation.keyResolver === 'function') {
@@ -901,12 +983,12 @@ export function validateAggregationOptions(aggregation) {
       normalized.keyResolver = null;
     }
   }
-  
+
   // showInDescription
   if (aggregation.showInDescription !== undefined) {
     normalized.showInDescription = coerceBoolean(aggregation.showInDescription, true);
   }
-  
+
   // topN
   if (aggregation.topN !== undefined) {
     const topNValue = Number(aggregation.topN);
@@ -917,12 +999,12 @@ export function validateAggregationOptions(aggregation) {
       normalized.topN = DEFAULT_OPTIONS.aggregation.topN;
     }
   }
-  
+
   // Validation: if enabled but neither byProperty nor keyResolver is set, warn
   if (normalized.enabled && !normalized.byProperty && !normalized.keyResolver) {
     Logger.warn('[aggregation] enabled=true but neither byProperty nor keyResolver is set. Will use default key "default".');
   }
-  
+
   return normalized;
 }
 
@@ -931,18 +1013,18 @@ function normalizeClassificationOptions(classification) {
     ...DEFAULT_OPTIONS.classification,
     classificationTargets: { ...DEFAULT_OPTIONS.classification.classificationTargets }
   };
-  
+
   if (classification === undefined) {
     return { ...defaults };
   }
-  
+
   if (classification === null || classification === false) {
     return { ...defaults, enabled: false };
   }
-  
+
   const normalized = { ...defaults };
   let input = classification;
-  
+
   const allowedClassificationTargets = ['color', 'opacity', 'width'];
 
   if (typeof classification === 'string') {
@@ -951,25 +1033,25 @@ function normalizeClassificationOptions(classification) {
       enabled: classification !== 'none'
     };
   }
-  
+
   if (typeof input === 'object') {
     if (input.enabled !== undefined) {
       normalized.enabled = coerceBoolean(input.enabled, defaults.enabled);
     } else {
       normalized.enabled = true;
     }
-    
+
     if (input.scheme !== undefined) {
       normalized.scheme = sanitizeClassificationScheme(input.scheme);
     }
-    
+
     if (input.classes !== undefined) {
       const classesValue = Number(input.classes);
       normalized.classes = Number.isInteger(classesValue)
         ? Math.max(2, Math.min(20, classesValue))
         : defaults.classes;
     }
-    
+
     if (Array.isArray(input.thresholds)) {
       const validThresholds = input.thresholds
         .map(value => Number(value))
@@ -979,7 +1061,7 @@ function normalizeClassificationOptions(classification) {
     } else if (input.thresholds === null) {
       normalized.thresholds = null;
     }
-    
+
     if (Array.isArray(input.colorMap)) {
       normalized.colorMap = input.colorMap.slice();
     } else if (input.colorMap === null) {
@@ -988,7 +1070,7 @@ function normalizeClassificationOptions(classification) {
       Logger.warn('[classification] colorMap should be an array of colors or stop objects. Ignoring provided value.');
       normalized.colorMap = null;
     }
-    
+
     if (Array.isArray(input.domain) && input.domain.length === 2) {
       const [minValue, maxValue] = input.domain.map(value => Number(value));
       if (Number.isFinite(minValue) && Number.isFinite(maxValue)) {
@@ -997,7 +1079,7 @@ function normalizeClassificationOptions(classification) {
     } else if (input.domain === null) {
       normalized.domain = null;
     }
-    
+
     const resolvedClassificationTargets = { ...defaults.classificationTargets };
     const applyClassificationTargets = (source, sourceName) => {
       if (source === undefined || source === null) {
@@ -1026,16 +1108,16 @@ function normalizeClassificationOptions(classification) {
     Logger.warn('[classification] Unsupported configuration type. Expected string or object.');
     normalized.enabled = false;
   }
-  
+
   if (!normalized.enabled) {
     return { ...defaults, enabled: false };
   }
-  
+
   if (normalized.scheme === 'threshold' && !Array.isArray(normalized.thresholds)) {
     Logger.warn('[classification] threshold scheme requires a thresholds array. Disabling classification.');
     return { ...defaults, enabled: false };
   }
-  
+
   return normalized;
 }
 
@@ -1043,14 +1125,14 @@ function sanitizeClassificationScheme(scheme) {
   if (!scheme || typeof scheme !== 'string') {
     return 'linear';
   }
-  
+
   const normalizedScheme = scheme.trim().toLowerCase();
   const supportedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold', 'quantile', 'jenks'];
-  
+
   if (supportedSchemes.includes(normalizedScheme)) {
     return normalizedScheme;
   }
-  
+
   Logger.warn(`[classification] Unknown scheme '${scheme}', falling back to 'linear'.`);
   return 'linear';
 }
@@ -1059,8 +1141,6 @@ function sanitizeClassificationScheme(scheme) {
 
 ## 日本語
 
-関連: [validationクラス](validation)
-
 ```javascript
 /**
  * Validation utility functions.
@@ -1128,19 +1208,19 @@ export function isValidViewer(viewer) {
   if (!viewer) {
     return false;
   }
-  
+
   // 必要なプロパティが存在するかチェック
   if (!viewer.scene || !viewer.entities || !viewer.scene.canvas) {
     return false;
   }
-  
+
   // WebGL対応チェック（WebGL2 も許容）
   const canvas = viewer.scene.canvas;
   const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
   if (!gl) {
     return false;
   }
-  
+
   return true;
 }
 
@@ -1154,15 +1234,15 @@ export function isValidEntities(entities) {
   if (!Array.isArray(entities)) {
     return false;
   }
-  
+
   if (entities.length === 0) {
     return false;
   }
-  
+
   if (entities.length > PERFORMANCE_LIMITS.maxEntities) {
     Logger.warn(`エンティティ数が推奨値(${PERFORMANCE_LIMITS.maxEntities})を超えています: ${entities.length}`);
   }
-  
+
   return true;
 }
 
@@ -1176,11 +1256,11 @@ export function isValidVoxelSize(voxelSize) {
   if (typeof voxelSize !== 'number' || isNaN(voxelSize)) {
     return false;
   }
-  
+
   if (voxelSize < PERFORMANCE_LIMITS.minVoxelSize || voxelSize > PERFORMANCE_LIMITS.maxVoxelSize) {
     return false;
   }
-  
+
   return true;
 }
 
@@ -1194,18 +1274,18 @@ export function hasValidPosition(entity) {
   if (!entity || !entity.position) {
     return false;
   }
-  
+
   // Propertyベースの位置情報の場合
   if (typeof entity.position.getValue === 'function') {
     const position = entity.position.getValue(Cesium.JulianDate.now());
     return position && !isNaN(position.x) && !isNaN(position.y) && !isNaN(position.z);
   }
-  
+
   // 直接Cartesian3の場合
   if (entity.position.x !== undefined) {
     return !isNaN(entity.position.x) && !isNaN(entity.position.y) && !isNaN(entity.position.z);
   }
-  
+
   return false;
 }
 
@@ -1223,25 +1303,25 @@ export function validateVoxelCount(totalVoxels, voxelSize) {
     error: null,
     recommendedSize: null
   };
-  
+
   if (totalVoxels > PERFORMANCE_LIMITS.maxVoxels) {
     result.valid = false;
     result.error = ERROR_MESSAGES.VOXEL_LIMIT_EXCEEDED;
-    
+
     // Safe calculation with bounds checking
     const ratio = totalVoxels / PERFORMANCE_LIMITS.maxVoxels;
     const scaleFactor = Math.pow(Math.max(1, Math.min(1000, ratio)), 1/3);
     const calculatedSize = voxelSize * scaleFactor;
-    
+
     result.recommendedSize = Math.ceil(
-      Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+      Math.max(PERFORMANCE_LIMITS.minVoxelSize,
                Math.min(PERFORMANCE_LIMITS.maxVoxelSize, calculatedSize))
     );
   } else if (totalVoxels > PERFORMANCE_LIMITS.warningThreshold) {
     result.warning = true;
     result.error = ERROR_MESSAGES.MEMORY_WARNING;
   }
-  
+
   return result;
 }
 
@@ -1267,35 +1347,35 @@ export function validateAndNormalizeOptions(options = {}) {
   }
 
   const normalized = { ...mergedOptions };
-  
+
   // v0.1.5: batchMode非推奨化警告（debug時のみ）
   if (normalized.batchMode && normalized.debug) {
-    Logger.warn('batchMode option is deprecated and will be removed in v1.0.0. It is currently ignored.');
+    Logger.warn('batchMode option is deprecated and will be removed in v2.0.0. It is currently ignored.');
   }
-  
+
   // ボクセルサイズのバリデーション
   if (normalized.voxelSize !== undefined && !isValidVoxelSize(normalized.voxelSize)) {
     throw new Error(`${ERROR_MESSAGES.INVALID_VOXEL_SIZE}: ${normalized.voxelSize}`);
   }
-  
+
   // 透明度のバリデーション
   if (normalized.opacity !== undefined) {
     normalized.opacity = Math.max(0, Math.min(1, normalized.opacity));
   }
-  
+
   if (normalized.emptyOpacity !== undefined) {
     normalized.emptyOpacity = Math.max(0, Math.min(1, normalized.emptyOpacity));
   }
-  
+
   // 色のバリデーション
   if (normalized.minColor && Array.isArray(normalized.minColor) && normalized.minColor.length === 3) {
     normalized.minColor = normalized.minColor.map(c => Math.max(0, Math.min(255, Math.floor(c))));
   }
-  
+
   if (normalized.maxColor && Array.isArray(normalized.maxColor) && normalized.maxColor.length === 3) {
     normalized.maxColor = normalized.maxColor.map(c => Math.max(0, Math.min(255, Math.floor(c))));
   }
-  
+
   // v0.1.5: 新機能のバリデーション
   if (normalized.colorMap !== undefined) {
     const validColorMaps = ['custom', 'viridis', 'inferno'];
@@ -1304,38 +1384,71 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.colorMap = 'custom';
     }
   }
-  
+
   if (normalized.highlightTopN !== undefined && normalized.highlightTopN !== null) {
     if (typeof normalized.highlightTopN !== 'number' || normalized.highlightTopN <= 0) {
       Logger.warn(`Invalid highlightTopN: ${normalized.highlightTopN}. Must be a positive number.`);
       normalized.highlightTopN = null;
     }
   }
-  
+
+  const highlightStyle = normalized.highlightStyle && typeof normalized.highlightStyle === 'object'
+    ? normalized.highlightStyle
+    : {};
+  normalized.highlightStyle = {
+    ...DEFAULT_OPTIONS.highlightStyle,
+    ...highlightStyle
+  };
+  const highlightOutlineWidth = parseFloat(normalized.highlightStyle.outlineWidth);
+  normalized.highlightStyle.outlineWidth = Number.isFinite(highlightOutlineWidth)
+    ? Math.max(0.5, Math.min(20, highlightOutlineWidth))
+    : DEFAULT_OPTIONS.highlightStyle.outlineWidth;
+  const boostOpacity = parseFloat(normalized.highlightStyle.boostOpacity);
+  normalized.highlightStyle.boostOpacity = Number.isFinite(boostOpacity)
+    ? Math.max(0, Math.min(1, boostOpacity))
+    : DEFAULT_OPTIONS.highlightStyle.boostOpacity;
+  const boostOutlineWidth = parseFloat(normalized.highlightStyle.boostOutlineWidth);
+  normalized.highlightStyle.boostOutlineWidth = Number.isFinite(boostOutlineWidth)
+    ? Math.max(0, Math.min(20, boostOutlineWidth))
+    : DEFAULT_OPTIONS.highlightStyle.boostOutlineWidth;
+
+  if (normalized.maxRenderVoxels !== undefined && normalized.maxRenderVoxels !== 'auto') {
+    const maxRenderVoxels = Number(normalized.maxRenderVoxels);
+    if (!Number.isFinite(maxRenderVoxels) || maxRenderVoxels <= 0) {
+      Logger.warn(`Invalid maxRenderVoxels: ${normalized.maxRenderVoxels}. Using ${DEFAULT_OPTIONS.maxRenderVoxels}.`);
+      normalized.maxRenderVoxels = DEFAULT_OPTIONS.maxRenderVoxels;
+    } else {
+      normalized.maxRenderVoxels = Math.max(1, Math.floor(maxRenderVoxels));
+    }
+  }
+
   // v0.1.6: 枠線重なり対策のバリデーション
   if (normalized.voxelGap !== undefined) {
     normalized.voxelGap = Math.max(0, Math.min(100, parseFloat(normalized.voxelGap) || 0));
   }
-  
+
   if (normalized.outlineOpacity !== undefined) {
-    normalized.outlineOpacity = Math.max(0, Math.min(1, parseFloat(normalized.outlineOpacity) || 1));
+    const opacity = parseFloat(normalized.outlineOpacity);
+    normalized.outlineOpacity = Number.isFinite(opacity)
+      ? Math.max(0, Math.min(1, opacity))
+      : DEFAULT_OPTIONS.outlineOpacity;
   }
-  
+
   if (normalized.outlineWidth !== undefined) {
     const width = parseFloat(normalized.outlineWidth);
     normalized.outlineWidth = Number.isFinite(width)
       ? Math.max(0.5, Math.min(20, width))
       : DEFAULT_OPTIONS.outlineWidth;
   }
-  
+
   if (normalized.wireframeOnly !== undefined) {
     normalized.wireframeOnly = coerceBoolean(normalized.wireframeOnly);
   }
-  
+
   if (normalized.heightBased !== undefined) {
     normalized.heightBased = coerceBoolean(normalized.heightBased);
   }
-  
+
   // v0.1.12: Deprecated Resolver systems - show warnings and remove
   if (normalized.outlineWidthResolver !== undefined && normalized.outlineWidthResolver !== null) {
     warnOnce('outlineWidthResolver',
@@ -1345,7 +1458,7 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.outlineWidthResolver = null;
     }
   }
-  
+
   // v1.0.0 planned: Resolver deprecation. For now, warn but keep for compatibility.
   if (normalized.outlineOpacityResolver !== undefined && normalized.outlineOpacityResolver !== null) {
     warnOnce('outlineOpacityResolver',
@@ -1355,7 +1468,7 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.outlineOpacityResolver = null;
     }
   }
-  
+
   if (normalized.boxOpacityResolver !== undefined && normalized.boxOpacityResolver !== null) {
     warnOnce('boxOpacityResolver',
       '[Heatbox][DEPRECATION][v1.0.0] boxOpacityResolver is deprecated; prefer adaptiveOutlines with adaptiveParams.boxOpacityRange.');
@@ -1365,11 +1478,11 @@ export function validateAndNormalizeOptions(options = {}) {
     }
   }
 
-  // v0.1.12: outlineEmulation deprecation and migration to outlineRenderMode  
+  // v0.1.12: outlineEmulation deprecation and migration to outlineRenderMode
   if (normalized.outlineEmulation !== undefined && (normalized.outlineRenderMode === undefined || normalized.outlineRenderMode === 'standard')) {
     warnOnce('outlineEmulation',
       '[Heatbox][DEPRECATION][v1.0.0] outlineEmulation is deprecated; use outlineRenderMode and emulationScope instead.');
-    
+
     const v = normalized.outlineEmulation;
     if (v === false || v === 'off') {
       // outlineEmulation: false/off → standard mode + explicit off scope
@@ -1391,16 +1504,16 @@ export function validateAndNormalizeOptions(options = {}) {
       Logger.warn(`Invalid outlineEmulation: ${v}. Using 'standard' mode.`);
       normalized.outlineRenderMode = 'standard';
     }
-    
+
     // Remove old property
     delete normalized.outlineEmulation;
   }
-  
+
   // v0.1.12: outlineWidthPreset legacy name mapping
   if (normalized.outlineWidthPreset !== undefined) {
     const preset = normalized.outlineWidthPreset;
     const legacyMap = { 'uniform': 'medium', 'adaptive-density': 'adaptive', 'topn-focus': 'thick' };
-    
+
     if (legacyMap[preset]) {
       warnOnce(`outlineWidthPreset.${preset}`,
         `[Heatbox][DEPRECATION][v1.0.0] outlineWidthPreset "${preset}" is deprecated; use "${legacyMap[preset]}".`);
@@ -1431,7 +1544,7 @@ export function validateAndNormalizeOptions(options = {}) {
     const inset = parseFloat(normalized.outlineInset);
     normalized.outlineInset = Math.max(0, Math.min(100, isNaN(inset) ? 0 : inset));
   }
-  
+
   if (normalized.outlineInsetMode !== undefined) {
     let mode2 = normalized.outlineInsetMode;
     if (mode2 === 'off') mode2 = 'none'; // legacy alias
@@ -1443,12 +1556,12 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.outlineInsetMode = mode2;
     }
   }
-  
+
   // 厚い枠線表示
   if (normalized.enableThickFrames !== undefined) {
     normalized.enableThickFrames = coerceBoolean(normalized.enableThickFrames);
   }
-  
+
   // v0.1.9: 適応的レンダリング制限のバリデーション
   if (normalized.renderLimitStrategy !== undefined) {
     const validStrategies = ['density', 'coverage', 'hybrid'];
@@ -1473,7 +1586,7 @@ export function validateAndNormalizeOptions(options = {}) {
       }
     }
   }
-  
+
   // v0.1.9: 自動ボクセルサイズ決定の強化
   if (normalized.autoVoxelSizeMode !== undefined) {
     const validModes = ['basic', 'occupancy'];
@@ -1486,7 +1599,7 @@ export function validateAndNormalizeOptions(options = {}) {
     const v = parseFloat(normalized.autoVoxelTargetFill);
     normalized.autoVoxelTargetFill = isNaN(v) ? 0.6 : Math.max(0, Math.min(1, v));
   }
-  
+
   // v0.1.9: Auto Render Budget
   if (normalized.renderBudgetMode !== undefined) {
     const validModes = ['manual', 'auto'];
@@ -1495,11 +1608,11 @@ export function validateAndNormalizeOptions(options = {}) {
       normalized.renderBudgetMode = 'manual';
     }
   }
-  
+
   // v0.1.9: 自動視点調整 fitView オプション
   if (normalized.fitViewOptions !== undefined) {
     const f = normalized.fitViewOptions || {};
-    
+
     // v0.1.12: Deprecation warnings for old naming
     if (f.pitch !== undefined && f.pitchDegrees === undefined) {
       warnOnce('fitViewOptions.pitch',
@@ -1509,13 +1622,13 @@ export function validateAndNormalizeOptions(options = {}) {
       warnOnce('fitViewOptions.heading',
         '[Heatbox][DEPRECATION][v1.0.0] fitViewOptions.heading is deprecated; use fitViewOptions.headingDegrees.');
     }
-    
+
     const padding = parseFloat(f.paddingPercent);
     // Prioritize new names, fallback to old names
     const pitch = f.pitchDegrees !== undefined ? parseFloat(f.pitchDegrees) : parseFloat(f.pitch);
     const heading = f.headingDegrees !== undefined ? parseFloat(f.headingDegrees) : parseFloat(f.heading);
     const altitudeStrategy = f.altitudeStrategy;
-    
+
     normalized.fitViewOptions = {
       paddingPercent: Number.isFinite(padding) ? Math.max(0, Math.min(1, padding)) : 0.1,
       pitchDegrees: Number.isFinite(pitch) ? Math.max(-90, Math.min(0, pitch)) : -30,
@@ -1523,19 +1636,19 @@ export function validateAndNormalizeOptions(options = {}) {
       altitudeStrategy: altitudeStrategy === 'manual' ? 'manual' : 'auto'
     };
   }
-  
+
   // v0.1.15: Phase 0 - adaptiveParams の正規化と範囲統一（ADR-0011）
   // ユーザー指定の adaptiveParams を保持
   const userAdaptiveParams = normalized.adaptiveParams ? { ...normalized.adaptiveParams } : {};
-  
+
   // デフォルト値とマージ（ユーザー指定を優先）
   normalized.adaptiveParams = {
     ...DEFAULT_OPTIONS.adaptiveParams,
     ...userAdaptiveParams
   };
-  
+
   const ap = normalized.adaptiveParams;
-  
+
   // min/max → range への統一（rangeが優先）
   if (userAdaptiveParams.minOutlineWidth !== undefined && userAdaptiveParams.maxOutlineWidth !== undefined && userAdaptiveParams.outlineWidthRange === undefined) {
     ap.outlineWidthRange = [
@@ -1544,7 +1657,7 @@ export function validateAndNormalizeOptions(options = {}) {
     ];
     Logger.debug('adaptiveParams: minOutlineWidth/maxOutlineWidth normalized to outlineWidthRange');
   }
-  
+
   // range の検証とクランプ
   if (ap.outlineWidthRange !== undefined && Array.isArray(ap.outlineWidthRange)) {
     const [min, max] = ap.outlineWidthRange;
@@ -1558,7 +1671,7 @@ export function validateAndNormalizeOptions(options = {}) {
       Logger.warn('adaptiveParams.outlineWidthRange: min > max detected, swapped values');
     }
   }
-  
+
   if (ap.boxOpacityRange !== undefined && Array.isArray(ap.boxOpacityRange)) {
     const [min, max] = ap.boxOpacityRange;
     ap.boxOpacityRange = [
@@ -1570,7 +1683,7 @@ export function validateAndNormalizeOptions(options = {}) {
       Logger.warn('adaptiveParams.boxOpacityRange: min > max detected, swapped values');
     }
   }
-  
+
   if (ap.outlineOpacityRange !== undefined && Array.isArray(ap.outlineOpacityRange)) {
     const [min, max] = ap.outlineOpacityRange;
     ap.outlineOpacityRange = [
@@ -1582,41 +1695,41 @@ export function validateAndNormalizeOptions(options = {}) {
       Logger.warn('adaptiveParams.outlineOpacityRange: min > max detected, swapped values');
     }
   }
-  
+
   // 既定値の検証
   if (ap.overlapDetection !== undefined) {
     ap.overlapDetection = coerceBoolean(ap.overlapDetection);
   }
-  
+
   if (ap.zScaleCompensation !== undefined) {
     ap.zScaleCompensation = coerceBoolean(ap.zScaleCompensation);
   }
-  
+
   if (ap.adaptiveOpacityEnabled !== undefined) {
     ap.adaptiveOpacityEnabled = coerceBoolean(ap.adaptiveOpacityEnabled);
   }
-  
+
   // 数値パラメータの検証
   if (ap.neighborhoodRadius !== undefined) {
     const v = parseFloat(ap.neighborhoodRadius);
     ap.neighborhoodRadius = Number.isFinite(v) && v > 0 ? v : 30;
   }
-  
+
   if (ap.densityThreshold !== undefined) {
     const v = parseFloat(ap.densityThreshold);
     ap.densityThreshold = Number.isFinite(v) && v > 0 ? v : 3;
   }
-  
+
   if (ap.cameraDistanceFactor !== undefined) {
     const v = parseFloat(ap.cameraDistanceFactor);
     ap.cameraDistanceFactor = Number.isFinite(v) && v > 0 ? v : 0.8;
   }
-  
+
   if (ap.overlapRiskFactor !== undefined) {
     const v = parseFloat(ap.overlapRiskFactor);
     ap.overlapRiskFactor = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.4;
   }
-  
+
   normalized.adaptiveParams = ap;
 
   if (normalized.performanceOverlay) {
@@ -1637,16 +1750,16 @@ export function validateAndNormalizeOptions(options = {}) {
     }
     normalized.performanceOverlay = overlay;
   }
-  
+
   // v0.1.17: Spatial ID validation (ADR-0013)
   if (mergedOptions.spatialId !== undefined) {
     const spatialId = typeof mergedOptions.spatialId === 'object' && mergedOptions.spatialId !== null
       ? { ...mergedOptions.spatialId }
       : {};
-    
+
     // enabled
     spatialId.enabled = coerceBoolean(spatialId.enabled, false);
-    
+
     // mode (v0.1.17: tile-grid only)
     if (spatialId.mode !== undefined) {
       if (spatialId.mode !== 'tile-grid') {
@@ -1656,7 +1769,7 @@ export function validateAndNormalizeOptions(options = {}) {
     } else {
       spatialId.mode = 'tile-grid';
     }
-    
+
     // provider
     if (spatialId.provider !== undefined) {
       if (spatialId.provider !== 'ouranos-gex') {
@@ -1666,7 +1779,7 @@ export function validateAndNormalizeOptions(options = {}) {
     } else {
       spatialId.provider = 'ouranos-gex';
     }
-    
+
     // zoom (number or 'auto')
     if (spatialId.zoom !== undefined) {
       if (spatialId.zoom === 'auto') {
@@ -1683,7 +1796,7 @@ export function validateAndNormalizeOptions(options = {}) {
     } else {
       spatialId.zoom = 25;
     }
-    
+
     // zoomControl
     if (spatialId.zoomControl !== undefined) {
       if (!['auto', 'manual'].includes(spatialId.zoomControl)) {
@@ -1693,7 +1806,7 @@ export function validateAndNormalizeOptions(options = {}) {
     } else {
       spatialId.zoomControl = 'auto';
     }
-    
+
     // zoomTolerancePct
     if (spatialId.zoomTolerancePct !== undefined) {
       const tolerance = parseFloat(spatialId.zoomTolerancePct);
@@ -1706,23 +1819,72 @@ export function validateAndNormalizeOptions(options = {}) {
     } else {
       spatialId.zoomTolerancePct = 10;
     }
-    
+
     normalized.spatialId = spatialId;
   } else {
     // Use defaults from constants
     normalized.spatialId = { ...DEFAULT_OPTIONS.spatialId };
   }
-  
+
   // v1.0.0: Classification options validation
   normalized.classification = normalizeClassificationOptions(normalized.classification);
-  
+
+  // v1.2.0: Temporal options validation and documented defaults
+  normalized.temporal = normalizeTemporalOptions(normalized.temporal);
+
   // v0.1.18: Aggregation options validation (ADR-0014)
   if (normalized.aggregation !== undefined) {
     normalized.aggregation = validateAggregationOptions(normalized.aggregation);
   } else {
     normalized.aggregation = { ...DEFAULT_OPTIONS.aggregation };
   }
-  
+
+  return normalized;
+}
+
+function normalizeTemporalOptions(temporal) {
+  if (temporal === undefined || temporal === null) {
+    return null;
+  }
+
+  if (typeof temporal !== 'object' || Array.isArray(temporal)) {
+    Logger.warn('Invalid temporal options. Temporal mode has been disabled.');
+    return null;
+  }
+
+  const normalized = {
+    enabled: false,
+    data: [],
+    classificationScope: 'global',
+    updateInterval: 100,
+    outOfRangeBehavior: 'hold',
+    overlapResolution: 'prefer-earlier',
+    interpolate: false,
+    dataSource: null,
+    useWorker: false,
+    ...temporal
+  };
+
+  normalized.enabled = coerceBoolean(normalized.enabled, false);
+  normalized.data = Array.isArray(normalized.data) ? normalized.data : [];
+  normalized.classificationScope = ['global', 'per-time'].includes(normalized.classificationScope)
+    ? normalized.classificationScope
+    : 'global';
+  normalized.outOfRangeBehavior = ['clear', 'hold'].includes(normalized.outOfRangeBehavior)
+    ? normalized.outOfRangeBehavior
+    : 'hold';
+  normalized.overlapResolution = ['skip', 'prefer-earlier', 'prefer-later'].includes(normalized.overlapResolution)
+    ? normalized.overlapResolution
+    : 'prefer-earlier';
+  normalized.interpolate = coerceBoolean(normalized.interpolate, false);
+  normalized.useWorker = coerceBoolean(normalized.useWorker, false);
+  normalized.dataSource = typeof normalized.dataSource === 'function' ? normalized.dataSource : null;
+
+  if (normalized.updateInterval !== 'frame') {
+    const interval = Number(normalized.updateInterval);
+    normalized.updateInterval = Number.isFinite(interval) && interval >= 0 ? interval : 100;
+  }
+
   return normalized;
 }
 
@@ -1737,7 +1899,7 @@ export function validateAndNormalizeOptions(options = {}) {
 export function estimateInitialVoxelSize(bounds, entityCount, options = {}) {
   try {
     const mode = options.autoVoxelSizeMode || 'basic';
-    
+
     if (mode === 'occupancy') {
       return estimateVoxelSizeByOccupancy(bounds, entityCount, options);
     } else {
@@ -1759,17 +1921,17 @@ export function estimateInitialVoxelSize(bounds, entityCount, options = {}) {
 function estimateVoxelSizeBasic(bounds, entityCount) {
   // 1. データ範囲（X/Y/Z軸の物理的範囲）を計算
   const dataRange = calculateDataRange(bounds);
-  
+
   // 2. エンティティ密度を推定
   const volume = dataRange.x * dataRange.y * Math.max(dataRange.z, 10); // 最小高度差10m
   const density = entityCount / volume; // エンティティ/立方メートル
-  
+
   // 3. 密度に応じて適切なボクセルサイズを推定
   // - 高密度: 細かいサイズ（10-20m）
   // - 中密度: 標準サイズ（20-50m）
   // - 低密度: 粗いサイズ（50-100m）
   let estimatedSize;
-  
+
   if (density > 0.001) {
     // 高密度：細かいサイズ
     estimatedSize = Math.max(10, Math.min(20, 20 / Math.sqrt(density * 1000)));
@@ -1780,11 +1942,11 @@ function estimateVoxelSizeBasic(bounds, entityCount) {
     // 低密度：粗いサイズ
     estimatedSize = Math.max(50, Math.min(100, 100 / Math.sqrt(density * 100000)));
   }
-  
+
   // 制限値内に収める
-  estimatedSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+  estimatedSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize,
                           Math.min(PERFORMANCE_LIMITS.maxVoxelSize, estimatedSize));
-  
+
   Logger.debug(`Basic voxel size estimated: ${estimatedSize}m (density: ${density}, volume: ${volume})`);
   return Math.round(estimatedSize);
 }
@@ -1803,12 +1965,12 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
   const targetFill = options.autoVoxelTargetFill || 0.6;
   const maxIterations = 10;
   const tolerance = 0.05; // 5%の許容誤差
-  
+
   // 初期推定値（基本アルゴリズムから）
   let currentSize = estimateVoxelSizeBasic(bounds, entityCount);
-  
+
   Logger.debug(`Starting occupancy-based estimation: N=${entityCount}, target=${targetFill}, maxVoxels=${maxRenderVoxels}`);
-  
+
   for (let iteration = 0; iteration < maxIterations; iteration++) {
     // Safe bounds checking for currentSize
     if (!Number.isFinite(currentSize) || currentSize <= 0) {
@@ -1818,38 +1980,38 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
         currentSize = PERFORMANCE_LIMITS.minVoxelSize;
       }
     }
-    
+
     // 現在のサイズでの総ボクセル数を計算（安全性チェック付き）
     const numVoxelsX = Math.max(1, Math.ceil(Math.max(0, dataRange.x) / currentSize));
     const numVoxelsY = Math.max(1, Math.ceil(Math.max(0, dataRange.y) / currentSize));
     const numVoxelsZ = Math.max(1, Math.ceil(Math.max(0, dataRange.z) / currentSize));
     const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
-    
+
     // Safeguard against overflow
     if (!Number.isFinite(totalVoxels) || totalVoxels <= 0 || totalVoxels > 1e9) {
       Logger.warn(`Invalid totalVoxels calculated: ${totalVoxels}, breaking iteration`);
       break;
     }
-    
+
     // 期待占有セル数の計算: E[occupied] ≈ M × (1 - exp(-N/M))
     const expectedOccupied = totalVoxels * (1 - Math.exp(-entityCount / totalVoxels));
-    
+
     // 現在の占有率
     const currentFill = Math.min(expectedOccupied / maxRenderVoxels, 1.0);
-    
+
     Logger.debug(`Iteration ${iteration}: size=${currentSize.toFixed(1)}m, totalVoxels=${totalVoxels}, expectedOccupied=${expectedOccupied.toFixed(0)}, fill=${currentFill.toFixed(3)}`);
-    
+
     // 収束判定
     const fillError = Math.abs(currentFill - targetFill);
     if (fillError < tolerance) {
       Logger.debug(`Converged at iteration ${iteration}: size=${currentSize.toFixed(1)}m, fill=${currentFill.toFixed(3)}`);
       break;
     }
-    
+
     // サイズ調整（Newton法的なアプローチ）- 安全な計算
     const fillRatio = Math.max(0.1, Math.min(10.0, currentFill / targetFill));
     const adjustmentFactor = Math.pow(fillRatio, 0.3);
-    
+
     if (currentFill > targetFill) {
       // 占有率が高すぎる → サイズを大きくしてボクセル数を減らす
       currentSize *= adjustmentFactor;
@@ -1857,15 +2019,15 @@ function estimateVoxelSizeByOccupancy(bounds, entityCount, options) {
       // 占有率が低すぎる → サイズを小さくしてボクセル数を増やす
       currentSize *= adjustmentFactor;
     }
-    
+
     // 制限値内に収める
-    currentSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize, 
+    currentSize = Math.max(PERFORMANCE_LIMITS.minVoxelSize,
                           Math.min(PERFORMANCE_LIMITS.maxVoxelSize, currentSize));
   }
-  
+
   const finalSize = Math.round(currentSize);
   Logger.info(`Occupancy-based voxel size: ${finalSize}m (target fill: ${targetFill})`);
-  
+
   return finalSize;
 }
 
@@ -1886,7 +2048,7 @@ export function calculateDataRange(bounds) {
       minAlt: Number.isFinite(bounds.minAlt) ? bounds.minAlt : 0,
       maxAlt: Number.isFinite(bounds.maxAlt) ? bounds.maxAlt : 100
     };
-    
+
     // Ensure valid ranges
     if (validBounds.maxLat <= validBounds.minLat) {
       validBounds.maxLat = validBounds.minLat + 0.001; // ~100m
@@ -1897,21 +2059,21 @@ export function calculateDataRange(bounds) {
     if (validBounds.maxAlt <= validBounds.minAlt) {
       validBounds.maxAlt = validBounds.minAlt + 1; // 1m minimum
     }
-    
+
     // 緯度経度をメートルに変換（簡易変換）- 安全な計算
     const centerLat = (validBounds.minLat + validBounds.maxLat) / 2;
     const cosLat = Math.cos(Math.max(-Math.PI/2, Math.min(Math.PI/2, centerLat * Math.PI / 180)));
-    
+
     const lonRangeMeters = Math.abs(validBounds.maxLon - validBounds.minLon) * 111000 * Math.abs(cosLat);
     const latRangeMeters = Math.abs(validBounds.maxLat - validBounds.minLat) * 111000;
     const altRangeMeters = Math.abs(validBounds.maxAlt - validBounds.minAlt);
-    
+
     return {
       x: Math.max(1, Math.min(1e6, lonRangeMeters)), // 1m to 1000km bounds
-      y: Math.max(1, Math.min(1e6, latRangeMeters)), 
+      y: Math.max(1, Math.min(1e6, latRangeMeters)),
       z: Math.max(1, Math.min(1e4, altRangeMeters))  // 1m to 10km altitude range
     };
-    
+
   } catch (error) {
     Logger.warn('Data range calculation failed:', error);
     // フォールバック値
@@ -1927,16 +2089,16 @@ export function calculateDataRange(bounds) {
  */
 export function validateAggregationOptions(aggregation) {
   const normalized = { ...DEFAULT_OPTIONS.aggregation };
-  
+
   if (!aggregation || typeof aggregation !== 'object') {
     return normalized;
   }
-  
+
   // enabled
   if (aggregation.enabled !== undefined) {
     normalized.enabled = coerceBoolean(aggregation.enabled, false);
   }
-  
+
   // byProperty
   if (aggregation.byProperty !== undefined && aggregation.byProperty !== null) {
     if (typeof aggregation.byProperty === 'string' && aggregation.byProperty.trim() !== '') {
@@ -1946,7 +2108,7 @@ export function validateAggregationOptions(aggregation) {
       normalized.byProperty = null;
     }
   }
-  
+
   // keyResolver
   if (aggregation.keyResolver !== undefined && aggregation.keyResolver !== null) {
     if (typeof aggregation.keyResolver === 'function') {
@@ -1956,12 +2118,12 @@ export function validateAggregationOptions(aggregation) {
       normalized.keyResolver = null;
     }
   }
-  
+
   // showInDescription
   if (aggregation.showInDescription !== undefined) {
     normalized.showInDescription = coerceBoolean(aggregation.showInDescription, true);
   }
-  
+
   // topN
   if (aggregation.topN !== undefined) {
     const topNValue = Number(aggregation.topN);
@@ -1972,12 +2134,12 @@ export function validateAggregationOptions(aggregation) {
       normalized.topN = DEFAULT_OPTIONS.aggregation.topN;
     }
   }
-  
+
   // Validation: if enabled but neither byProperty nor keyResolver is set, warn
   if (normalized.enabled && !normalized.byProperty && !normalized.keyResolver) {
     Logger.warn('[aggregation] enabled=true but neither byProperty nor keyResolver is set. Will use default key "default".');
   }
-  
+
   return normalized;
 }
 
@@ -1986,18 +2148,18 @@ function normalizeClassificationOptions(classification) {
     ...DEFAULT_OPTIONS.classification,
     classificationTargets: { ...DEFAULT_OPTIONS.classification.classificationTargets }
   };
-  
+
   if (classification === undefined) {
     return { ...defaults };
   }
-  
+
   if (classification === null || classification === false) {
     return { ...defaults, enabled: false };
   }
-  
+
   const normalized = { ...defaults };
   let input = classification;
-  
+
   const allowedClassificationTargets = ['color', 'opacity', 'width'];
 
   if (typeof classification === 'string') {
@@ -2006,25 +2168,25 @@ function normalizeClassificationOptions(classification) {
       enabled: classification !== 'none'
     };
   }
-  
+
   if (typeof input === 'object') {
     if (input.enabled !== undefined) {
       normalized.enabled = coerceBoolean(input.enabled, defaults.enabled);
     } else {
       normalized.enabled = true;
     }
-    
+
     if (input.scheme !== undefined) {
       normalized.scheme = sanitizeClassificationScheme(input.scheme);
     }
-    
+
     if (input.classes !== undefined) {
       const classesValue = Number(input.classes);
       normalized.classes = Number.isInteger(classesValue)
         ? Math.max(2, Math.min(20, classesValue))
         : defaults.classes;
     }
-    
+
     if (Array.isArray(input.thresholds)) {
       const validThresholds = input.thresholds
         .map(value => Number(value))
@@ -2034,7 +2196,7 @@ function normalizeClassificationOptions(classification) {
     } else if (input.thresholds === null) {
       normalized.thresholds = null;
     }
-    
+
     if (Array.isArray(input.colorMap)) {
       normalized.colorMap = input.colorMap.slice();
     } else if (input.colorMap === null) {
@@ -2043,7 +2205,7 @@ function normalizeClassificationOptions(classification) {
       Logger.warn('[classification] colorMap should be an array of colors or stop objects. Ignoring provided value.');
       normalized.colorMap = null;
     }
-    
+
     if (Array.isArray(input.domain) && input.domain.length === 2) {
       const [minValue, maxValue] = input.domain.map(value => Number(value));
       if (Number.isFinite(minValue) && Number.isFinite(maxValue)) {
@@ -2052,7 +2214,7 @@ function normalizeClassificationOptions(classification) {
     } else if (input.domain === null) {
       normalized.domain = null;
     }
-    
+
     const resolvedClassificationTargets = { ...defaults.classificationTargets };
     const applyClassificationTargets = (source, sourceName) => {
       if (source === undefined || source === null) {
@@ -2081,16 +2243,16 @@ function normalizeClassificationOptions(classification) {
     Logger.warn('[classification] Unsupported configuration type. Expected string or object.');
     normalized.enabled = false;
   }
-  
+
   if (!normalized.enabled) {
     return { ...defaults, enabled: false };
   }
-  
+
   if (normalized.scheme === 'threshold' && !Array.isArray(normalized.thresholds)) {
     Logger.warn('[classification] threshold scheme requires a thresholds array. Disabling classification.');
     return { ...defaults, enabled: false };
   }
-  
+
   return normalized;
 }
 
@@ -2098,14 +2260,14 @@ function sanitizeClassificationScheme(scheme) {
   if (!scheme || typeof scheme !== 'string') {
     return 'linear';
   }
-  
+
   const normalizedScheme = scheme.trim().toLowerCase();
   const supportedSchemes = ['linear', 'log', 'equal-interval', 'quantize', 'threshold', 'quantile', 'jenks'];
-  
+
   if (supportedSchemes.includes(normalizedScheme)) {
     return normalizedScheme;
   }
-  
+
   Logger.warn(`[classification] Unknown scheme '${scheme}', falling back to 'linear'.`);
   return 'linear';
 }

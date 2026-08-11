@@ -19,7 +19,7 @@ export const PROFILES = {
     opacity: 0.7,
     renderLimitStrategy: 'density',
     minCoverageRatio: 0.1,
-    topNHighlight: 10,
+    highlightTopN: 10,
     description: 'Mobile devices - prioritizes performance over visual quality'
   },
 
@@ -32,7 +32,7 @@ export const PROFILES = {
     opacity: 0.8,
     renderLimitStrategy: 'hybrid',
     minCoverageRatio: 0.2,
-    topNHighlight: 20,
+    highlightTopN: 20,
     adaptiveParams: {
       outlineWidthRange: [1, 4],
       outlineOpacityRange: [0.4, 1.0],
@@ -50,9 +50,8 @@ export const PROFILES = {
     opacity: 0.6,
     renderLimitStrategy: 'hybrid',
     minCoverageRatio: 0.3,
-    topNHighlight: 30,
+    highlightTopN: 30,
     outlineInset: 0.5,
-    highlightTopN: true,
     highlightStyle: {
       boostOpacity: 0.3,
       boostOutlineWidth: 1.5
@@ -69,7 +68,7 @@ export const PROFILES = {
     opacity: 0.9,
     renderLimitStrategy: 'coverage',
     minCoverageRatio: 0.8,
-    topNHighlight: 50,
+    highlightTopN: 50,
     emptyOpacity: 0.05,
     showEmptyVoxels: true,
     description: 'Sparse datasets - emphasizes visibility and coverage'

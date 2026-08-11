@@ -53,8 +53,7 @@ npm run build
 
 ## 互換性
 
-- minimum supported Cesium: `^1.120.0`
-- latest verified Cesium: CI の互換 smoke test を最後に通過した最新版
+- 対応する最小Cesiumバージョン: `^1.120.0`
 - CI では `cesium@^1.120.0` と `cesium@latest` の両方を検証
 
 ## クイックスタート
@@ -63,7 +62,7 @@ npm run build
 import { Heatbox } from 'cesium-heatbox';
 
 const heatbox = new Heatbox(viewer, {
-  voxelSize: { x: 1000, y: 1000, z: 100 },
+  voxelSize: 100,
   opacity: 0.8
 });
 
@@ -76,6 +75,15 @@ await heatbox.fitView(null, { paddingPercent: 0.1, pitchDegrees: -35 });
 // 統計情報の確認
 console.log(heatbox.getStatistics());
 ```
+
+### 実行時の高度な制御
+
+v0.1.12 で追加された実行時制御は、互換性を保って利用できます。
+
+- `fitViewOptions.headingDegrees` と `fitViewOptions.pitchDegrees` でカメラ方向を指定します。
+- `outlineRenderMode` と `emulationScope` は、非推奨の `outlineEmulation` を置き換えます。
+- `performanceOverlay` は `togglePerformanceOverlay()` または `setPerformanceOverlayEnabled()` で実行中に切り替えられます。
+- `getEffectiveOptions()` で、正規化後の現在の設定を取得できます。
 
 ## 主要機能
 
@@ -146,7 +154,7 @@ const heatbox = new Heatbox(viewer, {
 - `dataSource(currentTime, context)` で lazy loading を追加可能
 - `useWorker: true` で補間と時系列統計の前処理を worker に逃がせます
 - デモは baseline 再生、Global/Per-Time 比較、シナリオ切替、補間/lazy loading の拡張フローまで含みます
-- デモ: `examples/temporal/`
+- デモ: `examples/temporal/README.md`
 
 詳細は[APIリファレンス — 時系列](docs/API.md)を参照してください。
 
@@ -170,16 +178,9 @@ const heatbox = new Heatbox(viewer, {
 });
 ```
 
-#### インストールオプション
+#### プロバイダー
 
-**オプション1: 内蔵フォールバック（推奨）** — 追加インストール不要。Ouranoscが利用できない場合、内蔵のWeb Mercatorベース変換が自動的に使用されます。
-
-**オプション2: Ouranos公式ライブラリ（高精度）**
-
-```bash
-npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
-npx cesium-heatbox-install-ouranos
-```
+Ouranos公式プロバイダーは配布物の遅延チャンクに同梱されるため、追加パッケージのインストールは不要です。チャンクを読み込めない場合は、内蔵Web Mercatorフォールバックへ自動的に切り替わります。
 
 #### ズームレベルとセルサイズの関係
 
@@ -194,20 +195,20 @@ npx cesium-heatbox-install-ouranos
 
 ```javascript
 const stats = heatbox.getStatistics();
-console.log(stats.spatialIdProvider); // "ouranos-gex" または "fallback"
+console.log(stats.spatialId.provider); // 公式provider利用時は "ouranos-gex"、内蔵フォールバック時は null
 ```
 
 #### トラブルシューティング
 
-- `node_modules/ouranos-gex-lib-for-javascript/dist/index.js`が存在しない場合は`npx cesium-heatbox-install-ouranos`を実行してください。
-- webpackの警告`Module not found: Can't resolve 'ouranos-gex-lib-for-javascript'`はオプショナル依存のため正常です。
+- `dist/`をコピーまたはセルフホストする場合は、番号付き遅延チャンクもESM・CJS・UMD本体と一緒に配置してください。
+- 統計の`provider`が`null`の場合はブラウザーのネットワークログを確認してください。遅延チャンクが見つからないと内蔵フォールバックへ切り替わります。
 
 #### 制限事項
 
 - ±85.0511°（Web Mercator限界）内で正常動作
 - 日付変更線対応: 将来バージョンで実装予定
 
-詳細は[空間ID使用例](examples/spatial-id/)を参照してください。
+詳細は[空間ID使用例](examples/spatial-id/README.md)を参照してください。
 
 </details>
 
@@ -254,7 +255,7 @@ aggregation: {
 - メモリ: ボクセルあたりのユニークレイヤあたり ~8–16バイト
 - 処理時間: 有効時 ≤ +10%オーバーヘッド、無効時オーバーヘッドなし
 
-詳細は[集約使用例](examples/aggregation/)を参照してください。
+詳細は[集約使用例](examples/aggregation/README.md)を参照してください。
 
 </details>
 
@@ -295,24 +296,33 @@ aggregation: {
 
 | カテゴリ | 説明 | 場所 |
 |----------|------|------|
-| Basic | はじめに | `examples/basic/` |
-| Classification | 色分けスキームデモ | `examples/advanced/` |
-| Temporal | 時系列データ | `examples/temporal/` |
-| Spatial ID | タイルグリッドモード | `examples/spatial-id/` |
-| Aggregation | レイヤ内訳 | `examples/aggregation/` |
-| Rendering | ワイヤーフレーム、高さベース | `examples/rendering/` |
-| Performance | 適応制御、オーバーレイ | `examples/observability/` |
+| Basic | はじめに | `examples/basic/index.html` |
+| Classification | 色分けスキームデモ | `examples/advanced/README.md` |
+| Temporal | 時系列データ | `examples/temporal/README.md` |
+| Spatial ID | タイルグリッドモード | `examples/spatial-id/README.md` |
+| Aggregation | レイヤ内訳 | `examples/aggregation/README.md` |
+| Rendering | ワイヤーフレーム、高さベース | `examples/rendering/README.md` |
+| Performance | 適応制御、オーバーレイ | `examples/observability/README.md` |
 
 ## ドキュメント
 
-- [APIリファレンス](docs/API.md)
-- [クイックスタート](docs/quick-start.md)
-- [はじめに](docs/getting-started.md)
-- [移行ガイド](MIGRATION.md)
+**ライブラリを使い始める**
+
+- [クイックスタート](docs/quick-start.md) — 10〜15分でインストールから初回描画まで
+- [APIリファレンス](docs/API.md) — オプション、メソッド、戻り値の完全な一覧
+- [移行ガイド](MIGRATION.md) — 既存コードのアップグレード
+
+**機能を深掘りする**
+
+- [ドキュメント索引](docs/README.md) — 読者・目的別に整理したガイド一覧
+- [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki) — 描画戦略、性能、空間ID、落とし穴、用語集
+- [ロードマップ](ROADMAP.md)と[変更履歴](CHANGELOG.md)
+
+**開発・貢献する**
+
+- [開発環境セットアップ](docs/development-setup.md)
 - [開発ガイド](docs/development-guide.md)
-- [コントリビューティング](CONTRIBUTING.md)
-- [変更履歴](CHANGELOG.md)
-- [ロードマップ](ROADMAP.md)
+- [コントリビューションガイド](CONTRIBUTING.md)
 
 ## ライセンス
 

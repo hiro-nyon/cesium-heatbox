@@ -13,8 +13,56 @@ const { JSDOM } = require('jsdom');
 const REPO_ROOT = path.join(__dirname, '..');
 const API_DOCS_DIR = path.join(__dirname, '../docs/api');
 const WIKI_DIR = path.join(__dirname, '../wiki');
+const REPOSITORY_WEB_ROOT = 'https://github.com/hiro-nyon/cesium-heatbox';
+
+const WIKI_PAGE_MAPPINGS = [
+  ['README.md', 'Home.md'],
+  ['README.ja.md', 'Home-ja.md'],
+  ['CHANGELOG.md', 'Release-Notes.md'],
+  ['docs/quick-start.md', 'Getting-Started.md'],
+  ['docs/quick-start.md', 'Quick-Start.md'],
+  ['docs/development-setup.md', 'Development-Setup.md'],
+  ['docs/development-guide.md', 'Development-Guide.md'],
+  ['docs/contributing.md', 'Contributing.md'],
+  ['docs/specification.md', 'Architecture.md'],
+  ['docs/API.md', 'API.md'],
+  ['docs/RELEASE_RUNBOOK.md', 'Release-Runbook.md'],
+  ['docs/wiki-maintenance.md', 'Publishing-to-GitHub-Wiki.md']
+];
+
+const WIKI_PAGE_BY_SOURCE = new Map(
+  WIKI_PAGE_MAPPINGS.map(([source, target]) => [source, target.replace(/\.md$/, '')])
+);
 
 const JAPANESE_REGEX = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
+
+function cleanGeneratedMarkdown(content) {
+  return content.replace(/[ \t]+$/gm, '');
+}
+
+function isStaleGeneratedApiPage(content, htmlFiles) {
+  const match = content.match(/^<!-- Generated from docs\/api\/([^\s]+\.html) by npm run wiki:sync\./);
+  return Boolean(match && !htmlFiles.includes(match[1]));
+}
+
+function removeStaleGeneratedApiPages(htmlFiles) {
+  fs.readdirSync(WIKI_DIR)
+    .filter((file) => file.endsWith('.md'))
+    .forEach((file) => {
+      const targetPath = path.join(WIKI_DIR, file);
+      const content = fs.readFileSync(targetPath, 'utf8');
+      if (isStaleGeneratedApiPage(content, htmlFiles)) {
+        fs.rmSync(targetPath);
+        console.log(`🧹 Removed stale generated page: ${file}`);
+      }
+    });
+}
+
+function findClassPageLink(sourceName, htmlFiles = fs.readdirSync(API_DOCS_DIR)) {
+  const expectedPage = `${sourceName}.html`.toLowerCase();
+  const exactClassPage = htmlFiles.find((file) => file.toLowerCase() === expectedPage);
+  return exactClassPage ? path.basename(exactClassPage, '.html') : '';
+}
 
 /**
  * 日本語判定
@@ -74,7 +122,9 @@ function convertHtmlToMarkdown(htmlContent, filename) {
     let classLink = '';
     try {
       const m = pageTitle.match(/Source:\s*.+\/(.+?)\.js/i);
-      if (m && m[1]) classLink = m[1];
+      if (m && m[1]) {
+        classLink = findClassPageLink(m[1]);
+      }
     } catch (_) {}
     let md = `# ${makeBilingualTitle(pageTitle)}\n\n`;
     md += `**日本語** | [English](#english)\n\n`;
@@ -350,38 +400,61 @@ const heatbox = new Heatbox(viewer, {
 `;
 }
 
-function copyFileIfExists(sourcePath, targetPath) {
+function rewriteLinksForWiki(content, sourceRelativePath) {
+  return content.replace(/(!?\[[^\]]*\]\()([^)]+)(\))/g, (match, prefix, rawTarget, suffix) => {
+    const target = rawTarget.trim().replace(/^<|>$/g, '');
+    if (!target || target.startsWith('#') || target.startsWith('/') || /^[a-z][a-z+.-]*:/i.test(target)) {
+      return match;
+    }
+
+    const hashIndex = target.indexOf('#');
+    const relativeTarget = hashIndex >= 0 ? target.slice(0, hashIndex) : target;
+    const fragment = hashIndex >= 0 ? target.slice(hashIndex) : '';
+    if (!relativeTarget) return match;
+
+    const resolvedSource = path.posix.normalize(
+      path.posix.join(path.posix.dirname(sourceRelativePath), relativeTarget)
+    );
+    const wikiPage = WIKI_PAGE_BY_SOURCE.get(resolvedSource);
+    if (wikiPage) {
+      return `${prefix}${wikiPage}${fragment}${suffix}`;
+    }
+
+    const encodedPath = resolvedSource.split('/').map(encodeURIComponent).join('/');
+    const absolutePath = path.join(REPO_ROOT, ...resolvedSource.split('/'));
+    const isDirectory = fs.existsSync(absolutePath) && fs.statSync(absolutePath).isDirectory();
+    const base = prefix.startsWith('!')
+      ? 'https://raw.githubusercontent.com/hiro-nyon/cesium-heatbox/main'
+      : `${REPOSITORY_WEB_ROOT}/${isDirectory ? 'tree' : 'blob'}/main`;
+    return `${prefix}${base}/${encodedPath}${fragment}${suffix}`;
+  });
+}
+
+function copyFileIfExists(sourcePath, targetPath, sourceRelativePath) {
   if (!fs.existsSync(sourcePath)) return false;
-  fs.copyFileSync(sourcePath, targetPath);
+  const source = rewriteLinksForWiki(
+    cleanGeneratedMarkdown(fs.readFileSync(sourcePath, 'utf8')),
+    sourceRelativePath
+  );
+  const notice = `<!-- Generated from ${sourceRelativePath} by npm run wiki:sync. Edit the canonical source, not this page. -->\n\n`;
+  fs.writeFileSync(targetPath, `${notice}${source}`);
   return true;
 }
 
 function syncMarkdownPages() {
-  const pageMappings = [
-    ['README.md', 'Home.md'],
-    ['CHANGELOG.md', 'Release-Notes.md'],
-    ['docs/getting-started.md', 'Getting-Started.md'],
-    ['docs/quick-start.md', 'Quick-Start.md'],
-    ['docs/development-guide.md', 'Development-Guide.md'],
-    ['docs/contributing.md', 'Contributing.md'],
-    ['docs/specification.md', 'Architecture.md'],
-    ['docs/API.md', 'API.md'],
-    ['docs/wiki-maintenance.md', 'Publishing-to-GitHub-Wiki.md']
-  ];
-
   let syncedCount = 0;
 
-  pageMappings.forEach(([sourceRelativePath, targetFilename]) => {
+  WIKI_PAGE_MAPPINGS.forEach(([sourceRelativePath, targetFilename]) => {
     const sourcePath = path.join(REPO_ROOT, sourceRelativePath);
     const targetPath = path.join(WIKI_DIR, targetFilename);
 
-    if (copyFileIfExists(sourcePath, targetPath)) {
+    if (copyFileIfExists(sourcePath, targetPath, sourceRelativePath)) {
       console.log(`📝 Synced: ${sourceRelativePath} → ${targetFilename}`);
       syncedCount++;
     }
   });
 
-  console.log(`📚 Synced ${syncedCount}/${pageMappings.length} Markdown pages.`);
+  console.log(`📚 Synced ${syncedCount}/${WIKI_PAGE_MAPPINGS.length} Markdown pages.`);
 }
 
 /**
@@ -407,6 +480,7 @@ async function main() {
     .filter(file => file.endsWith('.html') && file !== 'index.html');
 
   console.log(`📄 Found ${htmlFiles.length} HTML files to convert`);
+  removeStaleGeneratedApiPages(htmlFiles);
 
   for (const htmlFile of htmlFiles) {
     const htmlPath = path.join(API_DOCS_DIR, htmlFile);
@@ -415,7 +489,8 @@ async function main() {
 
     try {
       const htmlContent = fs.readFileSync(htmlPath, 'utf8');
-      const markdownContent = convertHtmlToMarkdown(htmlContent, htmlFile);
+      const generatedNotice = `<!-- Generated from docs/api/${htmlFile} by npm run wiki:sync. Edit JSDoc in src/, not this page. -->\n\n`;
+      const markdownContent = cleanGeneratedMarkdown(`${generatedNotice}${convertHtmlToMarkdown(htmlContent, htmlFile)}`);
 
       fs.writeFileSync(markdownPath, markdownContent);
       console.log(`✅ Converted: ${htmlFile} → ${markdownFile}`);
@@ -578,4 +653,10 @@ if (require.main === module) {
   });
 }
 
-module.exports = { convertHtmlToMarkdown, convertTableToMarkdown };
+module.exports = {
+  convertHtmlToMarkdown,
+  convertTableToMarkdown,
+  findClassPageLink,
+  isStaleGeneratedApiPage,
+  rewriteLinksForWiki
+};

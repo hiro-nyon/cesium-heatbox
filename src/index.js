@@ -3,8 +3,8 @@
  * CesiumJS Heatbox - エントリーポイント。
  */
 
+import * as Cesium from 'cesium';
 import { Heatbox } from './Heatbox.js';
-import { Logger } from './utils/logger.js';
 import { getAllEntities, generateTestEntities } from './utils/sampleData.js';
 import { Legend } from './ui/Legend.js';
 
@@ -23,7 +23,7 @@ export { Heatbox as CesiumHeatbox };
  * Library metadata.
  * ライブラリのメタ情報。
  */
-export const VERSION = '1.3.6';
+export const VERSION = '1.3.7';
 export const AUTHOR = 'hiro-nyon';
 export const REPOSITORY = 'https://github.com/hiro-nyon/cesium-heatbox';
 
@@ -64,6 +64,3 @@ export function getEnvironmentInfo() {
     timestamp: new Date().toISOString()
   };
 }
-
-// ライブラリの初期化ログ
-Logger.info(`CesiumJS Heatbox v${VERSION} loaded`);

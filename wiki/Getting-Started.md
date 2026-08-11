@@ -1,550 +1,307 @@
-# Development Environment Setup (開発環境のセットアップ)
+<!-- Generated from docs/quick-start.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
+# Quick Start Guide (クイックスタートガイド)
 
 [English](#english) | [日本語](#日本語)
 
 ## English
 
-### Requirements
+**Target Audience**: Developers who want to render their first `cesium-heatbox` heatmap
+**Time Required**: ~10 minutes
+**Prerequisites**: Node.js 18+, an existing app that creates a `Cesium.Viewer`, basic JavaScript knowledge
 
-- Node.js 18.0.0 or higher
-- npm 8.0.0 or higher
-- Git
+This guide gets a heatmap on screen using your own project. If you are looking for library development or release workflows instead, see [Development Environment Setup](Development-Setup) and the [Development Guide](Development-Guide).
 
-### Installation
+### Table of Contents
+
+1. [Install](#1-install)
+2. [Set up a Cesium Viewer (if you don't have one yet)](#2-set-up-a-cesium-viewer-if-you-dont-have-one-yet)
+3. [Render your first heatmap](#3-render-your-first-heatmap)
+4. [Use your own entities](#4-use-your-own-entities)
+5. [Common adjustments](#5-common-adjustments)
+6. [Inspect the result](#6-inspect-the-result)
+7. [Troubleshooting](#7-troubleshooting)
+8. [Next Steps](#8-next-steps)
+
+---
+
+### 1. Install
 
 ```bash
-# Install from npm
 npm install cesium-heatbox
-
-# Or clone repository for development
-git clone https://github.com/hiro-nyon/cesium-heatbox.git
-cd cesium-heatbox
-npm install
 ```
 
-### Development Commands
+`cesium-heatbox` declares `cesium@^1.120.0` as a peer dependency. If your project does not already depend on CesiumJS, install it too:
 
 ```bash
-# Start development server
-npm run dev
-
-# Build (all formats)
-npm run build
-
-# ESM build only
-npm run build:esm
-
-# UMD build only
-npm run build:umd
-
-# Generate type definitions
-npm run build:types
-
-# Watch mode
-npm run build:watch
-
-# Run tests
-npm test
-
-# Test watch mode
-npm run test:watch
-
-# Test with coverage
-npm run test:coverage
-
-# Linting
-npm run lint
-npm run lint:fix
-
-# Type checking
-npm run type-check
-
-# Benchmark
-npm run benchmark
-
-# Generate documentation
-npm run docs
-
-# Cleanup
-npm run clean
+npm install cesium@^1.120.0
 ```
 
-### Project Structure
+### 2. Set up a Cesium Viewer (if you don't have one yet)
 
-```
-cesium-heatbox/
-├── src/                    # Source code
-│   ├── index.js           # Entry point
-│   ├── Heatbox.js         # Main class
-│   ├── core/              # Core functionality
-│   │   ├── CoordinateTransformer.js
-│   │   ├── VoxelGrid.js
-│   │   ├── DataProcessor.js
-│   │   └── VoxelRenderer.js
-│   └── utils/             # Utilities
-│       ├── constants.js
-│       ├── validation.js
-│       └── sampleData.js
-├── test/                  # Test files
-├── examples/              # Usage examples
-├── docs/                  # Documentation
-├── types/                 # TypeScript type definitions
-└── dist/                  # Build output
-```
+`cesium-heatbox` renders into an existing `Cesium.Viewer`; it does not create one for you. If your app already has a `viewer` instance, skip to [step 3](#3-render-your-first-heatmap).
 
-### Development Guidelines
-
-#### Coding Standards
-
-- Use ESLint Standard Style
-- Document with JSDoc format
-- Function names start with verbs
-- Constants use UPPER_SNAKE_CASE
-- Class names use PascalCase
-
-#### Commit Messages
-
-```
-type(scope): description
-
-Examples:
-feat(core): add new voxel rendering algorithm
-fix(utils): handle edge case in coordinate transformation
-docs(api): update API documentation
-test(heatbox): add comprehensive test cases
-```
-
-#### Branch Strategy
-
-- `main`: Stable version
-- `develop`: Development version
-- `feature/*`: New feature development
-- `hotfix/*`: Emergency fixes
-
-### Testing
-
-#### Running Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run specific test file
-npm test -- Heatbox.test.js
-
-# Generate coverage report
-npm run test:coverage
-```
-
-#### Writing Tests
+A minimal viewer that works without a Cesium Ion token (avoids the common "black globe" pitfall):
 
 ```javascript
-describe('MyClass', () => {
-  let instance;
-  
-  beforeEach(() => {
-    instance = new MyClass();
-  });
-  
-  test('should do something', () => {
-    const result = instance.doSomething();
-    expect(result).toBe(expected);
-  });
+import * as Cesium from 'cesium';
+
+Cesium.Ion.defaultAccessToken = null;
+
+const viewer = new Cesium.Viewer('cesiumContainer', {
+  imageryProvider: new Cesium.UrlTemplateImageryProvider({
+    url: 'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+    credit: '© OpenStreetMap contributors © CARTO'
+  }),
+  terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+  baseLayerPicker: false
 });
 ```
 
-### Debugging
+For a full runnable page, see `examples/basic/index.html`.
 
-#### Browser Debugging
+### 3. Render your first heatmap
 
-```bash
-# Start development server
-npm run dev
+`generateTestEntities()` (bundled with `cesium-heatbox`) creates sample point entities so you can see a heatmap immediately, without preparing real data:
 
-# Access http://localhost:8080 in browser
+```javascript
+import { Heatbox, generateTestEntities } from 'cesium-heatbox';
+
+const bounds = {
+  minLon: 139.68, maxLon: 139.70,
+  minLat: 35.68, maxLat: 35.70,
+  minAlt: 0, maxAlt: 200
+};
+generateTestEntities(viewer, bounds, 1000);
+
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 50,
+  opacity: 0.8
+});
+
+await heatbox.createFromEntities(viewer.entities.values);
+await heatbox.fitView(null, { pitchDegrees: -35, paddingPercent: 0.1 });
 ```
 
-#### Node.js Debugging
+You should now see voxel boxes colored by entity density over Shinjuku, Tokyo. `createFromEntities()` computes bounds, builds the voxel grid, classifies entities, renders, and resolves with the same statistics object returned by `getStatistics()`.
 
-```bash
-# Run with Node.js debugger
-node --inspect-brk node_modules/.bin/jest --runInBand
+### 4. Use your own entities
 
-# Access chrome://inspect in Chrome DevTools
+Replace the sample data with entities already in your scene, or your own array of `Cesium.Entity`-like objects with a resolvable `position`:
+
+```javascript
+// Everything currently in the viewer
+await heatbox.setData(viewer.entities.values);
+
+// Or a specific subset
+const vehicles = Heatbox.filterEntities(viewer.entities.values, (e) => e.properties?.type?.getValue() === 'vehicle');
+await heatbox.setData(vehicles);
 ```
 
-### Building
+`setData()` reuses `createFromEntities()`'s pipeline without throwing on an empty array (it clears the heatmap instead). Entities without a usable `position` are skipped, not treated as errors.
 
-#### Development Build
+### 5. Common adjustments
 
-```bash
-npm run build:esm
+```javascript
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 30,             // meters; smaller = finer detail, more voxels
+  autoVoxelSize: true,       // let the library pick a size instead (ignored if voxelSize is set)
+  opacity: 0.7,
+  colorMap: 'viridis',       // 'custom' | 'viridis' | 'inferno'
+  showEmptyVoxels: false,    // render empty voxels too (costs more)
+  maxRenderVoxels: 20000     // hard cap on rendered voxels for performance
+});
 ```
 
-#### Production Build
+Or start from a preset tuned for a common scenario, then override individual fields:
 
-```bash
-npm run build
+```javascript
+const heatbox = new Heatbox(viewer, {
+  profile: 'mobile-fast',   // 'mobile-fast' | 'desktop-balanced' | 'dense-data' | 'sparse-data'
+  opacity: 0.9              // profile values still apply; explicit fields like this override them
+});
+
+console.log(Heatbox.listProfiles());
 ```
 
-Output files:
-- `dist/cesium-heatbox.js` - ESM development version
-- `dist/cesium-heatbox.min.js` - ESM production version
-- `dist/cesium-heatbox.umd.js` - UMD development version
-- `dist/cesium-heatbox.umd.min.js` - UMD production version
+See [Key Capabilities in the README](Home#key-capabilities) for classification, temporal, Spatial ID, and layer aggregation, and the [API Reference](API) for the full option catalogue.
 
-### Release
+### 6. Inspect the result
 
-#### Version Management
+```javascript
+const stats = heatbox.getStatistics();
+console.log(`${stats.renderedVoxels}/${stats.totalVoxels} voxels rendered`);
+console.log(`${stats.nonEmptyVoxels} voxels contain data`);
 
-```bash
-# Patch version
-npm version patch
-
-# Minor version
-npm version minor
-
-# Major version
-npm version major
-
-# Push release tags
-git push origin main --tags
+console.log(heatbox.getDebugInfo()); // options, bounds, grid, and statistics snapshot
 ```
 
-#### Automated Release
+### 7. Troubleshooting
 
-GitHub Actions automatically:
-1. Runs tests
-2. Performs builds
-3. Publishes to NPM
-4. Creates GitHub Releases
+**Nothing renders / globe is black**: Usually a missing Cesium Ion token unrelated to `cesium-heatbox`. Either set `Cesium.Ion.defaultAccessToken` to a valid token, or use an imagery provider that doesn't require one (see [step 2](#2-set-up-a-cesium-viewer-if-you-dont-have-one-yet)).
 
-when tags are pushed.
+**`new Heatbox(viewer, ...)` throws "CesiumJS Viewerが無効です" / "Invalid viewer"**: The first argument is not a valid `Cesium.Viewer`. Confirm the viewer finished constructing before passing it in.
 
-### Common Issues and Solutions
+**`createFromEntities()` throws "対象エンティティがありません" / "No entities"**: The array was empty, `null`, or every entity lacked a resolvable position. `setData()` handles this case silently (clears instead of throwing) if you prefer not to catch it.
 
-**npm install fails:**
-```bash
-npm cache clean --force
-rm -rf node_modules package-lock.json
-npm install
-```
+**Rendering is slow with large datasets**: Lower `maxRenderVoxels`, set `autoVoxelSize: true`, or start from the `mobile-fast` / `dense-data` profile. See `getStatistics().selectionStrategy` and `renderBudgetTier` to see what the library already applied.
 
-**ESLint configuration issues:**
-- Use ESLint 8.x (9.x not supported)
-- Use `.eslintrc.js` format
+### 8. Next Steps
 
-**Test failures:**
-- Check import paths
-- Verify Cesium mocks in `test/setup.js`
+- [README — Key Capabilities](Home#key-capabilities): classification engine, temporal data, Spatial ID, layer aggregation
+- [API Reference](API): full options, methods, and return types
+- [Examples](https://github.com/hiro-nyon/cesium-heatbox/blob/main/examples/README.md): runnable demos by feature
+- [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki): rendering strategy guides, performance tuning, pitfalls
+- [Development Environment Setup](Development-Setup): if you plan to contribute to `cesium-heatbox` itself
 
-For detailed troubleshooting, see the Japanese section below.
+---
 
 ## 日本語
 
-## 必要な環境
+**対象**: `cesium-heatbox` で最初のヒートマップを描画したい開発者
+**所要時間**: 約10分
+**前提条件**: Node.js 18以上、`Cesium.Viewer`を生成済みのアプリ、基本的なJavaScript知識
 
-- Node.js 18.0.0 以上
-- npm 8.0.0 以上
-- Git
+このガイドは、あなた自身のプロジェクトでヒートマップを表示するまでの手順です。ライブラリ自体の開発・リリース手順を探している場合は[開発環境セットアップ](Development-Setup)と[開発ガイド](Development-Guide)を参照してください。
 
-## インストール（npm推奨）
+### 目次
+
+1. [インストール](#1-インストール)
+2. [Cesium Viewerの準備（未作成の場合）](#2-cesium-viewerの準備未作成の場合)
+3. [最初のヒートマップを描画](#3-最初のヒートマップを描画)
+4. [自分のエンティティを使う](#4-自分のエンティティを使う)
+5. [よくある調整](#5-よくある調整)
+6. [結果を確認する](#6-結果を確認する)
+7. [トラブルシューティング](#7-トラブルシューティング)
+8. [次のステップ](#8-次のステップ)
+
+---
+
+### 1. インストール
 
 ```bash
-# npmからインストール（推奨）
 npm install cesium-heatbox
-
-# または開発用にリポジトリをクローン
-git clone https://github.com/hiro-nyon/cesium-heatbox.git
-cd cesium-heatbox
-npm install
 ```
 
-## 開発コマンド
+`cesium-heatbox`は`cesium@^1.120.0`をpeer dependencyとして宣言しています。プロジェクトにまだCesiumJSが入っていない場合は、あわせてインストールしてください。
 
 ```bash
-# 開発サーバーを起動
-npm run dev
-
-# ビルド（全形式）
-npm run build
-
-# ESMビルドのみ
-npm run build:esm
-
-# UMDビルドのみ
-npm run build:umd
-
-# 型定義生成
-npm run build:types
-
-# ウォッチモード
-npm run build:watch
-
-# テスト実行
-npm test
-
-# テスト（ウォッチモード）
-npm run test:watch
-
-# カバレッジ付きテスト
-npm run test:coverage
-
-# リンティング
-npm run lint
-npm run lint:fix
-
-# 型チェック
-npm run type-check
-
-# ベンチマーク
-npm run benchmark
-
-# ドキュメント生成
-npm run docs
-
-# クリーンアップ
-npm run clean
+npm install cesium@^1.120.0
 ```
 
-## プロジェクト構造
+### 2. Cesium Viewerの準備（未作成の場合）
 
-```
-cesium-heatbox/
-├── src/                    # ソースコード
-│   ├── index.js           # エントリーポイント
-│   ├── Heatbox.js         # メインクラス
-│   ├── core/              # コア機能
-│   │   ├── CoordinateTransformer.js
-│   │   ├── VoxelGrid.js
-│   │   ├── DataProcessor.js
-│   │   └── VoxelRenderer.js
-│   └── utils/             # ユーティリティ
-│       ├── constants.js
-│       ├── validation.js
-│       └── sampleData.js
-├── test/                  # テストファイル
-├── examples/              # 使用例
-├── docs/                  # ドキュメント
-├── types/                 # TypeScript型定義
-└── dist/                  # ビルド出力
-```
+`cesium-heatbox`は既存の`Cesium.Viewer`に描画するライブラリで、Viewer自体は生成しません。すでにアプリに`viewer`インスタンスがある場合は[手順3](#3-最初のヒートマップを描画)へ進んでください。
 
-## 開発ガイドライン
-
-### コーディング規約
-
-- ESLint Standard Style を使用
-- JSDoc形式でドキュメントを記述
-- 関数名は動詞で始める
-- 定数は UPPER_SNAKE_CASE
-- クラス名は PascalCase
-
-### コミットメッセージ
-
-```
-type(scope): description
-
-feat(core): add new voxel rendering algorithm
-fix(utils): handle edge case in coordinate transformation
-docs(api): update API documentation
-test(heatbox): add comprehensive test cases
-```
-
-### ブランチ戦略
-
-- `main`: 安定版
-- `develop`: 開発版
-- `feature/*`: 新機能開発
-- `hotfix/*`: 緊急修正
-
-## テスト
-
-### テストの実行
-
-```bash
-# 全テストを実行
-npm test
-
-# 特定のテストファイルを実行
-npm test -- Heatbox.test.js
-
-# カバレッジレポートを生成
-npm run test:coverage
-```
-
-### テストの書き方
+Cesium Ionトークンなしで動く最小構成（「地球が真っ黒になる」よくあるつまずきを回避できます）:
 
 ```javascript
-describe('MyClass', () => {
-  let instance;
-  
-  beforeEach(() => {
-    instance = new MyClass();
-  });
-  
-  test('should do something', () => {
-    const result = instance.doSomething();
-    expect(result).toBe(expected);
-  });
+import * as Cesium from 'cesium';
+
+Cesium.Ion.defaultAccessToken = null;
+
+const viewer = new Cesium.Viewer('cesiumContainer', {
+  imageryProvider: new Cesium.UrlTemplateImageryProvider({
+    url: 'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+    credit: '© OpenStreetMap contributors © CARTO'
+  }),
+  terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+  baseLayerPicker: false
 });
 ```
 
-## デバッグ
+動作するHTML一式は`examples/basic/index.html`を参照してください。
 
-### ブラウザでのデバッグ
+### 3. 最初のヒートマップを描画
 
-```bash
-# 開発サーバーを起動
-npm run dev
+`generateTestEntities()`（`cesium-heatbox`に同梱）を使うと、実データを用意しなくてもサンプルのポイントエンティティを生成してすぐに確認できます。
 
-# ブラウザで http://localhost:8080 にアクセス
+```javascript
+import { Heatbox, generateTestEntities } from 'cesium-heatbox';
+
+const bounds = {
+  minLon: 139.68, maxLon: 139.70,
+  minLat: 35.68, maxLat: 35.70,
+  minAlt: 0, maxAlt: 200
+};
+generateTestEntities(viewer, bounds, 1000);
+
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 50,
+  opacity: 0.8
+});
+
+await heatbox.createFromEntities(viewer.entities.values);
+await heatbox.fitView(null, { pitchDegrees: -35, paddingPercent: 0.1 });
 ```
 
-### Node.js でのデバッグ
+東京・新宿付近に、エンティティ密度で色分けされたボクセルが表示されます。`createFromEntities()`は境界計算・ボクセルグリッド生成・分類・描画までを行い、`getStatistics()`と同じ統計情報オブジェクトで解決します。
 
-```bash
-# Node.js デバッガーで実行
-node --inspect-brk node_modules/.bin/jest --runInBand
+### 4. 自分のエンティティを使う
 
-# Chrome DevTools で chrome://inspect にアクセス
+サンプルデータの代わりに、シーンに既にあるエンティティや、`position`を解決できる独自の`Cesium.Entity`相当のオブジェクト配列を渡せます。
+
+```javascript
+// viewer内の全エンティティ
+await heatbox.setData(viewer.entities.values);
+
+// 特定のサブセットのみ
+const vehicles = Heatbox.filterEntities(viewer.entities.values, (e) => e.properties?.type?.getValue() === 'vehicle');
+await heatbox.setData(vehicles);
 ```
 
-## ビルド
+`setData()`は`createFromEntities()`と同じ処理経路を使いますが、空配列を渡してもエラーを投げず、代わりにヒートマップをクリアします。`position`を解決できないエンティティはエラーにせずスキップされます。
 
-### 開発ビルド
+### 5. よくある調整
 
-```bash
-npm run build:esm
+```javascript
+const heatbox = new Heatbox(viewer, {
+  voxelSize: 30,             // メートル単位。小さいほど精細だがボクセル数が増える
+  autoVoxelSize: true,       // 自動サイズ決定に任せる（voxelSizeを指定した場合は無視される）
+  opacity: 0.7,
+  colorMap: 'viridis',       // 'custom' | 'viridis' | 'inferno'
+  showEmptyVoxels: false,    // 空ボクセルも描画する（コスト増）
+  maxRenderVoxels: 20000     // 描画ボクセル数の上限（パフォーマンス制御）
+});
 ```
 
-### 本番ビルド
+よくある用途向けのプリセットから始めて、必要な項目だけ上書きすることもできます。
 
-```bash
-npm run build
+```javascript
+const heatbox = new Heatbox(viewer, {
+  profile: 'mobile-fast',   // 'mobile-fast' | 'desktop-balanced' | 'dense-data' | 'sparse-data'
+  opacity: 0.9              // プリセットの値は適用されたうえで、明示指定した項目が優先される
+});
+
+console.log(Heatbox.listProfiles());
 ```
 
-出力ファイル:
-- `dist/cesium-heatbox.js` - ESM開発版
-- `dist/cesium-heatbox.min.js` - ESM本番版
-- `dist/cesium-heatbox.umd.js` - UMD開発版
-- `dist/cesium-heatbox.umd.min.js` - UMD本番版
+分類エンジン・時系列データ・空間ID・レイヤ別集約については[日本語READMEの主要機能](Home-ja#主要機能)を、全オプションの一覧は[APIリファレンス](API)を参照してください。
 
-## リリース
+### 6. 結果を確認する
 
-### バージョン管理
+```javascript
+const stats = heatbox.getStatistics();
+console.log(`${stats.renderedVoxels}/${stats.totalVoxels} 個のボクセルを描画`);
+console.log(`${stats.nonEmptyVoxels} 個のボクセルにデータあり`);
 
-```bash
-# パッチバージョンを上げる
-npm version patch
-
-# マイナーバージョンを上げる
-npm version minor
-
-# メジャーバージョンを上げる
-npm version major
-
-# リリースタグをプッシュ
-git push origin main --tags
+console.log(heatbox.getDebugInfo()); // オプション・境界・グリッド・統計情報のスナップショット
 ```
 
-### 自動リリース
+### 7. トラブルシューティング
 
-GitHub Actions により、タグがプッシュされると自動的に:
-1. テストが実行される
-2. ビルドが行われる
-3. NPMに公開される
-4. GitHub Releasesが作成される
+**何も描画されない/地球が真っ黒**: 多くの場合、`cesium-heatbox`とは無関係なCesium Ionトークン未設定が原因です。`Cesium.Ion.defaultAccessToken`に有効なトークンを設定するか、トークン不要な地図プロバイダーを使ってください（[手順2](#2-cesium-viewerの準備未作成の場合)参照）。
 
-## トラブルシューティング
+**`new Heatbox(viewer, ...)`が「CesiumJS Viewerが無効です」で例外を投げる**: 第一引数が有効な`Cesium.Viewer`ではありません。Viewerの生成が完了してから渡しているか確認してください。
 
-### よくある問題
+**`createFromEntities()`が「対象エンティティがありません」で例外を投げる**: 配列が空、`null`、またはすべてのエンティティで`position`を解決できませんでした。例外を避けたい場合は代わりに`setData()`を使ってください（クリア動作になります）。
 
-#### `npm install` が失敗する
+**大量データで描画が遅い**: `maxRenderVoxels`を下げる、`autoVoxelSize: true`にする、または`mobile-fast`/`dense-data`プロファイルから始めてください。`getStatistics().selectionStrategy`と`renderBudgetTier`で、ライブラリが実際に適用した設定を確認できます。
 
-**問題**: 依存関係の競合エラー
-```
-npm ERR! code ERESOLVE
-npm ERR! ERESOLVE unable to resolve dependency tree
-```
+### 8. 次のステップ
 
-**解決方法**:
-```bash
-# 1. キャッシュをクリア
-npm cache clean --force
-
-# 2. node_modulesとpackage-lock.jsonを削除
-rm -rf node_modules package-lock.json
-
-# 3. 再インストール
-npm install
-```
-
-#### ESLint設定の問題
-
-**問題**: ESLintの設定ファイルの形式が古い
-```
-Error: ESLint configuration in eslint.config.js is invalid
-```
-
-**解決方法**:
-- ESLint 8.x系を使用（9.x系は非対応）
-- `.eslintrc.js`形式を使用（フラット設定は未対応）
-
-#### Cesiumの型定義の問題
-
-**問題**: `@types/cesium`パッケージの警告
-```
-warn deprecated @types/cesium@1.70.4: This is a stub types definition. 
-cesium provides its own type definitions, so you don't need this installed.
-```
-
-**解決方法**:
-```bash
-# @types/cesiumを削除（CesiumJS本体が型定義を提供）
-npm uninstall @types/cesium
-```
-
-#### テストが失敗する
-
-**問題**: Jest設定の問題
-```
-Unknown option "moduleNameMapping" with value
-```
-
-**解決方法**:
-- `jest.config.js`で`moduleNameMapping`を`moduleNameMapper`に修正
-
-**問題**: テストファイルのimportパスエラー
-```
-Cannot find module '../src/core/CoordinateTransformer.js'
-```
-
-**解決方法**:
-- 相対パスを正しく設定（`../../src/core/...`）
-
-**問題**: Cesiumオブジェクトの未定義エラー
-```
-TypeError: Cesium.Cartesian3 is not a constructor
-```
-
-**解決方法**:
-- `test/setup.js`でCesiumのモックを適切に設定
-
-## サポート
-
-問題が発生した場合は、以下の方法でサポートを受けられます:
-
-1. [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で報告
-2. [Discussion](https://github.com/hiro-nyon/cesium-heatbox/discussions) で質問
-3. メールでの問い合わせ
-
-## コントリビューション
-
-1. このリポジトリをフォーク
-2. 新しいブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチをプッシュ (`git push origin feature/amazing-feature`)
-5. Pull Request を作成
-
-詳細は [CONTRIBUTING.md](contributing.md) を参照してください。
+- [README — 主要機能](Home-ja#主要機能): 分類エンジン、時系列データ、空間ID、レイヤ別集約
+- [APIリファレンス](API): 全オプション・メソッド・戻り値
+- [サンプル](https://github.com/hiro-nyon/cesium-heatbox/blob/main/examples/README.md): 機能別の実行可能なデモ
+- [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki): 描画戦略、パフォーマンスチューニング、落とし穴
+- [開発環境セットアップ](Development-Setup): `cesium-heatbox`自体の開発に参加する場合

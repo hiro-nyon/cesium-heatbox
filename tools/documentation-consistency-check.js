@@ -4,12 +4,8 @@
  * Phase 4: Quality assurance - documentation integrity validation
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const fs = require('fs');
+const path = require('path');
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 // Files to check
@@ -18,8 +14,8 @@ const DOCS_TO_CHECK = {
   MIGRATION: path.join(PROJECT_ROOT, 'MIGRATION.md'),
   API: path.join(PROJECT_ROOT, 'docs/API.md'),
   BASIC_EXAMPLE: path.join(PROJECT_ROOT, 'examples/basic/app.js'),
-  ADVANCED_DEMO: path.join(PROJECT_ROOT, 'examples/rendering/v0.1.12-features-demo.html'),
-  PERFORMANCE_DEMO: path.join(PROJECT_ROOT, 'examples/observability/performance-overlay-demo.html')
+  ADVANCED_DEMO: path.join(PROJECT_ROOT, 'examples/rendering/v0.1.12-features/index.html'),
+  PERFORMANCE_DEMO: path.join(PROJECT_ROOT, 'examples/observability/performance-overlay/index.html')
 };
 
 // v0.1.12 API terms that should be consistently documented
@@ -344,7 +340,8 @@ function main() {
   }
 
   // Write detailed report
-  const reportPath = path.join(PROJECT_ROOT, 'test/documentation-consistency-report.json');
+  const reportDirectory = path.join(PROJECT_ROOT, 'coverage');
+  const reportPath = path.join(reportDirectory, 'documentation-consistency-report.json');
   const report = {
     timestamp: new Date().toISOString(),
     version: '0.1.12',
@@ -354,6 +351,7 @@ function main() {
   };
 
   try {
+    fs.mkdirSync(reportDirectory, { recursive: true });
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
     console.log(`\n📄 Detailed report saved: ${reportPath}`);
   } catch (error) {
@@ -363,8 +361,8 @@ function main() {
   process.exit(allPassed ? 0 : 1);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   main();
 }
 
-export { checkDocumentationConsistency, checkBilingualConsistency, API_TERMS };
+module.exports = { checkDocumentationConsistency, checkBilingualConsistency, API_TERMS };

@@ -1,4 +1,5 @@
 import { TimeSlicer } from './TimeSlicer.js';
+import { Logger } from '../../utils/logger.js';
 
 /**
  * Controller to synchronize Heatbox with Cesium Clock.
@@ -25,6 +26,9 @@ export class TimeController {
         this._isActive = false;
         this._lastCameraRefreshTime = 0;
         this._asyncTickRequestId = 0;
+        this._updateInFlight = null;
+        this._queuedEntry = null;
+        this._hasQueuedEntry = false;
     }
 
     /**
@@ -38,16 +42,7 @@ export class TimeController {
         // Global scope: calculate stats once
         if (this._options.classificationScope === 'global') {
             const heatboxOptions = this._heatbox.options || {};
-            const valueProperty = heatboxOptions.valueProperty || 'weight';
-            if (this._options.useWorker) {
-                void this._activateWithAsyncStats(valueProperty, heatboxOptions.classification || null);
-                return;
-            }
-
-            this._heatbox._globalStats = this._slicer.calculateGlobalStats(
-                valueProperty,
-                heatboxOptions.classification || null
-            );
+            return this._activateWithAsyncStats(heatboxOptions.classification || null);
         }
 
         this._bindClockListener();
@@ -57,14 +52,15 @@ export class TimeController {
         this._onTick(this._viewer.clock);
     }
 
-    async _activateWithAsyncStats(valueProperty, classificationOptions) {
+    async _activateWithAsyncStats(classificationOptions) {
         let isCancelled = false;
 
         try {
-            this._heatbox._globalStats = await this._slicer.calculateGlobalStatsAsync(
-                valueProperty,
-                classificationOptions
-            );
+            const heatboxOptions = this._heatbox.options || {};
+            this._heatbox._globalStats = await this._slicer.calculateGlobalVoxelStats({
+                ...heatboxOptions,
+                classification: classificationOptions
+            });
         } finally {
             isCancelled = !this._isActive;
         }
@@ -74,6 +70,7 @@ export class TimeController {
         }
 
         this._bindClockListener();
+        this._bindCameraListener();
         this._onTick(this._viewer.clock);
     }
 
@@ -106,6 +103,8 @@ export class TimeController {
         if (!this._isActive) return;
         this._isActive = false;
         this._asyncTickRequestId++;
+        this._queuedEntry = null;
+        this._hasQueuedEntry = false;
 
         if (this._removeListener) {
             this._removeListener();
@@ -218,6 +217,12 @@ export class TimeController {
      * @private
      */
     _updateHeatbox(entry) {
+        if (this._updateInFlight) {
+            this._queuedEntry = entry;
+            this._hasQueuedEntry = true;
+            return this._updateInFlight;
+        }
+
         if (!entry) {
             // No data: check outOfRangeBehavior
             if (this._options.outOfRangeBehavior === 'clear') {
@@ -234,11 +239,30 @@ export class TimeController {
             updateOptions._externalStats = this._heatbox._globalStats;
         }
 
-        if (typeof this._heatbox.updateValues === 'function') {
-            this._heatbox.updateValues(entry.data, updateOptions);
-            return;
+        const updateResult = typeof this._heatbox.updateValues === 'function'
+            ? this._heatbox.updateValues(entry.data, updateOptions)
+            : this._heatbox.setData(entry.data, updateOptions);
+
+        if (!updateResult || typeof updateResult.then !== 'function') {
+            return updateResult;
         }
 
-        this._heatbox.setData(entry.data, updateOptions);
+        this._updateInFlight = Promise.resolve(updateResult)
+            .catch((error) => {
+                Logger.warn('Temporal Heatbox update failed:', error);
+            })
+            .finally(() => {
+                this._updateInFlight = null;
+                if (!this._isActive || !this._hasQueuedEntry) {
+                    return;
+                }
+
+                const queuedEntry = this._queuedEntry;
+                this._queuedEntry = null;
+                this._hasQueuedEntry = false;
+                this._updateHeatbox(queuedEntry);
+            });
+
+        return this._updateInFlight;
     }
 }

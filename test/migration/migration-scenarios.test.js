@@ -6,6 +6,7 @@
 import { Heatbox } from '../../src/Heatbox.js';
 import { validateAndNormalizeOptions } from '../../src/utils/validation.js';
 import { clearWarnings } from '../../src/utils/deprecate.js';
+import { Logger } from '../../src/utils/logger.js';
 import { createMockViewer, TEST_CONFIGS } from '../helpers/testHelpers.js';
 // Future enhancement: import { createWarningAssertions } when migrating to advanced helpers
 
@@ -24,7 +25,7 @@ describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
   beforeEach(() => {
     mockViewer = createMockViewer();
     clearWarnings();
-    consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleSpy = jest.spyOn(Logger, 'warn').mockImplementation(() => {});
     // Future: warnings = createWarningAssertions(consoleSpy);
   });
 
@@ -81,9 +82,9 @@ describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
 
       const normalized = validateAndNormalizeOptions(oldResolverConfig);
 
-      // Resolvers should be removed from normalized options
-      expect(normalized.outlineWidthResolver).toBeUndefined();
-      expect(normalized.outlineOpacityResolver).toBeUndefined();
+      // Resolvers warn but remain functional until replacements are stable.
+      expect(normalized.outlineWidthResolver).toBe(oldResolverConfig.outlineWidthResolver);
+      expect(normalized.outlineOpacityResolver).toBe(oldResolverConfig.outlineOpacityResolver);
 
       // Should show deprecation warnings
       expectWarnContains('[Heatbox][DEPRECATION][v1.0.0] outlineWidthResolver is deprecated');
@@ -97,7 +98,7 @@ describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
 
       const normalized = validateAndNormalizeOptions(oldResolverConfig);
 
-      expect(normalized.boxOpacityResolver).toBeUndefined();
+      expect(normalized.boxOpacityResolver).toBe(oldResolverConfig.boxOpacityResolver);
       expectWarnContains('boxOpacityResolver is deprecated');
     });
   });
@@ -267,23 +268,24 @@ describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
 
       const heatbox = new Heatbox(mockViewer, v011Config);
       const effective = heatbox.getEffectiveOptions();
+      const runtimeOptions = heatbox.getOptions();
 
       // Check migration results
       expect(effective.fitViewOptions.pitchDegrees).toBe(-45);
-      expect(effective.fitViewOptions.headingDegrees).toBe(180);
+      expect(effective.fitViewOptions.headingDegrees).toBe(0);
       expect(effective.outlineRenderMode).toBe('standard');
       expect(effective.emulationScope).toBe('topn');
       expect(effective.outlineWidthPreset).toBe('medium');
       
-      // Resolvers should be removed
-      expect(effective.outlineWidthResolver).toBeUndefined();
-      expect(effective.outlineOpacityResolver).toBeUndefined();
-      expect(effective.boxOpacityResolver).toBeUndefined();
+      // Deprecated resolvers remain available until their replacements are stable.
+      expect(typeof runtimeOptions.outlineWidthResolver).toBe('function');
+      expect(typeof runtimeOptions.outlineOpacityResolver).toBe('function');
+      expect(typeof runtimeOptions.boxOpacityResolver).toBe('function');
 
       // Should show all relevant warnings (robust match across console args)
       // At minimum, legacy emulation and preset should warn
       expectWarnContains('outlineEmulation is deprecated');
-      expectWarnContains("outlineWidthPreset 'uniform' is deprecated");
+      expectWarnContains('outlineWidthPreset "uniform" is deprecated');
     });
 
     test('should maintain backward compatibility with warnings', () => {
@@ -300,7 +302,7 @@ describe('Migration Scenarios v0.1.11 → v0.1.12', () => {
 
       // Should show deprecation warnings (at least emulation and preset)
       expectWarnContains('outlineEmulation is deprecated');
-      expectWarnContains("outlineWidthPreset 'adaptive-density' is deprecated");
+      expectWarnContains('outlineWidthPreset "adaptive-density" is deprecated');
     });
   });
 

@@ -215,13 +215,9 @@ describe('Global Spatial ID QA (ADR-0015)', () => {
       // Attach metrics to Heatbox instance and verify exposure via getStatistics()
       const statsBefore = await heatbox.createFromEntities(entities);
       expect(statsBefore.spatialIdEnabled).toBe(true);
-
-      heatbox._spatialIdEdgeCaseMetrics = metrics;
-
-      const statsAfter = heatbox.getStatistics();
-      expect(statsAfter).toBeDefined();
-      expect(statsAfter.spatialId).toBeDefined();
-      expect(statsAfter.spatialId.edgeCaseMetrics).toEqual(metrics);
+      expect(statsBefore.spatialId).toBeDefined();
+      expect(statsBefore.spatialId.edgeCaseMetrics).not.toBeNull();
+      expect(statsBefore.spatialId.edgeCaseMetrics.datelineNeighborsChecked).toBeGreaterThan(0);
     });
   });
 });

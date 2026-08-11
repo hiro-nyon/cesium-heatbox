@@ -285,7 +285,7 @@ describe('VoxelSelector', () => {
       
       expect(result.strategy).toBe('hybrid');
       // Coverage ratio should be influenced by minCoverageRatio
-      expect(typeof result.coverageRatio).toBe('number');
+      expect(result.coverageRatio).toBeGreaterThanOrEqual(0.5);
     });
     
     test('Should store hybrid statistics correctly', () => {

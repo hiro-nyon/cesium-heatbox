@@ -2,6 +2,7 @@
  * Shared test helpers for CesiumJS Heatbox test suite
  * Centralizes common test utilities to reduce code duplication
  */
+import * as Cesium from 'cesium';
 
 /**
  * Create a mock CesiumJS viewer for testing
@@ -29,7 +30,7 @@ export function createMockViewer() {
     entities: {
       values: [],
       add: jest.fn(function(config) {
-        const entity = { id: config.id || 'mock-entity', ...config };
+        const entity = new Cesium.Entity({ id: config.id || 'mock-entity', ...config });
         this.values.push(entity);
         return entity;
       }),
