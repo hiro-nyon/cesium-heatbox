@@ -26,7 +26,7 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 ### Version Information
 
-- **Current Version**: 1.3.7-alpha.5
+- **Current Version**: 1.3.7
 - **Last Updated**: 2026-08-11
 - **Generated From**: JSDoc → Markdown conversion
 
@@ -60,7 +60,7 @@ This documentation is auto-generated from JSDoc comments in the source code.
 
 ### バージョン情報
 
-- **現在のバージョン**: 1.3.7-alpha.5
+- **現在のバージョン**: 1.3.7
 - **最終更新**: 2026-08-11
 - **生成元**: JSDoc → Markdown変換
 

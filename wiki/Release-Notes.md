@@ -43,6 +43,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.7] - 2026-08-11
+
+### Added
+- 公開API、Markdownアンカー、リポジトリ/Wikiリンク、生成Wikiの再現性を検査するドキュメント品質ゲートと、配布物の第三者ライセンス表示を追加しました。
+
+### Changed
+- Ouranos-GEX公式providerを固定commit・integrity・upstream lockfileから再現可能にbuildし、ESM、CJS、UMDの遅延chunkとして同梱する方式へ変更しました。利用者側の追加インストールは不要です。
+- npm公開workflowをタグpush専用にし、版番号・ブランチレーン・未公開版・Release notes本文をfail-closedで検証するよう強化しました。
+
+### Fixed
+- 公開APIと型定義、Spatial IDフォールバック説明、Quick Start、開発/リリース手順、Wikiリンクの不一致を修正しました。
+- GitHub ActionsでOuranosのbuild依存が欠落し、公式providerの遅延chunkを含まないパッケージが生成される問題を修正しました。
+
 ## [1.3.7-alpha.5] - 2026-08-11
 
 ### Fixed
