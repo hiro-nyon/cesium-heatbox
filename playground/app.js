@@ -191,7 +191,7 @@ class HeatboxPlayground {
     const toggleMenu = () => {
       const L = this._getTranslations()[this._lang] || this._getTranslations().ja;
       isMenuOpen = !isMenuOpen;
-      
+
       if (isMenuOpen) {
         toolbar.classList.add('open');
         mobileToggle.innerHTML = '✕';
