@@ -308,6 +308,8 @@ export class Heatbox {
       userOptions = applyProfile(userOptions.profile, userOptions);
       delete userOptions.profile;
     }
+    this._hasExplicitVoxelSize = Object.prototype.hasOwnProperty.call(userOptions, 'voxelSize') &&
+      userOptions.voxelSize !== undefined;
     const mergedOptions = { ...DEFAULT_OPTIONS, ...userOptions };
     this.options = validateAndNormalizeOptions(applyAutoRenderBudget(mergedOptions));
 
@@ -653,7 +655,7 @@ export class Heatbox {
       let finalVoxelSize = this.options.voxelSize || DEFAULT_OPTIONS.voxelSize;
       let autoAdjustmentInfo = null;
 
-      if (this.options.autoVoxelSize && !this.options.voxelSize) {
+      if (this.options.autoVoxelSize && !this._hasExplicitVoxelSize) {
         try {
           Logger.debug('自動ボクセルサイズ調整開始');
 
@@ -934,6 +936,10 @@ export class Heatbox {
   updateOptions(newOptions) {
     const previousTemporal = this.options ? this.options.temporal : undefined;
     const temporalUpdated = newOptions ? Object.prototype.hasOwnProperty.call(newOptions, 'temporal') : false;
+
+    if (newOptions && Object.prototype.hasOwnProperty.call(newOptions, 'voxelSize')) {
+      this._hasExplicitVoxelSize = newOptions.voxelSize !== undefined;
+    }
 
     this.options = validateAndNormalizeOptions({ ...this.options, ...newOptions });
     this.renderer.options = this.options;
@@ -1268,184 +1274,6 @@ export class Heatbox {
       bounds.minLon <= bounds.maxLon &&
       bounds.minLat <= bounds.maxLat &&
       bounds.minAlt <= bounds.maxAlt;
-  }
-
-  /**
-   * Handle minimal data range case.
-   * 極小データ範囲の場合の処理
-   * @param {number} centerLon - Center longitude / 中心経度
-   * @param {number} centerLat - Center latitude / 中心緯度
-   * @param {number} centerAlt - Center altitude / 中心高度
-   * @param {Object} fitOptions - Fit options / フィットオプション
-   * @returns {Promise} Camera movement promise / カメラ移動Promise
-   * @private
-   */
-  async _handleMinimalDataRange(centerLon, centerLat, centerAlt, fitOptions) {
-    Logger.debug('Handling minimal data range');
-
-    const destination = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt + 2000);
-    const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
-    const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
-
-    return this.viewer.camera.flyTo({
-      destination,
-      orientation: { heading, pitch, roll: 0 },
-      duration: 1.5
-    });
-  }
-
-  /**
-   * Handle large data range case.
-   * 極大データ範囲の場合の処理
-   * @param {Object} bounds - Target bounds / 対象境界
-   * @param {Object} fitOptions - Fit options / フィットオプション
-   * @returns {Promise} Camera movement promise / カメラ移動Promise
-   * @private
-   */
-  async _handleLargeDataRange(bounds, fitOptions) {
-    Logger.debug('Handling large data range with bounding sphere');
-
-    const centerLon = (bounds.minLon + bounds.maxLon) / 2;
-    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-    const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
-
-    const dataRange = calculateDataRange(bounds);
-    const maxRange = Math.max(dataRange.x, dataRange.y, dataRange.z);
-
-    const boundingSphere = new Cesium.BoundingSphere(
-      Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
-      maxRange / 2
-    );
-
-    const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
-    const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
-
-    return this.viewer.camera.flyToBoundingSphere(boundingSphere, {
-      duration: 2.5,
-      offset: new Cesium.HeadingPitchRange(heading, pitch, 0)
-    });
-  }
-
-  /**
-   * Calculate optimal camera height.
-   * 最適なカメラ高度を計算します。
-   * @param {number} maxRange - Maximum data range / 最大データ範囲
-   * @param {number} paddingMeters - Padding in meters / パディング（メートル）
-   * @param {Object} fitOptions - Fit options / フィットオプション
-   * @returns {number} Optimal camera height / 最適なカメラ高度
-   * @private
-   */
-  _calculateOptimalCameraHeight(maxRange, paddingMeters, fitOptions) {
-    if (fitOptions.altitudeStrategy !== 'auto') {
-      return fitOptions.altitude || 5000;
-    }
-
-    try {
-      const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
-      const fov = this.viewer.camera.frustum.fovy || Cesium.Math.toRadians(60);
-
-      // 幾何学的計算: データがフレームに収まる高度を計算
-      const adjustedRange = maxRange + paddingMeters;
-      const baseCameraHeight = adjustedRange / (2 * Math.tan(fov / 2));
-
-      // ピッチ補正（斜め視点での見え方調整）
-      const absPitch = Math.abs(pitch);
-      const pitchFactor = Math.max(0.5, Math.sin(Math.PI / 2 - absPitch) + 0.3);
-      let cameraHeight = baseCameraHeight * pitchFactor;
-
-      // アスペクト比補正（極端に細長いデータの場合）
-      const aspectRatio = maxRange / Math.min(maxRange, 100);
-      if (aspectRatio > 5) {
-        cameraHeight *= Math.log10(aspectRatio) + 1;
-      }
-
-      // 制限値適用（データ範囲に基づく適応的制限）
-      const minHeight = Math.max(500, maxRange * 0.1);
-      const maxHeight = Math.min(100000, maxRange * 10);
-      cameraHeight = Math.max(minHeight, Math.min(maxHeight, cameraHeight));
-
-      Logger.debug(`Camera height calculated: ${cameraHeight.toFixed(0)}m (range: ${maxRange.toFixed(0)}m, pitch: ${fitOptions.pitchDegrees || fitOptions.pitch}°)`);
-      return cameraHeight;
-
-    } catch (error) {
-      Logger.warn('Camera height calculation failed, using fallback:', error);
-      return Math.max(2000, maxRange * 2);
-    }
-  }
-
-  /**
-   * Execute camera movement.
-   * カメラ移動を実行します。
-   * @param {number} centerLon - Center longitude / 中心経度
-   * @param {number} centerLat - Center latitude / 中心緯度
-   * @param {number} centerAlt - Center altitude / 中心高度
-   * @param {number} cameraHeight - Camera height / カメラ高度
-   * @param {Object} fitOptions - Fit options / フィットオプション
-   * @param {number} maxRange - Maximum range / 最大範囲
-   * @param {number} paddingMeters - Padding meters / パディング（メートル）
-   * @returns {Promise} Camera movement promise / カメラ移動Promise
-   * @private
-   */
-  async _executeCameraMovement(centerLon, centerLat, centerAlt, cameraHeight, fitOptions, maxRange, paddingMeters) {
-    try {
-      // 目標カメラ位置
-      const destination = Cesium.Cartesian3.fromDegrees(
-        centerLon,
-        centerLat,
-        centerAlt + cameraHeight
-      );
-
-      // カメラの向き設定
-      const heading = Cesium.Math.toRadians(fitOptions.headingDegrees || fitOptions.heading);
-      const pitch = Cesium.Math.toRadians(fitOptions.pitchDegrees || fitOptions.pitch);
-      const roll = 0;
-
-      const orientation = {
-        heading,
-        pitch,
-        roll
-      };
-
-      Logger.debug(`Camera target: position=${centerLon.toFixed(6)},${centerLat.toFixed(6)},${(centerAlt + cameraHeight).toFixed(0)}, heading=${fitOptions.headingDegrees || fitOptions.heading}°, pitch=${fitOptions.pitchDegrees || fitOptions.pitch}°`);
-
-      // 距離に応じた移動時間の調整
-      const duration = Math.max(1.0, Math.min(3.0, Math.log10(maxRange) * 0.8));
-
-      // プライマリ: flyTo を使用
-      const flyPromise = this.viewer.camera.flyTo({
-        destination,
-        orientation,
-        duration,
-        complete: () => {
-          Logger.debug('fitView camera movement completed');
-        },
-        cancel: () => {
-          Logger.debug('fitView camera movement cancelled');
-        }
-      });
-
-      // flyToが利用できない場合のフォールバック
-      if (!flyPromise) {
-        Logger.debug('Using fallback: flyToBoundingSphere');
-        const boundingSphere = new Cesium.BoundingSphere(
-          Cesium.Cartesian3.fromDegrees(centerLon, centerLat, centerAlt),
-          maxRange / 2 + paddingMeters
-        );
-
-        await this.viewer.camera.flyToBoundingSphere(boundingSphere, {
-          duration,
-          offset: new Cesium.HeadingPitchRange(heading, pitch, 0)
-        });
-      } else {
-        await flyPromise;
-      }
-
-      Logger.info('fitView completed successfully');
-
-    } catch (error) {
-      Logger.error('Camera movement execution failed:', error);
-      throw error;
-    }
   }
 
   /**

@@ -522,8 +522,8 @@ module.exports = (env, argv) => {
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: isProduction ? 
-        'cesium-heatbox.min.js' : 
-        'cesium-heatbox.js',
+        'cesium-heatbox.umd.min.js' :
+        'cesium-heatbox.umd.js',
       library: {
         name: 'CesiumHeatbox',
         type: 'umd',
@@ -919,7 +919,8 @@ cesium-heatbox/
 │       └── constants.js
 ├── dist/                      # ビルド出力
 │   ├── cesium-heatbox.js
-│   ├── cesium-heatbox.min.js
+│   ├── cesium-heatbox.min.mjs
+│   ├── cesium-heatbox.cjs
 │   ├── cesium-heatbox.umd.js
 │   └── cesium-heatbox.d.ts
 ├── types/                     # TypeScript型定義
@@ -996,8 +997,8 @@ npm run benchmark
 {
   "name": "cesium-heatbox",
   "version": "0.1.4",
-  "main": "dist/cesium-heatbox.umd.min.js",
-  "module": "dist/cesium-heatbox.min.js",
+  "main": "dist/cesium-heatbox.cjs",
+  "module": "dist/cesium-heatbox.min.mjs",
   "types": "types/index.d.ts",
   "browser": "dist/cesium-heatbox.umd.min.js",
   "files": [
@@ -1010,9 +1011,9 @@ npm run benchmark
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "import": "./dist/cesium-heatbox.min.js",
-      "require": "./dist/cesium-heatbox.umd.min.js",
-      "default": "./dist/cesium-heatbox.umd.min.js"
+      "import": "./dist/cesium-heatbox.min.mjs",
+      "require": "./dist/cesium-heatbox.cjs",
+      "default": "./dist/cesium-heatbox.min.mjs"
     }
   }
 }
@@ -1021,10 +1022,10 @@ npm run benchmark
 #### CDN配布
 ```html
 <!-- jsDelivr CDN -->
-<script src="https://cdn.jsdelivr.net/npm/cesium-heatbox@latest/dist/cesium-heatbox.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
 
 <!-- unpkg CDN -->
-<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.min.js"></script>
+<script src="https://unpkg.com/cesium-heatbox@latest/dist/cesium-heatbox.umd.min.js"></script>
 ```
 
 ### クラス構造
@@ -1685,18 +1686,24 @@ on:
   push:
     tags: ['v*']
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
       - run: npm ci
       - run: npm run build:all
       - run: npm test:all
       - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

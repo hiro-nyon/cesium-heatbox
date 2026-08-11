@@ -1,6 +1,7 @@
 /**
  * Heatbox クラスのテスト
  */
+/* global document */
 
 import { Heatbox } from '../src/Heatbox.js';
 
@@ -44,6 +45,10 @@ describe('Heatbox', () => {
       expect(actualOptions.voxelSize).toBe(30);
       expect(actualOptions.opacity).toBe(0.7);
       expect(actualOptions.showEmptyVoxels).toBe(true);
+    });
+
+    test('非推奨のoutlineEmulationを既定値として注入しない', () => {
+      expect(heatbox.getOptions()).not.toHaveProperty('outlineEmulation');
     });
   });
   
@@ -90,6 +95,58 @@ describe('Heatbox', () => {
       heatbox.clear();
       expect(heatbox.getStatistics()).toBeNull();
     });
+
+    test('パフォーマンスオーバーレイを実行時に有効化・切替・無効化できる', () => {
+      viewer.scene.postRender = {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      };
+
+      expect(heatbox.togglePerformanceOverlay()).toBe(false);
+      expect(heatbox.setPerformanceOverlayEnabled(true, { autoShow: true })).toBe(true);
+      expect(heatbox._performanceOverlay).not.toBeNull();
+      expect(heatbox.togglePerformanceOverlay()).toBe(false);
+
+      heatbox.showPerformanceOverlay();
+      expect(heatbox.togglePerformanceOverlay()).toBe(false);
+      heatbox.hidePerformanceOverlay();
+      expect(heatbox.setPerformanceOverlayEnabled(false)).toBe(false);
+      expect(viewer.scene.postRender.removeEventListener).toHaveBeenCalled();
+    });
+
+    test('分類凡例を作成・更新・破棄できる', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+
+      expect(heatbox.createLegend(container)).toBe(container);
+      expect(() => heatbox.updateLegend()).not.toThrow();
+      heatbox.destroyLegend();
+      expect(heatbox._legend).toBeNull();
+      container.remove();
+    });
+  });
+
+  describe('カメラ制御', () => {
+    test('fitViewはpostRender後にBoundingSphereへ移動する', async () => {
+      viewer.camera.flyToBoundingSphere = jest.fn().mockResolvedValue(undefined);
+      viewer.scene.postRender = {
+        addEventListener: jest.fn(handler => {
+          void handler();
+        }),
+        removeEventListener: jest.fn()
+      };
+      const bounds = testUtils.createMockBounds();
+
+      await heatbox.fitView(bounds, { headingDegrees: 15, pitchDegrees: -40 });
+
+      expect(viewer.camera.flyToBoundingSphere).toHaveBeenCalledTimes(1);
+      expect(viewer.scene.postRender.removeEventListener).toHaveBeenCalledTimes(1);
+    });
+
+    test('fitViewは境界がない場合と無効な場合に安全に終了する', async () => {
+      await expect(heatbox.fitView()).resolves.toBeUndefined();
+      await expect(heatbox.fitView({ minLon: 1 })).resolves.toBeUndefined();
+    });
   });
   
   describe('統計情報', () => {
@@ -123,6 +180,36 @@ describe('Heatbox', () => {
       heatbox.updateOptions({ voxelSize: 50 });
       const options = heatbox.getOptions();
       expect(options.voxelSize).toBe(50);
+    });
+
+    test('autoVoxelSizeはvoxelSize未指定時に推定値を使用する', async () => {
+      const automaticHeatbox = new Heatbox(viewer, { autoVoxelSize: true });
+      const entities = [
+        testUtils.createMockEntity(139.7, 35.6, 0),
+        testUtils.createMockEntity(139.8, 35.7, 100)
+      ];
+
+      await automaticHeatbox.setData(entities);
+
+      expect(automaticHeatbox.getStatistics().finalVoxelSize).toBeDefined();
+      expect(automaticHeatbox._grid.voxelSizeMeters).toBe(
+        automaticHeatbox.getStatistics().finalVoxelSize
+      );
+      automaticHeatbox.clear();
+    });
+
+    test('autoVoxelSizeでも明示したvoxelSizeを優先する', async () => {
+      const fixedHeatbox = new Heatbox(viewer, { autoVoxelSize: true, voxelSize: 30 });
+      const entities = [
+        testUtils.createMockEntity(139.7, 35.6, 0),
+        testUtils.createMockEntity(139.71, 35.61, 30)
+      ];
+
+      await fixedHeatbox.setData(entities);
+
+      expect(fixedHeatbox._grid.voxelSizeMeters).toBe(30);
+      expect(fixedHeatbox.getStatistics().finalVoxelSize).toBeNull();
+      fixedHeatbox.clear();
     });
 
     test('updateValuesは条件を満たす場合に既存グリッドを再利用する', async () => {

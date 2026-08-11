@@ -63,7 +63,7 @@ npm run build
 import { Heatbox } from 'cesium-heatbox';
 
 const heatbox = new Heatbox(viewer, {
-  voxelSize: { x: 1000, y: 1000, z: 100 },
+  voxelSize: 100,
   opacity: 0.8
 });
 
@@ -76,6 +76,15 @@ await heatbox.fitView(null, { paddingPercent: 0.1, pitchDegrees: -35 });
 // 統計情報の確認
 console.log(heatbox.getStatistics());
 ```
+
+### 実行時の高度な制御
+
+v0.1.12 で追加された実行時制御は、互換性を保って利用できます。
+
+- `fitViewOptions.headingDegrees` と `fitViewOptions.pitchDegrees` でカメラ方向を指定します。
+- `outlineRenderMode` と `emulationScope` は、非推奨の `outlineEmulation` を置き換えます。
+- `performanceOverlay` は `togglePerformanceOverlay()` または `setPerformanceOverlayEnabled()` で実行中に切り替えられます。
+- `getEffectiveOptions()` で、正規化後の現在の設定を取得できます。
 
 ## 主要機能
 

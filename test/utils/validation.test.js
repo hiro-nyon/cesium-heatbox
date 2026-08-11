@@ -144,6 +144,23 @@ describe('validation.js', () => {
         const options2 = { emptyOpacity: -0.5 };
         const normalized2 = validateAndNormalizeOptions(options2);
         expect(normalized2.emptyOpacity).toBe(0);
+
+        const normalized3 = validateAndNormalizeOptions({ outlineOpacity: 0 });
+        expect(normalized3.outlineOpacity).toBe(0);
+      });
+
+      test('temporalの省略値が公開仕様どおりに補完される', () => {
+        const normalized = validateAndNormalizeOptions({
+          temporal: { enabled: true, data: [] }
+        });
+
+        expect(normalized.temporal).toEqual(expect.objectContaining({
+          enabled: true,
+          classificationScope: 'global',
+          updateInterval: 100,
+          outOfRangeBehavior: 'hold',
+          overlapResolution: 'prefer-earlier'
+        }));
       });
 
       test('色配列が正しく正規化される', () => {

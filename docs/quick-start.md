@@ -83,7 +83,8 @@ ls -la dist/
 ```
 dist/
 ├── cesium-heatbox.js
-├── cesium-heatbox.min.js
+├── cesium-heatbox.min.mjs
+├── cesium-heatbox.cjs
 └── cesium-heatbox.umd.js
 ```
 
@@ -488,7 +489,8 @@ ls -la dist/
 ```
 dist/
 ├── cesium-heatbox.js
-├── cesium-heatbox.min.js
+├── cesium-heatbox.min.mjs
+├── cesium-heatbox.cjs
 └── cesium-heatbox.umd.js
 ```
 

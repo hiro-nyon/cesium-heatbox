@@ -646,7 +646,8 @@ du -h dist/*
 
 # 生成されたファイル
 # - cesium-heatbox.js      (開発版)
-# - cesium-heatbox.min.js  (本番版・最適化済み)
+# - cesium-heatbox.min.mjs  (ESM本番版・最適化済み)
+# - cesium-heatbox.cjs     (CommonJS本番版)
 # - cesium-heatbox.umd.js  (UMD版)
 # - cesium-heatbox.d.ts    (TypeScript型定義)
 ```

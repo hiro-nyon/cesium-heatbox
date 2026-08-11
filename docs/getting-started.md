@@ -189,7 +189,8 @@ npm run build
 
 Output files:
 - `dist/cesium-heatbox.js` - ESM development version
-- `dist/cesium-heatbox.min.js` - ESM production version
+- `dist/cesium-heatbox.min.mjs` - ESM production version
+- `dist/cesium-heatbox.cjs` - CommonJS production version
 - `dist/cesium-heatbox.umd.js` - UMD development version
 - `dist/cesium-heatbox.umd.min.js` - UMD production version
 
@@ -426,7 +427,8 @@ npm run build
 
 出力ファイル:
 - `dist/cesium-heatbox.js` - ESM開発版
-- `dist/cesium-heatbox.min.js` - ESM本番版
+- `dist/cesium-heatbox.min.mjs` - ESM本番版
+- `dist/cesium-heatbox.cjs` - CommonJS本番版
 - `dist/cesium-heatbox.umd.js` - UMD開発版
 - `dist/cesium-heatbox.umd.min.js` - UMD本番版
 

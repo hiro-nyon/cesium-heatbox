@@ -184,6 +184,31 @@ class Entity {
   constructor(options) { Object.assign(this, options); }
 }
 
+class Rectangle {
+  static fromDegrees(minLon, minLat, maxLon, maxLat) {
+    return { minLon, minLat, maxLon, maxLat };
+  }
+}
+
+class BoundingSphere {
+  constructor(center = new Cartesian3(), radius = 1) {
+    this.center = center;
+    this.radius = radius;
+  }
+
+  static fromRectangle3D() {
+    return new BoundingSphere(new Cartesian3(), 500);
+  }
+}
+
+class HeadingPitchRange {
+  constructor(heading, pitch, range) {
+    this.heading = heading;
+    this.pitch = pitch;
+    this.range = range;
+  }
+}
+
 module.exports = {
   Cartesian3,
   Cartographic,
@@ -193,5 +218,9 @@ module.exports = {
   JulianDate,
   ScreenSpaceEventType,
   defined,
-  Entity
+  Entity,
+  Rectangle,
+  BoundingSphere,
+  HeadingPitchRange,
+  Ellipsoid: { WGS84: {} }
 };

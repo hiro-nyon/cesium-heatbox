@@ -54,8 +54,9 @@ module.exports = (env = {}, argv = {}) => {
     }
   };
 
-  if (target === 'esm') {
-    config.output.filename = isProduction ? 'cesium-heatbox.min.js' : 'cesium-heatbox.js';
+  if (target === 'esm' || target === 'esm-package') {
+    const extension = target === 'esm-package' ? 'mjs' : 'js';
+    config.output.filename = isProduction ? `cesium-heatbox.min.${extension}` : `cesium-heatbox.${extension}`;
     config.output.library = {
       type: 'module'
     };
@@ -64,6 +65,18 @@ module.exports = (env = {}, argv = {}) => {
     };
     // ESM externals: keep as import 'cesium'
     config.externalsType = 'module';
+    config.externals = {
+      cesium: 'cesium'
+    };
+  } else if (target === 'cjs') {
+    config.target = 'node18';
+    config.output.filename = isProduction ? 'cesium-heatbox.cjs' : 'cesium-heatbox.dev.cjs';
+    config.output.chunkFilename = 'chunks/[name].[contenthash].cjs';
+    config.output.library = {
+      type: 'commonjs2',
+      export: 'default'
+    };
+    config.externalsType = 'commonjs';
     config.externals = {
       cesium: 'cesium'
     };

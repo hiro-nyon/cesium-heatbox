@@ -64,7 +64,9 @@ git push origin --tags
 ファイル: `.github/workflows/release.yml`
 - `push.tags: [ 'v*' ]` で `v0.1.10` や `v0.1.10-alpha.0` の push をトリガに実行。
 - 版文字列に `-alpha.`/`-beta.`/`-rc.` を含む場合は `npm publish --tag next`、それ以外は `npm publish`。
-- 公開にはリポジトリの `NPM_TOKEN` シークレットが必要。
+- npm Trusted Publishing を使用するため、長期保存する `NPM_TOKEN` は不要。
+- npm 側の Trusted Publisher は `hiro-nyon/cesium-heatbox` の `release.yml` に限定する。
+- Workflow の `id-token: write` 権限により、公開時だけ有効な OIDC 資格情報を取得する。
 
 通常 CI: `.github/workflows/ci.yml`
 - `main`/`next` への push と PR で、Install→Test→Build→`npm pack --dry-run` まで実施。
@@ -121,4 +123,3 @@ git push origin :refs/tags/v0.1.10-alpha.0
 ## 参考: 運用上の注意
 - SemVer: `1.2.3-alpha.1` のようなプリリリースは安定より下位。通常の `^` 範囲には自動では入らない。
 - dist-tag と Git タグは別物。インストールレーンの切替は dist-tag（`latest`/`next`/…）。ワークフロートリガは Git タグ（`v*`）。
-
