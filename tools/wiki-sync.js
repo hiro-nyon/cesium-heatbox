@@ -40,6 +40,24 @@ function cleanGeneratedMarkdown(content) {
   return content.replace(/[ \t]+$/gm, '');
 }
 
+function isStaleGeneratedApiPage(content, htmlFiles) {
+  const match = content.match(/^<!-- Generated from docs\/api\/([^\s]+\.html) by npm run wiki:sync\./);
+  return Boolean(match && !htmlFiles.includes(match[1]));
+}
+
+function removeStaleGeneratedApiPages(htmlFiles) {
+  fs.readdirSync(WIKI_DIR)
+    .filter((file) => file.endsWith('.md'))
+    .forEach((file) => {
+      const targetPath = path.join(WIKI_DIR, file);
+      const content = fs.readFileSync(targetPath, 'utf8');
+      if (isStaleGeneratedApiPage(content, htmlFiles)) {
+        fs.rmSync(targetPath);
+        console.log(`🧹 Removed stale generated page: ${file}`);
+      }
+    });
+}
+
 function findClassPageLink(sourceName, htmlFiles = fs.readdirSync(API_DOCS_DIR)) {
   const expectedPage = `${sourceName}.html`.toLowerCase();
   const exactClassPage = htmlFiles.find((file) => file.toLowerCase() === expectedPage);
@@ -462,6 +480,7 @@ async function main() {
     .filter(file => file.endsWith('.html') && file !== 'index.html');
 
   console.log(`📄 Found ${htmlFiles.length} HTML files to convert`);
+  removeStaleGeneratedApiPages(htmlFiles);
 
   for (const htmlFile of htmlFiles) {
     const htmlPath = path.join(API_DOCS_DIR, htmlFile);
@@ -634,4 +653,10 @@ if (require.main === module) {
   });
 }
 
-module.exports = { convertHtmlToMarkdown, convertTableToMarkdown, findClassPageLink, rewriteLinksForWiki };
+module.exports = {
+  convertHtmlToMarkdown,
+  convertTableToMarkdown,
+  findClassPageLink,
+  isStaleGeneratedApiPage,
+  rewriteLinksForWiki
+};

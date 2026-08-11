@@ -18,13 +18,13 @@ import { ZFXYConverter } from './ZFXYConverter.js';
  * 空間IDプロバイダーの抽象化層
  *
  * Provides a unified interface for spatial ID conversion with support for:
- * - Dynamic loading of ouranos-gex-lib-for-javascript (optional dependency)
+ * - Dynamic loading of the bundled ouranos-gex-lib-for-javascript provider
  * - Built-in Web Mercator-based fallback converter (ZFXYConverter)
  * - Automatic zoom level selection based on target cell size
  * - 8-vertex bounding box calculation for each spatial ID voxel
  *
  * 以下をサポートする空間ID変換の統合インターフェースを提供：
- * - ouranos-gex-lib-for-javascriptの動的読み込み（オプショナル依存）
+ * - バンドル済みouranos-gex-lib-for-javascriptプロバイダーの動的読み込み
  * - 内蔵Web Mercatorベースのフォールバックコンバーター（ZFXYConverter）
  * - 目標セルサイズに基づく自動ズームレベル選択
  * - 各空間IDボクセルの8頂点バウンディングボックス計算
@@ -431,13 +431,13 @@ import { ZFXYConverter } from './ZFXYConverter.js';
  * 空間IDプロバイダーの抽象化層
  *
  * Provides a unified interface for spatial ID conversion with support for:
- * - Dynamic loading of ouranos-gex-lib-for-javascript (optional dependency)
+ * - Dynamic loading of the bundled ouranos-gex-lib-for-javascript provider
  * - Built-in Web Mercator-based fallback converter (ZFXYConverter)
  * - Automatic zoom level selection based on target cell size
  * - 8-vertex bounding box calculation for each spatial ID voxel
  *
  * 以下をサポートする空間ID変換の統合インターフェースを提供：
- * - ouranos-gex-lib-for-javascriptの動的読み込み（オプショナル依存）
+ * - バンドル済みouranos-gex-lib-for-javascriptプロバイダーの動的読み込み
  * - 内蔵Web Mercatorベースのフォールバックコンバーター（ZFXYConverter）
  * - 目標セルサイズに基づく自動ズームレベル選択
  * - 各空間IDボクセルの8頂点バウンディングボックス計算

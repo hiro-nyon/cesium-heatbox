@@ -9,27 +9,45 @@ const { execFileSync } = require('child_process');
 async function main() {
   const packageRoot = path.join(__dirname, '..');
   const packageJson = require(path.join(packageRoot, 'package.json'));
+  const packageLock = require(path.join(packageRoot, 'package-lock.json'));
   const noticesPath = path.join(packageRoot, 'THIRD_PARTY_NOTICES');
-  const installerPath = path.join(packageRoot, packageJson.bin['cesium-heatbox-install-ouranos']);
+  const buildHelperPath = path.join(packageRoot, 'tools', 'build-ouranos.js');
+  const distPath = path.join(packageRoot, 'dist');
 
   assert(packageJson.files.includes('THIRD_PARTY_NOTICES'), 'npm package must include third-party notices');
-  assert(packageJson.files.includes('tools/install-ouranos.js'), 'npm package must include the declared installer bin');
   assert(!packageJson.files.includes('tools/'), 'npm package must not publish unrelated development tools');
   assert.match(
-    packageJson.optionalDependencies['ouranos-gex-lib-for-javascript'],
-    /#[0-9a-f]{40}$/,
-    'GitHub optional dependency must be pinned to a full commit SHA'
+    packageJson.devDependencies['ouranos-gex-lib-for-javascript'],
+    /\/[0-9a-f]{40}\.tar\.gz$/,
+    'GitHub build dependency must be pinned to a full commit SHA'
   );
   assert(fs.existsSync(noticesPath), 'THIRD_PARTY_NOTICES must exist');
-  assert(fs.existsSync(installerPath), 'declared installer bin must exist');
-  fs.accessSync(installerPath, fs.constants.X_OK);
+  assert(fs.existsSync(buildHelperPath), 'Ouranos build helper must exist');
+  require.resolve('ouranos-gex-lib-for-javascript/package.json', { paths: [packageRoot] });
 
-  const pinnedOuranosRevision = packageJson.optionalDependencies['ouranos-gex-lib-for-javascript'].split('#')[1];
-  const installerSource = fs.readFileSync(installerPath, 'utf8');
-  assert(
-    installerSource.includes(pinnedOuranosRevision),
-    'installer bin must build the same pinned Ouranos revision declared by the package'
+  const chunksPath = path.join(distPath, 'chunks');
+  const distFiles = fs.readdirSync(distPath)
+    .concat(fs.existsSync(chunksPath)
+      ? fs.readdirSync(chunksPath).map((entry) => `chunks/${entry}`)
+      : []);
+  for (const expectedChunk of [
+    /^\d+\.cesium-heatbox\.min\.mjs$/,
+    /^\d+\.cesium-heatbox\.umd\.min\.js$/,
+    /^chunks\/.+\.cjs$/
+  ]) {
+    assert(
+      distFiles.some((entry) => expectedChunk.test(entry)),
+      `missing bundled Ouranos lazy chunk matching ${expectedChunk}`
+    );
+  }
+
+  const lockedOuranos = packageLock.packages['node_modules/ouranos-gex-lib-for-javascript'];
+  assert.strictEqual(
+    lockedOuranos.resolved,
+    packageJson.devDependencies['ouranos-gex-lib-for-javascript'],
+    'lockfile must resolve the exact pinned Ouranos source tarball'
   );
+  assert.match(lockedOuranos.integrity, /^sha512-/, 'Ouranos source tarball must have lockfile integrity');
 
   const notices = fs.readFileSync(noticesPath, 'utf8');
   for (const bundledComponent of [

@@ -1,4 +1,4 @@
-# API Reference (APIリファレンス) - v1.3.7-alpha.4
+# API Reference (APIリファレンス) - v1.3.7-alpha.5
 
 [English](#english) | [日本語](#日本語)
 

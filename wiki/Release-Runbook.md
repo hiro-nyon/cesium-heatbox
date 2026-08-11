@@ -2,7 +2,7 @@
 
 # Release Runbook（v1.3.7）
 
-この文書は、`1.3.7-alpha.4` を `@next` で検証した後、`1.3.7` を `@latest` として公開する手順を定義します。npm 公開は GitHub Actions の `.github/workflows/release.yml` だけが行い、ローカルでは `npm publish` を実行しません。
+この文書は、`1.3.7-alpha.5` を `@next` で検証した後、`1.3.7` を `@latest` として公開する手順を定義します。npm 公開は GitHub Actions の `.github/workflows/release.yml` だけが行い、ローカルでは `npm publish` を実行しません。
 
 ## 1. 公開レーン
 
@@ -33,14 +33,14 @@ Workflow は GitHub-hosted runner、Node.js 24、npm 11.5.1 以上、`id-token: 
 
 長期保存する `NPM_TOKEN` や公開用 `NODE_AUTH_TOKEN` は設定しません。npm の Trusted Publisher 設定、GitHub Environment の保護ルール、不要な旧 npm publish token が残っていないことをリリース前に確認します。
 
-## 3. `1.3.7-alpha.4` の準備
+## 3. `1.3.7-alpha.5` の準備
 
 ### 3.1 変更を `next` 向けに準備
 
 ドキュメントや実装変更は作業ブランチでコミットし、base を `next` とする PR でレビューします。タグを作る前に、以下の版番号更新も `next` へ取り込みます。
 
 ```bash
-npm version 1.3.7-alpha.4 --no-git-tag-version
+npm version 1.3.7-alpha.5 --no-git-tag-version
 ```
 
 このコマンドが更新するのは主に `package.json` と `package-lock.json` です。次のファイルは同じPR内で明示的に更新します。
@@ -50,7 +50,7 @@ npm version 1.3.7-alpha.4 --no-git-tag-version
 - `package-lock.json` の `packages[""].version`
 - `src/index.js` の `VERSION`
 - `docs/API.md` など、現在バージョンを明示するユーザー向け文書
-- `CHANGELOG.md` の `1.3.7-alpha.4` エントリ
+- `CHANGELOG.md` の `1.3.7-alpha.5` エントリ
 
 `npm version` だけでは `src/index.js` の `VERSION` は更新されないため、それだけでリリースコミットを完成扱いにしないでください。
 
@@ -76,24 +76,24 @@ PR マージ後、ローカルの `next` をリモート先端へ fast-forward �
 ```bash
 git switch next
 git pull --ff-only origin next
-git tag -a v1.3.7-alpha.4 -m "release: 1.3.7-alpha.4"
-git push origin v1.3.7-alpha.4
+git tag -a v1.3.7-alpha.5 -m "release: 1.3.7-alpha.5"
+git push origin v1.3.7-alpha.5
 ```
 
 `git push origin --tags` は使用しません。ローカルに残った無関係な `v*` タグまでpushされ、複数の公開処理を起動する危険があるためです。
 
-## 4. alpha.4 公開後の確認
+## 4. alpha.5 公開後の確認
 
 GitHub Actions の Release Workflow が成功した後に確認します。
 
 ```bash
 npm view cesium-heatbox dist-tags --json
-npm view cesium-heatbox@1.3.7-alpha.4 version gitHead dist.attestations --json
+npm view cesium-heatbox@1.3.7-alpha.5 version gitHead dist.attestations --json
 ```
 
 期待値は次のとおりです。
 
-- `next` が `1.3.7-alpha.4` を指す。
+- `next` が `1.3.7-alpha.5` を指す。
 - `latest` は正式公開まで `1.3.6` のまま。
 - provenance attestation が存在する。
 - `gitHead` が `next` のリリースコミットと一致する。
@@ -104,13 +104,13 @@ npm view cesium-heatbox@1.3.7-alpha.4 version gitHead dist.attestations --json
 
 ### 5.1 `next` で安定版番号を準備
 
-alpha.4 の検証が完了したら、`next` から作業ブランチを作り、正式版へ更新します。
+alpha.5 の検証が完了したら、`next` から作業ブランチを作り、正式版へ更新します。
 
 ```bash
 npm version 1.3.7 --no-git-tag-version
 ```
 
-alpha.4 と同様に `package.json`、`package-lock.json` の2箇所、`src/index.js`、現在バージョンを記載する文書を `1.3.7` に揃えます。`CHANGELOG.md` は `Unreleased` の内容を正式な `1.3.7` セクションへ確定し、alpha期間で確認した内容と公開日を記録します。
+alpha.5 と同様に `package.json`、`package-lock.json` の2箇所、`src/index.js`、現在バージョンを記載する文書を `1.3.7` に揃えます。`CHANGELOG.md` は `Unreleased` の内容を正式な `1.3.7` セクションへ確定し、alpha期間で確認した内容と公開日を記録します。
 
 ローカル検証とCIをすべて通し、まず base=`next` のPRへマージします。その後、`next` から `main` へのPRを作成してレビューします。
 
@@ -167,7 +167,7 @@ npm の同一バージョンは再公開できないため、Release Workflow �
 npm の `package@version` は、unpublishしても同じ版番号を再利用できません。影響に応じて誤版を `npm deprecate` し、修正版を新しいプレリリース番号またはpatch番号で公開します。dist-tagだけが誤っている場合は、正しい既存バージョンへ付け替えます。
 
 ```bash
-npm dist-tag add cesium-heatbox@1.3.7-alpha.4 next
+npm dist-tag add cesium-heatbox@1.3.7-alpha.5 next
 ```
 
 Gitタグの削除はnpmパッケージを削除せず、dist-tagも変更しません。各操作を別の状態変更として扱ってください。

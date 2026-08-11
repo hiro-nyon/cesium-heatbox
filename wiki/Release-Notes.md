@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.7-alpha.5] - 2026-08-11
+
+### Fixed
+- Ouranosを実行時optional dependencyではなく固定commitのbuild dependencyとして扱い、build前に公式ソースを再現可能な形で準備するよう修正しました。利用者側の追加インストールは不要です。
+- package smoke testでESM、CJS、UMDのOuranos遅延chunkを必須化し、公式providerが欠落したパッケージの公開を防止しました。
+
 ## [1.3.7-alpha.4] - 2026-08-11
 
 ### Added
