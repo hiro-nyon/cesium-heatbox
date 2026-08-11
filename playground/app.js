@@ -697,7 +697,7 @@ class HeatboxPlayground {
         btn_generate_test: 'テストデータを生成',
         // Display section
         label_baseMap: '背景地図:',
-        chk_autoVoxel: '自動サイズ決定（v0.1.4新機能）',
+        chk_autoVoxel: '自動ボクセルサイズ',
         label_gridSize: 'グリッドサイズ（手動）:',
         chk_heightBased: '高さベース表現',
         chk_showEmpty: '空のボクセルを表示',
@@ -855,7 +855,7 @@ class HeatboxPlayground {
         btn_generate_test: 'Generate test data',
         // Display
         label_baseMap: 'Base map:',
-        chk_autoVoxel: 'Auto voxel size (v0.1.4)',
+        chk_autoVoxel: 'Auto voxel size',
         label_gridSize: 'Grid size (manual):',
         chk_heightBased: 'Height-based boxes',
         chk_showEmpty: 'Show empty voxels',
@@ -2978,7 +2978,7 @@ class HeatboxPlayground {
       };
     }
     
-    console.log('Heatbox options (v0.1.9):', options);
+    console.log('Heatbox options:', options);
     return options;
   }
 
