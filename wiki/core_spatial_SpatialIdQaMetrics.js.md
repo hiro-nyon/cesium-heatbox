@@ -1,10 +1,10 @@
+<!-- Generated from docs/api/core_spatial_SpatialIdQaMetrics.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: core/spatial/SpatialIdQaMetrics.js
 
 **日本語** | [English](#english)
 
 ## English
-
-See also: [Class: SpatialIdQaMetrics](SpatialIdQaMetrics)
 
 ```javascript
 import { ZFXYConverter } from './ZFXYConverter.js';
@@ -95,8 +95,6 @@ export function computeSpatialIdEdgeCaseMetrics(adapter) {
 ```
 
 ## 日本語
-
-関連: [SpatialIdQaMetricsクラス](SpatialIdQaMetrics)
 
 ```javascript
 import { ZFXYConverter } from './ZFXYConverter.js';

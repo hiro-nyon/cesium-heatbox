@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/TimeController.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Class: TimeController（TimeControllerクラス）
 
 **日本語** | [English](#english)

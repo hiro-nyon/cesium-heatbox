@@ -8,6 +8,8 @@
 **Last Updated**: September 2025  
 **Author**: hiro-nyon  
 
+> Historical design baseline: this specification describes the v0.1.9 architecture and is retained for design context. For the current v1.3.7-alpha.4 public API and behavior, see [API Reference](API.md), [Quick Start](quick-start.md), and the source code.
+
 ### Table of Contents
 
 1. [Project Overview](#project-overview)
@@ -274,6 +276,8 @@ For detailed specifications, constraints, and implementation guidelines, see the
 **バージョン**: 0.1.9  
 **最終更新**: 2025年9月  
 **作成者**: hiro-nyon  
+
+> 歴史的な設計基準: この仕様書はv0.1.9時点のアーキテクチャを記録したものです。現在のv1.3.7-alpha.4の公開APIと動作は、[APIリファレンス](API.md)、[クイックスタート](quick-start.md)、ソースコードを参照してください。
 
 ## 目次
 
@@ -937,7 +941,7 @@ cesium-heatbox/
 │   └── performance/
 ├── docs/                      # ドキュメント
 │   ├── API.md
-│   ├── getting-started.md
+│   ├── development-setup.md
 │   ├── examples.md
 │   └── contributing.md
 └── tools/                     # 開発ツール

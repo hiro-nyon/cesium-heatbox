@@ -1,16 +1,18 @@
+<!-- Generated from docs/api/utils_performanceOverlay.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: utils/performanceOverlay.js
 
 **日本語** | [English](#english)
 
 ## English
 
-See also: [Class: performanceOverlay](performanceOverlay)
+See also: [Class: PerformanceOverlay](PerformanceOverlay)
 
 ```javascript
 /**
  * Performance overlay for real-time statistics display
  * リアルタイム統計表示用パフォーマンスオーバーレイ
- * 
+ *
  * @version 0.1.12
  */
 
@@ -39,7 +41,7 @@ export class PerformanceOverlay {
     this.updateInterval = null;
     this.frameTimeHistory = [];
     this.lastUpdateTime = Date.now();
-    
+
     this._createOverlay();
   }
 
@@ -119,7 +121,7 @@ export class PerformanceOverlay {
     if (this.element) {
       this.element.style.display = 'block';
       this.isVisible = true;
-      
+
       if (this.options.autoUpdate) {
         this.startAutoUpdate();
       }
@@ -153,7 +155,7 @@ export class PerformanceOverlay {
   /**
    * Update overlay content with statistics
    * 統計情報でオーバーレイ内容を更新
-   * 
+   *
    * @param {Object} stats - Performance statistics / パフォーマンス統計
    * @param {number} [frameTime] - Frame time in ms / フレーム時間（ミリ秒）
    */
@@ -178,7 +180,7 @@ export class PerformanceOverlay {
   _trackFrameTime(frameTime) {
     const now = Date.now();
     this.frameTimeHistory.push({ time: now, frameTime });
-    
+
     // Remove old entries
     const cutoff = now - this.options.fpsAveragingWindowMs;
     this.frameTimeHistory = this.frameTimeHistory.filter(entry => entry.time > cutoff);
@@ -191,8 +193,8 @@ export class PerformanceOverlay {
    */
   _calculateFPS() {
     if (this.frameTimeHistory.length < 2) return 0;
-    
-    const avgFrameTime = this.frameTimeHistory.reduce((sum, entry) => sum + entry.frameTime, 0) 
+
+    const avgFrameTime = this.frameTimeHistory.reduce((sum, entry) => sum + entry.frameTime, 0)
                         / this.frameTimeHistory.length;
     return avgFrameTime > 0 ? Math.round(1000 / avgFrameTime) : 0;
   }
@@ -204,11 +206,11 @@ export class PerformanceOverlay {
    */
   _formatStats(stats, fps, frameTime) {
     const lines = [];
-    
+
     // Header
     lines.push('<div style="font-weight: bold; color: #4CAF50;">🚀 Performance Stats</div>');
     lines.push('');
-    
+
     // FPS and Frame Time
     if (fps > 0) {
       const fpsColor = fps >= 30 ? '#4CAF50' : fps >= 15 ? '#FF9800' : '#F44336';
@@ -225,12 +227,12 @@ export class PerformanceOverlay {
       lines.push('<div style="font-weight: bold;">Voxels:</div>');
       lines.push(`  Total: ${stats.totalVoxels || 0}`);
       lines.push(`  Rendered: ${stats.renderedVoxels || 0}`);
-      
+
       if (stats.totalVoxels > 0) {
         const renderRatio = ((stats.renderedVoxels || 0) / stats.totalVoxels * 100).toFixed(1);
         lines.push(`  Ratio: ${renderRatio}%`);
       }
-      
+
       if (stats.topNCount) {
         lines.push(`  TopN: ${stats.topNCount}`);
       }
@@ -240,11 +242,11 @@ export class PerformanceOverlay {
       if (stats.selectionStrategy) {
         lines.push('<div style="font-weight: bold;">Strategy:</div>');
         lines.push(`  Selection: ${stats.selectionStrategy}`);
-        
+
         if (stats.coverageRatio !== undefined) {
           lines.push(`  Coverage: ${(stats.coverageRatio * 100).toFixed(1)}%`);
         }
-        
+
         if (stats.renderBudgetTier) {
           lines.push(`  Budget Tier: ${stats.renderBudgetTier}`);
         }
@@ -254,39 +256,39 @@ export class PerformanceOverlay {
       // v0.1.15 Phase 3: Adaptive Control Metrics (ADR-0011)
       if (stats.adaptive) {
         lines.push('<div style="font-weight: bold; color: #2196F3;">📊 Adaptive Control:</div>');
-        
+
         if (stats.adaptive.denseModeCount !== undefined) {
-          const densePct = stats.renderedVoxels > 0 
+          const densePct = stats.renderedVoxels > 0
             ? ((stats.adaptive.denseModeCount / stats.renderedVoxels) * 100).toFixed(1)
             : '0.0';
           lines.push(`  Dense Areas: ${stats.adaptive.denseModeCount} (${densePct}%)`);
         }
-        
+
         if (stats.adaptive.emulationModeCount !== undefined) {
-          const emuPct = stats.renderedVoxels > 0 
+          const emuPct = stats.renderedVoxels > 0
             ? ((stats.adaptive.emulationModeCount / stats.renderedVoxels) * 100).toFixed(1)
             : '0.0';
           lines.push(`  Emulation: ${stats.adaptive.emulationModeCount} (${emuPct}%)`);
         }
-        
+
         if (stats.adaptive.avgOutlineWidth !== undefined) {
-          const widthColor = stats.adaptive.avgOutlineWidth >= 1.0 && stats.adaptive.avgOutlineWidth <= 3.0 
+          const widthColor = stats.adaptive.avgOutlineWidth >= 1.0 && stats.adaptive.avgOutlineWidth <= 3.0
             ? '#4CAF50' : '#FF9800';
           lines.push(`  <span style="color: ${widthColor};">Avg Width: ${stats.adaptive.avgOutlineWidth.toFixed(2)}px</span>`);
         }
-        
+
         if (stats.adaptive.overlapDetections !== undefined) {
-          const overlapPct = stats.renderedVoxels > 0 
+          const overlapPct = stats.renderedVoxels > 0
             ? ((stats.adaptive.overlapDetections / stats.renderedVoxels) * 100).toFixed(1)
             : '0.0';
           const overlapColor = stats.adaptive.overlapDetections > 0 ? '#FF9800' : '#4CAF50';
           lines.push(`  <span style="color: ${overlapColor};">Overlaps: ${stats.adaptive.overlapDetections} (${overlapPct}%)</span>`);
         }
-        
+
         if (stats.adaptive.zScaleAdjustments !== undefined && stats.adaptive.zScaleAdjustments > 0) {
           lines.push(`  Z-Scale Adj: ${stats.adaptive.zScaleAdjustments}`);
         }
-        
+
         lines.push('');
       }
 
@@ -295,7 +297,7 @@ export class PerformanceOverlay {
         const renderColor = stats.renderTimeMs <= 50 ? '#4CAF50' : stats.renderTimeMs <= 100 ? '#FF9800' : '#F44336';
         lines.push(`<div style="color: ${renderColor};">Render Time: ${stats.renderTimeMs.toFixed(1)}ms</div>`);
       }
-      
+
       if (stats.memoryUsageMB !== undefined) {
         const memColor = stats.memoryUsageMB <= 50 ? '#4CAF50' : stats.memoryUsageMB <= 100 ? '#FF9800' : '#F44336';
         lines.push(`<div style="color: ${memColor};">Memory: ${stats.memoryUsageMB.toFixed(1)}MB</div>`);
@@ -346,13 +348,13 @@ export class PerformanceOverlay {
 
 ## 日本語
 
-関連: [performanceOverlayクラス](performanceOverlay)
+関連: [PerformanceOverlayクラス](PerformanceOverlay)
 
 ```javascript
 /**
  * Performance overlay for real-time statistics display
  * リアルタイム統計表示用パフォーマンスオーバーレイ
- * 
+ *
  * @version 0.1.12
  */
 
@@ -381,7 +383,7 @@ export class PerformanceOverlay {
     this.updateInterval = null;
     this.frameTimeHistory = [];
     this.lastUpdateTime = Date.now();
-    
+
     this._createOverlay();
   }
 
@@ -461,7 +463,7 @@ export class PerformanceOverlay {
     if (this.element) {
       this.element.style.display = 'block';
       this.isVisible = true;
-      
+
       if (this.options.autoUpdate) {
         this.startAutoUpdate();
       }
@@ -495,7 +497,7 @@ export class PerformanceOverlay {
   /**
    * Update overlay content with statistics
    * 統計情報でオーバーレイ内容を更新
-   * 
+   *
    * @param {Object} stats - Performance statistics / パフォーマンス統計
    * @param {number} [frameTime] - Frame time in ms / フレーム時間（ミリ秒）
    */
@@ -520,7 +522,7 @@ export class PerformanceOverlay {
   _trackFrameTime(frameTime) {
     const now = Date.now();
     this.frameTimeHistory.push({ time: now, frameTime });
-    
+
     // Remove old entries
     const cutoff = now - this.options.fpsAveragingWindowMs;
     this.frameTimeHistory = this.frameTimeHistory.filter(entry => entry.time > cutoff);
@@ -533,8 +535,8 @@ export class PerformanceOverlay {
    */
   _calculateFPS() {
     if (this.frameTimeHistory.length < 2) return 0;
-    
-    const avgFrameTime = this.frameTimeHistory.reduce((sum, entry) => sum + entry.frameTime, 0) 
+
+    const avgFrameTime = this.frameTimeHistory.reduce((sum, entry) => sum + entry.frameTime, 0)
                         / this.frameTimeHistory.length;
     return avgFrameTime > 0 ? Math.round(1000 / avgFrameTime) : 0;
   }
@@ -546,11 +548,11 @@ export class PerformanceOverlay {
    */
   _formatStats(stats, fps, frameTime) {
     const lines = [];
-    
+
     // Header
     lines.push('<div style="font-weight: bold; color: #4CAF50;">🚀 Performance Stats</div>');
     lines.push('');
-    
+
     // FPS and Frame Time
     if (fps > 0) {
       const fpsColor = fps >= 30 ? '#4CAF50' : fps >= 15 ? '#FF9800' : '#F44336';
@@ -567,12 +569,12 @@ export class PerformanceOverlay {
       lines.push('<div style="font-weight: bold;">Voxels:</div>');
       lines.push(`  Total: ${stats.totalVoxels || 0}`);
       lines.push(`  Rendered: ${stats.renderedVoxels || 0}`);
-      
+
       if (stats.totalVoxels > 0) {
         const renderRatio = ((stats.renderedVoxels || 0) / stats.totalVoxels * 100).toFixed(1);
         lines.push(`  Ratio: ${renderRatio}%`);
       }
-      
+
       if (stats.topNCount) {
         lines.push(`  TopN: ${stats.topNCount}`);
       }
@@ -582,11 +584,11 @@ export class PerformanceOverlay {
       if (stats.selectionStrategy) {
         lines.push('<div style="font-weight: bold;">Strategy:</div>');
         lines.push(`  Selection: ${stats.selectionStrategy}`);
-        
+
         if (stats.coverageRatio !== undefined) {
           lines.push(`  Coverage: ${(stats.coverageRatio * 100).toFixed(1)}%`);
         }
-        
+
         if (stats.renderBudgetTier) {
           lines.push(`  Budget Tier: ${stats.renderBudgetTier}`);
         }
@@ -596,39 +598,39 @@ export class PerformanceOverlay {
       // v0.1.15 Phase 3: Adaptive Control Metrics (ADR-0011)
       if (stats.adaptive) {
         lines.push('<div style="font-weight: bold; color: #2196F3;">📊 Adaptive Control:</div>');
-        
+
         if (stats.adaptive.denseModeCount !== undefined) {
-          const densePct = stats.renderedVoxels > 0 
+          const densePct = stats.renderedVoxels > 0
             ? ((stats.adaptive.denseModeCount / stats.renderedVoxels) * 100).toFixed(1)
             : '0.0';
           lines.push(`  Dense Areas: ${stats.adaptive.denseModeCount} (${densePct}%)`);
         }
-        
+
         if (stats.adaptive.emulationModeCount !== undefined) {
-          const emuPct = stats.renderedVoxels > 0 
+          const emuPct = stats.renderedVoxels > 0
             ? ((stats.adaptive.emulationModeCount / stats.renderedVoxels) * 100).toFixed(1)
             : '0.0';
           lines.push(`  Emulation: ${stats.adaptive.emulationModeCount} (${emuPct}%)`);
         }
-        
+
         if (stats.adaptive.avgOutlineWidth !== undefined) {
-          const widthColor = stats.adaptive.avgOutlineWidth >= 1.0 && stats.adaptive.avgOutlineWidth <= 3.0 
+          const widthColor = stats.adaptive.avgOutlineWidth >= 1.0 && stats.adaptive.avgOutlineWidth <= 3.0
             ? '#4CAF50' : '#FF9800';
           lines.push(`  <span style="color: ${widthColor};">Avg Width: ${stats.adaptive.avgOutlineWidth.toFixed(2)}px</span>`);
         }
-        
+
         if (stats.adaptive.overlapDetections !== undefined) {
-          const overlapPct = stats.renderedVoxels > 0 
+          const overlapPct = stats.renderedVoxels > 0
             ? ((stats.adaptive.overlapDetections / stats.renderedVoxels) * 100).toFixed(1)
             : '0.0';
           const overlapColor = stats.adaptive.overlapDetections > 0 ? '#FF9800' : '#4CAF50';
           lines.push(`  <span style="color: ${overlapColor};">Overlaps: ${stats.adaptive.overlapDetections} (${overlapPct}%)</span>`);
         }
-        
+
         if (stats.adaptive.zScaleAdjustments !== undefined && stats.adaptive.zScaleAdjustments > 0) {
           lines.push(`  Z-Scale Adj: ${stats.adaptive.zScaleAdjustments}`);
         }
-        
+
         lines.push('');
       }
 
@@ -637,7 +639,7 @@ export class PerformanceOverlay {
         const renderColor = stats.renderTimeMs <= 50 ? '#4CAF50' : stats.renderTimeMs <= 100 ? '#FF9800' : '#F44336';
         lines.push(`<div style="color: ${renderColor};">Render Time: ${stats.renderTimeMs.toFixed(1)}ms</div>`);
       }
-      
+
       if (stats.memoryUsageMB !== undefined) {
         const memColor = stats.memoryUsageMB <= 50 ? '#4CAF50' : stats.memoryUsageMB <= 100 ? '#FF9800' : '#F44336';
         lines.push(`<div style="color: ${memColor};">Memory: ${stats.memoryUsageMB.toFixed(1)}MB</div>`);

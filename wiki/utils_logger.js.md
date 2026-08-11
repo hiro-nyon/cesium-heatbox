@@ -1,10 +1,10 @@
+<!-- Generated from docs/api/utils_logger.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: utils/logger.js
 
 **日本語** | [English](#english)
 
 ## English
-
-See also: [Class: logger](logger)
 
 ```javascript
 /**
@@ -34,12 +34,12 @@ function getLogLevel() {
   if (typeof process !== 'undefined' && process.env && process.env.DEBUG === 'true') {
     return LOG_LEVELS.DEBUG;
   }
-  
+
   // NODE_ENVをチェック
   if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
     return LOG_LEVELS.WARN;
   }
-  
+
   // デフォルトは開発モード（全ログ出力）
   return LOG_LEVELS.DEBUG;
 }
@@ -128,8 +128,6 @@ export const info = Logger.info;
 
 ## 日本語
 
-関連: [loggerクラス](logger)
-
 ```javascript
 /**
  * Logging utility.
@@ -158,12 +156,12 @@ function getLogLevel() {
   if (typeof process !== 'undefined' && process.env && process.env.DEBUG === 'true') {
     return LOG_LEVELS.DEBUG;
   }
-  
+
   // NODE_ENVをチェック
   if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
     return LOG_LEVELS.WARN;
   }
-  
+
   // デフォルトは開発モード（全ログ出力）
   return LOG_LEVELS.DEBUG;
 }

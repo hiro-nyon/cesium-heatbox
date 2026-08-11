@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/global.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Global
 
 **日本語** | [English](#english)
@@ -78,6 +80,18 @@ Apply profile to options with user options taking priority
 |---|---|---|
 | profileName | string | Profile name / プロファイル名 |
 | userOptions | Object | User provided options / ユーザー提供オプション |
+
+#### buildDisplayVoxels(voxelData, grid, options, selectVoxels) → {Object}
+
+Build the list of voxels eligible for rendering.
+Occupied voxels always take priority over synthetic empty voxels.
+
+| Name | Type | Description |
+|---|---|---|
+| voxelData | Map | Occupied voxel data |
+| grid | Object | Grid dimensions |
+| options | Object | Renderer options |
+| selectVoxels | function | Occupied voxel selection callback |
 
 #### calculateDataRange(bounds) → {Object}
 
@@ -472,6 +486,18 @@ Auto Render Budgetをオプションに適用
 |---|---|---|
 | profileName | string | Profile name / プロファイル名 |
 | userOptions | Object | User provided options / ユーザー提供オプション |
+
+#### buildDisplayVoxels(voxelData, grid, options, selectVoxels) → {Object}
+
+Build the list of voxels eligible for rendering.
+Occupied voxels always take priority over synthetic empty voxels.
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| voxelData | Map | Occupied voxel data |
+| grid | Object | Grid dimensions |
+| options | Object | Renderer options |
+| selectVoxels | function | Occupied voxel selection callback |
 
 #### calculateDataRange(bounds) → {Object}
 

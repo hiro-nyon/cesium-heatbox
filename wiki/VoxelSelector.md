@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/VoxelSelector.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Class: VoxelSelector（VoxelSelectorクラス）
 
 **日本語** | [English](#english)

@@ -1,8 +1,10 @@
+<!-- Generated from docs/development-guide.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
 # Development Guide for Beginners (開発初心者向けガイド)
 
 [English](#english) | [日本語](#日本語)
 
-## English
+> **Current workflow / 現行ワークフロー:** This document retains some historical beginner-oriented explanations, but release and branch operations must follow [Development Environment Setup](Development-Setup) and the [Release Runbook](Release-Runbook). Do not push directly to `main`/`next` and do not run `npm publish` locally. / 本文には初心者向けの歴史的な説明が一部残っています。リリースとブランチ操作は現行ガイドに従い、`main` / `next` への直接pushとローカル `npm publish` は行わないでください。
 
 ## English
 
@@ -12,7 +14,7 @@
 - npm 8.0.0 or higher
 - Git
 
-**Target Audience**: Development beginners and those new to JavaScript/Node.js library development  
+**Target Audience**: Development beginners and those new to JavaScript/Node.js library development
 **Purpose**: Understand the development and release procedures for the cesium-heatbox project
 
 ### Table of Contents
@@ -65,9 +67,9 @@ git diff
 git add .
 git commit -m "commit message"
 
-# Sync with remote
-git pull origin main
-git push origin main
+# Sync a short-lived branch with the integration branch
+git pull origin next
+git push origin feature/new-feature
 
 # Branch operations
 git branch
@@ -111,9 +113,9 @@ npm version major  # 0.2.0 → 1.0.0
 #### Development Workflow
 
 **Daily Development Cycle:**
-1. Morning: `git pull origin main`, `npm install`, `npm run dev`
+1. Morning: update your short-lived branch from `next`, then run `npm install` and `npm run dev`
 2. Development: Edit code, `npm test`, `npm run lint`, `npm run build`
-3. Completion: `git add .`, `git commit -m "message"`, `git push origin main`
+3. Completion: commit, push the short-lived branch, and open a pull request against `next`
 
 **Feature Development Flow:**
 1. Specification review
@@ -140,7 +142,7 @@ npm run test:coverage # Coverage report
 **Build Commands:**
 ```bash
 npm run build        # Production build
-npm run build:dev    # Development build
+npm run build:esm    # ESM build only
 npm run build:watch  # Watch mode
 ```
 
@@ -153,26 +155,7 @@ npm run lint
 npm run build
 ```
 
-**Version Updates:**
-```bash
-# Alpha release
-npm version 0.1.0-alpha.1 --no-git-tag-version
-git add .
-git commit -m "chore: bump version to 0.1.0-alpha.1"
-git tag v0.1.0-alpha.1
-git push origin main --tags
-
-# Stable release
-npm version 0.1.0 --no-git-tag-version
-git tag v0.1.0
-git push origin main --tags
-```
-
-**NPM Publishing:**
-```bash
-npm publish --tag alpha  # Alpha release
-npm publish              # Stable release
-```
+**Publishing:** Releases are tag-driven through GitHub Actions. Prereleases are published under the npm `next` dist-tag and stable versions under `latest`. Do not run `npm publish` locally. Follow the [Release Runbook](Release-Runbook) for the exact version, branch-parity, validation, and tag steps.
 
 #### Troubleshooting
 
@@ -186,7 +169,7 @@ For detailed solutions, see the Japanese section below.
 
 ## 日本語
 
-**対象**: 開発初心者・JavaScript/Node.jsライブラリ開発が初めての方  
+**対象**: 開発初心者・JavaScript/Node.jsライブラリ開発が初めての方
 **目的**: cesium-heatboxプロジェクトの開発・リリース手順を理解する
 
 ## 目次
@@ -291,11 +274,11 @@ git commit -m "feat: add data source selection functionality
 
 #### 3. リモートリポジトリとの同期
 ```bash
-# リモートから最新版を取得
-git pull origin main
+# next の最新状態を取得
+git pull origin next
 
-# ローカルの変更をリモートに送信
-git push origin main
+# 短期作業ブランチを送信し、GitHubで next 向けPRを作成
+git push origin feature/data-source-selection
 
 # タグをプッシュ
 git push origin --tags
@@ -353,7 +336,8 @@ Closes #123
   "name": "cesium-heatbox",           // パッケージ名
   "version": "0.1.0",                // バージョン
   "description": "3D heatmap library", // 説明
-  "main": "dist/cesium-heatbox.js",  // メインファイル
+  "main": "dist/cesium-heatbox.cjs", // CommonJSメインファイル
+  "module": "dist/cesium-heatbox.min.mjs",
   "scripts": {                        // 実行可能コマンド
     "dev": "webpack serve --mode development",
     "build": "webpack --mode production",
@@ -477,8 +461,8 @@ git push origin :v0.1.0-alpha.1 # リモート
 
 #### 朝の開始時
 ```bash
-# 最新版を取得
-git pull origin main
+# next を基準に作業ブランチを更新
+git pull origin next
 
 # 依存関係を更新（必要に応じて）
 npm install
@@ -511,9 +495,7 @@ npm run build
 git add .
 git commit -m "feat: add data source selection functionality"
 
-# リモートにプッシュ
-git push origin main
-# または
+# 作業ブランチをプッシュし、next 向けPRを作成
 git push origin feature/data-source-selection
 ```
 
@@ -529,31 +511,17 @@ git push origin feature/data-source-selection
 
 ### 3. ブランチ戦略（初心者向け）
 
-#### シンプルな戦略
-```bash
-# メインブランチで直接作業
-git checkout main
-git pull origin main
-# 開発作業
-git add .
-git commit -m "message"
-git push origin main
-```
-
 #### 機能別ブランチ戦略
 ```bash
-# 機能開発用ブランチ作成
+# next から機能開発用ブランチを作成
+git checkout next
+git pull origin next
 git checkout -b feature/new-feature
 # 開発作業
 git add .
 git commit -m "message"
 git push origin feature/new-feature
-
-# 完了後、メインブランチに統合
-git checkout main
-git merge feature/new-feature
-git push origin main
-git branch -d feature/new-feature
+# GitHubで base=next のPull Requestを作成
 ```
 
 ---
@@ -621,8 +589,8 @@ npm test -- VoxelGrid.test.js
 
 #### ビルドの実行
 ```bash
-# 開発版ビルド
-npm run build:dev
+# ESM形式のみビルド
+npm run build:esm
 
 # 本番版ビルド（最適化あり）
 npm run build
@@ -645,10 +613,10 @@ ls -la dist/
 du -h dist/*
 
 # 生成されたファイル
-# - cesium-heatbox.js      (開発版)
-# - cesium-heatbox.min.js  (本番版・最適化済み)
-# - cesium-heatbox.umd.js  (UMD版)
-# - cesium-heatbox.d.ts    (TypeScript型定義)
+# - cesium-heatbox.min.mjs  (ESM本番版・最適化済み)
+# - cesium-heatbox.cjs     (CommonJS本番版)
+# - cesium-heatbox.umd.min.js (UMD本番版)
+# 型定義は types/index.d.* に生成
 ```
 
 ---
@@ -681,70 +649,14 @@ npm run type-check
 # - package.json: バージョン情報を更新
 ```
 
-### 2. バージョン更新とタグ付け
+### 2. バージョン更新・タグ・npm公開
 
-#### Alpha版リリース（開発初期）
-```bash
-# バージョンを0.1.0-alpha.1に更新
-npm version 0.1.0-alpha.1 --no-git-tag-version
+リリースはGitHub Actionsのタグ駆動です。プレリリースはnpmの `next`、安定版は `latest` dist-tagに公開されます。ローカルで `npm publish` は実行しません。バージョン更新、`next` / `main` の同一コミット確認、タグ付けの正確な手順は[リリースランブック](Release-Runbook)に従ってください。
 
-# 手動でタグを作成
-git add .
-git commit -m "chore: bump version to 0.1.0-alpha.1"
-git tag v0.1.0-alpha.1
-
-# GitHubにプッシュ
-git push origin main
-git push origin v0.1.0-alpha.1
-```
-
-#### Beta版リリース（機能完成後）
-```bash
-# バージョンを0.1.0-beta.1に更新
-npm version 0.1.0-beta.1 --no-git-tag-version
-
-# タグを作成してプッシュ
-git add .
-git commit -m "chore: bump version to 0.1.0-beta.1"
-git tag v0.1.0-beta.1
-git push origin main
-git push origin v0.1.0-beta.1
-```
-
-#### 正式リリース（安定版）
-```bash
-# バージョンを0.1.0に更新
-npm version 0.1.0 --no-git-tag-version
-
-# タグを作成してプッシュ
-git add .
-git commit -m "chore: release v0.1.0"
-git tag v0.1.0
-git push origin main
-git push origin v0.1.0
-```
-
-### 3. NPMパッケージの公開
-
-#### 公開前の確認
+#### 公開前のローカル確認
 ```bash
 # パッケージ内容を確認
 npm pack --dry-run
-
-# 公開されるファイルを確認
-npm publish --dry-run
-```
-
-#### 実際の公開
-```bash
-# Alpha版として公開
-npm publish --tag alpha
-
-# Beta版として公開
-npm publish --tag beta
-
-# 正式版として公開
-npm publish
 ```
 
 #### 公開後の確認
@@ -753,8 +665,7 @@ npm publish
 npm info cesium-heatbox
 
 # インストールテスト
-npm install cesium-heatbox@alpha
-npm install cesium-heatbox@beta
+npm install cesium-heatbox@next
 npm install cesium-heatbox
 ```
 
@@ -866,8 +777,8 @@ error: failed to push some refs to 'origin'
 
 **解決方法**:
 ```bash
-# リモートの最新版を取得
-git pull origin main
+# next の最新版を取得して作業ブランチへ反映
+git pull origin next
 
 # コンフリクトがある場合は解決
 git status
@@ -875,8 +786,8 @@ git status
 git add .
 git commit -m "resolve conflicts"
 
-# 再度プッシュ
-git push origin main
+# 再度作業ブランチをプッシュし、next 向けPRを更新
+git push origin feature/your-branch
 ```
 
 #### 5. バージョンタグが重複する
@@ -965,3 +876,5 @@ npm run dev
 - 作成日: 2025年7月9日
 - 対象バージョン: cesium-heatbox v0.1.0-alpha.1
 - 次回更新: 新機能追加時
+
+> 歴史的メモ: このガイドの本文はv0.1.0-alpha.1時点の開発手順を記録しています。現在の開発環境は[開発環境セットアップ](Development-Setup)、公開APIは[APIリファレンス](API)、リリース手順は[リリースランブック](Release-Runbook)を参照してください。

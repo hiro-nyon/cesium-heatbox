@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/ZFXYConverter.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Class: ZFXYConverter（ZFXYConverterクラス）
 
 **日本語** | [English](#english)

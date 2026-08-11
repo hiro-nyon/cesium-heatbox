@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/VoxelGrid.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Class: VoxelGrid（VoxelGridクラス）
 
 **日本語** | [English](#english)

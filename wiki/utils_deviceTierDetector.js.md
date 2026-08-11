@@ -1,10 +1,10 @@
+<!-- Generated from docs/api/utils_deviceTierDetector.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: utils/deviceTierDetector.js
 
 **日本語** | [English](#english)
 
 ## English
-
-See also: [Class: deviceTierDetector](deviceTierDetector)
 
 ```javascript
 /**
@@ -35,11 +35,11 @@ export function detectDeviceTier() {
   try {
     const webglInfo = getWebGLInfo();
     const deviceInfo = getDeviceInfo();
-    
+
     // ティア判定ロジック
     let tier = 'mid'; // デフォルトは中ティア
     let detectionMethod = 'fallback';
-    
+
     // Primary: deviceMemory利用可能時（Chrome系のみ）
     if (deviceInfo.deviceMemory !== null) {
       if (deviceInfo.deviceMemory <= 4) {
@@ -50,13 +50,13 @@ export function detectDeviceTier() {
         tier = 'high';
       }
       detectionMethod = 'deviceMemory';
-    } 
+    }
     // Fallback: hardwareConcurrency + 画面解像度
     else if (deviceInfo.hardwareConcurrency !== null) {
       const baseScore = deviceInfo.hardwareConcurrency;
       const resolutionFactor = Math.min(deviceInfo.screenPixels / 2073600, 2.0); // 1920x1080 = 2073600を基準
       const adjustedScore = baseScore * resolutionFactor;
-      
+
       if (adjustedScore <= 4) {
         tier = 'low';
       } else if (adjustedScore <= 8) {
@@ -66,13 +66,13 @@ export function detectDeviceTier() {
       }
       detectionMethod = 'hardwareConcurrency+resolution';
     }
-    
+
     // WebGL制限による追加調整
     if (webglInfo.maxTextureSize < 4096 || !webglInfo.webgl2) {
       tier = tier === 'high' ? 'mid' : 'low';
       detectionMethod += '+webglLimits';
     }
-    
+
     // ティアに応じた上限値を計算
     const range = DEVICE_TIER_RANGES[tier];
     let maxRenderVoxels = Math.min(
@@ -91,9 +91,9 @@ export function detectDeviceTier() {
     } catch (_) {
       // Ignore UA parsing errors - fallback to computed values
     }
-    
+
     Logger.debug(`Device tier detected: ${tier} (${detectionMethod}), maxRenderVoxels: ${maxRenderVoxels}`);
-    
+
     return {
       tier,
       maxRenderVoxels,
@@ -101,7 +101,7 @@ export function detectDeviceTier() {
       deviceInfo,
       webglInfo
     };
-    
+
   } catch (error) {
     Logger.warn('Device tier detection failed, using default mid tier:', error);
     return {
@@ -123,7 +123,7 @@ function getWebGLInfo() {
   try {
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-    
+
     if (!gl) {
       return {
         webgl2: false,
@@ -131,16 +131,16 @@ function getWebGLInfo() {
         maxRenderbufferSize: 0
       };
     }
-    
+
     const info = {
       webgl2: !!canvas.getContext('webgl2'),
       maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
       maxRenderbufferSize: gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)
     };
-    
+
     // クリーンアップ
     canvas.remove();
-    
+
     return info;
   } catch (error) {
     Logger.warn('WebGL info detection failed:', error);
@@ -166,7 +166,7 @@ function getDeviceInfo() {
       screenPixels: screen.width * screen.height * Math.pow(window.devicePixelRatio || 1, 2),
       userAgent: navigator.userAgent
     };
-    
+
     return info;
   } catch (error) {
     Logger.warn('Device info detection failed:', error);
@@ -190,9 +190,9 @@ export function applyAutoRenderBudget(options) {
   if (options.renderBudgetMode !== 'auto' && options.maxRenderVoxels !== 'auto') {
     return options; // 手動モードの場合は変更なし
   }
-  
+
   const detection = detectDeviceTier();
-  
+
   const updatedOptions = {
     ...options,
     maxRenderVoxels: detection.maxRenderVoxels,
@@ -203,9 +203,9 @@ export function applyAutoRenderBudget(options) {
       autoMaxRenderVoxels: detection.maxRenderVoxels
     }
   };
-  
+
   Logger.info(`Auto Render Budget applied: ${detection.tier} tier, maxRenderVoxels: ${detection.maxRenderVoxels}`);
-  
+
   return updatedOptions;
 }
 
@@ -213,8 +213,6 @@ export function applyAutoRenderBudget(options) {
 
 ## 日本語
 
-関連: [deviceTierDetectorクラス](deviceTierDetector)
-
 ```javascript
 /**
  * Device tier detection for Auto Render Budget.
@@ -244,11 +242,11 @@ export function detectDeviceTier() {
   try {
     const webglInfo = getWebGLInfo();
     const deviceInfo = getDeviceInfo();
-    
+
     // ティア判定ロジック
     let tier = 'mid'; // デフォルトは中ティア
     let detectionMethod = 'fallback';
-    
+
     // Primary: deviceMemory利用可能時（Chrome系のみ）
     if (deviceInfo.deviceMemory !== null) {
       if (deviceInfo.deviceMemory <= 4) {
@@ -259,13 +257,13 @@ export function detectDeviceTier() {
         tier = 'high';
       }
       detectionMethod = 'deviceMemory';
-    } 
+    }
     // Fallback: hardwareConcurrency + 画面解像度
     else if (deviceInfo.hardwareConcurrency !== null) {
       const baseScore = deviceInfo.hardwareConcurrency;
       const resolutionFactor = Math.min(deviceInfo.screenPixels / 2073600, 2.0); // 1920x1080 = 2073600を基準
       const adjustedScore = baseScore * resolutionFactor;
-      
+
       if (adjustedScore <= 4) {
         tier = 'low';
       } else if (adjustedScore <= 8) {
@@ -275,13 +273,13 @@ export function detectDeviceTier() {
       }
       detectionMethod = 'hardwareConcurrency+resolution';
     }
-    
+
     // WebGL制限による追加調整
     if (webglInfo.maxTextureSize < 4096 || !webglInfo.webgl2) {
       tier = tier === 'high' ? 'mid' : 'low';
       detectionMethod += '+webglLimits';
     }
-    
+
     // ティアに応じた上限値を計算
     const range = DEVICE_TIER_RANGES[tier];
     let maxRenderVoxels = Math.min(
@@ -300,9 +298,9 @@ export function detectDeviceTier() {
     } catch (_) {
       // Ignore UA parsing errors - fallback to computed values
     }
-    
+
     Logger.debug(`Device tier detected: ${tier} (${detectionMethod}), maxRenderVoxels: ${maxRenderVoxels}`);
-    
+
     return {
       tier,
       maxRenderVoxels,
@@ -310,7 +308,7 @@ export function detectDeviceTier() {
       deviceInfo,
       webglInfo
     };
-    
+
   } catch (error) {
     Logger.warn('Device tier detection failed, using default mid tier:', error);
     return {
@@ -332,7 +330,7 @@ function getWebGLInfo() {
   try {
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-    
+
     if (!gl) {
       return {
         webgl2: false,
@@ -340,16 +338,16 @@ function getWebGLInfo() {
         maxRenderbufferSize: 0
       };
     }
-    
+
     const info = {
       webgl2: !!canvas.getContext('webgl2'),
       maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
       maxRenderbufferSize: gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)
     };
-    
+
     // クリーンアップ
     canvas.remove();
-    
+
     return info;
   } catch (error) {
     Logger.warn('WebGL info detection failed:', error);
@@ -375,7 +373,7 @@ function getDeviceInfo() {
       screenPixels: screen.width * screen.height * Math.pow(window.devicePixelRatio || 1, 2),
       userAgent: navigator.userAgent
     };
-    
+
     return info;
   } catch (error) {
     Logger.warn('Device info detection failed:', error);
@@ -399,9 +397,9 @@ export function applyAutoRenderBudget(options) {
   if (options.renderBudgetMode !== 'auto' && options.maxRenderVoxels !== 'auto') {
     return options; // 手動モードの場合は変更なし
   }
-  
+
   const detection = detectDeviceTier();
-  
+
   const updatedOptions = {
     ...options,
     maxRenderVoxels: detection.maxRenderVoxels,
@@ -412,9 +410,9 @@ export function applyAutoRenderBudget(options) {
       autoMaxRenderVoxels: detection.maxRenderVoxels
     }
   };
-  
+
   Logger.info(`Auto Render Budget applied: ${detection.tier} tier, maxRenderVoxels: ${detection.maxRenderVoxels}`);
-  
+
   return updatedOptions;
 }
 

@@ -1,3 +1,5 @@
+<!-- Generated from docs/wiki-maintenance.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
 # GitHub Wiki Automation and Maintenance Procedures (GitHub Wiki 自動化・保守手順)
 
 [English](#english) | [日本語](#日本語)
@@ -54,7 +56,7 @@ cesium-heatbox/
 #### 1. Personal Access Token Setup (Recommended)
 
 1. GitHub → Settings → Developer settings → Personal access tokens
-2. "Generate new token (classic)" 
+2. "Generate new token (classic)"
 3. Permission selection:
    - `repo` (full access)
    - Or minimum permissions: `public_repo` + Wiki write permissions
@@ -154,7 +156,7 @@ npm run wiki:update
 #### Regular Inspection (Monthly)
 
 - [ ] Check Wiki content consistency
-- [ ] Check for broken links  
+- [ ] Check for broken links
 - [ ] Check GitHub Actions execution history
 - [ ] Check Personal Access Token expiration
 
@@ -223,7 +225,7 @@ cesium-heatbox/
 ### 1. Personal Access Token設定（推奨）
 
 1. GitHub → Settings → Developer settings → Personal access tokens
-2. "Generate new token (classic)" 
+2. "Generate new token (classic)"
 3. 権限選択:
    - `repo` （フルアクセス）
    - または最小権限: `public_repo` + Wiki write権限
@@ -323,7 +325,7 @@ npm run wiki:update
 ### 定期点検（月次）
 
 - [ ] Wiki内容の整合性確認
-- [ ] リンク切れチェック  
+- [ ] リンク切れチェック
 - [ ] GitHub Actions実行履歴確認
 - [ ] Personal Access Token有効期限確認
 

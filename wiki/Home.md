@@ -1,3 +1,5 @@
+<!-- Generated from README.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
 # CesiumJS Heatbox
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -5,7 +7,7 @@
 [![Version](https://img.shields.io/github/package-json/v/hiro-nyon/cesium-heatbox?label=version)](https://github.com/hiro-nyon/cesium-heatbox/blob/main/package.json)
 [![npm](https://img.shields.io/npm/v/cesium-heatbox)](https://www.npmjs.com/package/cesium-heatbox)
 
-English | [日本語](README.ja.md)
+English | [日本語](Home-ja)
 
 A 3D voxel-based heatmap visualization library for [CesiumJS](https://cesium.com/cesiumjs/). Build volumetric heatmaps directly from existing Cesium Entities — no server-side processing or pre-tiling required.
 
@@ -54,7 +56,6 @@ npm run build
 ## Compatibility
 
 - Minimum supported Cesium: `^1.120.0`
-- Latest verified Cesium: latest version that passes the CI compatibility smoke job
 - CI validates both `cesium@^1.120.0` and `cesium@latest`
 
 ## Quick Start
@@ -63,7 +64,7 @@ npm run build
 import { Heatbox } from 'cesium-heatbox';
 
 const heatbox = new Heatbox(viewer, {
-  voxelSize: { x: 1000, y: 1000, z: 100 },
+  voxelSize: 100,
   opacity: 0.8
 });
 
@@ -76,6 +77,15 @@ await heatbox.fitView(null, { paddingPercent: 0.1, pitchDegrees: -35 });
 // Inspect results
 console.log(heatbox.getStatistics());
 ```
+
+### Advanced runtime controls
+
+The v0.1.12 runtime controls remain available for compatibility:
+
+- `fitViewOptions.headingDegrees` and `fitViewOptions.pitchDegrees` control camera orientation.
+- `outlineRenderMode` and `emulationScope` replace the deprecated `outlineEmulation` option.
+- `performanceOverlay` can be changed later with `togglePerformanceOverlay()` or `setPerformanceOverlayEnabled()`.
+- `getEffectiveOptions()` returns the normalized configuration currently in use.
 
 ## Key Capabilities
 
@@ -115,7 +125,7 @@ const legendEl = heatbox.createLegend();
 - Statistics include `domain`, `quantiles`, `jenksBreaks`, `ckmeansClusters`, `histogram`, and `breaks`.
 - Interactive demo: `examples/advanced/classification-demo.html`
 
-See [API Reference — Classification](docs/API.md) for full details.
+See [API Reference — Classification](API) for full details.
 
 </details>
 
@@ -146,9 +156,9 @@ const heatbox = new Heatbox(viewer, {
 - `dataSource(currentTime, context)` can lazily provide additional temporal slices
 - `useWorker: true` offloads interpolation and temporal stats preprocessing when workers are available
 - Demos cover baseline playback, global/per-time comparison, scenario simulation, and advanced interpolation/lazy-loading flows
-- Demos: `examples/temporal/`
+- Demos: `examples/temporal/README.md`
 
-See [API Reference — Temporal](docs/API.md) for full details.
+See [API Reference — Temporal](API) for full details.
 
 </details>
 
@@ -177,7 +187,7 @@ const heatbox = new Heatbox(viewer, {
 **Option 2: Official Ouranos library (high accuracy)**
 
 ```bash
-npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript#5742889f20645fb0451c4870e5c54b5d34ab5c31 --no-save
 npx cesium-heatbox-install-ouranos
 ```
 
@@ -194,7 +204,7 @@ npx cesium-heatbox-install-ouranos
 
 ```javascript
 const stats = heatbox.getStatistics();
-console.log(stats.spatialIdProvider); // "ouranos-gex" or "fallback"
+console.log(stats.spatialId.provider); // "ouranos-gex" with the official provider; null when using fallback
 ```
 
 #### Troubleshooting
@@ -207,7 +217,7 @@ console.log(stats.spatialIdProvider); // "ouranos-gex" or "fallback"
 - Operates within ±85.0511° latitude (Web Mercator limit)
 - Antimeridian crossing: planned for a future release
 
-See [Spatial ID Examples](examples/spatial-id/) for details.
+See [Spatial ID Examples](https://github.com/hiro-nyon/cesium-heatbox/blob/main/examples/spatial-id/README.md) for details.
 
 </details>
 
@@ -254,7 +264,7 @@ aggregation: {
 - Memory: ~8–16 bytes per unique layer per voxel
 - Processing: ≤ +10% overhead when enabled; zero overhead when disabled
 
-See [Aggregation Examples](examples/aggregation/) for details.
+See [Aggregation Examples](https://github.com/hiro-nyon/cesium-heatbox/blob/main/examples/aggregation/README.md) for details.
 
 </details>
 
@@ -289,35 +299,44 @@ See [Aggregation Examples](examples/aggregation/) for details.
 | `Heatbox.listProfiles()` | List available configuration profiles (static) |
 | `Heatbox.getProfileDetails(name)` | Get profile configuration details (static) |
 
-See [API Reference](docs/API.md) for complete options and method documentation.
+See [API Reference](API) for complete options and method documentation.
 
 ## Examples
 
 | Category | Description | Location |
 |----------|-------------|----------|
-| Basic | Getting started | `examples/basic/` |
-| Classification | Color scheme demos | `examples/advanced/` |
-| Temporal | Time-dependent data | `examples/temporal/` |
-| Spatial ID | Tile-grid mode | `examples/spatial-id/` |
-| Aggregation | Layer breakdown | `examples/aggregation/` |
-| Rendering | Wireframe, height-based | `examples/rendering/` |
-| Performance | Adaptive, overlay | `examples/observability/` |
+| Basic | Getting started | `examples/basic/index.html` |
+| Classification | Color scheme demos | `examples/advanced/README.md` |
+| Temporal | Time-dependent data | `examples/temporal/README.md` |
+| Spatial ID | Tile-grid mode | `examples/spatial-id/README.md` |
+| Aggregation | Layer breakdown | `examples/aggregation/README.md` |
+| Rendering | Wireframe, height-based | `examples/rendering/README.md` |
+| Performance | Adaptive, overlay | `examples/observability/README.md` |
 
 ## Documentation
 
-- [API Reference](docs/API.md)
-- [Quick Start](docs/quick-start.md)
-- [Getting Started](docs/getting-started.md)
-- [Migration Guide](MIGRATION.md)
-- [Development Guide](docs/development-guide.md)
-- [Contributing](CONTRIBUTING.md)
-- [Changelog](CHANGELOG.md)
-- [Roadmap](ROADMAP.md)
+**Start using the library**
+
+- [Quick Start](Quick-Start) — install and render your first heatbox in 10–15 minutes
+- [API Reference](API) — complete options, methods, and return types
+- [Migration Guide](https://github.com/hiro-nyon/cesium-heatbox/blob/main/MIGRATION.md) — upgrade existing integrations
+
+**Explore features**
+
+- [Documentation Index](https://github.com/hiro-nyon/cesium-heatbox/blob/main/docs/README.md) — guides grouped by audience and task
+- [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki) — rendering strategies, performance, Spatial ID, pitfalls, and glossary
+- [Roadmap](https://github.com/hiro-nyon/cesium-heatbox/blob/main/ROADMAP.md) and [Changelog](Release-Notes)
+
+**Contribute and develop**
+
+- [Development Environment Setup](Development-Setup)
+- [Development Guide](Development-Guide)
+- [Contributing](https://github.com/hiro-nyon/cesium-heatbox/blob/main/CONTRIBUTING.md)
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](https://github.com/hiro-nyon/cesium-heatbox/blob/main/LICENSE) for details.
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome! See [CONTRIBUTING.md](https://github.com/hiro-nyon/cesium-heatbox/blob/main/CONTRIBUTING.md) for guidelines.

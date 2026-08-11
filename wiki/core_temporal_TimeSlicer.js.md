@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/core_temporal_TimeSlicer.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: core/temporal/TimeSlicer.js
 
 **日本語** | [English](#english)
@@ -9,9 +11,15 @@ See also: [Class: TimeSlicer](TimeSlicer)
 ```javascript
 import * as Cesium from 'cesium';
 import { DataProcessor } from '../DataProcessor.js';
+import { CoordinateTransformer } from '../CoordinateTransformer.js';
+import { VoxelGrid } from '../VoxelGrid.js';
 import { Logger } from '../../utils/logger.js';
 import { TemporalWorkerBridge } from './TemporalWorkerBridge.js';
-import { calculateTemporalStats, interpolateTemporalData } from './temporalWorkerTasks.js';
+import {
+    calculateTemporalStats,
+    calculateTemporalValueStats,
+    interpolateTemporalData
+} from './temporalWorkerTasks.js';
 
 /**
  * TimeSlicer class for managing and retrieving time-series data.
@@ -40,7 +48,7 @@ export class TimeSlicer {
     /**
      * Normalize and sort raw data.
      * データの正規化とソートを行います。
-     * @param {Array} rawData 
+     * @param {Array} rawData
      * @returns {Array} Normalized entries
      * @private
      */
@@ -101,7 +109,7 @@ export class TimeSlicer {
     /**
      * Convert various time formats to JulianDate.
      * 様々な時刻形式を JulianDate に変換します。
-     * @param {Cesium.JulianDate|string|Date|number} value 
+     * @param {Cesium.JulianDate|string|Date|number} value
      * @returns {Cesium.JulianDate}
      * @private
      */
@@ -122,7 +130,7 @@ export class TimeSlicer {
     /**
      * Validate that there are no overlaps between entries.
      * エントリー間に重複がないことを検証します。
-     * @param {Array} entries 
+     * @param {Array} entries
      * @private
      */
     _validateNoOverlap(entries) {
@@ -142,7 +150,7 @@ export class TimeSlicer {
     /**
      * Resolve overlaps by keeping the earlier entry and trimming later entries.
      * 早いエントリーを優先し、後続エントリーをトリミングまたは破棄します。
-     * @param {Array} entries 
+     * @param {Array} entries
      * @returns {Array}
      * @private
      */
@@ -177,7 +185,7 @@ export class TimeSlicer {
     /**
      * Resolve overlaps by prioritizing later entries.
      * 遅いエントリーを優先し、手前のエントリー終端を調整します。
-     * @param {Array} entries 
+     * @param {Array} entries
      * @returns {Array}
      * @private
      */
@@ -218,7 +226,7 @@ export class TimeSlicer {
     /**
    * Get entry for the current time.
    * 現在時刻に対応するエントリーを取得します。
-   * @param {Cesium.JulianDate} currentTime 
+   * @param {Cesium.JulianDate} currentTime
    * @returns {Object|null} Entry or null if not found
    */
     getEntry(currentTime) {
@@ -327,8 +335,8 @@ export class TimeSlicer {
     /**
      * Check if time is within entry range.
      * 時刻がエントリーの範囲内かチェックします。
-     * @param {Cesium.JulianDate} time 
-     * @param {Object} entry 
+     * @param {Cesium.JulianDate} time
+     * @param {Object} entry
      * @returns {boolean}
      * @private
      */
@@ -342,7 +350,7 @@ export class TimeSlicer {
     /**
      * Binary search for the entry containing the time.
      * 二分探索で時刻を含むエントリーを探します。
-     * @param {Cesium.JulianDate} time 
+     * @param {Cesium.JulianDate} time
      * @returns {number} Index or -1 if not found
      * @private
      */
@@ -549,6 +557,59 @@ export class TimeSlicer {
         return stats;
     }
 
+    /**
+     * Calculate the global classification domain from rendered voxel counts.
+     * 入力プロパティではなく、各時間断面で実際に生成されるボクセル件数を集計します。
+     * @param {Object} heatboxOptions - Normalized Heatbox options
+     * @returns {Promise<Object|null>} Global voxel statistics
+     */
+    async calculateGlobalVoxelStats(heatboxOptions = {}) {
+        const cacheKey = JSON.stringify({
+            mode: 'voxel-counts',
+            voxelSize: heatboxOptions.voxelSize,
+            spatialId: heatboxOptions.spatialId || null,
+            classification: heatboxOptions.classification || null
+        });
+        if (this._globalStatsCache[cacheKey]) {
+            return this._globalStatsCache[cacheKey];
+        }
+
+        const counts = [];
+        for (const entry of this._entries) {
+            if (!Array.isArray(entry.data) || entry.data.length === 0) continue;
+            try {
+                const bounds = CoordinateTransformer.calculateBounds(entry.data);
+                const voxelSize = Number.isFinite(heatboxOptions.voxelSize) && heatboxOptions.voxelSize > 0
+                    ? heatboxOptions.voxelSize
+                    : 20;
+                const grid = VoxelGrid.createGrid(bounds, voxelSize);
+                const voxelData = await DataProcessor.classifyEntitiesIntoVoxels(
+                    entry.data,
+                    bounds,
+                    grid,
+                    { ...heatboxOptions, voxelSize }
+                );
+                for (const voxel of voxelData.values()) counts.push(voxel.count);
+            } catch (error) {
+                Logger.warn('Temporal global voxel classification skipped an invalid entry:', error);
+            }
+        }
+
+        const stats = calculateTemporalValueStats(counts);
+        if (!stats) return null;
+
+        if (heatboxOptions.classification?.enabled) {
+            stats.classification = DataProcessor._buildClassificationStats(
+                counts,
+                heatboxOptions.classification,
+                stats.minCount,
+                stats.maxCount
+            );
+        }
+        this._globalStatsCache[cacheKey] = stats;
+        return stats;
+    }
+
     async calculateGlobalStatsAsync(valueProperty = 'weight', classificationOptions = null) {
         const cacheKey = JSON.stringify({
             valueProperty,
@@ -620,9 +681,15 @@ export class TimeSlicer {
 ```javascript
 import * as Cesium from 'cesium';
 import { DataProcessor } from '../DataProcessor.js';
+import { CoordinateTransformer } from '../CoordinateTransformer.js';
+import { VoxelGrid } from '../VoxelGrid.js';
 import { Logger } from '../../utils/logger.js';
 import { TemporalWorkerBridge } from './TemporalWorkerBridge.js';
-import { calculateTemporalStats, interpolateTemporalData } from './temporalWorkerTasks.js';
+import {
+    calculateTemporalStats,
+    calculateTemporalValueStats,
+    interpolateTemporalData
+} from './temporalWorkerTasks.js';
 
 /**
  * TimeSlicer class for managing and retrieving time-series data.
@@ -651,7 +718,7 @@ export class TimeSlicer {
     /**
      * Normalize and sort raw data.
      * データの正規化とソートを行います。
-     * @param {Array} rawData 
+     * @param {Array} rawData
      * @returns {Array} Normalized entries
      * @private
      */
@@ -712,7 +779,7 @@ export class TimeSlicer {
     /**
      * Convert various time formats to JulianDate.
      * 様々な時刻形式を JulianDate に変換します。
-     * @param {Cesium.JulianDate|string|Date|number} value 
+     * @param {Cesium.JulianDate|string|Date|number} value
      * @returns {Cesium.JulianDate}
      * @private
      */
@@ -733,7 +800,7 @@ export class TimeSlicer {
     /**
      * Validate that there are no overlaps between entries.
      * エントリー間に重複がないことを検証します。
-     * @param {Array} entries 
+     * @param {Array} entries
      * @private
      */
     _validateNoOverlap(entries) {
@@ -753,7 +820,7 @@ export class TimeSlicer {
     /**
      * Resolve overlaps by keeping the earlier entry and trimming later entries.
      * 早いエントリーを優先し、後続エントリーをトリミングまたは破棄します。
-     * @param {Array} entries 
+     * @param {Array} entries
      * @returns {Array}
      * @private
      */
@@ -788,7 +855,7 @@ export class TimeSlicer {
     /**
      * Resolve overlaps by prioritizing later entries.
      * 遅いエントリーを優先し、手前のエントリー終端を調整します。
-     * @param {Array} entries 
+     * @param {Array} entries
      * @returns {Array}
      * @private
      */
@@ -829,7 +896,7 @@ export class TimeSlicer {
     /**
    * Get entry for the current time.
    * 現在時刻に対応するエントリーを取得します。
-   * @param {Cesium.JulianDate} currentTime 
+   * @param {Cesium.JulianDate} currentTime
    * @returns {Object|null} Entry or null if not found
    */
     getEntry(currentTime) {
@@ -938,8 +1005,8 @@ export class TimeSlicer {
     /**
      * Check if time is within entry range.
      * 時刻がエントリーの範囲内かチェックします。
-     * @param {Cesium.JulianDate} time 
-     * @param {Object} entry 
+     * @param {Cesium.JulianDate} time
+     * @param {Object} entry
      * @returns {boolean}
      * @private
      */
@@ -953,7 +1020,7 @@ export class TimeSlicer {
     /**
      * Binary search for the entry containing the time.
      * 二分探索で時刻を含むエントリーを探します。
-     * @param {Cesium.JulianDate} time 
+     * @param {Cesium.JulianDate} time
      * @returns {number} Index or -1 if not found
      * @private
      */
@@ -1156,6 +1223,59 @@ export class TimeSlicer {
             );
         }
 
+        this._globalStatsCache[cacheKey] = stats;
+        return stats;
+    }
+
+    /**
+     * Calculate the global classification domain from rendered voxel counts.
+     * 入力プロパティではなく、各時間断面で実際に生成されるボクセル件数を集計します。
+     * @param {Object} heatboxOptions - Normalized Heatbox options
+     * @returns {Promise<Object|null>} Global voxel statistics
+     */
+    async calculateGlobalVoxelStats(heatboxOptions = {}) {
+        const cacheKey = JSON.stringify({
+            mode: 'voxel-counts',
+            voxelSize: heatboxOptions.voxelSize,
+            spatialId: heatboxOptions.spatialId || null,
+            classification: heatboxOptions.classification || null
+        });
+        if (this._globalStatsCache[cacheKey]) {
+            return this._globalStatsCache[cacheKey];
+        }
+
+        const counts = [];
+        for (const entry of this._entries) {
+            if (!Array.isArray(entry.data) || entry.data.length === 0) continue;
+            try {
+                const bounds = CoordinateTransformer.calculateBounds(entry.data);
+                const voxelSize = Number.isFinite(heatboxOptions.voxelSize) && heatboxOptions.voxelSize > 0
+                    ? heatboxOptions.voxelSize
+                    : 20;
+                const grid = VoxelGrid.createGrid(bounds, voxelSize);
+                const voxelData = await DataProcessor.classifyEntitiesIntoVoxels(
+                    entry.data,
+                    bounds,
+                    grid,
+                    { ...heatboxOptions, voxelSize }
+                );
+                for (const voxel of voxelData.values()) counts.push(voxel.count);
+            } catch (error) {
+                Logger.warn('Temporal global voxel classification skipped an invalid entry:', error);
+            }
+        }
+
+        const stats = calculateTemporalValueStats(counts);
+        if (!stats) return null;
+
+        if (heatboxOptions.classification?.enabled) {
+            stats.classification = DataProcessor._buildClassificationStats(
+                counts,
+                heatboxOptions.classification,
+                stats.minCount,
+                stats.maxCount
+            );
+        }
         this._globalStatsCache[cacheKey] = stats;
         return stats;
     }

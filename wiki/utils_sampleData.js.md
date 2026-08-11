@@ -1,10 +1,10 @@
+<!-- Generated from docs/api/utils_sampleData.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: utils/sampleData.js
 
 **日本語** | [English](#english)
 
 ## English
-
-See also: [Class: sampleData](sampleData)
 
 ```javascript
 /**
@@ -25,22 +25,22 @@ export function generateTestEntities(viewer, bounds, count = 500) {
   if (!viewer) {
     throw new Error('viewer is required');
   }
-  
+
   if (!bounds || !('minLon' in bounds) || !('maxLon' in bounds) || !('minLat' in bounds) || !('maxLat' in bounds)) {
     throw new Error('bounds must include minLon, maxLon, minLat, maxLat');
   }
-  
+
   const entities = [];
-  
+
   // デフォルト高度範囲
   const minAlt = bounds.minAlt || 0;
   const maxAlt = bounds.maxAlt || 100;
-  
+
   for (let i = 0; i < count; i++) {
     const lon = bounds.minLon + (bounds.maxLon - bounds.minLon) * Math.random();
     const lat = bounds.minLat + (bounds.maxLat - bounds.minLat) * Math.random();
     const alt = minAlt + (maxAlt - minAlt) * Math.random();
-    
+
     const entity = viewer.entities.add({
       id: `test-entity-${i}`,
       position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
@@ -60,10 +60,10 @@ export function generateTestEntities(viewer, bounds, count = 500) {
         style: Cesium.LabelStyle.FILL_AND_OUTLINE
       }
     });
-    
+
     entities.push(entity);
   }
-  
+
   return entities;
 }
 
@@ -77,7 +77,7 @@ export function getAllEntities(viewer) {
   if (!viewer || !viewer.entities) {
     throw new Error('Invalid viewer');
   }
-  
+
   return viewer.entities.values;
 }
 
@@ -168,7 +168,7 @@ export function createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMete
   const latDelta = sizeMeters / 111000 / 2;
   const lonDelta = sizeMeters / (111000 * Math.cos(centerLat * Math.PI / 180)) / 2;
   const altDelta = sizeMeters / 2;
-  
+
   return {
     minLon: centerLon - lonDelta,
     maxLon: centerLon + lonDelta,
@@ -208,7 +208,7 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
   const centerLon = (bounds.minLon + bounds.maxLon) / 2;
   const centerLat = (bounds.minLat + bounds.maxLat) / 2;
   const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
-  
+
   let globalIndex = 0;
   for (let c = 0; c < clusters; c++) {
     const clusterSize = basePerCluster + (c < remainder ? 1 : 0);
@@ -219,21 +219,21 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
     const clusterLon = centerLon + (Math.random() - 0.5) * (bounds.maxLon - bounds.minLon) * 0.6;
     const clusterLat = centerLat + (Math.random() - 0.5) * (bounds.maxLat - bounds.minLat) * 0.6;
     const clusterAlt = centerAlt + (Math.random() - 0.5) * (bounds.maxAlt - bounds.minAlt) * 0.6;
-    
+
     // 各クラスター内にエンティティを密集配置
     const clusterRadius = Math.min(
       (bounds.maxLon - bounds.minLon),
       (bounds.maxLat - bounds.minLat)
     ) * 0.1;
-    
+
     for (let i = 0; i < clusterSize; i++) {
       const r = Math.sqrt(Math.random()) * clusterRadius;
       const theta = Math.random() * Math.PI * 2;
-      
+
       const lon = clusterLon + r * Math.cos(theta);
       const lat = clusterLat + r * Math.sin(theta);
       const alt = clusterAlt + (Math.random() - 0.5) * (bounds.maxAlt - bounds.minAlt) * 0.2;
-      
+
       entities.push(new Cesium.Entity({
         id: `clustered-${c}-${i}-${globalIndex}-${Math.random().toString(36).slice(2, 8)}`,
         position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
@@ -241,7 +241,7 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
       globalIndex++;
     }
   }
-  
+
   return entities;
 }
 
@@ -254,18 +254,18 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
  */
 function generateScatteredPattern(bounds, count) {
   const entities = [];
-  
+
   for (let i = 0; i < count; i++) {
     const lon = bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon);
     const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
     const alt = bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt);
-    
+
     entities.push(new Cesium.Entity({
       id: `scattered-${i}-${Math.random().toString(36).slice(2, 8)}`,
       position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
     }));
   }
-  
+
   return entities;
 }
 
@@ -278,16 +278,16 @@ function generateScatteredPattern(bounds, count) {
  */
 function generateGradientPattern(bounds, count) {
   const entities = [];
-  
+
   for (let i = 0; i < count; i++) {
     // X軸方向に密度が増加するグラデーション
     const x = Math.random();
     const densityWeight = x * x; // 二乗で密度を増加
-    
+
     const lon = bounds.minLon + x * (bounds.maxLon - bounds.minLon);
     const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
     const alt = bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt);
-    
+
     // 密度の高いエリアでは複数のエンティティを近接配置
     if (densityWeight > 0.7 && Math.random() > 0.5) {
       const offset = 0.0001; // 約10m
@@ -300,13 +300,13 @@ function generateGradientPattern(bounds, count) {
         )
       }));
     }
-    
+
     entities.push(new Cesium.Entity({
       id: `gradient-${i}-${Math.random().toString(36).slice(2, 8)}`,
       position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
     }));
   }
-  
+
   return entities;
 }
 
@@ -319,19 +319,19 @@ function generateGradientPattern(bounds, count) {
  */
 function generateMixedPattern(bounds, count) {
   const entities = [];
-  
+
   // 30%を高密度クラスター、70%を疎分布として配置
   const clusteredCount = Math.floor(count * 0.3);
   const scatteredCount = count - clusteredCount;
-  
+
   // 高密度クラスター部分
   const clusteredEntities = generateClusteredPattern(bounds, clusteredCount, 2);
   entities.push(...clusteredEntities);
-  
+
   // 疎分布部分
   const scatteredEntities = generateScatteredPattern(bounds, scatteredCount);
   entities.push(...scatteredEntities);
-  
+
   return entities;
 }
 
@@ -366,8 +366,6 @@ export function generatePatternData(pattern, bounds, count) {
 
 ## 日本語
 
-関連: [sampleDataクラス](sampleData)
-
 ```javascript
 /**
  * Utility helpers for generating sample datasets.
@@ -387,22 +385,22 @@ export function generateTestEntities(viewer, bounds, count = 500) {
   if (!viewer) {
     throw new Error('viewer is required');
   }
-  
+
   if (!bounds || !('minLon' in bounds) || !('maxLon' in bounds) || !('minLat' in bounds) || !('maxLat' in bounds)) {
     throw new Error('bounds must include minLon, maxLon, minLat, maxLat');
   }
-  
+
   const entities = [];
-  
+
   // デフォルト高度範囲
   const minAlt = bounds.minAlt || 0;
   const maxAlt = bounds.maxAlt || 100;
-  
+
   for (let i = 0; i < count; i++) {
     const lon = bounds.minLon + (bounds.maxLon - bounds.minLon) * Math.random();
     const lat = bounds.minLat + (bounds.maxLat - bounds.minLat) * Math.random();
     const alt = minAlt + (maxAlt - minAlt) * Math.random();
-    
+
     const entity = viewer.entities.add({
       id: `test-entity-${i}`,
       position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
@@ -422,10 +420,10 @@ export function generateTestEntities(viewer, bounds, count = 500) {
         style: Cesium.LabelStyle.FILL_AND_OUTLINE
       }
     });
-    
+
     entities.push(entity);
   }
-  
+
   return entities;
 }
 
@@ -439,7 +437,7 @@ export function getAllEntities(viewer) {
   if (!viewer || !viewer.entities) {
     throw new Error('Invalid viewer');
   }
-  
+
   return viewer.entities.values;
 }
 
@@ -530,7 +528,7 @@ export function createBoundsFromCenter(centerLon, centerLat, centerAlt, sizeMete
   const latDelta = sizeMeters / 111000 / 2;
   const lonDelta = sizeMeters / (111000 * Math.cos(centerLat * Math.PI / 180)) / 2;
   const altDelta = sizeMeters / 2;
-  
+
   return {
     minLon: centerLon - lonDelta,
     maxLon: centerLon + lonDelta,
@@ -570,7 +568,7 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
   const centerLon = (bounds.minLon + bounds.maxLon) / 2;
   const centerLat = (bounds.minLat + bounds.maxLat) / 2;
   const centerAlt = (bounds.minAlt + bounds.maxAlt) / 2;
-  
+
   let globalIndex = 0;
   for (let c = 0; c < clusters; c++) {
     const clusterSize = basePerCluster + (c < remainder ? 1 : 0);
@@ -581,21 +579,21 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
     const clusterLon = centerLon + (Math.random() - 0.5) * (bounds.maxLon - bounds.minLon) * 0.6;
     const clusterLat = centerLat + (Math.random() - 0.5) * (bounds.maxLat - bounds.minLat) * 0.6;
     const clusterAlt = centerAlt + (Math.random() - 0.5) * (bounds.maxAlt - bounds.minAlt) * 0.6;
-    
+
     // 各クラスター内にエンティティを密集配置
     const clusterRadius = Math.min(
       (bounds.maxLon - bounds.minLon),
       (bounds.maxLat - bounds.minLat)
     ) * 0.1;
-    
+
     for (let i = 0; i < clusterSize; i++) {
       const r = Math.sqrt(Math.random()) * clusterRadius;
       const theta = Math.random() * Math.PI * 2;
-      
+
       const lon = clusterLon + r * Math.cos(theta);
       const lat = clusterLat + r * Math.sin(theta);
       const alt = clusterAlt + (Math.random() - 0.5) * (bounds.maxAlt - bounds.minAlt) * 0.2;
-      
+
       entities.push(new Cesium.Entity({
         id: `clustered-${c}-${i}-${globalIndex}-${Math.random().toString(36).slice(2, 8)}`,
         position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
@@ -603,7 +601,7 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
       globalIndex++;
     }
   }
-  
+
   return entities;
 }
 
@@ -616,18 +614,18 @@ function generateClusteredPattern(bounds, count, clusterCount = 3) {
  */
 function generateScatteredPattern(bounds, count) {
   const entities = [];
-  
+
   for (let i = 0; i < count; i++) {
     const lon = bounds.minLon + Math.random() * (bounds.maxLon - bounds.minLon);
     const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
     const alt = bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt);
-    
+
     entities.push(new Cesium.Entity({
       id: `scattered-${i}-${Math.random().toString(36).slice(2, 8)}`,
       position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
     }));
   }
-  
+
   return entities;
 }
 
@@ -640,16 +638,16 @@ function generateScatteredPattern(bounds, count) {
  */
 function generateGradientPattern(bounds, count) {
   const entities = [];
-  
+
   for (let i = 0; i < count; i++) {
     // X軸方向に密度が増加するグラデーション
     const x = Math.random();
     const densityWeight = x * x; // 二乗で密度を増加
-    
+
     const lon = bounds.minLon + x * (bounds.maxLon - bounds.minLon);
     const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
     const alt = bounds.minAlt + Math.random() * (bounds.maxAlt - bounds.minAlt);
-    
+
     // 密度の高いエリアでは複数のエンティティを近接配置
     if (densityWeight > 0.7 && Math.random() > 0.5) {
       const offset = 0.0001; // 約10m
@@ -662,13 +660,13 @@ function generateGradientPattern(bounds, count) {
         )
       }));
     }
-    
+
     entities.push(new Cesium.Entity({
       id: `gradient-${i}-${Math.random().toString(36).slice(2, 8)}`,
       position: Cesium.Cartesian3.fromDegrees(lon, lat, alt)
     }));
   }
-  
+
   return entities;
 }
 
@@ -681,19 +679,19 @@ function generateGradientPattern(bounds, count) {
  */
 function generateMixedPattern(bounds, count) {
   const entities = [];
-  
+
   // 30%を高密度クラスター、70%を疎分布として配置
   const clusteredCount = Math.floor(count * 0.3);
   const scatteredCount = count - clusteredCount;
-  
+
   // 高密度クラスター部分
   const clusteredEntities = generateClusteredPattern(bounds, clusteredCount, 2);
   entities.push(...clusteredEntities);
-  
+
   // 疎分布部分
   const scatteredEntities = generateScatteredPattern(bounds, scatteredCount);
   entities.push(...scatteredEntities);
-  
+
   return entities;
 }
 

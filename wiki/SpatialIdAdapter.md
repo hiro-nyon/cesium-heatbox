@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/SpatialIdAdapter.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Class: SpatialIdAdapter（SpatialIdAdapterクラス）
 
 **日本語** | [English](#english)
