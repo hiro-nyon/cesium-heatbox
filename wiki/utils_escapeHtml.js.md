@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: escapeHtml](escapeHtml)
-
 ```javascript
 const ESCAPE_MAP = {
   '&': '&amp;',
@@ -37,8 +35,6 @@ export function escapeHtml(value) {
 ```
 
 ## 日本語
-
-関連: [escapeHtmlクラス](escapeHtml)
 
 ```javascript
 const ESCAPE_MAP = {

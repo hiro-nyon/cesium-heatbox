@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: SpatialIdQaMetrics](SpatialIdQaMetrics)
-
 ```javascript
 import { ZFXYConverter } from './ZFXYConverter.js';
 
@@ -97,8 +95,6 @@ export function computeSpatialIdEdgeCaseMetrics(adapter) {
 ```
 
 ## 日本語
-
-関連: [SpatialIdQaMetricsクラス](SpatialIdQaMetrics)
 
 ```javascript
 import { ZFXYConverter } from './ZFXYConverter.js';

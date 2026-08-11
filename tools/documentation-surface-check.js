@@ -115,6 +115,30 @@ const markdownLinkPattern = /\[[^\]]*\]\(([^)]+)\)/g;
 const snippetPattern = /```(?:javascript|js)\s*\n([\s\S]*?)```/g;
 const methodCallPattern = /\bheatbox\.([A-Za-z_$][\w$]*)\s*\(/g;
 
+function headingSlug(heading) {
+  return heading
+    .toLowerCase()
+    .trim()
+    .replace(/<[^>]+>/g, '')
+    .replace(/[`*_~]/g, '')
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
+function collectHeadingSlugs(content) {
+  const slugs = new Set();
+  const counts = new Map();
+  for (const match of content.matchAll(/^#{1,6}\s+(.+)$/gm)) {
+    const base = headingSlug(match[1]);
+    if (!base) continue;
+    const count = counts.get(base) || 0;
+    slugs.add(count === 0 ? base : `${base}-${count}`);
+    counts.set(base, count + 1);
+  }
+  return slugs;
+}
+
 for (const relativePath of markdownFiles) {
   const content = read(relativePath);
   let match;
@@ -127,6 +151,15 @@ for (const relativePath of markdownFiles) {
     const resolved = path.resolve(path.dirname(path.join(ROOT, relativePath)), fileTarget);
     if (!fs.existsSync(resolved)) {
       failures.push(`${relativePath}: broken relative link ${rawTarget}`);
+      continue;
+    }
+
+    const fragment = rawTarget.includes('#') ? decodeURIComponent(rawTarget.split('#').slice(1).join('#')) : '';
+    if (fragment && fs.statSync(resolved).isFile() && resolved.endsWith('.md')) {
+      const targetContent = fs.readFileSync(resolved, 'utf8');
+      if (!collectHeadingSlugs(targetContent).has(fragment.toLowerCase())) {
+        failures.push(`${relativePath}: broken Markdown anchor ${rawTarget}`);
+      }
     }
   }
 
@@ -135,6 +168,33 @@ for (const relativePath of markdownFiles) {
     while ((call = methodCallPattern.exec(match[1]))) {
       if (!knownMethods.has(call[1])) {
         failures.push(`${relativePath}: unknown public method heatbox.${call[1]}()`);
+      }
+    }
+  }
+}
+
+const wikiDirectory = path.join(ROOT, 'wiki');
+if (fs.existsSync(wikiDirectory)) {
+  const generatedWikiFiles = fs.readdirSync(wikiDirectory)
+    .filter((name) => name.endsWith('.md'))
+    .filter((name) => read(path.join('wiki', name)).startsWith('<!-- Generated from '));
+
+  for (const name of generatedWikiFiles) {
+    const relativePath = path.join('wiki', name);
+    const content = read(relativePath);
+    let match;
+    markdownLinkPattern.lastIndex = 0;
+    while ((match = markdownLinkPattern.exec(content))) {
+      const rawTarget = match[1].trim().replace(/^<|>$/g, '');
+      if (!rawTarget || rawTarget.startsWith('#') || /^[a-z][a-z+.-]*:/i.test(rawTarget)) continue;
+      const pageTarget = decodeURIComponent(rawTarget.split('#')[0]);
+      if (!pageTarget) continue;
+      if (pageTarget.includes('/') || pageTarget.endsWith('.md')) {
+        failures.push(`${relativePath}: non-Wiki relative link ${rawTarget}`);
+        continue;
+      }
+      if (!fs.existsSync(path.join(wikiDirectory, `${pageTarget}.md`))) {
+        failures.push(`${relativePath}: missing Wiki page ${rawTarget}`);
       }
     }
   }

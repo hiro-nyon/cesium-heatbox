@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cesium-version: ['^1.120.0', 'latest']
+        cesium-version: ['1.120.0', 'latest']
     steps:
       - name: Checkout
         uses: actions/checkout@v4

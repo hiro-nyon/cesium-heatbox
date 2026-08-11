@@ -179,7 +179,7 @@ export interface HeatboxOptions {
   showEmptyVoxels?: boolean;
   minColor?: [number, number, number];
   maxColor?: [number, number, number];
-  maxRenderVoxels?: number;
+  maxRenderVoxels?: number | 'auto';
   /** @deprecated v0.1.5: retained for backward compatibility */
   batchMode?: 'auto' | 'primitive' | 'entity';
   debug?: boolean | { showBounds?: boolean };

@@ -41,6 +41,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.7-alpha.4] - 2026-08-11
+
+### Added
+- 公開API、Markdownアンカー、リポジトリ/Wikiリンク、生成Wikiの再現性を検査するドキュメント品質ゲートをCIに追加しました。
+- bundleへ同梱する依存コードの許諾表示を `THIRD_PARTY_NOTICES` に追加しました。
+
+### Changed
+- Quick Startを実利用者向けの導入に再構成し、APIリファレンス、README、開発環境ガイド、生成Wikiを現行APIとリリース運用に同期しました。
+- npm配布対象を実行時生成物、型定義、Ouranos導入bin、必要文書に絞り、Ouranos依存と導入binを同一commitへ固定しました。
+- 公開workflowをタグpush専用にし、タグ・package・lockfile・実行時版番の一致、`next`/`main` の公開レーン、npm未公開版をpublish前に検証するよう強化しました。
+- Cesium互換CIで最低対応版 `1.120.0` を完全固定で検証するようにしました。
+
+### Fixed
+- `setData()` の `Promise<void>`、`maxRenderVoxels: 'auto'`、Spatial IDフォールバック統計など、公開文書と実装/型定義の不一致を修正しました。
+- Wiki同期時にリポジトリ相対リンクが壊れる問題と、存在しないクラスページへの生成リンクを修正しました。
+- Cesiumの推移依存を更新し、公開前の本番依存監査で検出された脆弱性を解消しました。
+
+## [1.3.7-alpha.3] - 2026-08-11
+
 ### Fixed
 - Cesium `PropertyBag` を使うクリック選択と差分描画時の太枠エンティティ回収を修正しました。
 - temporal global classification を実際のボクセル件数ドメインに統一し、Spatial ID QA metrics を統計へ自動反映しました。

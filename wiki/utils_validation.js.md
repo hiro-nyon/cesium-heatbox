@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: validation](validation)
-
 ```javascript
 /**
  * Validation utility functions.
@@ -1142,8 +1140,6 @@ function sanitizeClassificationScheme(scheme) {
 ```
 
 ## 日本語
-
-関連: [validationクラス](validation)
 
 ```javascript
 /**

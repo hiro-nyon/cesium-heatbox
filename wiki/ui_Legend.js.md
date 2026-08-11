@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: Legend](Legend)
-
 ```javascript
 /**
  * Legend UI component for Heatbox classification.
@@ -159,8 +157,6 @@ export class Legend {
 ```
 
 ## 日本語
-
-関連: [Legendクラス](Legend)
 
 ```javascript
 /**

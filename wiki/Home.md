@@ -7,7 +7,7 @@
 [![Version](https://img.shields.io/github/package-json/v/hiro-nyon/cesium-heatbox?label=version)](https://github.com/hiro-nyon/cesium-heatbox/blob/main/package.json)
 [![npm](https://img.shields.io/npm/v/cesium-heatbox)](https://www.npmjs.com/package/cesium-heatbox)
 
-English | [日本語](README.ja.md)
+English | [日本語](Home-ja)
 
 A 3D voxel-based heatmap visualization library for [CesiumJS](https://cesium.com/cesiumjs/). Build volumetric heatmaps directly from existing Cesium Entities — no server-side processing or pre-tiling required.
 
@@ -125,7 +125,7 @@ const legendEl = heatbox.createLegend();
 - Statistics include `domain`, `quantiles`, `jenksBreaks`, `ckmeansClusters`, `histogram`, and `breaks`.
 - Interactive demo: `examples/advanced/classification-demo.html`
 
-See [API Reference — Classification](docs/API.md) for full details.
+See [API Reference — Classification](API) for full details.
 
 </details>
 
@@ -158,7 +158,7 @@ const heatbox = new Heatbox(viewer, {
 - Demos cover baseline playback, global/per-time comparison, scenario simulation, and advanced interpolation/lazy-loading flows
 - Demos: `examples/temporal/README.md`
 
-See [API Reference — Temporal](docs/API.md) for full details.
+See [API Reference — Temporal](API) for full details.
 
 </details>
 
@@ -187,7 +187,7 @@ const heatbox = new Heatbox(viewer, {
 **Option 2: Official Ouranos library (high accuracy)**
 
 ```bash
-npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript#5742889f20645fb0451c4870e5c54b5d34ab5c31 --no-save
 npx cesium-heatbox-install-ouranos
 ```
 
@@ -204,7 +204,7 @@ npx cesium-heatbox-install-ouranos
 
 ```javascript
 const stats = heatbox.getStatistics();
-console.log(stats.spatialIdProvider); // "ouranos-gex" or "fallback"
+console.log(stats.spatialId.provider); // "ouranos-gex" with the official provider; null when using fallback
 ```
 
 #### Troubleshooting
@@ -217,7 +217,7 @@ console.log(stats.spatialIdProvider); // "ouranos-gex" or "fallback"
 - Operates within ±85.0511° latitude (Web Mercator limit)
 - Antimeridian crossing: planned for a future release
 
-See [Spatial ID Examples](examples/spatial-id/README.md) for details.
+See [Spatial ID Examples](https://github.com/hiro-nyon/cesium-heatbox/blob/main/examples/spatial-id/README.md) for details.
 
 </details>
 
@@ -264,7 +264,7 @@ aggregation: {
 - Memory: ~8–16 bytes per unique layer per voxel
 - Processing: ≤ +10% overhead when enabled; zero overhead when disabled
 
-See [Aggregation Examples](examples/aggregation/README.md) for details.
+See [Aggregation Examples](https://github.com/hiro-nyon/cesium-heatbox/blob/main/examples/aggregation/README.md) for details.
 
 </details>
 
@@ -299,7 +299,7 @@ See [Aggregation Examples](examples/aggregation/README.md) for details.
 | `Heatbox.listProfiles()` | List available configuration profiles (static) |
 | `Heatbox.getProfileDetails(name)` | Get profile configuration details (static) |
 
-See [API Reference](docs/API.md) for complete options and method documentation.
+See [API Reference](API) for complete options and method documentation.
 
 ## Examples
 
@@ -317,26 +317,26 @@ See [API Reference](docs/API.md) for complete options and method documentation.
 
 **Start using the library**
 
-- [Quick Start](docs/quick-start.md) — install and render your first heatbox in 10–15 minutes
-- [API Reference](docs/API.md) — complete options, methods, and return types
-- [Migration Guide](MIGRATION.md) — upgrade existing integrations
+- [Quick Start](Quick-Start) — install and render your first heatbox in 10–15 minutes
+- [API Reference](API) — complete options, methods, and return types
+- [Migration Guide](https://github.com/hiro-nyon/cesium-heatbox/blob/main/MIGRATION.md) — upgrade existing integrations
 
 **Explore features**
 
-- [Documentation Index](docs/README.md) — guides grouped by audience and task
+- [Documentation Index](https://github.com/hiro-nyon/cesium-heatbox/blob/main/docs/README.md) — guides grouped by audience and task
 - [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki) — rendering strategies, performance, Spatial ID, pitfalls, and glossary
-- [Roadmap](ROADMAP.md) and [Changelog](CHANGELOG.md)
+- [Roadmap](https://github.com/hiro-nyon/cesium-heatbox/blob/main/ROADMAP.md) and [Changelog](Release-Notes)
 
 **Contribute and develop**
 
-- [Development Environment Setup](docs/development-setup.md)
-- [Development Guide](docs/development-guide.md)
-- [Contributing](CONTRIBUTING.md)
+- [Development Environment Setup](Development-Setup)
+- [Development Guide](Development-Guide)
+- [Contributing](https://github.com/hiro-nyon/cesium-heatbox/blob/main/CONTRIBUTING.md)
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](https://github.com/hiro-nyon/cesium-heatbox/blob/main/LICENSE) for details.
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome! See [CONTRIBUTING.md](https://github.com/hiro-nyon/cesium-heatbox/blob/main/CONTRIBUTING.md) for guidelines.

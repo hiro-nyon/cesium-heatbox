@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: logger](logger)
-
 ```javascript
 /**
  * Logging utility.
@@ -129,8 +127,6 @@ export const info = Logger.info;
 ```
 
 ## 日本語
-
-関連: [loggerクラス](logger)
 
 ```javascript
 /**

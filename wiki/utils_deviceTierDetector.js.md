@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: deviceTierDetector](deviceTierDetector)
-
 ```javascript
 /**
  * Device tier detection for Auto Render Budget.
@@ -214,8 +212,6 @@ export function applyAutoRenderBudget(options) {
 ```
 
 ## 日本語
-
-関連: [deviceTierDetectorクラス](deviceTierDetector)
 
 ```javascript
 /**

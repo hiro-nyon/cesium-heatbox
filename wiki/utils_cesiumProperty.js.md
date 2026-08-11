@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: cesiumProperty](cesiumProperty)
-
 ```javascript
 import * as Cesium from 'cesium';
 
@@ -41,8 +39,6 @@ export function resolvePropertyValue(property, time = Cesium.JulianDate.now()) {
 ```
 
 ## 日本語
-
-関連: [cesiumPropertyクラス](cesiumProperty)
 
 ```javascript
 import * as Cesium from 'cesium';

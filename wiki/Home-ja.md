@@ -1,3 +1,5 @@
+<!-- Generated from README.ja.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
 # CesiumJS Heatbox
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -5,7 +7,7 @@
 [![Version](https://img.shields.io/github/package-json/v/hiro-nyon/cesium-heatbox?label=version)](https://github.com/hiro-nyon/cesium-heatbox/blob/main/package.json)
 [![npm](https://img.shields.io/npm/v/cesium-heatbox)](https://www.npmjs.com/package/cesium-heatbox)
 
-[English](README.md) | 日本語
+[English](Home) | 日本語
 
 [CesiumJS](https://cesium.com/cesiumjs/)環境内の既存エンティティを対象とした3Dボクセルベースヒートマップ可視化ライブラリです。サーバー処理や事前タイル化は不要で、`Cesium.Entity`から直接ボリュメトリックヒートマップを生成します。
 
@@ -123,7 +125,7 @@ const legendEl = heatbox.createLegend();
 - 統計情報には`domain` / `quantiles` / `jenksBreaks` / `ckmeansClusters` / `histogram` / `breaks`が含まれます。
 - インタラクティブデモ: `examples/advanced/classification-demo.html`
 
-詳細は[APIリファレンス — 分類](docs/API.md)を参照してください。
+詳細は[APIリファレンス — 分類](API)を参照してください。
 
 </details>
 
@@ -156,7 +158,7 @@ const heatbox = new Heatbox(viewer, {
 - デモは baseline 再生、Global/Per-Time 比較、シナリオ切替、補間/lazy loading の拡張フローまで含みます
 - デモ: `examples/temporal/README.md`
 
-詳細は[APIリファレンス — 時系列](docs/API.md)を参照してください。
+詳細は[APIリファレンス — 時系列](API)を参照してください。
 
 </details>
 
@@ -215,7 +217,7 @@ console.log(stats.spatialId.provider); // 公式provider利用時は "ouranos-ge
 - ±85.0511°（Web Mercator限界）内で正常動作
 - 日付変更線対応: 将来バージョンで実装予定
 
-詳細は[空間ID使用例](examples/spatial-id/README.md)を参照してください。
+詳細は[空間ID使用例](https://github.com/hiro-nyon/cesium-heatbox/blob/main/examples/spatial-id/README.md)を参照してください。
 
 </details>
 
@@ -262,7 +264,7 @@ aggregation: {
 - メモリ: ボクセルあたりのユニークレイヤあたり ~8–16バイト
 - 処理時間: 有効時 ≤ +10%オーバーヘッド、無効時オーバーヘッドなし
 
-詳細は[集約使用例](examples/aggregation/README.md)を参照してください。
+詳細は[集約使用例](https://github.com/hiro-nyon/cesium-heatbox/blob/main/examples/aggregation/README.md)を参照してください。
 
 </details>
 
@@ -297,7 +299,7 @@ aggregation: {
 | `Heatbox.listProfiles()` | 利用可能な設定プロファイル一覧（静的） |
 | `Heatbox.getProfileDetails(name)` | プロファイル設定詳細を取得（静的） |
 
-詳細は[APIリファレンス](docs/API.md)を参照してください。
+詳細は[APIリファレンス](API)を参照してください。
 
 ## サンプル
 
@@ -315,26 +317,26 @@ aggregation: {
 
 **ライブラリを使い始める**
 
-- [クイックスタート](docs/quick-start.md) — 10〜15分でインストールから初回描画まで
-- [APIリファレンス](docs/API.md) — オプション、メソッド、戻り値の完全な一覧
-- [移行ガイド](MIGRATION.md) — 既存コードのアップグレード
+- [クイックスタート](Quick-Start) — 10〜15分でインストールから初回描画まで
+- [APIリファレンス](API) — オプション、メソッド、戻り値の完全な一覧
+- [移行ガイド](https://github.com/hiro-nyon/cesium-heatbox/blob/main/MIGRATION.md) — 既存コードのアップグレード
 
 **機能を深掘りする**
 
-- [ドキュメント索引](docs/README.md) — 読者・目的別に整理したガイド一覧
+- [ドキュメント索引](https://github.com/hiro-nyon/cesium-heatbox/blob/main/docs/README.md) — 読者・目的別に整理したガイド一覧
 - [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki) — 描画戦略、性能、空間ID、落とし穴、用語集
-- [ロードマップ](ROADMAP.md)と[変更履歴](CHANGELOG.md)
+- [ロードマップ](https://github.com/hiro-nyon/cesium-heatbox/blob/main/ROADMAP.md)と[変更履歴](Release-Notes)
 
 **開発・貢献する**
 
-- [開発環境セットアップ](docs/development-setup.md)
-- [開発ガイド](docs/development-guide.md)
-- [コントリビューションガイド](CONTRIBUTING.md)
+- [開発環境セットアップ](Development-Setup)
+- [開発ガイド](Development-Guide)
+- [コントリビューションガイド](https://github.com/hiro-nyon/cesium-heatbox/blob/main/CONTRIBUTING.md)
 
 ## ライセンス
 
-MIT License — 詳細は[LICENSE](LICENSE)を参照してください。
+MIT License — 詳細は[LICENSE](https://github.com/hiro-nyon/cesium-heatbox/blob/main/LICENSE)を参照してください。
 
 ## 貢献
 
-プロジェクトへの貢献を歓迎します！詳細は[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。
+プロジェクトへの貢献を歓迎します！詳細は[CONTRIBUTING.md](https://github.com/hiro-nyon/cesium-heatbox/blob/main/CONTRIBUTING.md)を参照してください。

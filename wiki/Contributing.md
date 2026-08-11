@@ -42,7 +42,7 @@ If you want to make code changes or implement new features, please follow these 
 8. Push to your forked repository
 9. Create a pull request against `next`
 
-Release preparation and npm publishing are maintainer tasks. See the [Release Runbook](RELEASE_RUNBOOK.md); contributors must not run `npm publish` locally.
+Release preparation and npm publishing are maintainer tasks. See the [Release Runbook](Release-Runbook); contributors must not run `npm publish` locally.
 
 ### Development Environment Setup
 
@@ -89,7 +89,7 @@ Update documentation as needed when making code changes. For API changes, update
 
 ### License
 
-Contributions to this project are made under the [MIT License](../LICENSE). By submitting a pull request, you agree that your contributions will be published under this license.
+Contributions to this project are made under the [MIT License](https://github.com/hiro-nyon/cesium-heatbox/blob/main/LICENSE). By submitting a pull request, you agree that your contributions will be published under this license.
 
 ## 日本語
 
@@ -129,7 +129,7 @@ CesiumJS Heatboxプロジェクトへの貢献を歓迎します。このガイ�
 8. フォークしたリポジトリにプッシュする
 9. `next` 向けのプルリクエストを作成する
 
-リリース準備とnpm公開はメンテナーの作業です。[リリースランブック](RELEASE_RUNBOOK.md)を参照し、ローカルでは `npm publish` を実行しないでください。
+リリース準備とnpm公開はメンテナーの作業です。[リリースランブック](Release-Runbook)を参照し、ローカルでは `npm publish` を実行しないでください。
 
 ## 開発環境のセットアップ
 
@@ -176,4 +176,4 @@ npm run test:coverage
 
 ## ライセンス
 
-プロジェクトへの貢献は[MITライセンス](../LICENSE)の下で行われます。プルリクエストを送ることで、あなたの貢献がこのライセンスの下で公開されることに同意したものとみなします。
+プロジェクトへの貢献は[MITライセンス](https://github.com/hiro-nyon/cesium-heatbox/blob/main/LICENSE)の下で行われます。プルリクエストを送ることで、あなたの貢献がこのライセンスの下で公開されることに同意したものとみなします。

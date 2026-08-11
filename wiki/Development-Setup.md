@@ -197,7 +197,7 @@ Output files:
 
 ### Release
 
-Releases are tag-driven and published by GitHub Actions with npm Trusted Publishing. Do not run `npm publish` locally. See [Release Runbook](RELEASE_RUNBOOK.md) for versioning, validation, tagging, rollback, and stable promotion procedures.
+Releases are tag-driven and published by GitHub Actions with npm Trusted Publishing. Do not run `npm publish` locally. See [Release Runbook](Release-Runbook) for versioning, validation, tagging, rollback, and stable promotion procedures.
 
 ### Common Issues and Solutions
 
@@ -410,7 +410,7 @@ npm run build
 
 ## リリース
 
-リリースはタグ駆動で、npm Trusted Publishingを使ってGitHub Actionsから公開します。ローカルで `npm publish` は実行しません。バージョン更新、検証、タグ付け、ロールバック、安定版への昇格手順は[リリースランブック](RELEASE_RUNBOOK.md)を参照してください。
+リリースはタグ駆動で、npm Trusted Publishingを使ってGitHub Actionsから公開します。ローカルで `npm publish` は実行しません。バージョン更新、検証、タグ付け、ロールバック、安定版への昇格手順は[リリースランブック](Release-Runbook)を参照してください。
 
 ## トラブルシューティング
 
@@ -503,4 +503,4 @@ TypeError: Cesium.Cartesian3 is not a constructor
 4. ブランチをプッシュ (`git push origin feature/amazing-feature`)
 5. Pull Request を作成
 
-詳細は [CONTRIBUTING.md](contributing.md) を参照してください。
+詳細は [CONTRIBUTING.md](Contributing) を参照してください。

@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: deprecate](deprecate)
-
 ```javascript
 /**
  * Deprecation utilities for Heatbox
@@ -48,8 +46,6 @@ export function clearWarnings() {
 ```
 
 ## 日本語
-
-関連: [deprecateクラス](deprecate)
 
 ```javascript
 /**

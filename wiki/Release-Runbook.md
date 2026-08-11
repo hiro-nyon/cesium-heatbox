@@ -1,3 +1,5 @@
+<!-- Generated from docs/RELEASE_RUNBOOK.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
 # Release Runbook（v1.3.7）
 
 この文書は、`1.3.7-alpha.4` を `@next` で検証した後、`1.3.7` を `@latest` として公開する手順を定義します。npm 公開は GitHub Actions の `.github/workflows/release.yml` だけが行い、ローカルでは `npm publish` を実行しません。

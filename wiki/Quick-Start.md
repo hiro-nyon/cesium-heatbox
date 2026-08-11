@@ -10,7 +10,7 @@
 **Time Required**: ~10 minutes
 **Prerequisites**: Node.js 18+, an existing app that creates a `Cesium.Viewer`, basic JavaScript knowledge
 
-This guide gets a heatmap on screen using your own project. If you are looking for library development or release workflows instead, see [Development Environment Setup](development-setup.md) and the [Development Guide](development-guide.md).
+This guide gets a heatmap on screen using your own project. If you are looking for library development or release workflows instead, see [Development Environment Setup](Development-Setup) and the [Development Guide](Development-Guide).
 
 ### Table of Contents
 
@@ -124,7 +124,7 @@ const heatbox = new Heatbox(viewer, {
 console.log(Heatbox.listProfiles());
 ```
 
-See [Key Capabilities in the README](../README.md#key-capabilities) for classification, temporal, Spatial ID, and layer aggregation, and the [API Reference](API.md) for the full option catalogue.
+See [Key Capabilities in the README](Home#key-capabilities) for classification, temporal, Spatial ID, and layer aggregation, and the [API Reference](API) for the full option catalogue.
 
 ### 6. Inspect the result
 
@@ -148,11 +148,11 @@ console.log(heatbox.getDebugInfo()); // options, bounds, grid, and statistics sn
 
 ### 8. Next Steps
 
-- [README — Key Capabilities](../README.md#key-capabilities): classification engine, temporal data, Spatial ID, layer aggregation
-- [API Reference](API.md): full options, methods, and return types
-- [Examples](../examples/README.md): runnable demos by feature
+- [README — Key Capabilities](Home#key-capabilities): classification engine, temporal data, Spatial ID, layer aggregation
+- [API Reference](API): full options, methods, and return types
+- [Examples](https://github.com/hiro-nyon/cesium-heatbox/blob/main/examples/README.md): runnable demos by feature
 - [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki): rendering strategy guides, performance tuning, pitfalls
-- [Development Environment Setup](development-setup.md): if you plan to contribute to `cesium-heatbox` itself
+- [Development Environment Setup](Development-Setup): if you plan to contribute to `cesium-heatbox` itself
 
 ---
 
@@ -162,7 +162,7 @@ console.log(heatbox.getDebugInfo()); // options, bounds, grid, and statistics sn
 **所要時間**: 約10分
 **前提条件**: Node.js 18以上、`Cesium.Viewer`を生成済みのアプリ、基本的なJavaScript知識
 
-このガイドは、あなた自身のプロジェクトでヒートマップを表示するまでの手順です。ライブラリ自体の開発・リリース手順を探している場合は[開発環境セットアップ](development-setup.md)と[開発ガイド](development-guide.md)を参照してください。
+このガイドは、あなた自身のプロジェクトでヒートマップを表示するまでの手順です。ライブラリ自体の開発・リリース手順を探している場合は[開発環境セットアップ](Development-Setup)と[開発ガイド](Development-Guide)を参照してください。
 
 ### 目次
 
@@ -276,7 +276,7 @@ const heatbox = new Heatbox(viewer, {
 console.log(Heatbox.listProfiles());
 ```
 
-分類エンジン・時系列データ・空間ID・レイヤ別集約については[READMEの主要機能](../README.md#主要機能)を、全オプションの一覧は[APIリファレンス](API.md)を参照してください。
+分類エンジン・時系列データ・空間ID・レイヤ別集約については[日本語READMEの主要機能](Home-ja#主要機能)を、全オプションの一覧は[APIリファレンス](API)を参照してください。
 
 ### 6. 結果を確認する
 
@@ -300,8 +300,8 @@ console.log(heatbox.getDebugInfo()); // オプション・境界・グリッド�
 
 ### 8. 次のステップ
 
-- [README — 主要機能](../README.md#主要機能): 分類エンジン、時系列データ、空間ID、レイヤ別集約
-- [APIリファレンス](API.md): 全オプション・メソッド・戻り値
-- [サンプル](../examples/README.md): 機能別の実行可能なデモ
+- [README — 主要機能](Home-ja#主要機能): 分類エンジン、時系列データ、空間ID、レイヤ別集約
+- [APIリファレンス](API): 全オプション・メソッド・戻り値
+- [サンプル](https://github.com/hiro-nyon/cesium-heatbox/blob/main/examples/README.md): 機能別の実行可能なデモ
 - [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki): 描画戦略、パフォーマンスチューニング、落とし穴
-- [開発環境セットアップ](development-setup.md): `cesium-heatbox`自体の開発に参加する場合
+- [開発環境セットアップ](Development-Setup): `cesium-heatbox`自体の開発に参加する場合

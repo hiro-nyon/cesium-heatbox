@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: sampleData](sampleData)
-
 ```javascript
 /**
  * Utility helpers for generating sample datasets.
@@ -367,8 +365,6 @@ export function generatePatternData(pattern, bounds, count) {
 ```
 
 ## 日本語
-
-関連: [sampleDataクラス](sampleData)
 
 ```javascript
 /**

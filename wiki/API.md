@@ -1,6 +1,6 @@
 <!-- Generated from docs/API.md by npm run wiki:sync. Edit the canonical source, not this page. -->
 
-# API Reference (APIリファレンス) - v1.3.7-alpha.3
+# API Reference (APIリファレンス) - v1.3.7-alpha.4
 
 [English](#english) | [日本語](#日本語)
 
@@ -37,6 +37,14 @@ Creates a new Heatbox instance.
 - **`colorMap` ('custom'|'viridis'|'inferno', default: 'custom') - v0.1.5: Perceptually uniform color maps**
 - **`diverging` (boolean, default: false) / `divergingPivot` (number, default: 0) - v0.1.5: Diverging color scheme for bipolar data**
 - **`highlightTopN` (number|null, default: null) / `highlightStyle` ({ outlineWidth?: number; boostOpacity?: number; boostOutlineWidth?: number }) - Highlight top N voxels. `boostOutlineWidth` is added to the highlighted outline width**
+- **`profile` ('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data') - Start from a predefined configuration profile; explicitly supplied options take precedence**
+- **`voxelGap` (number, default: 0) - Gap between voxel dimensions in meters**
+- **`outlineOpacity` (number, default: 1.0) - Outline opacity from 0 to 1**
+- **`outlineWidthResolver` ((params) => number|null, default: null) - Per-voxel outline-width resolver**
+- **`outlineInset` (number, default: 0) / `outlineInsetMode` ('all'|'topn'|'none', default: 'all') - Inset outline offset and target scope**
+- **`outlineRenderMode` ('standard'|'inset'|'emulation-only', default: 'standard') / `emulationScope` ('off'|'topn'|'non-topn'|'all', default: 'off') - Outline rendering mode and emulation scope**
+- **`adaptiveOutlines` (boolean, default: false) / `outlineWidthPreset` ('thin'|'medium'|'thick'|'adaptive', default: 'medium') - Adaptive outline controls**
+- **`performanceOverlay` (Object|null, default: null) - Optional FPS/render-time/memory overlay configuration**
 - **`enableThickFrames` (boolean, default: false) - Fill the space between standard and inset outlines to emulate thick frames**
 - **`renderLimitStrategy` ('density'|'coverage'|'hybrid', default: 'density') - v0.1.9: Adaptive rendering strategy for voxel selection when exceeding maxRenderVoxels**
 - **`minCoverageRatio` (number, default: 0.2) - v0.1.9: Minimum coverage ratio for hybrid strategy**
@@ -95,6 +103,14 @@ Creates heatmap data from entity array and renders it.
 
 **Parameters:**
 - `entities` (Array<Cesium.Entity>) - Target entity array
+
+**Returns:**
+- `Promise<void>` - Resolves after rendering completes; invalid or empty input clears the heatmap
+
+**Example:**
+```javascript
+await heatbox.setData(viewer.entities.values);
+```
 
 ##### `updateValues(entities, runtimeOptions?)` (v1.3.x)
 
@@ -385,7 +401,7 @@ See Japanese section for complete performance optimization tips.
 - `showEmptyVoxels` (boolean, default: false) - 空ボクセル表示の有無
 - `minColor` (Array, default: [0, 32, 255]) - 最小密度の色 (RGB)
 - `maxColor` (Array, default: [255, 64, 0]) - 最大密度の色 (RGB)
-- `maxRenderVoxels` (number, default: 50000) - 最大描画ボクセル数
+- `maxRenderVoxels` (number|'auto', default: 50000) - 最大描画ボクセル数。`'auto'` で端末別の自動レンダリング予算を有効化
 - **`wireframeOnly` (boolean, default: false) - 枠線のみ表示（v0.1.2新機能）**
 - **`heightBased` (boolean, default: false) - 密度を高さで表現（v0.1.2新機能）**
 - **`outlineWidth` (number, default: 2) - 枠線の太さ（v0.1.2新機能）**
@@ -415,6 +431,10 @@ See Japanese section for complete performance optimization tips.
 // v0.1.12 追加
 - **`profile` ('mobile-fast'|'desktop-balanced'|'dense-data'|'sparse-data') - v0.1.12: 環境別の事前定義プロファイル**
 - **`performanceOverlay` ({ enabled?: boolean; position?: 'top-left'|'top-right'|'bottom-left'|'bottom-right'; autoShow?: boolean; updateIntervalMs?: number }) - v0.1.12: パフォーマンスオーバーレイ**
+- **`renderLimitStrategy` ('density'|'coverage'|'hybrid', default: 'density') - 描画上限超過時のボクセル選択戦略**
+- **`minCoverageRatio` (number, default: 0.2) / `coverageBinsXY` (number|'auto', default: 'auto') - coverage/hybrid選択の設定**
+- **`renderBudgetMode` ('manual'|'auto', default: 'manual') - 端末別の自動描画予算を有効化**
+- **`autoView` (boolean, default: false) - データ描画後に `fitView()` を自動実行**
 - **`fitViewOptions` (Object) - `fitView()` と `autoView` の既定設定**
   - `headingDegrees` (number, default: 0) - カメラ方位角（度）
   - `pitchDegrees` (number, default: -30) - カメラ俯角（度）
@@ -444,6 +464,8 @@ See Japanese section for complete performance optimization tips.
   - `keyResolver` ((entity) => string|null, default: null) - 独自キー解決関数。`byProperty` より優先
   - `showInDescription` (boolean, default: true) - ボクセル説明にレイヤ内訳を表示
   - `topN` (number, default: 10) - `getStatistics()` が返す最大レイヤ数
+- **`classification` (string | ClassificationOptions | false) - linear/log/equal-interval/quantize/threshold/quantile/jenks を選択できる分類エンジン**
+- **`temporal` (TemporalOptions|null) - Cesium Clock同期、分類スコープ、スロットル、補間、遅延ロードを含む時系列設定**
 - // v0.1.6+ 追加（強調表示向け）
 - ~~`outlineEmulation` ('off'|'topn'|...)~~ - Deprecated in v0.1.12: `outlineRenderMode` + `emulationScope` に統合
   - 太線の表現は引き続き利用可能です。`outlineRenderMode: 'emulation-only'` と `emulationScope` を使用してください。
@@ -536,14 +558,24 @@ v0.1.4 から `autoVoxelSize: true` の場合、`voxelSize` を省略すると�
 - `entities` (Array<Cesium.Entity>) - 対象エンティティ配列
 
 **戻り値:**
-- `void`
+- `Promise<void>` - 描画完了後に解決。無効または空の入力はヒートマップをクリア
 
 **例:**
 ```javascript
 const entities = viewer.entities.values;
-heatbox.setData(entities);
-console.log('ヒートマップ作成が実行されました。');
+await heatbox.setData(entities);
+console.log('ヒートマップ作成が完了しました。');
 ```
+
+#### `updateValues(entities, runtimeOptions?)` (v1.3.x)
+
+新しいデータが現在の空間範囲に収まる場合、既存の bounds/grid を再利用してボクセル値を更新します。再利用できない場合は `setData()` にフォールバックします。
+
+**パラメータ:**
+- `entities` (Array<Cesium.Entity>) - 対象エンティティ配列
+- `runtimeOptions` (Object, optional) - 内部実行時オーバーライド
+
+**戻り値:** `Promise<void>`
 
 #### `updateOptions(newOptions)`
 
@@ -646,6 +678,16 @@ if (bounds) {
   console.log('最大緯度:', bounds.maxLat);
 }
 ```
+
+#### `createLegend(container?)`
+
+現在の分類状態から凡例DOMを作成します。`container` 省略時は `document.body` に追加します。
+
+**戻り値:** `HTMLElement|null`
+
+#### `updateLegend()` / `destroyLegend()`
+
+`updateLegend()` は作成済みの凡例を最新の分類状態で更新し、`destroyLegend()` は凡例DOMと内部リソースを破棄します。
 
 #### `getOptions()`
 
@@ -767,7 +809,7 @@ interface HeatboxOptions {
   showEmptyVoxels?: boolean;
   minColor?: [number, number, number];
   maxColor?: [number, number, number];
-  maxRenderVoxels?: number; // レンダリング上限（非空ボクセルが上限超過時は高密度トップNのみ描画）
+  maxRenderVoxels?: number | 'auto'; // レンダリング上限（`auto` は端末性能に応じて自動設定）
   batchMode?: 'auto' | 'primitive' | 'entity';
   classification?: ClassificationOptions | 'linear' | 'log' | 'equal-interval' | 'quantize' | 'threshold' | 'quantile' | 'jenks' | false;
   temporal?: TemporalOptions | null; // v1.2.0: 時系列データ再生

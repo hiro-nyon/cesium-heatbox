@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: profiles](profiles)
-
 ```javascript
 /**
  * Configuration profiles for different use cases
@@ -167,8 +165,6 @@ export function isValidProfile(profileName) {
 ```
 
 ## 日本語
-
-関連: [profilesクラス](profiles)
 
 ```javascript
 /**

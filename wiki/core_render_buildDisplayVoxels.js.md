@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: buildDisplayVoxels](buildDisplayVoxels)
-
 ```javascript
 /**
  * Build the list of voxels eligible for rendering.
@@ -71,8 +69,6 @@ function getGridVoxelCount(grid) {
 ```
 
 ## 日本語
-
-関連: [buildDisplayVoxelsクラス](buildDisplayVoxels)
 
 ```javascript
 /**

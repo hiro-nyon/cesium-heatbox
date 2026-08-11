@@ -13,17 +13,24 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const projectRoot = path.resolve(__dirname, '..');
-const moduleDir = path.join(projectRoot, 'node_modules', 'ouranos-gex-lib-for-javascript');
-const distEntry = path.join(moduleDir, 'dist', 'index.js');
+const OURANOS_REVISION = '5742889f20645fb0451c4870e5c54b5d34ab5c31';
+let moduleDir = null;
+let distEntry = null;
 
 function run(command, options = {}) {
   execSync(command, { stdio: 'inherit', ...options });
 }
 
 function ensureModuleInstalled() {
-  if (!fs.existsSync(moduleDir)) {
+  try {
+    const packageJsonPath = require.resolve('ouranos-gex-lib-for-javascript/package.json', {
+      paths: [projectRoot]
+    });
+    moduleDir = path.dirname(packageJsonPath);
+    distEntry = path.join(moduleDir, 'dist', 'index.js');
+  } catch (_error) {
     console.error('[ouranos] node_modules/ouranos-gex-lib-for-javascript not found.');
-    console.error('[ouranos] Run `npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-javascript --no-save` first.');
+    console.error('[ouranos] Reinstall cesium-heatbox so its pinned optional dependency is available.');
     process.exit(1);
   }
 }
@@ -32,11 +39,14 @@ function ensureVendorClone(cloneDir) {
   if (!fs.existsSync(cloneDir)) {
     fs.mkdirSync(path.dirname(cloneDir), { recursive: true });
     console.log('[ouranos] cloning upstream repository...');
-    run(`git clone https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript.git "${cloneDir}"`);
+    run(`git clone --no-checkout https://github.com/ouranos-gex/ouranos-gex-lib-for-JavaScript.git "${cloneDir}"`);
   } else {
-    console.log('[ouranos] pulling latest changes...');
-    run(`git -C "${cloneDir}" pull --ff-only`);
+    console.log('[ouranos] reusing existing upstream clone...');
   }
+
+  console.log(`[ouranos] checking out pinned revision ${OURANOS_REVISION}...`);
+  run(`git -C "${cloneDir}" fetch --depth 1 origin "${OURANOS_REVISION}"`);
+  run(`git -C "${cloneDir}" checkout --detach "${OURANOS_REVISION}"`);
 }
 
 function buildClone(cloneDir) {

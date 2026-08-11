@@ -274,7 +274,7 @@ const heatbox = new Heatbox(viewer, {
 console.log(Heatbox.listProfiles());
 ```
 
-分類エンジン・時系列データ・空間ID・レイヤ別集約については[READMEの主要機能](../README.md#主要機能)を、全オプションの一覧は[APIリファレンス](API.md)を参照してください。
+分類エンジン・時系列データ・空間ID・レイヤ別集約については[日本語READMEの主要機能](../README.ja.md#主要機能)を、全オプションの一覧は[APIリファレンス](API.md)を参照してください。
 
 ### 6. 結果を確認する
 
@@ -298,7 +298,7 @@ console.log(heatbox.getDebugInfo()); // オプション・境界・グリッド�
 
 ### 8. 次のステップ
 
-- [README — 主要機能](../README.md#主要機能): 分類エンジン、時系列データ、空間ID、レイヤ別集約
+- [README — 主要機能](../README.ja.md#主要機能): 分類エンジン、時系列データ、空間ID、レイヤ別集約
 - [APIリファレンス](API.md): 全オプション・メソッド・戻り値
 - [サンプル](../examples/README.md): 機能別の実行可能なデモ
 - [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki): 描画戦略、パフォーマンスチューニング、落とし穴

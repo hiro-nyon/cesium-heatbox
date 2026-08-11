@@ -6,8 +6,6 @@
 
 ## English
 
-See also: [Class: constants](constants)
-
 ```javascript
 /**
  * Constant definitions for CesiumJS Heatbox library.
@@ -209,8 +207,6 @@ export const COLOR_CONSTANTS = {
 ```
 
 ## 日本語
-
-関連: [constantsクラス](constants)
 
 ```javascript
 /**

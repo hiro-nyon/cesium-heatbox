@@ -185,7 +185,7 @@ const heatbox = new Heatbox(viewer, {
 **Option 2: Official Ouranos library (high accuracy)**
 
 ```bash
-npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript --no-save
+npm install ouranos-gex-lib-for-javascript@github:ouranos-gex/ouranos-gex-lib-for-JavaScript#5742889f20645fb0451c4870e5c54b5d34ab5c31 --no-save
 npx cesium-heatbox-install-ouranos
 ```
 
@@ -202,7 +202,7 @@ npx cesium-heatbox-install-ouranos
 
 ```javascript
 const stats = heatbox.getStatistics();
-console.log(stats.spatialIdProvider); // "ouranos-gex" or "fallback"
+console.log(stats.spatialId.provider); // "ouranos-gex" with the official provider; null when using fallback
 ```
 
 #### Troubleshooting

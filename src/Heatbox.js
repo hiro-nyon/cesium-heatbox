@@ -228,7 +228,7 @@ import { computeSpatialIdEdgeCaseMetrics } from './core/spatial/SpatialIdQaMetri
  * @property {boolean} [autoVoxelSize=false] - Enable auto voxel size estimation / 自動ボクセルサイズ推定
  * @property {('basic'|'occupancy')} [autoVoxelSizeMode='basic'] - Auto voxel mode / 自動ボクセルモード
  * @property {number} [autoVoxelTargetFill=0.6] - Target occupancy ratio for auto mode / 自動モード時の目標充填率
- * @property {number} [maxRenderVoxels=50000] - Max voxels to render / 描画ボクセル上限
+ * @property {(number|'auto')} [maxRenderVoxels=50000] - Max voxels to render; `auto` enables device-based budgeting / 描画ボクセル上限。`auto` で端末別の自動予算を有効化
  * @property {('density'|'coverage'|'hybrid')} [renderLimitStrategy='density'] - Voxel selection strategy / ボクセル選択戦略
  * @property {number} [minCoverageRatio=0.2] - Minimum coverage ratio for hybrid strategy / ハイブリッド戦略時の最小カバレッジ比率
  * @property {('auto'|number)} [coverageBinsXY='auto'] - Grid bins for coverage strategy / カバレッジ戦略用グリッド分割
