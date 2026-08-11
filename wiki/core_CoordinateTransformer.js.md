@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/core_CoordinateTransformer.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: core/CoordinateTransformer.js
 
 **日本語** | [English](#english)
@@ -29,17 +31,17 @@ export class CoordinateTransformer {
     if (!Array.isArray(entities) || entities.length === 0) {
       throw new Error('エンティティが提供されていません');
     }
-    
+
     let minLon = Infinity;
     let maxLon = -Infinity;
     let minLat = Infinity;
     let maxLat = -Infinity;
     let minAlt = Infinity;
     let maxAlt = -Infinity;
-    
+
     let validCount = 0;
     const currentTime = Cesium.JulianDate.now();
-    
+
     entities.forEach((entity, index) => {
       try {
         // エンティティの位置を取得
@@ -51,11 +53,11 @@ export class CoordinateTransformer {
             position = entity.position;
           }
         }
-        
+
         if (!position) {
           return; // 位置情報がない場合はスキップ
         }
-        
+
         // Cartesian3→Cartographic 変換（テスト環境の簡易モックに対するフォールバック）
         let lon, lat, alt;
         const looksLikeDegrees = typeof position?.x === 'number' && typeof position?.y === 'number' &&
@@ -69,34 +71,34 @@ export class CoordinateTransformer {
           lat = Cesium.Math.toDegrees(cartographic.latitude);
           alt = cartographic.height;
         }
-        
+
         minLon = Math.min(minLon, lon);
         maxLon = Math.max(maxLon, lon);
         minLat = Math.min(minLat, lat);
         maxLat = Math.max(maxLat, lat);
         minAlt = Math.min(minAlt, alt);
         maxAlt = Math.max(maxAlt, alt);
-        
+
         validCount++;
       } catch (error) {
         Logger.warn(`エンティティ ${index} の処理に失敗:`, error);
       }
     });
-    
+
     if (validCount === 0) {
       throw new Error('有効な位置情報を持つエンティティが見つかりません');
     }
-    
+
     // デバッグ出力
     Logger.debug('座標範囲計算完了:', {
       validCount,
       bounds: {
-        minLon, maxLon, 
-        minLat, maxLat, 
+        minLon, maxLon,
+        minLat, maxLat,
         minAlt, maxAlt
       }
     });
-    
+
     return {
       minLon,
       maxLon,
@@ -109,7 +111,7 @@ export class CoordinateTransformer {
       centerAlt: (minAlt + maxAlt) / 2
     };
   }
-  
+
   /**
    * Convert voxel indices to geographic coordinates (cell center).
    * ボクセルインデックスを地理座標（中心位置）に変換します。
@@ -123,19 +125,19 @@ export class CoordinateTransformer {
   static voxelIndexToCoordinate(x, y, z, bounds, grid) {
     const { minLon, maxLon, minLat, maxLat, minAlt, maxAlt } = bounds;
     const { numVoxelsX, numVoxelsY, numVoxelsZ } = grid;
-    
+
     // ボクセルの中心位置を計算（シンプルな線形補間）
     const normalizedLon = (x + 0.5) / numVoxelsX;
     const normalizedLat = (y + 0.5) / numVoxelsY;
     const normalizedAlt = (z + 0.5) / numVoxelsZ;
-    
+
     return {
       lon: minLon + normalizedLon * (maxLon - minLon),
       lat: minLat + normalizedLat * (maxLat - minLat),
       alt: minAlt + normalizedAlt * (maxAlt - minAlt)
     };
   }
-  
+
   /**
    * Convert geographic coordinates to Cesium Cartesian3.
    * 地理座標を Cesium Cartesian3 に変換します。
@@ -178,17 +180,17 @@ export class CoordinateTransformer {
     if (!Array.isArray(entities) || entities.length === 0) {
       throw new Error('エンティティが提供されていません');
     }
-    
+
     let minLon = Infinity;
     let maxLon = -Infinity;
     let minLat = Infinity;
     let maxLat = -Infinity;
     let minAlt = Infinity;
     let maxAlt = -Infinity;
-    
+
     let validCount = 0;
     const currentTime = Cesium.JulianDate.now();
-    
+
     entities.forEach((entity, index) => {
       try {
         // エンティティの位置を取得
@@ -200,11 +202,11 @@ export class CoordinateTransformer {
             position = entity.position;
           }
         }
-        
+
         if (!position) {
           return; // 位置情報がない場合はスキップ
         }
-        
+
         // Cartesian3→Cartographic 変換（テスト環境の簡易モックに対するフォールバック）
         let lon, lat, alt;
         const looksLikeDegrees = typeof position?.x === 'number' && typeof position?.y === 'number' &&
@@ -218,34 +220,34 @@ export class CoordinateTransformer {
           lat = Cesium.Math.toDegrees(cartographic.latitude);
           alt = cartographic.height;
         }
-        
+
         minLon = Math.min(minLon, lon);
         maxLon = Math.max(maxLon, lon);
         minLat = Math.min(minLat, lat);
         maxLat = Math.max(maxLat, lat);
         minAlt = Math.min(minAlt, alt);
         maxAlt = Math.max(maxAlt, alt);
-        
+
         validCount++;
       } catch (error) {
         Logger.warn(`エンティティ ${index} の処理に失敗:`, error);
       }
     });
-    
+
     if (validCount === 0) {
       throw new Error('有効な位置情報を持つエンティティが見つかりません');
     }
-    
+
     // デバッグ出力
     Logger.debug('座標範囲計算完了:', {
       validCount,
       bounds: {
-        minLon, maxLon, 
-        minLat, maxLat, 
+        minLon, maxLon,
+        minLat, maxLat,
         minAlt, maxAlt
       }
     });
-    
+
     return {
       minLon,
       maxLon,
@@ -258,7 +260,7 @@ export class CoordinateTransformer {
       centerAlt: (minAlt + maxAlt) / 2
     };
   }
-  
+
   /**
    * Convert voxel indices to geographic coordinates (cell center).
    * ボクセルインデックスを地理座標（中心位置）に変換します。
@@ -272,19 +274,19 @@ export class CoordinateTransformer {
   static voxelIndexToCoordinate(x, y, z, bounds, grid) {
     const { minLon, maxLon, minLat, maxLat, minAlt, maxAlt } = bounds;
     const { numVoxelsX, numVoxelsY, numVoxelsZ } = grid;
-    
+
     // ボクセルの中心位置を計算（シンプルな線形補間）
     const normalizedLon = (x + 0.5) / numVoxelsX;
     const normalizedLat = (y + 0.5) / numVoxelsY;
     const normalizedAlt = (z + 0.5) / numVoxelsZ;
-    
+
     return {
       lon: minLon + normalizedLon * (maxLon - minLon),
       lat: minLat + normalizedLat * (maxLat - minLat),
       alt: minAlt + normalizedAlt * (maxAlt - minAlt)
     };
   }
-  
+
   /**
    * Convert geographic coordinates to Cesium Cartesian3.
    * 地理座標を Cesium Cartesian3 に変換します。

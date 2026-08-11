@@ -1,3 +1,5 @@
+<!-- Generated from CHANGELOG.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -40,6 +42,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `examples/advanced/classification-demo` が設定反映・統計表示・Viridis 初期化を確実に行うよう修正し、UI操作と描画の同期を改善。
 
 ## [Unreleased]
+
+### Fixed
+- Cesium `PropertyBag` を使うクリック選択と差分描画時の太枠エンティティ回収を修正しました。
+- temporal global classification を実際のボクセル件数ドメインに統一し、Spatial ID QA metrics を統計へ自動反映しました。
+- `maxRenderVoxels`、TopN style、coverage/hybrid 選択、`fitView` オプションの境界処理を修正しました。
+- CommonJS/ESM の条件付き型定義と実行時 export を一致させ、ビルド生成物とサンプルリンクを整理しました。
+- npm Trusted Publishing 用に release job の GitHub Environment と registry を設定し、対応 npm CLI バージョンを保証しました。
 
 ## [1.3.6] - 2026-04-13
 
@@ -560,7 +569,7 @@ v0.1系における適応的可視化機能の仕上げバージョン。Phase 0
 - **TopN強調表示**: `highlightTopN` オプションで密度上位Nボクセルのみを強調表示。`highlightStyle` でアウトライン幅や不透明度の調整が可能。
 
 ### Deprecated
-- **batchMode非推奨化**: `batchMode: 'auto'` オプションは非推奨化され、`debug` 時に警告を表示。v1.0.0で削除予定。
+- **batchMode非推奨化**: `batchMode: 'auto'` オプションは非推奨化され、`debug` 時に警告を表示。互換性維持のため v2.0.0 まで保持予定。
 
 ### Changed
 - **Logger拡張**: `Logger.setLogLevel()` が `debug` オプションのオブジェクト形式に対応。互換性を保ちつつ拡張。
@@ -603,7 +612,7 @@ v0.1系における適応的可視化機能の仕上げバージョン。Phase 0
 
 ### Fixed
 - **選択イベント情報の修正**: `pickedObject.id.type` → `pickedObject.id.properties?.type` の判定不一致を修正
-- **統計値の整合性修正**: `renderedVoxels` が実際の描画数を反映しない問題を修正  
+- **統計値の整合性修正**: `renderedVoxels` が実際の描画数を反映しない問題を修正
 - **ピック判定のキー取得**: `properties.key` から正しくキー値を取得するよう修正
 - **未使用コード削除**: `this._selectedEntitySubscription` を完全に削除
 - **Cesiumバージョン整合**: examples の CDN を 1.132 → 1.120 に修正
@@ -614,7 +623,7 @@ v0.1系における適応的可視化機能の仕上げバージョン。Phase 0
 - **デフォルト設定最適化**: `DEFAULT_OPTIONS.debug = false` に変更（本番環境向け）
 - **Debug境界ボックス制御**: `options.debug` 連動でバウンディングボックス表示をON/OFF制御
 
-### Added  
+### Added
 - **基本例のUX改善**: UMD読み込み方式・日本語UI統一・Debugログチェックボックス追加
 - **統計表示の改善**: 描画制限による非表示ボクセルの説明を追加
 - **高度な例のUMD対応**: `wireframe-height-demo-umd.html` でブラウザ直接実行対応

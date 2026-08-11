@@ -1,30 +1,25 @@
 # Contributing
 
-Welcome! This project maintains two primary lanes:
+Thank you for contributing to cesium-heatbox.
 
-- main: stable, always buildable from source (publishes to npm dist-tag `latest`).
-- next: integration lane for in-progress work (publishes pre-releases to npm dist-tag `next`).
+The complete bilingual contribution guide is maintained at [docs/contributing.md](docs/contributing.md). It covers bug reports, feature requests, branch and pull-request workflow, development setup, coding standards, tests, and documentation updates.
 
-Beginner-friendly summary and step-by-step release guidance are in `docs/RELEASE_RUNBOOK.md`.
+Quick rules:
 
-## Branching
-- Use feature branches off `next`, e.g. `feat/adr8-split-color-debug`.
-- Open PRs into `next`. Keep changes small and focused.
-- When ready for a stable release, prepare a `release/vX.Y.Z` branch if needed, then merge to `main`.
+- Create feature and fix branches from `next`.
+- Open pull requests against `next`.
+- Run `npm run lint`, `npm run type-check`, `npm test`, and `npm run build` before requesting review.
+- Do not publish from a local machine. Maintainers follow the [Release Runbook](docs/RELEASE_RUNBOOK.md).
 
-## CI and Publishing
-- `.github/workflows/ci.yml`: runs on PRs and pushes to `main`/`next` (install, test, build, pack dry-run).
-- `.github/workflows/release.yml`: runs only when Git tags are pushed (e.g. `v0.1.10` or `v0.1.10-alpha.0`).
-  - Pre-release tags (alpha/beta/rc) publish to `@next`.
-  - Stable tags publish to `@latest`.
+---
 
-## Scripts
-- `npm test`: runs Jest tests.
-- `npm run build`: builds bundles with webpack and generates types.
-- `npm pack --dry-run`: inspects what would be published to npm.
+cesium-heatboxへの貢献ありがとうございます。
 
-## Releasing (tag-driven)
-- Pre-release: `npm version prerelease --preid=alpha` → `git push --tags` → published to `@next`.
-- Stable: `npm version X.Y.Z` → `git push --tags` → published to `@latest`.
+完全な日英併記のガイドは [docs/contributing.md](docs/contributing.md) で管理しています。バグ報告、機能要望、ブランチとPull Requestの運用、開発環境、コーディング規約、テスト、ドキュメント更新を説明しています。
 
-Please see `docs/RELEASE_RUNBOOK.md` for full details and rollback instructions.
+要点:
+
+- 機能・修正ブランチは `next` から作成します。
+- Pull Requestは `next` 向けに作成します。
+- レビュー依頼前に `npm run lint`、`npm run type-check`、`npm test`、`npm run build` を実行します。
+- ローカルから公開しません。メンテナーは[リリースランブック](docs/RELEASE_RUNBOOK.md)に従います。

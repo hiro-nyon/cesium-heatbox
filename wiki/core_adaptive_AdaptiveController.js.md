@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/core_adaptive_AdaptiveController.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: core/adaptive/AdaptiveController.js
 
 **日本語** | [English](#english)
@@ -15,13 +17,13 @@ const DEFAULT_ADAPTIVE_PARAMS = DEFAULT_OPTIONS.adaptiveParams || {};
 /**
  * AdaptiveController - Adaptive outline logic delegated from VoxelRenderer.
  * 適応的制御ロジック - ボクセルレンダラーから委譲されるアウトライン制御を担当
- * 
+ *
  * Responsibilities:
  * - 近傍密度計算 (Neighborhood density calculation)
  * - プリセット適用ロジック (Preset application logic)
  * - 適応的パラメータ計算 (Adaptive parameter calculation)
  * - Z軸スケール補正と重なり検出の推奨提示 (Z scale compensation & overlap recommendations)
- * 
+ *
  * ADR-0009 Phase 3 + ADR-0011 Phase 4
  * @version 0.1.15
  */
@@ -53,7 +55,7 @@ export class AdaptiveController {
   /**
    * Calculate neighborhood density around a voxel
    * ボクセル周辺の近傍密度を計算
-   * 
+   *
    * @param {Object} voxelInfo - Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値）
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @param {number} [radius] - Search radius override / 探索半径オーバーライド
@@ -82,15 +84,15 @@ export class AdaptiveController {
 
     let neighborhoodDensity = 0;
     let neighborCount = 0;
-    
+
     for (let dx = -searchRadius; dx <= searchRadius; dx++) {
       for (let dy = -searchRadius; dy <= searchRadius; dy++) {
         for (let dz = -searchRadius; dz <= searchRadius; dz++) {
           if (dx === 0 && dy === 0 && dz === 0) continue;
-          
+
           const neighborKey = `${x + dx},${y + dy},${z + dz}`;
           const neighbor = voxelData.get(neighborKey);
-          
+
           if (neighbor) {
             neighborhoodDensity += neighbor.count;
             neighborCount++;
@@ -98,11 +100,11 @@ export class AdaptiveController {
         }
       }
     }
-    
+
     const avgNeighborhoodDensity = neighborCount > 0 ? neighborhoodDensity / neighborCount : 0;
     const densityThreshold = controllerAdaptiveParams.densityThreshold ?? DEFAULT_ADAPTIVE_PARAMS.densityThreshold ?? 5;
     const isDenseArea = avgNeighborhoodDensity > densityThreshold;
-    
+
     return {
       totalDensity: neighborhoodDensity,
       neighborCount,
@@ -115,7 +117,7 @@ export class AdaptiveController {
   /**
    * Calculate Z-axis scale compensation factor
    * Z軸スケール補正係数を計算（v0.1.15 Phase 1 - ADR-0011）
-   * 
+   *
    * @param {Object} voxelInfo - Target voxel information / 対象ボクセル情報
    * @param {Object} grid - Grid information with cellSizeX/Y/Z / グリッド情報
    * @returns {number} Scale compensation factor / スケール補正係数
@@ -126,15 +128,15 @@ export class AdaptiveController {
     if (!grid || !controllerAdaptiveParams.zScaleCompensation) {
       return 1.0;
     }
-    
+
     const { cellSizeX, cellSizeY, cellSizeZ } = grid;
     if (!cellSizeX || !cellSizeY || !cellSizeZ) {
       return 1.0;
     }
-    
+
     const avgHorizontalSize = (cellSizeX + cellSizeY) / 2;
     const aspectRatio = cellSizeZ / avgHorizontalSize;
-    
+
     // Z軸が極小の場合は補正を適用
     if (aspectRatio < 0.1) {
       return Math.max(0.7, Math.min(1.3, 1.0 + (0.1 - aspectRatio) * 2));
@@ -145,7 +147,7 @@ export class AdaptiveController {
   /**
    * Count adjacent voxels (6 directions: ±X, ±Y, ±Z)
    * 隣接ボクセルをカウント（6方向：±X, ±Y, ±Z）（v0.1.15 Phase 2 - ADR-0011）
-   * 
+   *
    * @param {Object} voxelInfo - Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値）
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @returns {number} Number of adjacent voxels / 隣接ボクセル数
@@ -179,7 +181,7 @@ export class AdaptiveController {
   /**
    * Detect overlap and recommend rendering mode
    * 隣接重なりを検出してレンダリングモードを推奨（v0.1.15 Phase 2 - ADR-0011）
-   * 
+   *
    * @param {Object} voxelInfo - Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値）
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @returns {Object} Recommended rendering settings / 推奨レンダリング設定
@@ -227,7 +229,7 @@ export class AdaptiveController {
   /**
    * Apply preset-specific adaptive logic
    * プリセット固有の適応ロジックを適用
-   * 
+   *
    * @param {string} preset - Outline width preset / アウトライン幅プリセット
    * @param {boolean} isTopN - Whether it is TopN voxel / TopNボクセルかどうか
    * @param {number} normalizedDensity - Normalized density [0-1] / 正規化密度 [0-1]
@@ -244,32 +246,32 @@ export class AdaptiveController {
         // v0.1.12-alpha.10: 最小値を1.0に設定してRangeError防止
         adaptiveWidth = Math.max(1.0, baseOptions.outlineWidth * 0.8);
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 0.8;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 0.8;
         break;
 
       case 'medium':
         adaptiveWidth = baseOptions.outlineWidth;
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 1.0;
         break;
 
       case 'thick':
         adaptiveWidth = Math.max(1, baseOptions.outlineWidth * 1.5);
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 1.0;
         break;
 
       case 'adaptive':
       case 'adaptive-density': {
         // v0.1.15 Phase 1: より柔軟で安定した調整（ADR-0011）
         // 密度に応じたベース係数（中央値を基準に調整）
-        const baseFactor = isDenseArea ? 
+        const baseFactor = isDenseArea ?
           Math.max(0.6, 0.8 + (normalizedDensity - 0.5) * 0.3) : 1.0; // 0.6-0.95倍（密集時）
-        
+
         // Z軸スケール補正を適用（有効な場合）
         // 注: voxelInfoとgridはcalculateAdaptiveParams内でのみ利用可能
         // ここではbaseFactor * zScaleFactorの形で後段で適用される想定
-        
+
         adaptiveWidth = Math.max(1.0, Math.min(baseOptions.outlineWidth * 3.0,
           baseOptions.outlineWidth * baseFactor));
         adaptiveBoxOpacity = isDenseArea ? baseOptions.opacity * 0.8 : baseOptions.opacity;
@@ -281,7 +283,7 @@ export class AdaptiveController {
       case 'topn-focus':
         // v0.1.12-alpha.10: 安全な値範囲でRangeError防止
         adaptiveWidth = isTopN ?
-          Math.max(1.0, Math.min(baseOptions.outlineWidth * 3.0, 
+          Math.max(1.0, Math.min(baseOptions.outlineWidth * 3.0,
             baseOptions.outlineWidth * (1.5 + normalizedDensity * 0.5))) :
           Math.max(1.0, baseOptions.outlineWidth * 0.8); // 0.5→0.8で最小値を安全に
         adaptiveBoxOpacity = isTopN ? baseOptions.opacity : baseOptions.opacity * 0.6;
@@ -293,7 +295,7 @@ export class AdaptiveController {
       default:
         adaptiveWidth = baseOptions.outlineWidth;
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 1.0;
         break;
     }
 
@@ -307,7 +309,7 @@ export class AdaptiveController {
   /**
    * Calculate adaptive parameters for a voxel
    * ボクセルの適応的パラメータを計算
-   * 
+   *
    * @param {Object} voxelInfo - Voxel information / ボクセル情報
    * @param {boolean} isTopN - Whether it is TopN voxel / TopNボクセルかどうか
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
@@ -326,7 +328,7 @@ export class AdaptiveController {
         shouldUseEmulation: false
       };
     }
-    
+
     const classificationOptions = renderOptions.classification || {};
     const classificationTargets = classificationOptions.classificationTargets || DEFAULT_OPTIONS.classification.classificationTargets || {};
     const classificationEnabled = Boolean(classificationOptions.enabled && classifier);
@@ -344,7 +346,7 @@ export class AdaptiveController {
     }
 
     const { count } = voxelInfo;
-    const normalizedDensity = statistics.maxCount > statistics.minCount ? 
+    const normalizedDensity = statistics.maxCount > statistics.minCount ?
       (count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
 
     let classificationNormalized = null;
@@ -360,7 +362,7 @@ export class AdaptiveController {
     }
 
     const baseNormalized = classificationNormalized !== null ? classificationNormalized : normalizedDensity;
-    
+
     // 近傍密度を計算
     const neighborhoodResult = this.calculateNeighborhoodDensity(voxelInfo, voxelData, null, renderOptions);
     const { isDenseArea } = neighborhoodResult;
@@ -492,7 +494,7 @@ export class AdaptiveController {
   /**
    * Update adaptive control options
    * 適応制御オプションを更新
-   * 
+   *
    * @param {Object} newOptions - New options to merge / マージする新オプション
    */
   updateOptions(newOptions) {
@@ -504,14 +506,14 @@ export class AdaptiveController {
         ...(newOptions.adaptiveParams || {})
       }
     };
-    
+
     Logger.debug('AdaptiveController options updated:', this.options);
   }
 
   /**
    * Get current adaptive control configuration
    * 現在の適応制御設定を取得
-   * 
+   *
    * @returns {Object} Current configuration / 現在の設定
    */
   getConfiguration() {
@@ -538,13 +540,13 @@ const DEFAULT_ADAPTIVE_PARAMS = DEFAULT_OPTIONS.adaptiveParams || {};
 /**
  * AdaptiveController - Adaptive outline logic delegated from VoxelRenderer.
  * 適応的制御ロジック - ボクセルレンダラーから委譲されるアウトライン制御を担当
- * 
+ *
  * Responsibilities:
  * - 近傍密度計算 (Neighborhood density calculation)
  * - プリセット適用ロジック (Preset application logic)
  * - 適応的パラメータ計算 (Adaptive parameter calculation)
  * - Z軸スケール補正と重なり検出の推奨提示 (Z scale compensation & overlap recommendations)
- * 
+ *
  * ADR-0009 Phase 3 + ADR-0011 Phase 4
  * @version 0.1.15
  */
@@ -576,7 +578,7 @@ export class AdaptiveController {
   /**
    * Calculate neighborhood density around a voxel
    * ボクセル周辺の近傍密度を計算
-   * 
+   *
    * @param {Object} voxelInfo - Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値）
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @param {number} [radius] - Search radius override / 探索半径オーバーライド
@@ -605,15 +607,15 @@ export class AdaptiveController {
 
     let neighborhoodDensity = 0;
     let neighborCount = 0;
-    
+
     for (let dx = -searchRadius; dx <= searchRadius; dx++) {
       for (let dy = -searchRadius; dy <= searchRadius; dy++) {
         for (let dz = -searchRadius; dz <= searchRadius; dz++) {
           if (dx === 0 && dy === 0 && dz === 0) continue;
-          
+
           const neighborKey = `${x + dx},${y + dy},${z + dz}`;
           const neighbor = voxelData.get(neighborKey);
-          
+
           if (neighbor) {
             neighborhoodDensity += neighbor.count;
             neighborCount++;
@@ -621,11 +623,11 @@ export class AdaptiveController {
         }
       }
     }
-    
+
     const avgNeighborhoodDensity = neighborCount > 0 ? neighborhoodDensity / neighborCount : 0;
     const densityThreshold = controllerAdaptiveParams.densityThreshold ?? DEFAULT_ADAPTIVE_PARAMS.densityThreshold ?? 5;
     const isDenseArea = avgNeighborhoodDensity > densityThreshold;
-    
+
     return {
       totalDensity: neighborhoodDensity,
       neighborCount,
@@ -638,7 +640,7 @@ export class AdaptiveController {
   /**
    * Calculate Z-axis scale compensation factor
    * Z軸スケール補正係数を計算（v0.1.15 Phase 1 - ADR-0011）
-   * 
+   *
    * @param {Object} voxelInfo - Target voxel information / 対象ボクセル情報
    * @param {Object} grid - Grid information with cellSizeX/Y/Z / グリッド情報
    * @returns {number} Scale compensation factor / スケール補正係数
@@ -649,15 +651,15 @@ export class AdaptiveController {
     if (!grid || !controllerAdaptiveParams.zScaleCompensation) {
       return 1.0;
     }
-    
+
     const { cellSizeX, cellSizeY, cellSizeZ } = grid;
     if (!cellSizeX || !cellSizeY || !cellSizeZ) {
       return 1.0;
     }
-    
+
     const avgHorizontalSize = (cellSizeX + cellSizeY) / 2;
     const aspectRatio = cellSizeZ / avgHorizontalSize;
-    
+
     // Z軸が極小の場合は補正を適用
     if (aspectRatio < 0.1) {
       return Math.max(0.7, Math.min(1.3, 1.0 + (0.1 - aspectRatio) * 2));
@@ -668,7 +670,7 @@ export class AdaptiveController {
   /**
    * Count adjacent voxels (6 directions: ±X, ±Y, ±Z)
    * 隣接ボクセルをカウント（6方向：±X, ±Y, ±Z）（v0.1.15 Phase 2 - ADR-0011）
-   * 
+   *
    * @param {Object} voxelInfo - Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値）
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @returns {number} Number of adjacent voxels / 隣接ボクセル数
@@ -702,7 +704,7 @@ export class AdaptiveController {
   /**
    * Detect overlap and recommend rendering mode
    * 隣接重なりを検出してレンダリングモードを推奨（v0.1.15 Phase 2 - ADR-0011）
-   * 
+   *
    * @param {Object} voxelInfo - Target voxel information (`x`, `y`, `z` number) / 対象ボクセル情報（`x`・`y`・`z` は数値）
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
    * @returns {Object} Recommended rendering settings / 推奨レンダリング設定
@@ -750,7 +752,7 @@ export class AdaptiveController {
   /**
    * Apply preset-specific adaptive logic
    * プリセット固有の適応ロジックを適用
-   * 
+   *
    * @param {string} preset - Outline width preset / アウトライン幅プリセット
    * @param {boolean} isTopN - Whether it is TopN voxel / TopNボクセルかどうか
    * @param {number} normalizedDensity - Normalized density [0-1] / 正規化密度 [0-1]
@@ -767,32 +769,32 @@ export class AdaptiveController {
         // v0.1.12-alpha.10: 最小値を1.0に設定してRangeError防止
         adaptiveWidth = Math.max(1.0, baseOptions.outlineWidth * 0.8);
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 0.8;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 0.8;
         break;
 
       case 'medium':
         adaptiveWidth = baseOptions.outlineWidth;
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 1.0;
         break;
 
       case 'thick':
         adaptiveWidth = Math.max(1, baseOptions.outlineWidth * 1.5);
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 1.0;
         break;
 
       case 'adaptive':
       case 'adaptive-density': {
         // v0.1.15 Phase 1: より柔軟で安定した調整（ADR-0011）
         // 密度に応じたベース係数（中央値を基準に調整）
-        const baseFactor = isDenseArea ? 
+        const baseFactor = isDenseArea ?
           Math.max(0.6, 0.8 + (normalizedDensity - 0.5) * 0.3) : 1.0; // 0.6-0.95倍（密集時）
-        
+
         // Z軸スケール補正を適用（有効な場合）
         // 注: voxelInfoとgridはcalculateAdaptiveParams内でのみ利用可能
         // ここではbaseFactor * zScaleFactorの形で後段で適用される想定
-        
+
         adaptiveWidth = Math.max(1.0, Math.min(baseOptions.outlineWidth * 3.0,
           baseOptions.outlineWidth * baseFactor));
         adaptiveBoxOpacity = isDenseArea ? baseOptions.opacity * 0.8 : baseOptions.opacity;
@@ -804,7 +806,7 @@ export class AdaptiveController {
       case 'topn-focus':
         // v0.1.12-alpha.10: 安全な値範囲でRangeError防止
         adaptiveWidth = isTopN ?
-          Math.max(1.0, Math.min(baseOptions.outlineWidth * 3.0, 
+          Math.max(1.0, Math.min(baseOptions.outlineWidth * 3.0,
             baseOptions.outlineWidth * (1.5 + normalizedDensity * 0.5))) :
           Math.max(1.0, baseOptions.outlineWidth * 0.8); // 0.5→0.8で最小値を安全に
         adaptiveBoxOpacity = isTopN ? baseOptions.opacity : baseOptions.opacity * 0.6;
@@ -816,7 +818,7 @@ export class AdaptiveController {
       default:
         adaptiveWidth = baseOptions.outlineWidth;
         adaptiveBoxOpacity = baseOptions.opacity;
-        adaptiveOutlineOpacity = baseOptions.outlineOpacity || 1.0;
+        adaptiveOutlineOpacity = baseOptions.outlineOpacity ?? 1.0;
         break;
     }
 
@@ -830,7 +832,7 @@ export class AdaptiveController {
   /**
    * Calculate adaptive parameters for a voxel
    * ボクセルの適応的パラメータを計算
-   * 
+   *
    * @param {Object} voxelInfo - Voxel information / ボクセル情報
    * @param {boolean} isTopN - Whether it is TopN voxel / TopNボクセルかどうか
    * @param {Map} voxelData - All voxel data / 全ボクセルデータ
@@ -849,7 +851,7 @@ export class AdaptiveController {
         shouldUseEmulation: false
       };
     }
-    
+
     const classificationOptions = renderOptions.classification || {};
     const classificationTargets = classificationOptions.classificationTargets || DEFAULT_OPTIONS.classification.classificationTargets || {};
     const classificationEnabled = Boolean(classificationOptions.enabled && classifier);
@@ -867,7 +869,7 @@ export class AdaptiveController {
     }
 
     const { count } = voxelInfo;
-    const normalizedDensity = statistics.maxCount > statistics.minCount ? 
+    const normalizedDensity = statistics.maxCount > statistics.minCount ?
       (count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
 
     let classificationNormalized = null;
@@ -883,7 +885,7 @@ export class AdaptiveController {
     }
 
     const baseNormalized = classificationNormalized !== null ? classificationNormalized : normalizedDensity;
-    
+
     // 近傍密度を計算
     const neighborhoodResult = this.calculateNeighborhoodDensity(voxelInfo, voxelData, null, renderOptions);
     const { isDenseArea } = neighborhoodResult;
@@ -1015,7 +1017,7 @@ export class AdaptiveController {
   /**
    * Update adaptive control options
    * 適応制御オプションを更新
-   * 
+   *
    * @param {Object} newOptions - New options to merge / マージする新オプション
    */
   updateOptions(newOptions) {
@@ -1027,14 +1029,14 @@ export class AdaptiveController {
         ...(newOptions.adaptiveParams || {})
       }
     };
-    
+
     Logger.debug('AdaptiveController options updated:', this.options);
   }
 
   /**
    * Get current adaptive control configuration
    * 現在の適応制御設定を取得
-   * 
+   *
    * @returns {Object} Current configuration / 現在の設定
    */
   getConfiguration() {

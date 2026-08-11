@@ -149,14 +149,13 @@ class HeatmapLegend {
 const legend = new HeatmapLegend();
 
 // Update legend after Heatbox generation
-heatbox.addEventListener('heatmapGenerated', (event) => {
-  const { options, statistics } = event.detail;
-  legend.update(options, statistics);
-  
-  if (options.highlightTopN) {
-    legend.addTopNIndicator(options.highlightTopN);
-  }
-});
+await heatbox.setData(entities);
+const options = heatbox.getOptions();
+legend.update(options, heatbox.getStatistics());
+
+if (options.highlightTopN) {
+  legend.addTopNIndicator(options.highlightTopN);
+}
 ```
 
 ### Advanced Legend Implementation
@@ -234,18 +233,18 @@ const legend = new HeatmapLegend();
 
 // Generate heatmap with legend
 async function generateHeatmapWithLegend() {
-  // 1. Add data
-  heatbox.addEntityDataArray(sampleData);
-  
-  // 2. Generate heatmap
+  // 1. Configure the heatmap
   const options = {
     colorMap: 'viridis',
     highlightTopN: 5,
     voxelGap: 1.0,           // v0.1.6
     outlineOpacity: 0.8      // v0.1.6
   };
-  
-  await heatbox.generateHeatmap(options);
+
+  heatbox.updateOptions(options);
+
+  // 2. Generate heatmap
+  await heatbox.setData(sampleData);
   
   // 3. Update legend
   const statistics = heatbox.getStatistics();
@@ -256,7 +255,7 @@ async function generateHeatmapWithLegend() {
 // UI control integration
 document.getElementById('colorMapSelect').addEventListener('change', (e) => {
   const newOptions = { colorMap: e.target.value };
-  heatbox.updateVisualization(newOptions);
+  heatbox.updateOptions(newOptions);
   legend.update(newOptions, heatbox.getStatistics());
 });
 ```
@@ -443,14 +442,13 @@ class HeatmapLegend {
 const legend = new HeatmapLegend();
 
 // Heatbox生成後に凡例を更新
-heatbox.addEventListener('heatmapGenerated', (event) => {
-  const { options, statistics } = event.detail;
-  legend.update(options, statistics);
-  
-  if (options.highlightTopN) {
-    legend.addTopNIndicator(options.highlightTopN);
-  }
-});
+await heatbox.setData(entities);
+const options = heatbox.getOptions();
+legend.update(options, heatbox.getStatistics());
+
+if (options.highlightTopN) {
+  legend.addTopNIndicator(options.highlightTopN);
+}
 ```
 
 ## 高度な凡例の実装
@@ -528,18 +526,18 @@ const legend = new HeatmapLegend();
 
 // データ生成とヒートマップ作成
 async function generateHeatmapWithLegend() {
-  // 1. データ追加
-  heatbox.addEntityDataArray(sampleData);
-  
-  // 2. ヒートマップ生成
+  // 1. ヒートマップ設定
   const options = {
     colorMap: 'viridis',
     highlightTopN: 5,
     voxelGap: 1.0,           // v0.1.6
     outlineOpacity: 0.8      // v0.1.6
   };
-  
-  await heatbox.generateHeatmap(options);
+
+  heatbox.updateOptions(options);
+
+  // 2. ヒートマップ生成
+  await heatbox.setData(sampleData);
   
   // 3. 凡例更新
   const statistics = heatbox.getStatistics();
@@ -550,7 +548,7 @@ async function generateHeatmapWithLegend() {
 // UI制御との連携
 document.getElementById('colorMapSelect').addEventListener('change', (e) => {
   const newOptions = { colorMap: e.target.value };
-  heatbox.updateVisualization(newOptions);
+  heatbox.updateOptions(newOptions);
   legend.update(newOptions, heatbox.getStatistics());
 });
 ```

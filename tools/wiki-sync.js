@@ -16,6 +16,10 @@ const WIKI_DIR = path.join(__dirname, '../wiki');
 
 const JAPANESE_REGEX = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
 
+function cleanGeneratedMarkdown(content) {
+  return content.replace(/[ \t]+$/gm, '');
+}
+
 /**
  * 日本語判定
  * @param {string} text
@@ -350,9 +354,11 @@ const heatbox = new Heatbox(viewer, {
 `;
 }
 
-function copyFileIfExists(sourcePath, targetPath) {
+function copyFileIfExists(sourcePath, targetPath, sourceRelativePath) {
   if (!fs.existsSync(sourcePath)) return false;
-  fs.copyFileSync(sourcePath, targetPath);
+  const source = cleanGeneratedMarkdown(fs.readFileSync(sourcePath, 'utf8'));
+  const notice = `<!-- Generated from ${sourceRelativePath} by npm run wiki:sync. Edit the canonical source, not this page. -->\n\n`;
+  fs.writeFileSync(targetPath, `${notice}${source}`);
   return true;
 }
 
@@ -360,8 +366,9 @@ function syncMarkdownPages() {
   const pageMappings = [
     ['README.md', 'Home.md'],
     ['CHANGELOG.md', 'Release-Notes.md'],
-    ['docs/getting-started.md', 'Getting-Started.md'],
+    ['docs/quick-start.md', 'Getting-Started.md'],
     ['docs/quick-start.md', 'Quick-Start.md'],
+    ['docs/development-setup.md', 'Development-Setup.md'],
     ['docs/development-guide.md', 'Development-Guide.md'],
     ['docs/contributing.md', 'Contributing.md'],
     ['docs/specification.md', 'Architecture.md'],
@@ -375,7 +382,7 @@ function syncMarkdownPages() {
     const sourcePath = path.join(REPO_ROOT, sourceRelativePath);
     const targetPath = path.join(WIKI_DIR, targetFilename);
 
-    if (copyFileIfExists(sourcePath, targetPath)) {
+    if (copyFileIfExists(sourcePath, targetPath, sourceRelativePath)) {
       console.log(`📝 Synced: ${sourceRelativePath} → ${targetFilename}`);
       syncedCount++;
     }
@@ -415,7 +422,8 @@ async function main() {
 
     try {
       const htmlContent = fs.readFileSync(htmlPath, 'utf8');
-      const markdownContent = convertHtmlToMarkdown(htmlContent, htmlFile);
+      const generatedNotice = `<!-- Generated from docs/api/${htmlFile} by npm run wiki:sync. Edit JSDoc in src/, not this page. -->\n\n`;
+      const markdownContent = cleanGeneratedMarkdown(`${generatedNotice}${convertHtmlToMarkdown(htmlContent, htmlFile)}`);
 
       fs.writeFileSync(markdownPath, markdownContent);
       console.log(`✅ Converted: ${htmlFile} → ${markdownFile}`);

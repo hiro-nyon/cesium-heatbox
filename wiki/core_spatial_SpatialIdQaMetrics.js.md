@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/core_spatial_SpatialIdQaMetrics.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: core/spatial/SpatialIdQaMetrics.js
 
 **日本語** | [English](#english)

@@ -35,11 +35,12 @@
     "type-check": "tsc --noEmit",
     "benchmark": "node tools/benchmark.js",
     "docs": "jsdoc src/ -d docs/api -c jsdoc.config.json",
+    "test:docs": "node tools/documentation-surface-check.js",
     "wiki:sync": "node tools/wiki-sync.js",
     "wiki:publish": "bash tools/wiki/publish-wiki.sh hiro-nyon cesium-heatbox",
     "wiki:update": "npm run docs && npm run wiki:sync && npm run wiki:publish",
     "clean": "rm -rf dist/ types/ coverage/",
-    "prepublishOnly": "npm run clean && npm run build && npm test"
+    "prepublishOnly": "npm run clean && npm run build && npm test && npm run test:docs"
   },
   "exports": {
     ".": {

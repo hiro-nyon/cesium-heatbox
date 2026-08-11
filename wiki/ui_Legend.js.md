@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/ui_Legend.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: ui/Legend.js
 
 **日本語** | [English](#english)

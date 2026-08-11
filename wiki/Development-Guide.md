@@ -1,3 +1,5 @@
+<!-- Generated from docs/development-guide.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
 # Development Guide for Beginners (開発初心者向けガイド)
 
 [English](#english) | [日本語](#日本語)
@@ -12,7 +14,7 @@
 - npm 8.0.0 or higher
 - Git
 
-**Target Audience**: Development beginners and those new to JavaScript/Node.js library development  
+**Target Audience**: Development beginners and those new to JavaScript/Node.js library development
 **Purpose**: Understand the development and release procedures for the cesium-heatbox project
 
 ### Table of Contents
@@ -186,7 +188,7 @@ For detailed solutions, see the Japanese section below.
 
 ## 日本語
 
-**対象**: 開発初心者・JavaScript/Node.jsライブラリ開発が初めての方  
+**対象**: 開発初心者・JavaScript/Node.jsライブラリ開発が初めての方
 **目的**: cesium-heatboxプロジェクトの開発・リリース手順を理解する
 
 ## 目次
@@ -353,7 +355,8 @@ Closes #123
   "name": "cesium-heatbox",           // パッケージ名
   "version": "0.1.0",                // バージョン
   "description": "3D heatmap library", // 説明
-  "main": "dist/cesium-heatbox.js",  // メインファイル
+  "main": "dist/cesium-heatbox.cjs", // CommonJSメインファイル
+  "module": "dist/cesium-heatbox.min.mjs",
   "scripts": {                        // 実行可能コマンド
     "dev": "webpack serve --mode development",
     "build": "webpack --mode production",
@@ -645,10 +648,10 @@ ls -la dist/
 du -h dist/*
 
 # 生成されたファイル
-# - cesium-heatbox.js      (開発版)
-# - cesium-heatbox.min.js  (本番版・最適化済み)
-# - cesium-heatbox.umd.js  (UMD版)
-# - cesium-heatbox.d.ts    (TypeScript型定義)
+# - cesium-heatbox.min.mjs  (ESM本番版・最適化済み)
+# - cesium-heatbox.cjs     (CommonJS本番版)
+# - cesium-heatbox.umd.min.js (UMD本番版)
+# 型定義は types/index.d.* に生成
 ```
 
 ---
@@ -965,3 +968,5 @@ npm run dev
 - 作成日: 2025年7月9日
 - 対象バージョン: cesium-heatbox v0.1.0-alpha.1
 - 次回更新: 新機能追加時
+
+> 歴史的メモ: このガイドの本文はv0.1.0-alpha.1時点の開発手順を記録しています。現在の開発環境は[開発環境セットアップ](development-setup.md)、公開APIは[APIリファレンス](API.md)、リリース手順は[リリースランブック](RELEASE_RUNBOOK.md)を参照してください。

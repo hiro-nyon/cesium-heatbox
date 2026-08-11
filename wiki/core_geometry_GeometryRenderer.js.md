@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/core_geometry_GeometryRenderer.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: core/geometry/GeometryRenderer.js
 
 **日本語** | [English](#english)
@@ -117,7 +119,7 @@ export class GeometryRenderer {
   /**
    * Create a voxel box entity
    * ボクセルボックスエンティティを作成
-   * 
+   *
    * @param {Object} config - Voxel configuration / ボクセル設定
    * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
    * `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、
@@ -146,12 +148,12 @@ export class GeometryRenderer {
     const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
     const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-90, Math.min(90, centerLat)) : 0;
     const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
-    
+
     // Validate dimension inputs to prevent Cesium geometry errors
     const safeCellSizeX = Number.isFinite(cellSizeX) && cellSizeX > 0 ? Math.min(cellSizeX, 1e6) : 1;
     const safeCellSizeY = Number.isFinite(cellSizeY) && cellSizeY > 0 ? Math.min(cellSizeY, 1e6) : 1;
     const safeBoxHeight = Number.isFinite(boxHeight) && boxHeight > 0 ? Math.min(boxHeight, 1e6) : 1;
-    
+
     // Log warning if values were clamped
     if (safeCenterLon !== centerLon || safeCenterLat !== centerLat || safeCenterAlt !== centerAlt ||
         safeCellSizeX !== cellSizeX || safeCellSizeY !== cellSizeY || safeBoxHeight !== boxHeight) {
@@ -185,12 +187,12 @@ export class GeometryRenderer {
       },
       description: this.createVoxelDescription(voxelInfo, voxelKey)
     };
-    
+
     // v0.1.17: Add spatial ID to properties if available / 空間IDがあればプロパティに追加
     if (voxelInfo.spatialId) {
       entityConfig.properties.spatialId = voxelInfo.spatialId;
     }
-    
+
     // v0.1.18: Add layer aggregation info to properties (ADR-0014)
     if (voxelInfo.layerTop) {
       entityConfig.properties.layerTop = voxelInfo.layerTop;
@@ -214,18 +216,18 @@ export class GeometryRenderer {
       entityConfig.box.material = color.withAlpha(opacity);
       entityConfig.box.fill = true;
     }
-    
+
     // Create and track entity
     const entity = this.viewer.entities.add(entityConfig);
     this.entities.push(entity);
-    
+
     return entity;
   }
 
   /**
-   * Create inset outline for a voxel  
+   * Create inset outline for a voxel
    * ボクセルのインセット枠線を作成
-   * 
+   *
    * @param {Object} config - Inset outline configuration / インセット枠線設定
    * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
    * `baseSizeX`, `baseSizeY`, `baseSizeZ` (number) / ベース寸法、
@@ -247,7 +249,7 @@ export class GeometryRenderer {
     const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
     const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-90, Math.min(90, centerLat)) : 0;
     const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
-    
+
     const safeBaseSizeX = Number.isFinite(baseSizeX) && baseSizeX > 0 ? Math.min(baseSizeX, 1e6) : 1;
     const safeBaseSizeY = Number.isFinite(baseSizeY) && baseSizeY > 0 ? Math.min(baseSizeY, 1e6) : 1;
     const safeBaseSizeZ = Number.isFinite(baseSizeZ) && baseSizeZ > 0 ? Math.min(baseSizeZ, 1e6) : 1;
@@ -257,17 +259,17 @@ export class GeometryRenderer {
     const maxInsetX = safeBaseSizeX * 0.2;
     const maxInsetY = safeBaseSizeY * 0.2;
     const maxInsetZ = safeBaseSizeZ * 0.2;
-    
+
     const baseInset = insetAmount !== null ? insetAmount : this.options.outlineInset;
     const effectiveInsetX = Math.min(baseInset, maxInsetX);
-    const effectiveInsetY = Math.min(baseInset, maxInsetY);  
+    const effectiveInsetY = Math.min(baseInset, maxInsetY);
     const effectiveInsetZ = Math.min(baseInset, maxInsetZ);
-    
+
     // インセット後の寸法計算（各軸から2倍のインセットを引く）
     const insetSizeX = Math.max(safeBaseSizeX - (effectiveInsetX * 2), safeBaseSizeX * 0.1);
     const insetSizeY = Math.max(safeBaseSizeY - (effectiveInsetY * 2), safeBaseSizeY * 0.1);
     const insetSizeZ = Math.max(safeBaseSizeZ - (effectiveInsetZ * 2), safeBaseSizeZ * 0.1);
-    
+
     // セカンダリBoxエンティティの設定（枠線のみ、塗りなし）
     const insetEntity = this.viewer.entities.add({
       position: Cesium.Cartesian3.fromDegrees(safeCenterLon, safeCenterLat, safeCenterAlt),
@@ -285,19 +287,22 @@ export class GeometryRenderer {
         insetSize: { x: insetSizeX, y: insetSizeY, z: insetSizeZ }
       }
     });
-    
+
     this.entities.push(insetEntity);
-    
+
     // 枠線の厚み部分を視覚化（WebGL 1px制限の回避）
+    let frameEntities = [];
     if (this.options.enableThickFrames && (effectiveInsetX > 0.1 || effectiveInsetY > 0.1 || effectiveInsetZ > 0.1)) {
-      this.createThickOutlineFrames({
+      frameEntities = this.createThickOutlineFrames({
         centerLon: safeCenterLon, centerLat: safeCenterLat, centerAlt: safeCenterAlt,
         outerX: safeBaseSizeX, outerY: safeBaseSizeY, outerZ: safeBaseSizeZ,
         innerX: insetSizeX, innerY: insetSizeY, innerZ: insetSizeZ,
         frameColor: outlineColor, voxelKey
       });
     }
-    
+    // Cesium PropertyBag を走査せず、生成元から所有エンティティを直接引き渡す。
+    insetEntity._heatboxFrameEntities = frameEntities;
+
     Logger.debug(`Inset outline created for voxel ${voxelKey}:`, {
       originalSize: { x: baseSizeX, y: baseSizeY, z: baseSizeZ },
       insetSize: { x: insetSizeX, y: insetSizeY, z: insetSizeZ },
@@ -310,7 +315,7 @@ export class GeometryRenderer {
   /**
    * Create thick outline frame structures
    * 枠線の厚み部分を視覚化するフレーム構造を作成
-   * 
+   *
    * @param {Object} config - Frame configuration / フレーム設定
    * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
    * `outerX`, `outerY`, `outerZ` (number) / 外枠寸法、
@@ -340,7 +345,7 @@ export class GeometryRenderer {
     frameThickX = Math.max(frameThickX, minFrame);
     frameThickY = Math.max(frameThickY, minFrame);
     frameThickZ = Math.max(frameThickZ, minFrame);
-    
+
     // 境界計算：各軸での内側・外側の境界
     const outerBoundX = outerX / 2;    // 外側境界（中心からの距離）
     const outerBoundY = outerY / 2;
@@ -348,7 +353,7 @@ export class GeometryRenderer {
     // 内側境界は以降の処理では直接使用しないため計算を省略
 
     const frameEntities = [];
-    
+
     // 12個のフレームボックスを作成
     // X軸に平行なフレーム（4本）
     const xFrames = [
@@ -456,14 +461,14 @@ export class GeometryRenderer {
     });
 
     Logger.debug(`Created ${frameEntities.length} thick frame entities for voxel ${voxelKey}`);
-    
+
     return frameEntities;
   }
 
   /**
    * Create edge polylines for thick outline emulation
    * 太線エミュレーション用のエッジポリライン作成
-   * 
+   *
    * @param {Object} config - Edge polyline configuration / エッジポリライン設定
    * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
    * `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、
@@ -482,12 +487,12 @@ export class GeometryRenderer {
     } = config;
 
     const polylineEntities = [];
-    
+
     // Validate inputs for edge polylines to prevent coordinate calculation errors
     const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
     const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-85, Math.min(85, centerLat)) : 0; // Avoid poles more strictly
     const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
-    
+
     const safeCellSizeX = Number.isFinite(cellSizeX) && cellSizeX > 0 ? Math.min(cellSizeX, 1e5) : 1; // More conservative limits
     const safeCellSizeY = Number.isFinite(cellSizeY) && cellSizeY > 0 ? Math.min(cellSizeY, 1e5) : 1;
     const safeBoxHeight = Number.isFinite(boxHeight) && boxHeight > 0 ? Math.min(boxHeight, 1e5) : 1;
@@ -502,7 +507,7 @@ export class GeometryRenderer {
     const halfX = safeCellSizeX / 2;
     const halfY = safeCellSizeY / 2;
     const halfZ = safeBoxHeight / 2;
-    
+
     // 座標変換係数の安全な計算 - より保守的なアプローチ
     const cosLat = Math.cos(safeCenterLat * Math.PI / 180);
     const safeCosFactor = Math.max(0.1, Math.abs(cosLat)); // より保守的な最小値
@@ -510,8 +515,8 @@ export class GeometryRenderer {
     // 計算された座標オフセットの事前検証
     const lonOffset = halfX / (111320 * safeCosFactor);
     const latOffset = halfY / 111320;
-    
-    if (!Number.isFinite(lonOffset) || !Number.isFinite(latOffset) || 
+
+    if (!Number.isFinite(lonOffset) || !Number.isFinite(latOffset) ||
         Math.abs(lonOffset) > 0.1 || Math.abs(latOffset) > 0.1) {
       Logger.warn(`Coordinate offsets out of range for voxel ${voxelKey}, skipping edge polylines`);
       return polylineEntities;
@@ -532,7 +537,7 @@ export class GeometryRenderer {
     ];
 
     // 全ての座標が有効範囲内かチェック
-    const allCoordsValid = vertexCoords.every(([lon, lat, alt]) => 
+    const allCoordsValid = vertexCoords.every(([lon, lat, alt]) =>
       Number.isFinite(lon) && Number.isFinite(lat) && Number.isFinite(alt) &&
       lon >= -180 && lon <= 180 && lat >= -85 && lat <= 85 &&
       alt >= -50000 && alt <= 500000
@@ -546,7 +551,7 @@ export class GeometryRenderer {
     // Cartesian3頂点の安全な作成
     let vertices;
     try {
-      vertices = vertexCoords.map(([lon, lat, alt]) => 
+      vertices = vertexCoords.map(([lon, lat, alt]) =>
         Cesium.Cartesian3.fromDegrees(lon, lat, alt)
       );
     } catch (error) {
@@ -555,7 +560,7 @@ export class GeometryRenderer {
     }
 
     // 作成された頂点の最終検証
-    const validVertices = vertices.every(vertex => 
+    const validVertices = vertices.every(vertex =>
       vertex && Number.isFinite(vertex.x) && Number.isFinite(vertex.y) && Number.isFinite(vertex.z)
     );
 
@@ -579,7 +584,7 @@ export class GeometryRenderer {
       try {
         const vertex0 = vertices[edge[0]];
         const vertex1 = vertices[edge[1]];
-        
+
         // 追加の安全性チェック
         if (!vertex0 || !vertex1) {
           Logger.warn(`Missing vertices for edge ${index} in voxel ${voxelKey}`);
@@ -587,7 +592,7 @@ export class GeometryRenderer {
         }
 
         const positions = [vertex0, vertex1];
-        
+
         // positions配列の最終検証
         if (positions.length !== 2) {
           Logger.warn(`Invalid positions array length for edge ${index} in voxel ${voxelKey}`);
@@ -618,7 +623,7 @@ export class GeometryRenderer {
 
         this.entities.push(polylineEntity);
         polylineEntities.push(polylineEntity);
-        
+
       } catch (error) {
         Logger.warn(`Failed to create polyline for edge ${index} in voxel ${voxelKey}:`, error);
         // エラーが発生しても処理を継続（他のエッジは正常に作成される可能性がある）
@@ -626,14 +631,14 @@ export class GeometryRenderer {
     });
 
     Logger.debug(`Created ${polylineEntities.length} edge polylines for voxel ${voxelKey}`);
-    
+
     return polylineEntities;
   }
 
   /**
    * Create voxel description HTML
    * ボクセルの説明HTMLを生成
-   * 
+   *
    * @param {Object} voxelInfo - Voxel information / ボクセル情報
    * @param {string} voxelKey - Voxel key / ボクセルキー
    * @returns {string} HTML description / HTML形式の説明文
@@ -645,14 +650,14 @@ export class GeometryRenderer {
           <tr><td><b>ズームレベル:</b></td><td>Z=${escapeHtml(String(voxelInfo.spatialId.z))}, F=${escapeHtml(String(voxelInfo.spatialId.f))}</td></tr>
           <tr><td><b>タイル座標:</b></td><td>X=${escapeHtml(String(voxelInfo.spatialId.x))}, Y=${escapeHtml(String(voxelInfo.spatialId.y))}</td></tr>
     ` : '';
-    
+
     // v0.1.18: Include layer breakdown if aggregation enabled and showInDescription is true (ADR-0014)
     let layerInfo = '';
-    const showLayerInfo = this.options.aggregation?.enabled && 
+    const showLayerInfo = this.options.aggregation?.enabled &&
                           this.options.aggregation?.showInDescription !== false &&
-                          voxelInfo.layerStats && 
+                          voxelInfo.layerStats &&
                           voxelInfo.layerStats.size > 0;
-    
+
     if (showLayerInfo) {
       // Escape layer keys to prevent XSS / XSS防止のためレイヤキーをエスケープ
       const layerRows = Array.from(voxelInfo.layerStats.entries())
@@ -663,18 +668,18 @@ export class GeometryRenderer {
           <tr><td style="padding-left: 10px;">${escapeHtml(key)}</td><td>${count} (${pct}%)</td></tr>
         `;
         }).join('');
-      
+
       const topLayerInfo = voxelInfo.layerTop ? `
           <tr><td><b>支配的レイヤ:</b></td><td>${escapeHtml(voxelInfo.layerTop)}</td></tr>
       ` : '';
-      
+
       layerInfo = `
           ${topLayerInfo}
           <tr><td colspan="2"><b>レイヤ内訳:</b></td></tr>
           ${layerRows}
       `;
     }
-    
+
     return `
       <div style="padding: 10px; font-family: Arial, sans-serif;">
         <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
@@ -763,10 +768,7 @@ export class GeometryRenderer {
       voxelKey: config.voxelKey,
       insetAmount: this.options.outlineInset > 0 ? this.options.outlineInset : 1
     });
-
-    if (this.options.enableThickFrames) {
-      record.frameEntities = this.entities.filter(entity => entity?.properties?.parentKey === config.voxelKey && String(entity?.properties?.type || '').startsWith('voxel-thick-frame-'));
-    }
+    record.frameEntities = record.insetEntity?._heatboxFrameEntities || [];
   }
 
   _syncPolylineRecord(record, config) {
@@ -836,7 +838,7 @@ export class GeometryRenderer {
   /**
    * Check if inset outline should be applied
    * インセット枠線を適用すべきかどうかを判定
-   * 
+   *
    * @param {boolean} isTopN - Is TopN voxel / TopNボクセルかどうか
    * @returns {boolean} Should apply inset outline / インセット枠線を適用する場合はtrue
    */
@@ -908,7 +910,7 @@ export class GeometryRenderer {
   /**
    * Get entity count
    * エンティティ数を取得
-   * 
+   *
    * @returns {number} Number of managed entities / 管理対象エンティティ数
    */
   getEntityCount() {
@@ -918,7 +920,7 @@ export class GeometryRenderer {
   /**
    * Update rendering options
    * 描画オプションを更新
-   * 
+   *
    * @param {Object} newOptions - New options to merge / マージする新オプション
    */
   updateOptions(newOptions) {
@@ -926,14 +928,14 @@ export class GeometryRenderer {
       ...this.options,
       ...newOptions
     };
-    
+
     Logger.debug('GeometryRenderer options updated:', this.options);
   }
 
   /**
    * Get current configuration
    * 現在の設定を取得
-   * 
+   *
    * @returns {Object} Current configuration / 現在の設定
    */
   getConfiguration() {
@@ -1063,7 +1065,7 @@ export class GeometryRenderer {
   /**
    * Create a voxel box entity
    * ボクセルボックスエンティティを作成
-   * 
+   *
    * @param {Object} config - Voxel configuration / ボクセル設定
    * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
    * `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、
@@ -1092,12 +1094,12 @@ export class GeometryRenderer {
     const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
     const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-90, Math.min(90, centerLat)) : 0;
     const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
-    
+
     // Validate dimension inputs to prevent Cesium geometry errors
     const safeCellSizeX = Number.isFinite(cellSizeX) && cellSizeX > 0 ? Math.min(cellSizeX, 1e6) : 1;
     const safeCellSizeY = Number.isFinite(cellSizeY) && cellSizeY > 0 ? Math.min(cellSizeY, 1e6) : 1;
     const safeBoxHeight = Number.isFinite(boxHeight) && boxHeight > 0 ? Math.min(boxHeight, 1e6) : 1;
-    
+
     // Log warning if values were clamped
     if (safeCenterLon !== centerLon || safeCenterLat !== centerLat || safeCenterAlt !== centerAlt ||
         safeCellSizeX !== cellSizeX || safeCellSizeY !== cellSizeY || safeBoxHeight !== boxHeight) {
@@ -1131,12 +1133,12 @@ export class GeometryRenderer {
       },
       description: this.createVoxelDescription(voxelInfo, voxelKey)
     };
-    
+
     // v0.1.17: Add spatial ID to properties if available / 空間IDがあればプロパティに追加
     if (voxelInfo.spatialId) {
       entityConfig.properties.spatialId = voxelInfo.spatialId;
     }
-    
+
     // v0.1.18: Add layer aggregation info to properties (ADR-0014)
     if (voxelInfo.layerTop) {
       entityConfig.properties.layerTop = voxelInfo.layerTop;
@@ -1160,18 +1162,18 @@ export class GeometryRenderer {
       entityConfig.box.material = color.withAlpha(opacity);
       entityConfig.box.fill = true;
     }
-    
+
     // Create and track entity
     const entity = this.viewer.entities.add(entityConfig);
     this.entities.push(entity);
-    
+
     return entity;
   }
 
   /**
-   * Create inset outline for a voxel  
+   * Create inset outline for a voxel
    * ボクセルのインセット枠線を作成
-   * 
+   *
    * @param {Object} config - Inset outline configuration / インセット枠線設定
    * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
    * `baseSizeX`, `baseSizeY`, `baseSizeZ` (number) / ベース寸法、
@@ -1193,7 +1195,7 @@ export class GeometryRenderer {
     const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
     const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-90, Math.min(90, centerLat)) : 0;
     const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
-    
+
     const safeBaseSizeX = Number.isFinite(baseSizeX) && baseSizeX > 0 ? Math.min(baseSizeX, 1e6) : 1;
     const safeBaseSizeY = Number.isFinite(baseSizeY) && baseSizeY > 0 ? Math.min(baseSizeY, 1e6) : 1;
     const safeBaseSizeZ = Number.isFinite(baseSizeZ) && baseSizeZ > 0 ? Math.min(baseSizeZ, 1e6) : 1;
@@ -1203,17 +1205,17 @@ export class GeometryRenderer {
     const maxInsetX = safeBaseSizeX * 0.2;
     const maxInsetY = safeBaseSizeY * 0.2;
     const maxInsetZ = safeBaseSizeZ * 0.2;
-    
+
     const baseInset = insetAmount !== null ? insetAmount : this.options.outlineInset;
     const effectiveInsetX = Math.min(baseInset, maxInsetX);
-    const effectiveInsetY = Math.min(baseInset, maxInsetY);  
+    const effectiveInsetY = Math.min(baseInset, maxInsetY);
     const effectiveInsetZ = Math.min(baseInset, maxInsetZ);
-    
+
     // インセット後の寸法計算（各軸から2倍のインセットを引く）
     const insetSizeX = Math.max(safeBaseSizeX - (effectiveInsetX * 2), safeBaseSizeX * 0.1);
     const insetSizeY = Math.max(safeBaseSizeY - (effectiveInsetY * 2), safeBaseSizeY * 0.1);
     const insetSizeZ = Math.max(safeBaseSizeZ - (effectiveInsetZ * 2), safeBaseSizeZ * 0.1);
-    
+
     // セカンダリBoxエンティティの設定（枠線のみ、塗りなし）
     const insetEntity = this.viewer.entities.add({
       position: Cesium.Cartesian3.fromDegrees(safeCenterLon, safeCenterLat, safeCenterAlt),
@@ -1231,19 +1233,22 @@ export class GeometryRenderer {
         insetSize: { x: insetSizeX, y: insetSizeY, z: insetSizeZ }
       }
     });
-    
+
     this.entities.push(insetEntity);
-    
+
     // 枠線の厚み部分を視覚化（WebGL 1px制限の回避）
+    let frameEntities = [];
     if (this.options.enableThickFrames && (effectiveInsetX > 0.1 || effectiveInsetY > 0.1 || effectiveInsetZ > 0.1)) {
-      this.createThickOutlineFrames({
+      frameEntities = this.createThickOutlineFrames({
         centerLon: safeCenterLon, centerLat: safeCenterLat, centerAlt: safeCenterAlt,
         outerX: safeBaseSizeX, outerY: safeBaseSizeY, outerZ: safeBaseSizeZ,
         innerX: insetSizeX, innerY: insetSizeY, innerZ: insetSizeZ,
         frameColor: outlineColor, voxelKey
       });
     }
-    
+    // Cesium PropertyBag を走査せず、生成元から所有エンティティを直接引き渡す。
+    insetEntity._heatboxFrameEntities = frameEntities;
+
     Logger.debug(`Inset outline created for voxel ${voxelKey}:`, {
       originalSize: { x: baseSizeX, y: baseSizeY, z: baseSizeZ },
       insetSize: { x: insetSizeX, y: insetSizeY, z: insetSizeZ },
@@ -1256,7 +1261,7 @@ export class GeometryRenderer {
   /**
    * Create thick outline frame structures
    * 枠線の厚み部分を視覚化するフレーム構造を作成
-   * 
+   *
    * @param {Object} config - Frame configuration / フレーム設定
    * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
    * `outerX`, `outerY`, `outerZ` (number) / 外枠寸法、
@@ -1286,7 +1291,7 @@ export class GeometryRenderer {
     frameThickX = Math.max(frameThickX, minFrame);
     frameThickY = Math.max(frameThickY, minFrame);
     frameThickZ = Math.max(frameThickZ, minFrame);
-    
+
     // 境界計算：各軸での内側・外側の境界
     const outerBoundX = outerX / 2;    // 外側境界（中心からの距離）
     const outerBoundY = outerY / 2;
@@ -1294,7 +1299,7 @@ export class GeometryRenderer {
     // 内側境界は以降の処理では直接使用しないため計算を省略
 
     const frameEntities = [];
-    
+
     // 12個のフレームボックスを作成
     // X軸に平行なフレーム（4本）
     const xFrames = [
@@ -1402,14 +1407,14 @@ export class GeometryRenderer {
     });
 
     Logger.debug(`Created ${frameEntities.length} thick frame entities for voxel ${voxelKey}`);
-    
+
     return frameEntities;
   }
 
   /**
    * Create edge polylines for thick outline emulation
    * 太線エミュレーション用のエッジポリライン作成
-   * 
+   *
    * @param {Object} config - Edge polyline configuration / エッジポリライン設定
    * Properties: `centerLon`, `centerLat`, `centerAlt` (number) / 中心座標、
    * `cellSizeX`, `cellSizeY` (number) / フットプリント寸法、
@@ -1428,12 +1433,12 @@ export class GeometryRenderer {
     } = config;
 
     const polylineEntities = [];
-    
+
     // Validate inputs for edge polylines to prevent coordinate calculation errors
     const safeCenterLon = Number.isFinite(centerLon) ? Math.max(-180, Math.min(180, centerLon)) : 0;
     const safeCenterLat = Number.isFinite(centerLat) ? Math.max(-85, Math.min(85, centerLat)) : 0; // Avoid poles more strictly
     const safeCenterAlt = Number.isFinite(centerAlt) ? Math.max(-10000, Math.min(100000, centerAlt)) : 0;
-    
+
     const safeCellSizeX = Number.isFinite(cellSizeX) && cellSizeX > 0 ? Math.min(cellSizeX, 1e5) : 1; // More conservative limits
     const safeCellSizeY = Number.isFinite(cellSizeY) && cellSizeY > 0 ? Math.min(cellSizeY, 1e5) : 1;
     const safeBoxHeight = Number.isFinite(boxHeight) && boxHeight > 0 ? Math.min(boxHeight, 1e5) : 1;
@@ -1448,7 +1453,7 @@ export class GeometryRenderer {
     const halfX = safeCellSizeX / 2;
     const halfY = safeCellSizeY / 2;
     const halfZ = safeBoxHeight / 2;
-    
+
     // 座標変換係数の安全な計算 - より保守的なアプローチ
     const cosLat = Math.cos(safeCenterLat * Math.PI / 180);
     const safeCosFactor = Math.max(0.1, Math.abs(cosLat)); // より保守的な最小値
@@ -1456,8 +1461,8 @@ export class GeometryRenderer {
     // 計算された座標オフセットの事前検証
     const lonOffset = halfX / (111320 * safeCosFactor);
     const latOffset = halfY / 111320;
-    
-    if (!Number.isFinite(lonOffset) || !Number.isFinite(latOffset) || 
+
+    if (!Number.isFinite(lonOffset) || !Number.isFinite(latOffset) ||
         Math.abs(lonOffset) > 0.1 || Math.abs(latOffset) > 0.1) {
       Logger.warn(`Coordinate offsets out of range for voxel ${voxelKey}, skipping edge polylines`);
       return polylineEntities;
@@ -1478,7 +1483,7 @@ export class GeometryRenderer {
     ];
 
     // 全ての座標が有効範囲内かチェック
-    const allCoordsValid = vertexCoords.every(([lon, lat, alt]) => 
+    const allCoordsValid = vertexCoords.every(([lon, lat, alt]) =>
       Number.isFinite(lon) && Number.isFinite(lat) && Number.isFinite(alt) &&
       lon >= -180 && lon <= 180 && lat >= -85 && lat <= 85 &&
       alt >= -50000 && alt <= 500000
@@ -1492,7 +1497,7 @@ export class GeometryRenderer {
     // Cartesian3頂点の安全な作成
     let vertices;
     try {
-      vertices = vertexCoords.map(([lon, lat, alt]) => 
+      vertices = vertexCoords.map(([lon, lat, alt]) =>
         Cesium.Cartesian3.fromDegrees(lon, lat, alt)
       );
     } catch (error) {
@@ -1501,7 +1506,7 @@ export class GeometryRenderer {
     }
 
     // 作成された頂点の最終検証
-    const validVertices = vertices.every(vertex => 
+    const validVertices = vertices.every(vertex =>
       vertex && Number.isFinite(vertex.x) && Number.isFinite(vertex.y) && Number.isFinite(vertex.z)
     );
 
@@ -1525,7 +1530,7 @@ export class GeometryRenderer {
       try {
         const vertex0 = vertices[edge[0]];
         const vertex1 = vertices[edge[1]];
-        
+
         // 追加の安全性チェック
         if (!vertex0 || !vertex1) {
           Logger.warn(`Missing vertices for edge ${index} in voxel ${voxelKey}`);
@@ -1533,7 +1538,7 @@ export class GeometryRenderer {
         }
 
         const positions = [vertex0, vertex1];
-        
+
         // positions配列の最終検証
         if (positions.length !== 2) {
           Logger.warn(`Invalid positions array length for edge ${index} in voxel ${voxelKey}`);
@@ -1564,7 +1569,7 @@ export class GeometryRenderer {
 
         this.entities.push(polylineEntity);
         polylineEntities.push(polylineEntity);
-        
+
       } catch (error) {
         Logger.warn(`Failed to create polyline for edge ${index} in voxel ${voxelKey}:`, error);
         // エラーが発生しても処理を継続（他のエッジは正常に作成される可能性がある）
@@ -1572,14 +1577,14 @@ export class GeometryRenderer {
     });
 
     Logger.debug(`Created ${polylineEntities.length} edge polylines for voxel ${voxelKey}`);
-    
+
     return polylineEntities;
   }
 
   /**
    * Create voxel description HTML
    * ボクセルの説明HTMLを生成
-   * 
+   *
    * @param {Object} voxelInfo - Voxel information / ボクセル情報
    * @param {string} voxelKey - Voxel key / ボクセルキー
    * @returns {string} HTML description / HTML形式の説明文
@@ -1591,14 +1596,14 @@ export class GeometryRenderer {
           <tr><td><b>ズームレベル:</b></td><td>Z=${escapeHtml(String(voxelInfo.spatialId.z))}, F=${escapeHtml(String(voxelInfo.spatialId.f))}</td></tr>
           <tr><td><b>タイル座標:</b></td><td>X=${escapeHtml(String(voxelInfo.spatialId.x))}, Y=${escapeHtml(String(voxelInfo.spatialId.y))}</td></tr>
     ` : '';
-    
+
     // v0.1.18: Include layer breakdown if aggregation enabled and showInDescription is true (ADR-0014)
     let layerInfo = '';
-    const showLayerInfo = this.options.aggregation?.enabled && 
+    const showLayerInfo = this.options.aggregation?.enabled &&
                           this.options.aggregation?.showInDescription !== false &&
-                          voxelInfo.layerStats && 
+                          voxelInfo.layerStats &&
                           voxelInfo.layerStats.size > 0;
-    
+
     if (showLayerInfo) {
       // Escape layer keys to prevent XSS / XSS防止のためレイヤキーをエスケープ
       const layerRows = Array.from(voxelInfo.layerStats.entries())
@@ -1609,18 +1614,18 @@ export class GeometryRenderer {
           <tr><td style="padding-left: 10px;">${escapeHtml(key)}</td><td>${count} (${pct}%)</td></tr>
         `;
         }).join('');
-      
+
       const topLayerInfo = voxelInfo.layerTop ? `
           <tr><td><b>支配的レイヤ:</b></td><td>${escapeHtml(voxelInfo.layerTop)}</td></tr>
       ` : '';
-      
+
       layerInfo = `
           ${topLayerInfo}
           <tr><td colspan="2"><b>レイヤ内訳:</b></td></tr>
           ${layerRows}
       `;
     }
-    
+
     return `
       <div style="padding: 10px; font-family: Arial, sans-serif;">
         <h3 style="margin-top: 0;">ボクセル [${voxelInfo.x}, ${voxelInfo.y}, ${voxelInfo.z}]</h3>
@@ -1709,10 +1714,7 @@ export class GeometryRenderer {
       voxelKey: config.voxelKey,
       insetAmount: this.options.outlineInset > 0 ? this.options.outlineInset : 1
     });
-
-    if (this.options.enableThickFrames) {
-      record.frameEntities = this.entities.filter(entity => entity?.properties?.parentKey === config.voxelKey && String(entity?.properties?.type || '').startsWith('voxel-thick-frame-'));
-    }
+    record.frameEntities = record.insetEntity?._heatboxFrameEntities || [];
   }
 
   _syncPolylineRecord(record, config) {
@@ -1782,7 +1784,7 @@ export class GeometryRenderer {
   /**
    * Check if inset outline should be applied
    * インセット枠線を適用すべきかどうかを判定
-   * 
+   *
    * @param {boolean} isTopN - Is TopN voxel / TopNボクセルかどうか
    * @returns {boolean} Should apply inset outline / インセット枠線を適用する場合はtrue
    */
@@ -1854,7 +1856,7 @@ export class GeometryRenderer {
   /**
    * Get entity count
    * エンティティ数を取得
-   * 
+   *
    * @returns {number} Number of managed entities / 管理対象エンティティ数
    */
   getEntityCount() {
@@ -1864,7 +1866,7 @@ export class GeometryRenderer {
   /**
    * Update rendering options
    * 描画オプションを更新
-   * 
+   *
    * @param {Object} newOptions - New options to merge / マージする新オプション
    */
   updateOptions(newOptions) {
@@ -1872,14 +1874,14 @@ export class GeometryRenderer {
       ...this.options,
       ...newOptions
     };
-    
+
     Logger.debug('GeometryRenderer options updated:', this.options);
   }
 
   /**
    * Get current configuration
    * 現在の設定を取得
-   * 
+   *
    * @returns {Object} Current configuration / 現在の設定
    */
   getConfiguration() {

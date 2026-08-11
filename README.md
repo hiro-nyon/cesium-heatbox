@@ -54,7 +54,6 @@ npm run build
 ## Compatibility
 
 - Minimum supported Cesium: `^1.120.0`
-- Latest verified Cesium: latest version that passes the CI compatibility smoke job
 - CI validates both `cesium@^1.120.0` and `cesium@latest`
 
 ## Quick Start
@@ -314,14 +313,23 @@ See [API Reference](docs/API.md) for complete options and method documentation.
 
 ## Documentation
 
-- [API Reference](docs/API.md)
-- [Quick Start](docs/quick-start.md)
-- [Getting Started](docs/getting-started.md)
-- [Migration Guide](MIGRATION.md)
+**Start using the library**
+
+- [Quick Start](docs/quick-start.md) — install and render your first heatbox in 10–15 minutes
+- [API Reference](docs/API.md) — complete options, methods, and return types
+- [Migration Guide](MIGRATION.md) — upgrade existing integrations
+
+**Explore features**
+
+- [Documentation Index](docs/README.md) — guides grouped by audience and task
+- [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki) — rendering strategies, performance, Spatial ID, pitfalls, and glossary
+- [Roadmap](ROADMAP.md) and [Changelog](CHANGELOG.md)
+
+**Contribute and develop**
+
+- [Development Environment Setup](docs/development-setup.md)
 - [Development Guide](docs/development-guide.md)
 - [Contributing](CONTRIBUTING.md)
-- [Changelog](CHANGELOG.md)
-- [Roadmap](ROADMAP.md)
 
 ## License
 

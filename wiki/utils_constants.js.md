@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/utils_constants.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: utils/constants.js
 
 **日本語** | [English](#english)
@@ -38,33 +40,29 @@ export const DEFAULT_OPTIONS = {
   highlightTopN: null, // トップN強調表示（null: 無効）
   highlightStyle: {
     outlineWidth: 4,
-    boostOpacity: 0.2
+    boostOpacity: 0.2,
+    boostOutlineWidth: 0
   },
   // v0.1.6: 枠線重なり対策・柔軟化
   voxelGap: 0, // ボクセル間ギャップ（メートル）
   outlineOpacity: 1.0, // 枠線透明度（0-1）
   outlineWidthResolver: null, // 関数: (params) => number で動的太さ制御
   // 実質的な太さ表現のための代替描画（WebGLの線幅制限回避用）
-  /**
-   * @deprecated v0.1.12 — Use `outlineRenderMode` and `emulationScope` instead.
-   * 'off' | 'topn' | 'non-topn' | 'all'
-   */
-  outlineEmulation: 'off',
   // v0.1.6.1: インセット枠線（ADR-0004）
   outlineInset: 0, // インセット枠線のオフセット距離（メートル、0で無効）
   outlineInsetMode: 'all', // インセット枠線の適用範囲：'all'（全体） | 'topn'（TopNのみ）
   enableThickFrames: false, // 厚い枠線表示（インセット枠線とメイン枠線の間をフレームで埋める）
-  
+
   // v0.1.7: 適応的枠線制御とエミュレーション専用表示モード（ADR-0005）
   outlineRenderMode: 'standard', // 'standard' | 'inset' | 'emulation-only' 表示モード
   emulationScope: 'off', // v0.1.12: 'off' | 'topn' | 'non-topn' | 'all' - emulation scope
   adaptiveOutlines: false, // 適応的枠線制御を有効化（オプトイン）
   outlineWidthPreset: 'medium', // v0.1.12: 'thin' | 'medium' | 'thick' | 'adaptive' プリセット
-  
+
   // v0.1.7: 透明度resolver
   boxOpacityResolver: null, // 関数: (ctx) => number(0-1) でボックス透明度制御
   outlineOpacityResolver: null, // 関数: (ctx) => number(0-1) で枠線透明度制御
-  
+
   // v0.1.7: 適応的制御パラメータ
   // v0.1.15: Phase 0 - デフォルト値更新と新オプション追加（ADR-0011）
   adaptiveParams: {
@@ -82,19 +80,19 @@ export const DEFAULT_OPTIONS = {
     zScaleCompensation: true, // Z軸スケール補正の有効化
     overlapDetection: false // 重なり検出機能（オプトイン）
   },
-  
+
   // v0.1.9: 適応的レンダリング制限とスマート視覚化支援（ADR-0006 Phase 1）
   renderLimitStrategy: 'density', // 'density' | 'coverage' | 'hybrid' 選択戦略
   minCoverageRatio: 0.2, // hybrid戦略での層化抽出最小比率（0-1）
   coverageBinsXY: 'auto', // 層化抽出用格子分割数（'auto' | number）
-  
+
   // 自動ボクセルサイズ決定の強化
   autoVoxelSizeMode: 'basic', // 'basic' | 'occupancy' 自動サイズ計算方式
   autoVoxelTargetFill: 0.6, // 目標占有率（0-1, occupancyモード用）
-  
+
   // Auto Render Budget
   renderBudgetMode: 'manual', // 'manual' | 'auto' 描画上限制御
-  
+
   // 自動視点調整
   autoView: false, // 自動視点調整有効化
   fitViewOptions: {
@@ -103,7 +101,7 @@ export const DEFAULT_OPTIONS = {
     headingDegrees: 0, // ヘディング角度（度）- v0.1.12: unified naming
     altitudeStrategy: 'auto' // 'auto' | 'manual' 高度計算戦略
   },
-  
+
   // v0.1.17: 空間ID対応（ADR-0013）
   spatialId: {
     enabled: false, // 空間IDモード有効化（デフォルト: 従来の一様グリッド）
@@ -113,7 +111,7 @@ export const DEFAULT_OPTIONS = {
     zoomControl: 'auto', // 'auto' | 'manual' - ズーム制御モード
     zoomTolerancePct: 10 // 自動ズーム選択時の許容誤差パーセンテージ
   },
-  
+
   // v0.1.18: レイヤ別集約（ADR-0014）
   aggregation: {
     enabled: false, // レイヤ別集約を有効化（デフォルト: 無効）
@@ -136,7 +134,10 @@ export const DEFAULT_OPTIONS = {
       opacity: false,
       width: false
     }
-  }
+  },
+
+  // v1.2.0: Cesium Clock synchronization (opt-in)
+  temporal: null
 };
 
 /**
@@ -243,33 +244,29 @@ export const DEFAULT_OPTIONS = {
   highlightTopN: null, // トップN強調表示（null: 無効）
   highlightStyle: {
     outlineWidth: 4,
-    boostOpacity: 0.2
+    boostOpacity: 0.2,
+    boostOutlineWidth: 0
   },
   // v0.1.6: 枠線重なり対策・柔軟化
   voxelGap: 0, // ボクセル間ギャップ（メートル）
   outlineOpacity: 1.0, // 枠線透明度（0-1）
   outlineWidthResolver: null, // 関数: (params) => number で動的太さ制御
   // 実質的な太さ表現のための代替描画（WebGLの線幅制限回避用）
-  /**
-   * @deprecated v0.1.12 — Use `outlineRenderMode` and `emulationScope` instead.
-   * 'off' | 'topn' | 'non-topn' | 'all'
-   */
-  outlineEmulation: 'off',
   // v0.1.6.1: インセット枠線（ADR-0004）
   outlineInset: 0, // インセット枠線のオフセット距離（メートル、0で無効）
   outlineInsetMode: 'all', // インセット枠線の適用範囲：'all'（全体） | 'topn'（TopNのみ）
   enableThickFrames: false, // 厚い枠線表示（インセット枠線とメイン枠線の間をフレームで埋める）
-  
+
   // v0.1.7: 適応的枠線制御とエミュレーション専用表示モード（ADR-0005）
   outlineRenderMode: 'standard', // 'standard' | 'inset' | 'emulation-only' 表示モード
   emulationScope: 'off', // v0.1.12: 'off' | 'topn' | 'non-topn' | 'all' - emulation scope
   adaptiveOutlines: false, // 適応的枠線制御を有効化（オプトイン）
   outlineWidthPreset: 'medium', // v0.1.12: 'thin' | 'medium' | 'thick' | 'adaptive' プリセット
-  
+
   // v0.1.7: 透明度resolver
   boxOpacityResolver: null, // 関数: (ctx) => number(0-1) でボックス透明度制御
   outlineOpacityResolver: null, // 関数: (ctx) => number(0-1) で枠線透明度制御
-  
+
   // v0.1.7: 適応的制御パラメータ
   // v0.1.15: Phase 0 - デフォルト値更新と新オプション追加（ADR-0011）
   adaptiveParams: {
@@ -287,19 +284,19 @@ export const DEFAULT_OPTIONS = {
     zScaleCompensation: true, // Z軸スケール補正の有効化
     overlapDetection: false // 重なり検出機能（オプトイン）
   },
-  
+
   // v0.1.9: 適応的レンダリング制限とスマート視覚化支援（ADR-0006 Phase 1）
   renderLimitStrategy: 'density', // 'density' | 'coverage' | 'hybrid' 選択戦略
   minCoverageRatio: 0.2, // hybrid戦略での層化抽出最小比率（0-1）
   coverageBinsXY: 'auto', // 層化抽出用格子分割数（'auto' | number）
-  
+
   // 自動ボクセルサイズ決定の強化
   autoVoxelSizeMode: 'basic', // 'basic' | 'occupancy' 自動サイズ計算方式
   autoVoxelTargetFill: 0.6, // 目標占有率（0-1, occupancyモード用）
-  
+
   // Auto Render Budget
   renderBudgetMode: 'manual', // 'manual' | 'auto' 描画上限制御
-  
+
   // 自動視点調整
   autoView: false, // 自動視点調整有効化
   fitViewOptions: {
@@ -308,7 +305,7 @@ export const DEFAULT_OPTIONS = {
     headingDegrees: 0, // ヘディング角度（度）- v0.1.12: unified naming
     altitudeStrategy: 'auto' // 'auto' | 'manual' 高度計算戦略
   },
-  
+
   // v0.1.17: 空間ID対応（ADR-0013）
   spatialId: {
     enabled: false, // 空間IDモード有効化（デフォルト: 従来の一様グリッド）
@@ -318,7 +315,7 @@ export const DEFAULT_OPTIONS = {
     zoomControl: 'auto', // 'auto' | 'manual' - ズーム制御モード
     zoomTolerancePct: 10 // 自動ズーム選択時の許容誤差パーセンテージ
   },
-  
+
   // v0.1.18: レイヤ別集約（ADR-0014）
   aggregation: {
     enabled: false, // レイヤ別集約を有効化（デフォルト: 無効）
@@ -341,7 +338,10 @@ export const DEFAULT_OPTIONS = {
       opacity: false,
       width: false
     }
-  }
+  },
+
+  // v1.2.0: Cesium Clock synchronization (opt-in)
+  temporal: null
 };
 
 /**

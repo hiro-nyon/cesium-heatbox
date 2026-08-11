@@ -966,3 +966,5 @@ npm run dev
 - 作成日: 2025年7月9日
 - 対象バージョン: cesium-heatbox v0.1.0-alpha.1
 - 次回更新: 新機能追加時
+
+> 歴史的メモ: このガイドの本文はv0.1.0-alpha.1時点の開発手順を記録しています。現在の開発環境は[開発環境セットアップ](development-setup.md)、公開APIは[APIリファレンス](API.md)、リリース手順は[リリースランブック](RELEASE_RUNBOOK.md)を参照してください。

@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/core_VoxelGrid.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: core/VoxelGrid.js
 
 **日本語** | [English](#english)
@@ -30,7 +32,7 @@ export class VoxelGrid {
     const lonRangeMeters = (bounds.maxLon - bounds.minLon) * 111000 * Math.cos(centerLat * Math.PI / 180);
     const latRangeMeters = (bounds.maxLat - bounds.minLat) * 111000;
     const altRangeMeters = bounds.maxAlt - bounds.minAlt;
-    
+
     // 各軸のボクセル数を計算
     const numVoxelsX = Math.max(1, Math.ceil(lonRangeMeters / voxelSizeMeters));
     const numVoxelsY = Math.max(1, Math.ceil(latRangeMeters / voxelSizeMeters));
@@ -42,9 +44,9 @@ export class VoxelGrid {
     const cellSizeY = numVoxelsY > 0 ? (latRangeMeters / numVoxelsY) : voxelSizeMeters;
     // 高度差が極小の場合に0にならないよう最低1mを確保
     const cellSizeZ = numVoxelsZ > 0 ? Math.max(altRangeMeters / numVoxelsZ, 1) : Math.max(voxelSizeMeters, 1);
-    
+
     const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
-    
+
     Logger.debug('VoxelGrid created:', {
       numVoxelsX,
       numVoxelsY,
@@ -58,7 +60,7 @@ export class VoxelGrid {
       latRangeMeters,
       altRangeMeters
     });
-    
+
     return {
       numVoxelsX,
       numVoxelsY,
@@ -73,7 +75,7 @@ export class VoxelGrid {
       altRangeMeters
     };
   }
-  
+
   /**
    * Generate a key from voxel indices.
    * ボクセルインデックスからキーを生成します。
@@ -85,7 +87,7 @@ export class VoxelGrid {
   static getVoxelKey(x, y, z) {
     return `${x},${y},${z}`;
   }
-  
+
   /**
    * Parse voxel key into indices.
    * ボクセルキーからインデックスを解析します。
@@ -96,7 +98,7 @@ export class VoxelGrid {
     const [x, y, z] = key.split(',').map(Number);
     return { x, y, z };
   }
-  
+
   /**
    * Iterate all voxels and invoke callback per cell.
    * グリッド内の全ボクセルを反復処理します。
@@ -105,7 +107,7 @@ export class VoxelGrid {
    */
   static iterateAllVoxels(grid, callback) {
     const { numVoxelsX, numVoxelsY, numVoxelsZ } = grid;
-    
+
     for (let x = 0; x < numVoxelsX; x++) {
       for (let y = 0; y < numVoxelsY; y++) {
         for (let z = 0; z < numVoxelsZ; z++) {
@@ -147,7 +149,7 @@ export class VoxelGrid {
     const lonRangeMeters = (bounds.maxLon - bounds.minLon) * 111000 * Math.cos(centerLat * Math.PI / 180);
     const latRangeMeters = (bounds.maxLat - bounds.minLat) * 111000;
     const altRangeMeters = bounds.maxAlt - bounds.minAlt;
-    
+
     // 各軸のボクセル数を計算
     const numVoxelsX = Math.max(1, Math.ceil(lonRangeMeters / voxelSizeMeters));
     const numVoxelsY = Math.max(1, Math.ceil(latRangeMeters / voxelSizeMeters));
@@ -159,9 +161,9 @@ export class VoxelGrid {
     const cellSizeY = numVoxelsY > 0 ? (latRangeMeters / numVoxelsY) : voxelSizeMeters;
     // 高度差が極小の場合に0にならないよう最低1mを確保
     const cellSizeZ = numVoxelsZ > 0 ? Math.max(altRangeMeters / numVoxelsZ, 1) : Math.max(voxelSizeMeters, 1);
-    
+
     const totalVoxels = numVoxelsX * numVoxelsY * numVoxelsZ;
-    
+
     Logger.debug('VoxelGrid created:', {
       numVoxelsX,
       numVoxelsY,
@@ -175,7 +177,7 @@ export class VoxelGrid {
       latRangeMeters,
       altRangeMeters
     });
-    
+
     return {
       numVoxelsX,
       numVoxelsY,
@@ -190,7 +192,7 @@ export class VoxelGrid {
       altRangeMeters
     };
   }
-  
+
   /**
    * Generate a key from voxel indices.
    * ボクセルインデックスからキーを生成します。
@@ -202,7 +204,7 @@ export class VoxelGrid {
   static getVoxelKey(x, y, z) {
     return `${x},${y},${z}`;
   }
-  
+
   /**
    * Parse voxel key into indices.
    * ボクセルキーからインデックスを解析します。
@@ -213,7 +215,7 @@ export class VoxelGrid {
     const [x, y, z] = key.split(',').map(Number);
     return { x, y, z };
   }
-  
+
   /**
    * Iterate all voxels and invoke callback per cell.
    * グリッド内の全ボクセルを反復処理します。
@@ -222,7 +224,7 @@ export class VoxelGrid {
    */
   static iterateAllVoxels(grid, callback) {
     const { numVoxelsX, numVoxelsY, numVoxelsZ } = grid;
-    
+
     for (let x = 0; x < numVoxelsX; x++) {
       for (let y = 0; y < numVoxelsY; y++) {
         for (let z = 0; z < numVoxelsZ; z++) {

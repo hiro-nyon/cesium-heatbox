@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/DataProcessor.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Class: DataProcessor（DataProcessorクラス）
 
 **日本語** | [English](#english)

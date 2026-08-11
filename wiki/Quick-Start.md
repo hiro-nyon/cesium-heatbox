@@ -1,11 +1,13 @@
+<!-- Generated from docs/quick-start.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
 # Quick Start Guide (クイックスタートガイド)
 
 [English](#english) | [日本語](#日本語)
 
 ## English
 
-**Target Audience**: Those who want to use cesium-heatbox immediately  
-**Time Required**: 10-15 minutes  
+**Target Audience**: Those who want to use cesium-heatbox immediately
+**Time Required**: 10-15 minutes
 **Prerequisites**: Node.js 18+, Git, basic JavaScript knowledge
 
 ### Table of Contents
@@ -82,9 +84,9 @@ ls -la dist/
 **Expected output:**
 ```
 dist/
-├── cesium-heatbox.js
-├── cesium-heatbox.min.js
-└── cesium-heatbox.umd.js
+├── cesium-heatbox.min.mjs
+├── cesium-heatbox.cjs
+└── cesium-heatbox.umd.min.js
 ```
 
 #### Sample Execution (2 minutes)
@@ -239,7 +241,7 @@ const denseHeatbox = new Heatbox(viewer, {
   maxRenderVoxels: 5000
 });
 
-// Wide area coverage - use coverage strategy  
+// Wide area coverage - use coverage strategy
 const coverageHeatbox = new Heatbox(viewer, {
   renderLimitStrategy: 'coverage',
   maxRenderVoxels: 5000
@@ -279,12 +281,12 @@ Experience v0.1.9 features with the comprehensive demo:
 
 ```bash
 # Open advanced demo
-open examples/selection-limits/adaptive-rendering-demo.html
+open examples/selection-limits/adaptive-rendering/index.html
 ```
 
 The demo includes:
 - Real-time strategy switching
-- Device tier visualization  
+- Device tier visualization
 - Performance monitoring
 - Interactive controls for all new features
 
@@ -405,8 +407,8 @@ Congratulations! Enjoy developing with cesium-heatbox!
 
 ## 日本語
 
-**対象**: cesium-heatboxを今すぐ使いたい方  
-**所要時間**: 10-15分  
+**対象**: cesium-heatboxを今すぐ使いたい方
+**所要時間**: 10-15分
 **前提条件**: Node.js 18+、Git、基本的なJavaScript知識
 
 ## 目次
@@ -487,9 +489,9 @@ ls -la dist/
 **期待される出力**:
 ```
 dist/
-├── cesium-heatbox.js
-├── cesium-heatbox.min.js
-└── cesium-heatbox.umd.js
+├── cesium-heatbox.min.mjs
+├── cesium-heatbox.cjs
+└── cesium-heatbox.umd.min.js
 ```
 
 ---

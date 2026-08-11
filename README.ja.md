@@ -54,7 +54,6 @@ npm run build
 ## 互換性
 
 - minimum supported Cesium: `^1.120.0`
-- latest verified Cesium: CI の互換 smoke test を最後に通過した最新版
 - CI では `cesium@^1.120.0` と `cesium@latest` の両方を検証
 
 ## クイックスタート
@@ -314,14 +313,23 @@ aggregation: {
 
 ## ドキュメント
 
-- [APIリファレンス](docs/API.md)
-- [クイックスタート](docs/quick-start.md)
-- [はじめに](docs/getting-started.md)
-- [移行ガイド](MIGRATION.md)
+**ライブラリを使い始める**
+
+- [クイックスタート](docs/quick-start.md) — 10〜15分でインストールから初回描画まで
+- [APIリファレンス](docs/API.md) — オプション、メソッド、戻り値の完全な一覧
+- [移行ガイド](MIGRATION.md) — 既存コードのアップグレード
+
+**機能を深掘りする**
+
+- [ドキュメント索引](docs/README.md) — 読者・目的別に整理したガイド一覧
+- [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki) — 描画戦略、性能、空間ID、落とし穴、用語集
+- [ロードマップ](ROADMAP.md)と[変更履歴](CHANGELOG.md)
+
+**開発・貢献する**
+
+- [開発環境セットアップ](docs/development-setup.md)
 - [開発ガイド](docs/development-guide.md)
-- [コントリビューティング](CONTRIBUTING.md)
-- [変更履歴](CHANGELOG.md)
-- [ロードマップ](ROADMAP.md)
+- [コントリビューションガイド](CONTRIBUTING.md)
 
 ## ライセンス
 

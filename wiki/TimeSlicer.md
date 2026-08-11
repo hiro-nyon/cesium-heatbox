@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/TimeSlicer.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Class: TimeSlicer（TimeSlicerクラス）
 
 **日本語** | [English](#english)
@@ -19,6 +21,14 @@ Calculate global statistics across all time entries.
 | Name | Type | Default | Description |
 |---|---|---|---|
 | valueProperty | string | weight | Property name to use for value (default: 'weight') |
+
+#### (async) calculateGlobalVoxelStats(heatboxOptions) → {Promise.<(Object|null)>}
+
+Calculate the global classification domain from rendered voxel counts.
+
+| Name | Type | Description |
+|---|---|---|
+| heatboxOptions | Object | Normalized Heatbox options |
 
 #### getCacheHitRate() → {number}
 
@@ -54,6 +64,14 @@ Get time range of all data.
 | 名前 | 型 | 既定値 | 説明 |
 |---|---|---|---|
 | valueProperty | string | weight | Property name to use for value (default: 'weight') |
+
+#### (async) calculateGlobalVoxelStats(heatboxOptions) → {Promise.<(Object|null)>}
+
+入力プロパティではなく、各時間断面で実際に生成されるボクセル件数を集計します。
+
+| 名前 | 型 | 説明 |
+|---|---|---|
+| heatboxOptions | Object | Normalized Heatbox options |
 
 #### getCacheHitRate() → {number}
 

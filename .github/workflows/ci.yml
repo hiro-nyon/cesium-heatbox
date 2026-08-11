@@ -24,6 +24,13 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Verify documentation sources and generated Wiki copies
+        run: |
+          npm run test:docs
+          npm run docs
+          npm run wiki:sync
+          git diff --exit-code -- wiki
+
       - name: Build
         run: npm run build
 

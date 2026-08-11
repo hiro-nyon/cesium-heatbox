@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/utils_escapeHtml.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: utils/escapeHtml.js
 
 **日本語** | [English](#english)

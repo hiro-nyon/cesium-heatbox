@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/core_render_RenderPlanner.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: core/render/RenderPlanner.js
 
 **日本語** | [English](#english)

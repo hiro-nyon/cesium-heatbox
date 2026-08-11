@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/Spatial-ID-Setup.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Spatial ID Setup Guide / 空間IDセットアップガイド
 
 **日本語** | [English](#english)

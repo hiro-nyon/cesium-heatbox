@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/core_VoxelRenderer.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: core/VoxelRenderer.js
 
 **日本語** | [English](#english)
@@ -10,17 +12,17 @@ See also: [Class: VoxelRenderer](VoxelRenderer)
 /**
  * Class responsible for rendering 3D voxels.
  * 3Dボクセルの描画を担当するクラス。
- * 
+ *
  * v0.1.11: ADR-0009準拠のアーキテクチャ - Single Responsibility Principle適用
- * 
+ *
  * **アーキテクチャ概要**:
  * - **オーケストレーション役**: 各専門クラスを統括し、描画プロセス全体を調整
  * - **ColorCalculator**: 色計算・カラーマップ処理の専門クラス (Phase 1)
- * - **VoxelSelector**: ボクセル選択戦略の専門クラス (Phase 2)  
+ * - **VoxelSelector**: ボクセル選択戦略の専門クラス (Phase 2)
  * - **AdaptiveController**: 適応制御ロジックの専門クラス (Phase 3)
  * - **GeometryRenderer**: ジオメトリ作成・エンティティ管理の専門クラス (Phase 4)
  * - **Phase 5**: 完全オーケストレーション化・性能最適化済み
- * 
+ *
  * **責任範囲**:
  * - 描画プロセスの統制・調整
  * - 各専門クラス間のデータ連携
@@ -34,6 +36,7 @@ import { VoxelSelector } from './selection/VoxelSelector.js';
 import { AdaptiveController } from './adaptive/AdaptiveController.js';
 import { GeometryRenderer } from './geometry/GeometryRenderer.js';
 import { RenderPlanner } from './render/RenderPlanner.js';
+import { buildDisplayVoxels } from './render/buildDisplayVoxels.js';
 import { createClassifier } from '../utils/classification.js';
 
 // v0.1.11: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
@@ -44,30 +47,30 @@ import { createClassifier } from '../utils/classification.js';
 /**
  * VoxelRenderer - 3D voxel rendering orchestration class.
  * 3Dボクセル描画オーケストレーションクラス。
- * 
+ *
  * v0.1.11: Refactored for Single Responsibility Principle (ADR-0009).
  * Now serves as orchestrator delegating specialized tasks to:
  * ColorCalculator, VoxelSelector, AdaptiveController, and GeometryRenderer.
- * 
+ *
  * 各専門クラスに特化タスクを委譲するオーケストレーション役に特化。
  */
 export class VoxelRenderer {
   /**
    * Constructor - Initialize VoxelRenderer orchestration system.
    * VoxelRendererオーケストレーションシステムを初期化します。
-   * 
+   *
    * v0.1.11: Instantiates specialized classes for delegation:
    * - VoxelSelector: Voxel selection strategies (density, coverage, hybrid)
-   * - AdaptiveController: Adaptive parameter calculation and preset logic  
+   * - AdaptiveController: Adaptive parameter calculation and preset logic
    * - GeometryRenderer: Entity creation and management
    * - ColorCalculator: Used statically for color computation
-   * 
+   *
    * 各専門クラスをインスタンス化し、委譲体制を構築:
    * - VoxelSelector: ボクセル選択戦略（密度・カバレッジ・ハイブリッド）
    * - AdaptiveController: 適応パラメータ計算・プリセットロジック
    * - GeometryRenderer: エンティティ作成・管理
    * - ColorCalculator: 色計算用の静的利用
-   * 
+   *
    * @param {Cesium.Viewer} viewer - CesiumJS Viewer instance / CesiumJS Viewerインスタンス
    * @param {Object} options - Rendering options / 描画オプション
    * @param {Array} [options.minColor=[0,0,255]] - Minimum density color (RGB) / 最小密度色
@@ -102,18 +105,18 @@ export class VoxelRenderer {
     if (!this.options.classification || typeof this.options.classification !== 'object') {
       this.options.classification = { enabled: false };
     }
-    
+
     // v0.1.11-alpha: VoxelSelector instantiation (ADR-0009 Phase 2)
     this.voxelSelector = new VoxelSelector(this.options);
     this._selectionStats = null;
-    
+
     // v0.1.11-alpha: AdaptiveController instantiation (ADR-0009 Phase 3)
     this.adaptiveController = new AdaptiveController(this.options);
-    
+
     // v0.1.11-alpha: GeometryRenderer instantiation (ADR-0009 Phase 4)
     this.geometryRenderer = new GeometryRenderer(this.viewer, this.options);
     this.renderPlanner = new RenderPlanner(this.viewer, this.options);
-    
+
     // Legacy compatibility: voxelEntities now delegates to GeometryRenderer
     Object.defineProperty(this, 'voxelEntities', {
       get: () => this.geometryRenderer.entities,
@@ -166,18 +169,18 @@ export class VoxelRenderer {
   /**
    * Render voxel data - Orchestrated rendering process.
    * ボクセルデータ描画 - オーケストレーション化された描画プロセス。
-   * 
+   *
    * v0.1.11: Fully orchestrated implementation (ADR-0009 Phase 5):
-   * 
+   *
    * **Process Flow**:
    * 1. **GeometryRenderer.clear()** - Clear existing entities
    * 2. **VoxelSelector.selectVoxels()** - Apply selection strategy if needed
    * 3. **For each voxel**: Delegate to `_renderSingleVoxel()` for orchestration:
    *    - **AdaptiveController** - Calculate adaptive parameters
-   *    - **ColorCalculator** - Compute colors based on density  
+   *    - **ColorCalculator** - Compute colors based on density
    *    - **GeometryRenderer** - Create voxel box, outlines, and polylines
    * 4. **Return count** - Number of successfully rendered voxels
-   * 
+   *
    * **実行フロー**:
    * 1. **GeometryRenderer.clear()** - 既存エンティティのクリア
    * 2. **VoxelSelector.selectVoxels()** - 必要に応じて選択戦略適用
@@ -186,7 +189,7 @@ export class VoxelRenderer {
    *    - **ColorCalculator** - 密度ベース色計算
    *    - **GeometryRenderer** - ボクセルボックス・枠線・ポリライン作成
    * 4. **カウント返却** - 正常描画されたボクセル数
-   * 
+   *
    * @param {Map} voxelData - Voxel data map / ボクセルデータマップ
    * @param {Object} bounds - Spatial bounds / 空間境界
    * @param {Object} grid - Grid configuration / グリッド設定
@@ -197,6 +200,7 @@ export class VoxelRenderer {
     this.geometryRenderer.beginFrame();
     this.geometryRenderer.clearDebugEntities();
     this.renderPlanner.updateOptions(this.options);
+    this._selectionStats = null;
     Logger.debug('VoxelRenderer.render - Starting render with simplified approach', {
       voxelDataSize: voxelData.size,
       bounds,
@@ -213,57 +217,24 @@ export class VoxelRenderer {
       this.geometryRenderer.renderBoundingBox(bounds);
     }
 
-    // 表示するボクセルのリスト
-    let displayVoxels = [];
+    // 表示するボクセルのリスト。実データを空セルより優先する。
+    const displayResult = buildDisplayVoxels(
+      voxelData,
+      grid,
+      this.options,
+      (voxels, limit) => this._selectVoxelsForRendering(voxels, limit, bounds, grid)
+    );
+    let displayVoxels = displayResult.voxels;
     const topNVoxels = new Set(); // v0.1.5: TopN強調表示用
 
-    // 空ボクセルのフィルタリング
-    if (this.options.showEmptyVoxels) {
-      // 全ボクセルを生成（これは上限値が大きいとメモリ消費とパフォーマンスに影響する）
-      const maxVoxels = Math.min(grid.totalVoxels, this.options.maxRenderVoxels || 10000);
-      Logger.debug(`Generating grid for up to ${maxVoxels} voxels`);
-      
-      // 空のボクセルも含めて全ボクセルを追加
-      for (let x = 0; x < grid.numVoxelsX; x++) {
-        for (let y = 0; y < grid.numVoxelsY; y++) {
-          for (let z = 0; z < grid.numVoxelsZ; z++) {
-            const voxelKey = `${x},${y},${z}`;
-            const voxelInfo = voxelData.get(voxelKey) || { x, y, z, count: 0 };
-            
-            displayVoxels.push({
-              key: voxelKey,
-              info: voxelInfo
-            });
-            
-            if (displayVoxels.length >= maxVoxels) {
-              Logger.debug(`Reached maximum voxel limit of ${maxVoxels}`);
-              break;
-            }
-          }
-          if (displayVoxels.length >= maxVoxels) break;
-        }
-        if (displayVoxels.length >= maxVoxels) break;
-      }
-    } else {
-      // データがあるボクセルのみ表示
-      displayVoxels = Array.from(voxelData.entries()).map(([key, info]) => {
-        return { key, info };
-      });
-      
-      // v0.1.9: 適応的レンダリング制限の適用
-      if (this.options.maxRenderVoxels && displayVoxels.length > this.options.maxRenderVoxels) {
-        const selectionResult = this._selectVoxelsForRendering(displayVoxels, this.options.maxRenderVoxels, bounds, grid);
-        displayVoxels = selectionResult.selectedVoxels;
-        
-        // 統計情報の更新
-        this._selectionStats = {
-          strategy: selectionResult.strategy,
-          clippedNonEmpty: selectionResult.clippedNonEmpty,
-          coverageRatio: selectionResult.coverageRatio || 0
-        };
-        
-        Logger.debug(`Applied ${selectionResult.strategy} strategy: ${displayVoxels.length} voxels selected, ${selectionResult.clippedNonEmpty} clipped`);
-      }
+    if (displayResult.selectionResult) {
+      const { strategy, clippedNonEmpty, coverageRatio } = displayResult.selectionResult;
+      this._selectionStats = {
+        strategy,
+        clippedNonEmpty,
+        coverageRatio: coverageRatio || 0
+      };
+      Logger.debug(`Applied ${strategy} strategy: ${displayVoxels.length} voxels selected, ${clippedNonEmpty} clipped`);
     }
 
     // v0.1.5: TopN強調表示の前処理
@@ -279,9 +250,9 @@ export class VoxelRenderer {
       : displayVoxels.length;
     const planningResult = this.renderPlanner.plan(displayVoxels, bounds, grid, topNVoxels, plannedBudget);
     displayVoxels = planningResult.voxels;
-    
+
     Logger.debug(`Rendering ${displayVoxels.length} voxels`);
-    
+
     // レンダリングカウント
     let renderedCount = 0;
 
@@ -328,18 +299,18 @@ export class VoxelRenderer {
    */
   _renderSingleVoxel(key, info, bounds, grid, statistics, topNVoxels, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx) {
     const isTopN = topNVoxels.has(key);
-    
+
     // Calculate voxel rendering parameters
     const renderParams = this._calculateVoxelRenderingParams(info, bounds, grid, statistics, isTopN, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx);
-    
+
     // 安全性チェック - レンダリングパラメータが無効な場合はスキップ
     if (!renderParams) {
       return 0; // Skipped rendering due to invalid parameters
     }
-    
+
     // Delegate to GeometryRenderer for actual rendering
     this._delegateVoxelRendering(key, renderParams);
-    
+
     return 1; // Successfully rendered
   }
 
@@ -362,21 +333,21 @@ export class VoxelRenderer {
     if (!info || !bounds || !grid || !statistics) {
       return null;
     }
-    
+
     // v0.1.17: Spatial ID mode - calculate position from 8-vertex bounds / 空間IDモード - 8頂点boundsから位置を計算
     let centerLon, centerLat, centerAlt, cellSizeX, cellSizeY, baseCellSizeZ;
-    
+
     if (info.bounds && Array.isArray(info.bounds) && info.bounds.length === 8) {
       // Spatial ID mode: use 8 vertices to calculate center and dimensions
       // 空間IDモード: 8頂点を使って中心と寸法を計算
       const vertices = info.bounds;
-      
+
       // Calculate center from vertices (average of all 8 points)
       // 頂点から中心を計算（8点の平均）
       centerLon = vertices.reduce((sum, v) => sum + v.lng, 0) / 8;
       centerLat = vertices.reduce((sum, v) => sum + v.lat, 0) / 8;
       centerAlt = vertices.reduce((sum, v) => sum + v.alt, 0) / 8;
-      
+
       // Calculate dimensions from vertices (distance between corners)
       // 頂点から寸法を計算（角間の距離）
       // Assume vertices[0-3] are bottom face, vertices[4-7] are top face
@@ -386,7 +357,7 @@ export class VoxelRenderer {
       const v1 = Cesium.Cartesian3.fromDegrees(vertices[1].lng, vertices[1].lat, vertices[1].alt);
       const v3 = Cesium.Cartesian3.fromDegrees(vertices[3].lng, vertices[3].lat, vertices[3].alt);
       const v4 = Cesium.Cartesian3.fromDegrees(vertices[4].lng, vertices[4].lat, vertices[4].alt);
-      
+
       cellSizeX = Cesium.Cartesian3.distance(v0, v1);
       cellSizeY = Cesium.Cartesian3.distance(v0, v3);
       baseCellSizeZ = Cesium.Cartesian3.distance(v0, v4);
@@ -394,28 +365,28 @@ export class VoxelRenderer {
       // Uniform grid mode: use x/y/z indices (legacy)
       // 一様グリッドモード: x/y/zインデックスを使用（レガシー）
       const { x, y, z } = info;
-      
+
       centerLon = bounds.minLon + (x + 0.5) * (bounds.maxLon - bounds.minLon) / grid.numVoxelsX;
       centerLat = bounds.minLat + (y + 0.5) * (bounds.maxLat - bounds.minLat) / grid.numVoxelsY;
       centerAlt = bounds.minAlt + (z + 0.5) * (bounds.maxAlt - bounds.minAlt) / grid.numVoxelsZ;
-      
+
       // Calculate dimensions from grid (legacy)
       // グリッドから寸法を計算（レガシー）
       cellSizeX = grid.cellSizeX || (grid.lonRangeMeters ? (grid.lonRangeMeters / grid.numVoxelsX) : grid.voxelSizeMeters);
       cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
       baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
     }
-    
+
     // Normalized density
-    const normalizedDensity = statistics.maxCount > statistics.minCount ? 
+    const normalizedDensity = statistics.maxCount > statistics.minCount ?
       (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-    
+
     // Adaptive parameters
     const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, this._currentVoxelData, statistics, grid);
-    
+
     // Color and opacity
     const { color, opacity } = this._calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx);
-    
+
     // Dimensions (v0.1.17: use pre-calculated dimensions for spatial ID mode)
     let finalCellSizeX, finalCellSizeY, boxHeight;
     if (info.bounds) {
@@ -424,13 +395,13 @@ export class VoxelRenderer {
       finalCellSizeX = cellSizeX;
       finalCellSizeY = cellSizeY;
       let finalBaseCellSizeZ = baseCellSizeZ;
-      
+
       if (this.options.voxelGap > 0) {
         finalCellSizeX = Math.max(cellSizeX - this.options.voxelGap, cellSizeX * 0.1);
         finalCellSizeY = Math.max(cellSizeY - this.options.voxelGap, cellSizeY * 0.1);
         finalBaseCellSizeZ = Math.max(baseCellSizeZ - this.options.voxelGap, baseCellSizeZ * 0.1);
       }
-      
+
       boxHeight = finalBaseCellSizeZ;
       if (this.options.heightBased) {
         boxHeight = finalBaseCellSizeZ * (0.1 + normalizedDensity * 0.9);
@@ -443,10 +414,10 @@ export class VoxelRenderer {
       finalCellSizeY = dimensions.cellSizeY;
       boxHeight = dimensions.boxHeight;
     }
-    
+
     // Outline properties
     const outlineProps = this._calculateOutlineProperties(info, isTopN, normalizedDensity, adaptiveParams, statistics, color, reusableVoxelCtx, reusableWidthResolverParams);
-    
+
     return {
       centerLon, centerLat, centerAlt,
       cellSizeX: finalCellSizeX, cellSizeY: finalCellSizeY, boxHeight,
@@ -473,7 +444,7 @@ export class VoxelRenderer {
    */
   _calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx) {
     let color, opacity;
-    
+
     if (info.count === 0) {
       color = Cesium.Color.LIGHTGRAY;
       opacity = this.options.emptyOpacity;
@@ -491,7 +462,7 @@ export class VoxelRenderer {
       } else {
         color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
       }
-      
+
       // Opacity calculation with resolver support
       if (this.options.boxOpacityResolver && typeof this.options.boxOpacityResolver === 'function') {
         reusableVoxelCtx.x = info.x; reusableVoxelCtx.y = info.y; reusableVoxelCtx.z = info.z; reusableVoxelCtx.count = info.count;
@@ -508,13 +479,13 @@ export class VoxelRenderer {
       } else {
         opacity = (adaptiveParams.boxOpacity ?? this.options.opacity);
       }
-      
-      // TopN highlight adjustment 
+
+      // TopN highlight adjustment
       if (this.options.highlightTopN && !isTopN) {
-        opacity *= (1 - (this.options.highlightStyle?.boostOpacity || 0.2));
+        opacity *= (1 - (this.options.highlightStyle?.boostOpacity ?? 0.2));
       }
     }
-    
+
     return { color, opacity };
   }
 
@@ -543,7 +514,7 @@ export class VoxelRenderer {
     if (this.options.heightBased) {
       boxHeight = baseCellSizeZ * (0.1 + normalizedDensity * 0.9);
     }
-    
+
     return { cellSizeX, cellSizeY, boxHeight };
   }
 
@@ -582,9 +553,10 @@ export class VoxelRenderer {
       if (adaptiveParams.outlineWidth !== null && adaptiveParams.outlineWidth !== undefined) {
         finalOutlineWidth = adaptiveParams.outlineWidth;
       } else {
-        finalOutlineWidth = isTopN && this.options.highlightTopN ? 
-          (this.options.highlightStyle?.outlineWidth || this.options.outlineWidth) : 
-          this.options.outlineWidth;
+        finalOutlineWidth = isTopN && this.options.highlightTopN
+          ? (this.options.highlightStyle?.outlineWidth ?? this.options.outlineWidth) +
+            (this.options.highlightStyle?.boostOutlineWidth ?? 0)
+          : this.options.outlineWidth;
       }
     }
 
@@ -631,7 +603,7 @@ export class VoxelRenderer {
     let shouldShowStandardOutline = true;
     let shouldShowInsetOutline = false;
     let shouldUseEmulationOnly = false;
-    
+
     switch (this.options.outlineRenderMode) {
       case 'standard':
         shouldShowStandardOutline = this.options.showOutline;
@@ -647,7 +619,7 @@ export class VoxelRenderer {
         shouldUseEmulationOnly = true;
         break;
     }
-    
+
     return { shouldShowStandardOutline, shouldShowInsetOutline, shouldUseEmulationOnly };
   }
 
@@ -751,8 +723,8 @@ export class VoxelRenderer {
       this._classifier = null;
     }
   }
-  
-  // v0.1.11: _interpolateFromColorMap and _interpolateDivergingColor methods 
+
+  // v0.1.11: _interpolateFromColorMap and _interpolateDivergingColor methods
   // moved to ColorCalculator (ADR-0009 Phase 1)
 
 
@@ -774,17 +746,17 @@ export class VoxelRenderer {
     if (!this.options.debug) {
       return false;
     }
-    
+
     if (typeof this.options.debug === 'boolean') {
       // 従来の動作：debugがtrueの場合はバウンディングボックス表示
       return this.options.debug;
     }
-    
+
     if (typeof this.options.debug === 'object' && this.options.debug !== null) {
       // 新しい動作：debug.showBoundsで明示的に制御
       return this.options.debug.showBounds === true;
     }
-    
+
     return false;
   }
 
@@ -820,10 +792,10 @@ export class VoxelRenderer {
   _selectVoxelsForRendering(allVoxels, maxCount, bounds, grid) {
     // v0.1.11: 新しいVoxelSelectorに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 2)
     const selectionResult = this.voxelSelector.selectVoxels(allVoxels, maxCount, { grid, bounds });
-    
+
     // 統計情報の更新
     this._selectionStats = this.voxelSelector.getLastSelectionStats();
-    
+
     return selectionResult;
   }
 
@@ -850,17 +822,17 @@ export class VoxelRenderer {
 /**
  * Class responsible for rendering 3D voxels.
  * 3Dボクセルの描画を担当するクラス。
- * 
+ *
  * v0.1.11: ADR-0009準拠のアーキテクチャ - Single Responsibility Principle適用
- * 
+ *
  * **アーキテクチャ概要**:
  * - **オーケストレーション役**: 各専門クラスを統括し、描画プロセス全体を調整
  * - **ColorCalculator**: 色計算・カラーマップ処理の専門クラス (Phase 1)
- * - **VoxelSelector**: ボクセル選択戦略の専門クラス (Phase 2)  
+ * - **VoxelSelector**: ボクセル選択戦略の専門クラス (Phase 2)
  * - **AdaptiveController**: 適応制御ロジックの専門クラス (Phase 3)
  * - **GeometryRenderer**: ジオメトリ作成・エンティティ管理の専門クラス (Phase 4)
  * - **Phase 5**: 完全オーケストレーション化・性能最適化済み
- * 
+ *
  * **責任範囲**:
  * - 描画プロセスの統制・調整
  * - 各専門クラス間のデータ連携
@@ -874,6 +846,7 @@ import { VoxelSelector } from './selection/VoxelSelector.js';
 import { AdaptiveController } from './adaptive/AdaptiveController.js';
 import { GeometryRenderer } from './geometry/GeometryRenderer.js';
 import { RenderPlanner } from './render/RenderPlanner.js';
+import { buildDisplayVoxels } from './render/buildDisplayVoxels.js';
 import { createClassifier } from '../utils/classification.js';
 
 // v0.1.11: COLOR_MAPS moved to ColorCalculator (ADR-0009 Phase 1)
@@ -884,30 +857,30 @@ import { createClassifier } from '../utils/classification.js';
 /**
  * VoxelRenderer - 3D voxel rendering orchestration class.
  * 3Dボクセル描画オーケストレーションクラス。
- * 
+ *
  * v0.1.11: Refactored for Single Responsibility Principle (ADR-0009).
  * Now serves as orchestrator delegating specialized tasks to:
  * ColorCalculator, VoxelSelector, AdaptiveController, and GeometryRenderer.
- * 
+ *
  * 各専門クラスに特化タスクを委譲するオーケストレーション役に特化。
  */
 export class VoxelRenderer {
   /**
    * Constructor - Initialize VoxelRenderer orchestration system.
    * VoxelRendererオーケストレーションシステムを初期化します。
-   * 
+   *
    * v0.1.11: Instantiates specialized classes for delegation:
    * - VoxelSelector: Voxel selection strategies (density, coverage, hybrid)
-   * - AdaptiveController: Adaptive parameter calculation and preset logic  
+   * - AdaptiveController: Adaptive parameter calculation and preset logic
    * - GeometryRenderer: Entity creation and management
    * - ColorCalculator: Used statically for color computation
-   * 
+   *
    * 各専門クラスをインスタンス化し、委譲体制を構築:
    * - VoxelSelector: ボクセル選択戦略（密度・カバレッジ・ハイブリッド）
    * - AdaptiveController: 適応パラメータ計算・プリセットロジック
    * - GeometryRenderer: エンティティ作成・管理
    * - ColorCalculator: 色計算用の静的利用
-   * 
+   *
    * @param {Cesium.Viewer} viewer - CesiumJS Viewer instance / CesiumJS Viewerインスタンス
    * @param {Object} options - Rendering options / 描画オプション
    * @param {Array} [options.minColor=[0,0,255]] - Minimum density color (RGB) / 最小密度色
@@ -942,18 +915,18 @@ export class VoxelRenderer {
     if (!this.options.classification || typeof this.options.classification !== 'object') {
       this.options.classification = { enabled: false };
     }
-    
+
     // v0.1.11-alpha: VoxelSelector instantiation (ADR-0009 Phase 2)
     this.voxelSelector = new VoxelSelector(this.options);
     this._selectionStats = null;
-    
+
     // v0.1.11-alpha: AdaptiveController instantiation (ADR-0009 Phase 3)
     this.adaptiveController = new AdaptiveController(this.options);
-    
+
     // v0.1.11-alpha: GeometryRenderer instantiation (ADR-0009 Phase 4)
     this.geometryRenderer = new GeometryRenderer(this.viewer, this.options);
     this.renderPlanner = new RenderPlanner(this.viewer, this.options);
-    
+
     // Legacy compatibility: voxelEntities now delegates to GeometryRenderer
     Object.defineProperty(this, 'voxelEntities', {
       get: () => this.geometryRenderer.entities,
@@ -1006,18 +979,18 @@ export class VoxelRenderer {
   /**
    * Render voxel data - Orchestrated rendering process.
    * ボクセルデータ描画 - オーケストレーション化された描画プロセス。
-   * 
+   *
    * v0.1.11: Fully orchestrated implementation (ADR-0009 Phase 5):
-   * 
+   *
    * **Process Flow**:
    * 1. **GeometryRenderer.clear()** - Clear existing entities
    * 2. **VoxelSelector.selectVoxels()** - Apply selection strategy if needed
    * 3. **For each voxel**: Delegate to `_renderSingleVoxel()` for orchestration:
    *    - **AdaptiveController** - Calculate adaptive parameters
-   *    - **ColorCalculator** - Compute colors based on density  
+   *    - **ColorCalculator** - Compute colors based on density
    *    - **GeometryRenderer** - Create voxel box, outlines, and polylines
    * 4. **Return count** - Number of successfully rendered voxels
-   * 
+   *
    * **実行フロー**:
    * 1. **GeometryRenderer.clear()** - 既存エンティティのクリア
    * 2. **VoxelSelector.selectVoxels()** - 必要に応じて選択戦略適用
@@ -1026,7 +999,7 @@ export class VoxelRenderer {
    *    - **ColorCalculator** - 密度ベース色計算
    *    - **GeometryRenderer** - ボクセルボックス・枠線・ポリライン作成
    * 4. **カウント返却** - 正常描画されたボクセル数
-   * 
+   *
    * @param {Map} voxelData - Voxel data map / ボクセルデータマップ
    * @param {Object} bounds - Spatial bounds / 空間境界
    * @param {Object} grid - Grid configuration / グリッド設定
@@ -1037,6 +1010,7 @@ export class VoxelRenderer {
     this.geometryRenderer.beginFrame();
     this.geometryRenderer.clearDebugEntities();
     this.renderPlanner.updateOptions(this.options);
+    this._selectionStats = null;
     Logger.debug('VoxelRenderer.render - Starting render with simplified approach', {
       voxelDataSize: voxelData.size,
       bounds,
@@ -1053,57 +1027,24 @@ export class VoxelRenderer {
       this.geometryRenderer.renderBoundingBox(bounds);
     }
 
-    // 表示するボクセルのリスト
-    let displayVoxels = [];
+    // 表示するボクセルのリスト。実データを空セルより優先する。
+    const displayResult = buildDisplayVoxels(
+      voxelData,
+      grid,
+      this.options,
+      (voxels, limit) => this._selectVoxelsForRendering(voxels, limit, bounds, grid)
+    );
+    let displayVoxels = displayResult.voxels;
     const topNVoxels = new Set(); // v0.1.5: TopN強調表示用
 
-    // 空ボクセルのフィルタリング
-    if (this.options.showEmptyVoxels) {
-      // 全ボクセルを生成（これは上限値が大きいとメモリ消費とパフォーマンスに影響する）
-      const maxVoxels = Math.min(grid.totalVoxels, this.options.maxRenderVoxels || 10000);
-      Logger.debug(`Generating grid for up to ${maxVoxels} voxels`);
-      
-      // 空のボクセルも含めて全ボクセルを追加
-      for (let x = 0; x < grid.numVoxelsX; x++) {
-        for (let y = 0; y < grid.numVoxelsY; y++) {
-          for (let z = 0; z < grid.numVoxelsZ; z++) {
-            const voxelKey = `${x},${y},${z}`;
-            const voxelInfo = voxelData.get(voxelKey) || { x, y, z, count: 0 };
-            
-            displayVoxels.push({
-              key: voxelKey,
-              info: voxelInfo
-            });
-            
-            if (displayVoxels.length >= maxVoxels) {
-              Logger.debug(`Reached maximum voxel limit of ${maxVoxels}`);
-              break;
-            }
-          }
-          if (displayVoxels.length >= maxVoxels) break;
-        }
-        if (displayVoxels.length >= maxVoxels) break;
-      }
-    } else {
-      // データがあるボクセルのみ表示
-      displayVoxels = Array.from(voxelData.entries()).map(([key, info]) => {
-        return { key, info };
-      });
-      
-      // v0.1.9: 適応的レンダリング制限の適用
-      if (this.options.maxRenderVoxels && displayVoxels.length > this.options.maxRenderVoxels) {
-        const selectionResult = this._selectVoxelsForRendering(displayVoxels, this.options.maxRenderVoxels, bounds, grid);
-        displayVoxels = selectionResult.selectedVoxels;
-        
-        // 統計情報の更新
-        this._selectionStats = {
-          strategy: selectionResult.strategy,
-          clippedNonEmpty: selectionResult.clippedNonEmpty,
-          coverageRatio: selectionResult.coverageRatio || 0
-        };
-        
-        Logger.debug(`Applied ${selectionResult.strategy} strategy: ${displayVoxels.length} voxels selected, ${selectionResult.clippedNonEmpty} clipped`);
-      }
+    if (displayResult.selectionResult) {
+      const { strategy, clippedNonEmpty, coverageRatio } = displayResult.selectionResult;
+      this._selectionStats = {
+        strategy,
+        clippedNonEmpty,
+        coverageRatio: coverageRatio || 0
+      };
+      Logger.debug(`Applied ${strategy} strategy: ${displayVoxels.length} voxels selected, ${clippedNonEmpty} clipped`);
     }
 
     // v0.1.5: TopN強調表示の前処理
@@ -1119,9 +1060,9 @@ export class VoxelRenderer {
       : displayVoxels.length;
     const planningResult = this.renderPlanner.plan(displayVoxels, bounds, grid, topNVoxels, plannedBudget);
     displayVoxels = planningResult.voxels;
-    
+
     Logger.debug(`Rendering ${displayVoxels.length} voxels`);
-    
+
     // レンダリングカウント
     let renderedCount = 0;
 
@@ -1168,18 +1109,18 @@ export class VoxelRenderer {
    */
   _renderSingleVoxel(key, info, bounds, grid, statistics, topNVoxels, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx) {
     const isTopN = topNVoxels.has(key);
-    
+
     // Calculate voxel rendering parameters
     const renderParams = this._calculateVoxelRenderingParams(info, bounds, grid, statistics, isTopN, reusableVoxelCtx, reusableWidthResolverParams, reusableOpacityResolverCtx);
-    
+
     // 安全性チェック - レンダリングパラメータが無効な場合はスキップ
     if (!renderParams) {
       return 0; // Skipped rendering due to invalid parameters
     }
-    
+
     // Delegate to GeometryRenderer for actual rendering
     this._delegateVoxelRendering(key, renderParams);
-    
+
     return 1; // Successfully rendered
   }
 
@@ -1202,21 +1143,21 @@ export class VoxelRenderer {
     if (!info || !bounds || !grid || !statistics) {
       return null;
     }
-    
+
     // v0.1.17: Spatial ID mode - calculate position from 8-vertex bounds / 空間IDモード - 8頂点boundsから位置を計算
     let centerLon, centerLat, centerAlt, cellSizeX, cellSizeY, baseCellSizeZ;
-    
+
     if (info.bounds && Array.isArray(info.bounds) && info.bounds.length === 8) {
       // Spatial ID mode: use 8 vertices to calculate center and dimensions
       // 空間IDモード: 8頂点を使って中心と寸法を計算
       const vertices = info.bounds;
-      
+
       // Calculate center from vertices (average of all 8 points)
       // 頂点から中心を計算（8点の平均）
       centerLon = vertices.reduce((sum, v) => sum + v.lng, 0) / 8;
       centerLat = vertices.reduce((sum, v) => sum + v.lat, 0) / 8;
       centerAlt = vertices.reduce((sum, v) => sum + v.alt, 0) / 8;
-      
+
       // Calculate dimensions from vertices (distance between corners)
       // 頂点から寸法を計算（角間の距離）
       // Assume vertices[0-3] are bottom face, vertices[4-7] are top face
@@ -1226,7 +1167,7 @@ export class VoxelRenderer {
       const v1 = Cesium.Cartesian3.fromDegrees(vertices[1].lng, vertices[1].lat, vertices[1].alt);
       const v3 = Cesium.Cartesian3.fromDegrees(vertices[3].lng, vertices[3].lat, vertices[3].alt);
       const v4 = Cesium.Cartesian3.fromDegrees(vertices[4].lng, vertices[4].lat, vertices[4].alt);
-      
+
       cellSizeX = Cesium.Cartesian3.distance(v0, v1);
       cellSizeY = Cesium.Cartesian3.distance(v0, v3);
       baseCellSizeZ = Cesium.Cartesian3.distance(v0, v4);
@@ -1234,28 +1175,28 @@ export class VoxelRenderer {
       // Uniform grid mode: use x/y/z indices (legacy)
       // 一様グリッドモード: x/y/zインデックスを使用（レガシー）
       const { x, y, z } = info;
-      
+
       centerLon = bounds.minLon + (x + 0.5) * (bounds.maxLon - bounds.minLon) / grid.numVoxelsX;
       centerLat = bounds.minLat + (y + 0.5) * (bounds.maxLat - bounds.minLat) / grid.numVoxelsY;
       centerAlt = bounds.minAlt + (z + 0.5) * (bounds.maxAlt - bounds.minAlt) / grid.numVoxelsZ;
-      
+
       // Calculate dimensions from grid (legacy)
       // グリッドから寸法を計算（レガシー）
       cellSizeX = grid.cellSizeX || (grid.lonRangeMeters ? (grid.lonRangeMeters / grid.numVoxelsX) : grid.voxelSizeMeters);
       cellSizeY = grid.cellSizeY || (grid.latRangeMeters ? (grid.latRangeMeters / grid.numVoxelsY) : grid.voxelSizeMeters);
       baseCellSizeZ = grid.cellSizeZ || (grid.altRangeMeters ? Math.max(grid.altRangeMeters / Math.max(grid.numVoxelsZ, 1), 1) : Math.max(grid.voxelSizeMeters, 1));
     }
-    
+
     // Normalized density
-    const normalizedDensity = statistics.maxCount > statistics.minCount ? 
+    const normalizedDensity = statistics.maxCount > statistics.minCount ?
       (info.count - statistics.minCount) / (statistics.maxCount - statistics.minCount) : 0;
-    
+
     // Adaptive parameters
     const adaptiveParams = this._calculateAdaptiveParams(info, isTopN, this._currentVoxelData, statistics, grid);
-    
+
     // Color and opacity
     const { color, opacity } = this._calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx);
-    
+
     // Dimensions (v0.1.17: use pre-calculated dimensions for spatial ID mode)
     let finalCellSizeX, finalCellSizeY, boxHeight;
     if (info.bounds) {
@@ -1264,13 +1205,13 @@ export class VoxelRenderer {
       finalCellSizeX = cellSizeX;
       finalCellSizeY = cellSizeY;
       let finalBaseCellSizeZ = baseCellSizeZ;
-      
+
       if (this.options.voxelGap > 0) {
         finalCellSizeX = Math.max(cellSizeX - this.options.voxelGap, cellSizeX * 0.1);
         finalCellSizeY = Math.max(cellSizeY - this.options.voxelGap, cellSizeY * 0.1);
         finalBaseCellSizeZ = Math.max(baseCellSizeZ - this.options.voxelGap, baseCellSizeZ * 0.1);
       }
-      
+
       boxHeight = finalBaseCellSizeZ;
       if (this.options.heightBased) {
         boxHeight = finalBaseCellSizeZ * (0.1 + normalizedDensity * 0.9);
@@ -1283,10 +1224,10 @@ export class VoxelRenderer {
       finalCellSizeY = dimensions.cellSizeY;
       boxHeight = dimensions.boxHeight;
     }
-    
+
     // Outline properties
     const outlineProps = this._calculateOutlineProperties(info, isTopN, normalizedDensity, adaptiveParams, statistics, color, reusableVoxelCtx, reusableWidthResolverParams);
-    
+
     return {
       centerLon, centerLat, centerAlt,
       cellSizeX: finalCellSizeX, cellSizeY: finalCellSizeY, boxHeight,
@@ -1313,7 +1254,7 @@ export class VoxelRenderer {
    */
   _calculateColorAndOpacity(info, normalizedDensity, isTopN, adaptiveParams, statistics, reusableVoxelCtx, reusableOpacityResolverCtx) {
     let color, opacity;
-    
+
     if (info.count === 0) {
       color = Cesium.Color.LIGHTGRAY;
       opacity = this.options.emptyOpacity;
@@ -1331,7 +1272,7 @@ export class VoxelRenderer {
       } else {
         color = ColorCalculator.calculateColor(normalizedDensity, info.count, this.options);
       }
-      
+
       // Opacity calculation with resolver support
       if (this.options.boxOpacityResolver && typeof this.options.boxOpacityResolver === 'function') {
         reusableVoxelCtx.x = info.x; reusableVoxelCtx.y = info.y; reusableVoxelCtx.z = info.z; reusableVoxelCtx.count = info.count;
@@ -1348,13 +1289,13 @@ export class VoxelRenderer {
       } else {
         opacity = (adaptiveParams.boxOpacity ?? this.options.opacity);
       }
-      
-      // TopN highlight adjustment 
+
+      // TopN highlight adjustment
       if (this.options.highlightTopN && !isTopN) {
-        opacity *= (1 - (this.options.highlightStyle?.boostOpacity || 0.2));
+        opacity *= (1 - (this.options.highlightStyle?.boostOpacity ?? 0.2));
       }
     }
-    
+
     return { color, opacity };
   }
 
@@ -1383,7 +1324,7 @@ export class VoxelRenderer {
     if (this.options.heightBased) {
       boxHeight = baseCellSizeZ * (0.1 + normalizedDensity * 0.9);
     }
-    
+
     return { cellSizeX, cellSizeY, boxHeight };
   }
 
@@ -1422,9 +1363,10 @@ export class VoxelRenderer {
       if (adaptiveParams.outlineWidth !== null && adaptiveParams.outlineWidth !== undefined) {
         finalOutlineWidth = adaptiveParams.outlineWidth;
       } else {
-        finalOutlineWidth = isTopN && this.options.highlightTopN ? 
-          (this.options.highlightStyle?.outlineWidth || this.options.outlineWidth) : 
-          this.options.outlineWidth;
+        finalOutlineWidth = isTopN && this.options.highlightTopN
+          ? (this.options.highlightStyle?.outlineWidth ?? this.options.outlineWidth) +
+            (this.options.highlightStyle?.boostOutlineWidth ?? 0)
+          : this.options.outlineWidth;
       }
     }
 
@@ -1471,7 +1413,7 @@ export class VoxelRenderer {
     let shouldShowStandardOutline = true;
     let shouldShowInsetOutline = false;
     let shouldUseEmulationOnly = false;
-    
+
     switch (this.options.outlineRenderMode) {
       case 'standard':
         shouldShowStandardOutline = this.options.showOutline;
@@ -1487,7 +1429,7 @@ export class VoxelRenderer {
         shouldUseEmulationOnly = true;
         break;
     }
-    
+
     return { shouldShowStandardOutline, shouldShowInsetOutline, shouldUseEmulationOnly };
   }
 
@@ -1591,8 +1533,8 @@ export class VoxelRenderer {
       this._classifier = null;
     }
   }
-  
-  // v0.1.11: _interpolateFromColorMap and _interpolateDivergingColor methods 
+
+  // v0.1.11: _interpolateFromColorMap and _interpolateDivergingColor methods
   // moved to ColorCalculator (ADR-0009 Phase 1)
 
 
@@ -1614,17 +1556,17 @@ export class VoxelRenderer {
     if (!this.options.debug) {
       return false;
     }
-    
+
     if (typeof this.options.debug === 'boolean') {
       // 従来の動作：debugがtrueの場合はバウンディングボックス表示
       return this.options.debug;
     }
-    
+
     if (typeof this.options.debug === 'object' && this.options.debug !== null) {
       // 新しい動作：debug.showBoundsで明示的に制御
       return this.options.debug.showBounds === true;
     }
-    
+
     return false;
   }
 
@@ -1660,10 +1602,10 @@ export class VoxelRenderer {
   _selectVoxelsForRendering(allVoxels, maxCount, bounds, grid) {
     // v0.1.11: 新しいVoxelSelectorに委譲しつつ、既存インターフェースを維持 (ADR-0009 Phase 2)
     const selectionResult = this.voxelSelector.selectVoxels(allVoxels, maxCount, { grid, bounds });
-    
+
     // 統計情報の更新
     this._selectionStats = this.voxelSelector.getLastSelectionStats();
-    
+
     return selectionResult;
   }
 

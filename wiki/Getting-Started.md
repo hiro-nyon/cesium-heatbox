@@ -1,550 +1,762 @@
-# Development Environment Setup (開発環境のセットアップ)
+<!-- Generated from docs/quick-start.md by npm run wiki:sync. Edit the canonical source, not this page. -->
+
+# Quick Start Guide (クイックスタートガイド)
 
 [English](#english) | [日本語](#日本語)
 
 ## English
 
-### Requirements
+**Target Audience**: Those who want to use cesium-heatbox immediately
+**Time Required**: 10-15 minutes
+**Prerequisites**: Node.js 18+, Git, basic JavaScript knowledge
 
-- Node.js 18.0.0 or higher
-- npm 8.0.0 or higher
-- Git
+### Table of Contents
 
-### Installation
+1. [Environment Setup (5 minutes)](#environment-setup-5-minutes)
+2. [Project Setup (3 minutes)](#project-setup-3-minutes)
+3. [Sample Execution (2 minutes)](#sample-execution-2-minutes)
+4. [Basic Development Work (5 minutes)](#basic-development-work-5-minutes)
+5. [Next Steps](#next-steps)
+
+#### Environment Setup (5 minutes)
+
+**1. Check Node.js Installation**
+
+```bash
+# Check version
+node --version  # v18.0.0 or higher required
+npm --version   # v8.0.0 or higher required
+```
+
+**If not installed:**
+1. Download LTS version from [Node.js official site](https://nodejs.org/)
+2. Run installer
+
+**2. Check Git Installation**
+
+```bash
+# Check version
+git --version
+```
+
+**If not installed:**
+- Download from [Git official site](https://git-scm.com/)
+- macOS: `brew install git`
+- Windows: Install Git for Windows
+
+#### Project Setup (3 minutes)
+
+**1. Install cesium-heatbox**
 
 ```bash
 # Install from npm
 npm install cesium-heatbox
 
-# Or clone repository for development
+# Or for development from source
 git clone https://github.com/hiro-nyon/cesium-heatbox.git
 cd cesium-heatbox
 npm install
 ```
 
-### Development Commands
+**2. Install Dependencies (if building from source)**
 
 ```bash
-# Start development server
-npm run dev
+# Initial setup
+npm install
 
-# Build (all formats)
-npm run build
+# Verify success
+npm ls --depth=0
+```
 
-# ESM build only
-npm run build:esm
+**3. Basic Operation Check**
 
-# UMD build only
-npm run build:umd
-
-# Generate type definitions
-npm run build:types
-
-# Watch mode
-npm run build:watch
-
+```bash
 # Run tests
 npm test
 
-# Test watch mode
-npm run test:watch
+# Run build
+npm run build
 
-# Test with coverage
-npm run test:coverage
-
-# Linting
-npm run lint
-npm run lint:fix
-
-# Type checking
-npm run type-check
-
-# Benchmark
-npm run benchmark
-
-# Generate documentation
-npm run docs
-
-# Cleanup
-npm run clean
+# Check results
+ls -la dist/
 ```
 
-### Project Structure
-
+**Expected output:**
 ```
-cesium-heatbox/
-├── src/                    # Source code
-│   ├── index.js           # Entry point
-│   ├── Heatbox.js         # Main class
-│   ├── core/              # Core functionality
-│   │   ├── CoordinateTransformer.js
-│   │   ├── VoxelGrid.js
-│   │   ├── DataProcessor.js
-│   │   └── VoxelRenderer.js
-│   └── utils/             # Utilities
-│       ├── constants.js
-│       ├── validation.js
-│       └── sampleData.js
-├── test/                  # Test files
-├── examples/              # Usage examples
-├── docs/                  # Documentation
-├── types/                 # TypeScript type definitions
-└── dist/                  # Build output
+dist/
+├── cesium-heatbox.min.mjs
+├── cesium-heatbox.cjs
+└── cesium-heatbox.umd.min.js
 ```
 
-### Development Guidelines
+#### Sample Execution (2 minutes)
 
-#### Coding Standards
-
-- Use ESLint Standard Style
-- Document with JSDoc format
-- Function names start with verbs
-- Constants use UPPER_SNAKE_CASE
-- Class names use PascalCase
-
-#### Commit Messages
-
-```
-type(scope): description
-
-Examples:
-feat(core): add new voxel rendering algorithm
-fix(utils): handle edge case in coordinate transformation
-docs(api): update API documentation
-test(heatbox): add comprehensive test cases
-```
-
-#### Branch Strategy
-
-- `main`: Stable version
-- `develop`: Development version
-- `feature/*`: New feature development
-- `hotfix/*`: Emergency fixes
-
-### Testing
-
-#### Running Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run specific test file
-npm test -- Heatbox.test.js
-
-# Generate coverage report
-npm run test:coverage
-```
-
-#### Writing Tests
-
-```javascript
-describe('MyClass', () => {
-  let instance;
-  
-  beforeEach(() => {
-    instance = new MyClass();
-  });
-  
-  test('should do something', () => {
-    const result = instance.doSomething();
-    expect(result).toBe(expected);
-  });
-});
-```
-
-### Debugging
-
-#### Browser Debugging
+**1. Start Development Server**
 
 ```bash
 # Start development server
 npm run dev
 
-# Access http://localhost:8080 in browser
+# Check in browser
+# Browser should open automatically (usually http://localhost:8080)
 ```
 
-#### Node.js Debugging
+**2. Check Basic Sample**
+
+Verify in browser:
+- Basic 3D map display
+- Heatmap configuration UI
+- Entity generation and heatmap creation buttons
+
+**3. Function Test**
+
+1. **Generate Entities**: Click "Generate Test Entities" button
+2. **Create Heatmap**: Click "Create Heatmap" button
+3. **Change Settings**: Adjust voxel size and opacity
+4. **Toggle Display**: Use "Show/Hide" button to verify
+
+#### Basic Development Work (5 minutes)
+
+**1. Open Code in Editor**
 
 ```bash
-# Run with Node.js debugger
-node --inspect-brk node_modules/.bin/jest --runInBand
+# Open with Visual Studio Code
+code .
 
-# Access chrome://inspect in Chrome DevTools
+# Or open with other editor
+open .
 ```
 
-### Building
-
-#### Development Build
-
-```bash
-npm run build:esm
+**Basic File Structure:**
+```
+cesium-heatbox/
+├── src/                    # Source code
+│   ├── Heatbox.js         # Main class
+│   ├── core/              # Core functionality
+│   └── utils/             # Utilities
+├── examples/              # Sample code
+│   └── basic/
+│       ├── index.html
+│       └── app.js
+├── test/                  # Test code
+└── docs/                  # Documentation
 ```
 
-#### Production Build
+**2. Try Simple Changes**
+
+Change default voxel size:
+```javascript
+// src/utils/constants.js
+export const DEFAULT_VOXEL_SIZE = 20;  // Change 20 → 30
+```
+
+Change default colors:
+```javascript
+// src/utils/constants.js
+export const DEFAULT_MIN_COLOR = [0, 32, 255];     // Blue
+export const DEFAULT_MAX_COLOR = [255, 64, 0];     // Red
+// → Try changing to other colors
+```
+
+**3. Verify Changes**
 
 ```bash
+# Check with development server (hot reload)
+npm run dev
+
+# Check with tests
+npm test
+
+# Check with build
 npm run build
 ```
 
-Output files:
-- `dist/cesium-heatbox.js` - ESM development version
-- `dist/cesium-heatbox.min.js` - ESM production version
-- `dist/cesium-heatbox.umd.js` - UMD development version
-- `dist/cesium-heatbox.umd.min.js` - UMD production version
-
-### Release
-
-#### Version Management
+**4. Commit Changes**
 
 ```bash
-# Patch version
-npm version patch
+# Check changes
+git status
+git diff
 
-# Minor version
-npm version minor
+# Commit changes
+git add .
+git commit -m "chore: update default voxel size to 30"
 
-# Major version
-npm version major
-
-# Push release tags
-git push origin main --tags
+# Push to GitHub
+git push origin main
 ```
 
-#### Automated Release
+#### v0.1.9 New Features (Advanced Usage)
 
-GitHub Actions automatically:
-1. Runs tests
-2. Performs builds
-3. Publishes to NPM
-4. Creates GitHub Releases
+**1. Adaptive Rendering with Auto Render Budget**
 
-when tags are pushed.
+Automatically optimize performance based on device capabilities:
 
-### Common Issues and Solutions
+```javascript
+const heatbox = new Heatbox(viewer, {
+  maxRenderVoxels: 'auto',        // Auto device detection
+  renderLimitStrategy: 'hybrid',   // Smart voxel selection
+  autoVoxelSizeMode: 'occupancy'  // Enhanced calculation
+});
 
-**npm install fails:**
+await heatbox.setData(entities);
+
+// Check applied settings
+const stats = heatbox.getStatistics();
+console.log(`Device tier: ${stats.renderBudgetTier}`);
+console.log(`Auto max voxels: ${stats.autoMaxRenderVoxels}`);
+console.log(`Rendered: ${stats.renderedVoxels}/${stats.totalVoxels}`);
+```
+
+**2. Smart Camera Positioning**
+
+Automatically position camera for optimal data viewing:
+
+```javascript
+// Basic auto-fit
+await heatbox.fitView();
+
+// Custom camera angles
+await heatbox.fitView(null, {
+  heading: 45,      // Camera direction (degrees)
+  pitch: -60,       // Camera tilt (degrees)
+  paddingPercent: 0.2 // Extra space around data (ratio of data extent)
+});
+
+// Auto-fit after data loading
+const heatbox = new Heatbox(viewer, {
+  autoView: true,  // Automatically execute fitView
+  fitViewOptions: { heading: 0, pitch: -45 }
+});
+```
+
+**3. Rendering Strategy Comparison**
+
+Test different voxel selection strategies:
+
+```javascript
+// Dense data areas - use density strategy
+const denseHeatbox = new Heatbox(viewer, {
+  renderLimitStrategy: 'density',
+  maxRenderVoxels: 5000
+});
+
+// Wide area coverage - use coverage strategy
+const coverageHeatbox = new Heatbox(viewer, {
+  renderLimitStrategy: 'coverage',
+  maxRenderVoxels: 5000
+});
+
+// Balanced approach - use hybrid strategy
+const hybridHeatbox = new Heatbox(viewer, {
+  renderLimitStrategy: 'hybrid',
+  maxRenderVoxels: 5000
+});
+```
+
+**4. Enhanced Auto Voxel Sizing**
+
+Use mathematical occupancy estimation for optimal voxel size:
+
+```javascript
+const heatbox = new Heatbox(viewer, {
+  autoVoxelSize: true,
+  autoVoxelSizeMode: 'occupancy', // v0.1.9 enhanced mode
+  maxRenderVoxels: 'auto'
+});
+
+await heatbox.setData(entities);
+
+// Check calculation results
+const stats = heatbox.getStatistics();
+console.log(`Original size: ${stats.originalVoxelSize}m`);
+console.log(`Final size: ${stats.finalVoxelSize}m`);
+console.log(`Adjusted: ${stats.autoAdjusted}`);
+console.log(`Reason: ${stats.adjustmentReason}`);
+```
+
+**5. Try the Interactive Demo**
+
+Experience v0.1.9 features with the comprehensive demo:
+
 ```bash
-npm cache clean --force
+# Open advanced demo
+open examples/selection-limits/adaptive-rendering/index.html
+```
+
+The demo includes:
+- Real-time strategy switching
+- Device tier visualization
+- Performance monitoring
+- Interactive controls for all new features
+
+#### Next Steps
+
+**1. Read Detailed Documentation**
+
+- **[development-guide.md](./development-guide.md)**: From basics to advanced development
+- **[specification.md](./specification.md)**: Complete project specifications
+- **[API.md](./API.md)**: Detailed API specifications
+
+**2. Practical Development**
+
+Feature implementation:
+1. Check v1.0.0 planned features in **specification.md**
+2. Challenge implementing **data source selection functionality**
+3. Add **test cases**
+4. Update **documentation**
+
+Quality improvement:
+1. Improve **test coverage**
+2. Optimize **performance**
+3. Enhance **error handling**
+4. Improve **usability**
+
+**3. Release Preparation**
+
+Alpha release:
+```bash
+# Update version
+npm version 0.1.0-alpha.1 --no-git-tag-version
+
+# Create tag
+git add .
+git commit -m "chore: bump version to 0.1.0-alpha.1"
+git tag v0.1.0-alpha.1
+
+# Push
+git push origin main
+git push origin v0.1.0-alpha.1
+```
+
+Future NPM publication:
+```bash
+# Prepare for publication
+npm publish --dry-run
+
+# Publish as alpha
+npm publish --tag alpha
+```
+
+### Frequently Used Commands
+
+**Development:**
+```bash
+npm install     # Install dependencies
+npm run dev     # Start development server
+npm test        # Run tests
+npm run build   # Build
+npm run lint    # Linting
+```
+
+**Git Operations:**
+```bash
+git status                    # Check status
+git add .                     # Stage changes
+git commit -m "message"       # Commit
+git push origin main          # Push
+git pull origin main          # Pull latest
+```
+
+**Troubleshooting:**
+```bash
+# Environment reset
 rm -rf node_modules package-lock.json
 npm install
+
+# Detailed error checking
+npm test -- --verbose
+npm run build -- --verbose
 ```
 
-**ESLint configuration issues:**
-- Use ESLint 8.x (9.x not supported)
-- Use `.eslintrc.js` format
+### Frequently Asked Questions
 
-**Test failures:**
-- Check import paths
-- Verify Cesium mocks in `test/setup.js`
+**Q: Development server won't start**
+**A:** Check:
+1. Node.js 18+ installed
+2. `npm install` succeeded
+3. Port 8080 available
 
-For detailed troubleshooting, see the Japanese section below.
+**Q: Tests fail**
+**A:** Try:
+1. `npm test -- --verbose` for detailed errors
+2. `npm install` to reinstall dependencies
+3. Run specific test: `npm test -- Heatbox.test.js`
+
+**Q: Build fails**
+**A:** Check:
+1. No ESLint errors: `npm run lint`
+2. No type errors: `npm run type-check`
+3. File paths are correct
+
+**Q: Git push error**
+**A:** Try:
+1. `git pull origin main` to get latest
+2. Resolve conflicts if any
+3. Push again
+
+### Success Tips
+
+1. **Start small**: Don't make big changes at once
+2. **Test frequently**: Always run tests after changes
+3. **Commit often**: Commit in meaningful units
+4. **Read documentation**: Check specifications for questions
+5. **Don't fear experimentation**: Failure is a learning opportunity
+
+Congratulations! Enjoy developing with cesium-heatbox!
 
 ## 日本語
 
-## 必要な環境
+**対象**: cesium-heatboxを今すぐ使いたい方
+**所要時間**: 10-15分
+**前提条件**: Node.js 18+、Git、基本的なJavaScript知識
 
-- Node.js 18.0.0 以上
-- npm 8.0.0 以上
-- Git
+## 目次
 
-## インストール（npm推奨）
+1. [環境準備（5分）](#環境準備5分)
+2. [プロジェクトセットアップ（3分）](#プロジェクトセットアップ3分)
+3. [サンプル実行（2分）](#サンプル実行2分)
+4. [基本的な開発作業（5分）](#基本的な開発作業5分)
+5. [次のステップ](#次のステップ)
+
+---
+
+## 環境準備（5分）
+
+### 1. Node.jsのインストール確認
 
 ```bash
-# npmからインストール（推奨）
+# バージョン確認
+node --version  # v18.0.0以上必要
+npm --version   # v8.0.0以上必要
+```
+
+**未インストールの場合**:
+1. [Node.js公式サイト](https://nodejs.org/)でLTS版をダウンロード
+2. インストーラーを実行
+
+### 2. Gitのインストール確認
+
+```bash
+# バージョン確認
+git --version
+```
+
+**未インストールの場合**:
+- [Git公式サイト](https://git-scm.com/)からダウンロード
+- macOS: `brew install git`
+- Windows: Git for Windowsをインストール
+
+---
+
+## プロジェクトセットアップ（3分）
+
+### 1. cesium-heatboxのインストール
+
+```bash
+# npmからインストール
 npm install cesium-heatbox
 
-# または開発用にリポジトリをクローン
+# または開発用にソースから
 git clone https://github.com/hiro-nyon/cesium-heatbox.git
 cd cesium-heatbox
 npm install
 ```
 
-## 開発コマンド
+### 2. 依存関係のインストール（ソースからビルドする場合）
+
+```bash
+# 初回セットアップ
+npm install
+
+# 成功確認
+npm ls --depth=0
+```
+
+### 3. 基本動作確認
+
+```bash
+# テストの実行
+npm test
+
+# ビルドの実行
+npm run build
+
+# 結果確認
+ls -la dist/
+```
+
+**期待される出力**:
+```
+dist/
+├── cesium-heatbox.min.mjs
+├── cesium-heatbox.cjs
+└── cesium-heatbox.umd.min.js
+```
+
+---
+
+## サンプル実行（2分）
+
+### 1. 開発サーバーの起動
 
 ```bash
 # 開発サーバーを起動
 npm run dev
 
-# ビルド（全形式）
+# ブラウザで確認
+# 自動的にブラウザが開く（通常はhttp://localhost:8080）
+```
+
+### 2. 基本サンプルの確認
+
+ブラウザで以下を確認:
+- 基本的な3Dマップが表示される
+- ヒートマップの設定UI
+- エンティティ生成・ヒートマップ作成ボタン
+
+### 3. 機能テスト
+
+1. **エンティティ生成**: 「テストエンティティ生成」ボタンをクリック
+2. **ヒートマップ作成**: 「ヒートマップ作成」ボタンをクリック
+3. **設定変更**: ボクセルサイズや透明度を調整
+4. **表示切り替え**: 「表示/非表示」ボタンで確認
+
+---
+
+## 基本的な開発作業（5分）
+
+### 1. コードの編集
+
+#### エディタでプロジェクトを開く
+```bash
+# Visual Studio Codeで開く
+code .
+
+# または他のエディタで開く
+open .
+```
+
+#### 基本的なファイル構造
+```
+cesium-heatbox/
+├── src/                    # ソースコード
+│   ├── Heatbox.js         # メインクラス
+│   ├── core/              # 核心機能
+│   └── utils/             # ユーティリティ
+├── examples/              # サンプルコード
+│   └── basic/
+│       ├── index.html
+│       └── app.js
+├── test/                  # テストコード
+└── docs/                  # ドキュメント
+```
+
+### 2. 簡単な変更を試す
+
+#### デフォルトボクセルサイズの変更
+```javascript
+// src/utils/constants.js
+export const DEFAULT_VOXEL_SIZE = 20;  // 20 → 30に変更
+```
+
+#### デフォルト色の変更
+```javascript
+// src/utils/constants.js
+export const DEFAULT_MIN_COLOR = [0, 32, 255];     // 青
+export const DEFAULT_MAX_COLOR = [255, 64, 0];     // 赤
+// → 他の色に変更してみる
+```
+
+### 3. 変更の確認
+
+```bash
+# 開発サーバーで確認（ホットリロード）
+npm run dev
+
+# テストで確認
+npm test
+
+# ビルドで確認
 npm run build
+```
 
-# ESMビルドのみ
-npm run build:esm
+### 4. 変更のコミット
 
-# UMDビルドのみ
-npm run build:umd
+```bash
+# 変更を確認
+git status
+git diff
 
-# 型定義生成
-npm run build:types
+# 変更をコミット
+git add .
+git commit -m "chore: update default voxel size to 30"
 
-# ウォッチモード
-npm run build:watch
+# GitHubにプッシュ
+git push origin main
+```
+
+---
+
+## 次のステップ
+
+### 1. 詳細なドキュメントを読む
+
+- **[development-guide.md](./development-guide.md)**: 開発の基本から応用まで
+- **[specification.md](./specification.md)**: プロジェクトの全体仕様
+- **[API.md](./API.md)**: API仕様の詳細
+
+### 2. 実践的な開発
+
+#### 新機能の実装
+1. **specification.md**でv1.0.0の計画機能を確認
+2. **データソース選択機能**の実装にチャレンジ
+3. **テストケース**の追加
+4. **ドキュメント**の更新
+
+#### 品質向上
+1. **テストカバレッジ**の向上
+2. **パフォーマンス**の最適化
+3. **エラーハンドリング**の改善
+4. **ユーザビリティ**の向上
+
+### 3. リリースの準備
+
+#### Alpha版リリース
+```bash
+# バージョン更新
+npm version 0.1.0-alpha.1 --no-git-tag-version
+
+# タグ作成
+git add .
+git commit -m "chore: bump version to 0.1.0-alpha.1"
+git tag v0.1.0-alpha.1
+
+# プッシュ
+git push origin main
+git push origin v0.1.0-alpha.1
+```
+
+#### NPM公開（手動実行時）
+```bash
+# 公開準備
+npm publish --dry-run
+
+# プレリリース（alpha/beta/rc など）として公開
+npm publish --tag alpha
+
+# 安定版として公開（latest）
+npm publish --tag latest
+```
+
+---
+
+## 頻繁に使うコマンド一覧
+
+### 開発時
+
+```bash
+# 依存関係のインストール
+npm install
+
+# 開発サーバー起動
+npm run dev
 
 # テスト実行
 npm test
 
-# テスト（ウォッチモード）
-npm run test:watch
-
-# カバレッジ付きテスト
-npm run test:coverage
+# ビルド
+npm run build
 
 # リンティング
 npm run lint
-npm run lint:fix
-
-# 型チェック
-npm run type-check
-
-# ベンチマーク
-npm run benchmark
-
-# ドキュメント生成
-npm run docs
-
-# クリーンアップ
-npm run clean
 ```
 
-## プロジェクト構造
-
-```
-cesium-heatbox/
-├── src/                    # ソースコード
-│   ├── index.js           # エントリーポイント
-│   ├── Heatbox.js         # メインクラス
-│   ├── core/              # コア機能
-│   │   ├── CoordinateTransformer.js
-│   │   ├── VoxelGrid.js
-│   │   ├── DataProcessor.js
-│   │   └── VoxelRenderer.js
-│   └── utils/             # ユーティリティ
-│       ├── constants.js
-│       ├── validation.js
-│       └── sampleData.js
-├── test/                  # テストファイル
-├── examples/              # 使用例
-├── docs/                  # ドキュメント
-├── types/                 # TypeScript型定義
-└── dist/                  # ビルド出力
-```
-
-## 開発ガイドライン
-
-### コーディング規約
-
-- ESLint Standard Style を使用
-- JSDoc形式でドキュメントを記述
-- 関数名は動詞で始める
-- 定数は UPPER_SNAKE_CASE
-- クラス名は PascalCase
-
-### コミットメッセージ
-
-```
-type(scope): description
-
-feat(core): add new voxel rendering algorithm
-fix(utils): handle edge case in coordinate transformation
-docs(api): update API documentation
-test(heatbox): add comprehensive test cases
-```
-
-### ブランチ戦略
-
-- `main`: 安定版
-- `develop`: 開発版
-- `feature/*`: 新機能開発
-- `hotfix/*`: 緊急修正
-
-## テスト
-
-### テストの実行
+### Git操作
 
 ```bash
-# 全テストを実行
-npm test
+# 状態確認
+git status
 
-# 特定のテストファイルを実行
-npm test -- Heatbox.test.js
+# 変更をコミット
+git add .
+git commit -m "commit message"
 
-# カバレッジレポートを生成
-npm run test:coverage
+# プッシュ
+git push origin main
+
+# 最新版を取得
+git pull origin main
 ```
 
-### テストの書き方
-
-```javascript
-describe('MyClass', () => {
-  let instance;
-  
-  beforeEach(() => {
-    instance = new MyClass();
-  });
-  
-  test('should do something', () => {
-    const result = instance.doSomething();
-    expect(result).toBe(expected);
-  });
-});
-```
-
-## デバッグ
-
-### ブラウザでのデバッグ
+### トラブルシューティング
 
 ```bash
-# 開発サーバーを起動
-npm run dev
-
-# ブラウザで http://localhost:8080 にアクセス
-```
-
-### Node.js でのデバッグ
-
-```bash
-# Node.js デバッガーで実行
-node --inspect-brk node_modules/.bin/jest --runInBand
-
-# Chrome DevTools で chrome://inspect にアクセス
-```
-
-## ビルド
-
-### 開発ビルド
-
-```bash
-npm run build:esm
-```
-
-### 本番ビルド
-
-```bash
-npm run build
-```
-
-出力ファイル:
-- `dist/cesium-heatbox.js` - ESM開発版
-- `dist/cesium-heatbox.min.js` - ESM本番版
-- `dist/cesium-heatbox.umd.js` - UMD開発版
-- `dist/cesium-heatbox.umd.min.js` - UMD本番版
-
-## リリース
-
-### バージョン管理
-
-```bash
-# パッチバージョンを上げる
-npm version patch
-
-# マイナーバージョンを上げる
-npm version minor
-
-# メジャーバージョンを上げる
-npm version major
-
-# リリースタグをプッシュ
-git push origin main --tags
-```
-
-### 自動リリース
-
-GitHub Actions により、タグがプッシュされると自動的に:
-1. テストが実行される
-2. ビルドが行われる
-3. NPMに公開される
-4. GitHub Releasesが作成される
-
-## トラブルシューティング
-
-### よくある問題
-
-#### `npm install` が失敗する
-
-**問題**: 依存関係の競合エラー
-```
-npm ERR! code ERESOLVE
-npm ERR! ERESOLVE unable to resolve dependency tree
-```
-
-**解決方法**:
-```bash
-# 1. キャッシュをクリア
-npm cache clean --force
-
-# 2. node_modulesとpackage-lock.jsonを削除
+# 環境リセット
 rm -rf node_modules package-lock.json
-
-# 3. 再インストール
 npm install
+
+# 詳細エラー確認
+npm test -- --verbose
+npm run build -- --verbose
 ```
 
-#### ESLint設定の問題
+---
 
-**問題**: ESLintの設定ファイルの形式が古い
-```
-Error: ESLint configuration in eslint.config.js is invalid
-```
+## よくある質問
 
-**解決方法**:
-- ESLint 8.x系を使用（9.x系は非対応）
-- `.eslintrc.js`形式を使用（フラット設定は未対応）
+### Q: 開発サーバーが起動しない
+**A**: 以下を確認してください
+1. Node.js 18+がインストールされているか
+2. `npm install`が成功したか
+3. ポート8080が使用可能か
 
-#### Cesiumの型定義の問題
+### Q: テストが失敗する
+**A**: 以下を試してください
+1. `npm test -- --verbose`で詳細エラーを確認
+2. `npm install`で依存関係を再インストール
+3. 個別のテストファイルを実行: `npm test -- Heatbox.test.js`
 
-**問題**: `@types/cesium`パッケージの警告
-```
-warn deprecated @types/cesium@1.70.4: This is a stub types definition. 
-cesium provides its own type definitions, so you don't need this installed.
-```
+### Q: ビルドが失敗する
+**A**: 以下を確認してください
+1. ESLintエラーがないか: `npm run lint`
+2. 型エラーがないか: `npm run type-check`
+3. ファイルパスが正しいか
 
-**解決方法**:
-```bash
-# @types/cesiumを削除（CesiumJS本体が型定義を提供）
-npm uninstall @types/cesium
-```
+### Q: Gitプッシュでエラーが発生
+**A**: 以下を試してください
+1. `git pull origin main`で最新版を取得
+2. コンフリクトがある場合は解決
+3. 再度プッシュ
 
-#### テストが失敗する
-
-**問題**: Jest設定の問題
-```
-Unknown option "moduleNameMapping" with value
-```
-
-**解決方法**:
-- `jest.config.js`で`moduleNameMapping`を`moduleNameMapper`に修正
-
-**問題**: テストファイルのimportパスエラー
-```
-Cannot find module '../src/core/CoordinateTransformer.js'
-```
-
-**解決方法**:
-- 相対パスを正しく設定（`../../src/core/...`）
-
-**問題**: Cesiumオブジェクトの未定義エラー
-```
-TypeError: Cesium.Cartesian3 is not a constructor
-```
-
-**解決方法**:
-- `test/setup.js`でCesiumのモックを適切に設定
+---
 
 ## サポート
 
-問題が発生した場合は、以下の方法でサポートを受けられます:
+### ヘルプが必要な場合
+- **GitHub Issues**: プロジェクト固有の問題
+- **development-guide.md**: 詳細な開発ガイド
+- **specification.md**: プロジェクトの全体仕様
 
-1. [GitHub Issues](https://github.com/hiro-nyon/cesium-heatbox/issues) で報告
-2. [Discussion](https://github.com/hiro-nyon/cesium-heatbox/discussions) で質問
-3. メールでの問い合わせ
+### 学習リソース
+- [CesiumJS公式ドキュメント](https://cesium.com/learn/)
+- [JavaScript MDN](https://developer.mozilla.org/ja/docs/Web/JavaScript)
+- [Git入門](https://git-scm.com/book/ja/v2)
 
-## コントリビューション
+---
 
-1. このリポジトリをフォーク
-2. 新しいブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチをプッシュ (`git push origin feature/amazing-feature`)
-5. Pull Request を作成
+**成功のコツ**:
+1. **小さく始める**: 一度に大きな変更をしない
+2. **頻繁にテスト**: 変更後は必ずテストを実行
+3. **コミットを細かく**: 意味のある単位でコミット
+4. **ドキュメントを読む**: 疑問点は仕様書で確認
+5. **実験を恐れない**: 失敗しても学習の機会
 
-詳細は [CONTRIBUTING.md](contributing.md) を参照してください。
+お疲れ様でした！cesium-heatboxの開発を楽しんでください！
+
+---
+
+**更新情報**
+- 作成日: 2025年7月9日
+- 対象バージョン: cesium-heatbox v0.1.0-alpha.1（歴史的メモ。最新版はREADMEおよび docs/API.md を参照）
+- 次回更新: ユーザーフィードバック後

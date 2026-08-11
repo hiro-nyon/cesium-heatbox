@@ -31,14 +31,16 @@ If you have ideas for new features, please propose them on the GitHub Issue trac
 If you want to make code changes or implement new features, please follow these steps to submit a pull request:
 
 1. Fork the repository
-2. Create a new branch (`feature/your-feature-name` or `fix/your-fix-name`)
+2. Create a new branch from `next` (`feature/your-feature-name` or `fix/your-fix-name`)
 3. Implement your changes
 4. Add or update tests
 5. Check code style (`npm run lint`)
 6. Ensure tests pass (`npm test`)
 7. Commit your changes
 8. Push to your forked repository
-9. Create a pull request
+9. Create a pull request against `next`
+
+Release preparation and npm publishing are maintainer tasks. See the [Release Runbook](RELEASE_RUNBOOK.md); contributors must not run `npm publish` locally.
 
 ### Development Environment Setup
 
@@ -116,14 +118,16 @@ CesiumJS Heatboxプロジェクトへの貢献を歓迎します。このガイ�
 コードの変更や新機能の実装を行いたい場合は、以下の手順でプルリクエストを送ってください：
 
 1. リポジトリをフォークする
-2. 新しいブランチを作成する（`feature/your-feature-name` または `fix/your-fix-name`）
+2. `next` から新しいブランチを作成する（`feature/your-feature-name` または `fix/your-fix-name`）
 3. 変更を実装する
 4. テストを追加または更新する
 5. コードスタイルを確認する（`npm run lint`）
 6. テストが通ることを確認する（`npm test`）
 7. 変更をコミットする
 8. フォークしたリポジトリにプッシュする
-9. プルリクエストを作成する
+9. `next` 向けのプルリクエストを作成する
+
+リリース準備とnpm公開はメンテナーの作業です。[リリースランブック](RELEASE_RUNBOOK.md)を参照し、ローカルでは `npm publish` を実行しないでください。
 
 ## 開発環境のセットアップ
 
@@ -171,4 +175,3 @@ npm run test:coverage
 ## ライセンス
 
 プロジェクトへの貢献は[MITライセンス](../LICENSE)の下で行われます。プルリクエストを送ることで、あなたの貢献がこのライセンスの下で公開されることに同意したものとみなします。
-

@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/PerformanceOverlay.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Class: PerformanceOverlay（PerformanceOverlayクラス）
 
 **日本語** | [English](#english)

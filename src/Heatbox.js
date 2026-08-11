@@ -69,6 +69,8 @@ import { computeSpatialIdEdgeCaseMetrics } from './core/spatial/SpatialIdQaMetri
  * @property {number} [densityThreshold=3] - Density threshold (entities per voxel) / 密度しきい値（エンティティ/ボクセル）
  * @property {number} [cameraDistanceFactor=0.8] - Camera distance compensation factor / カメラ距離補正係数
  * @property {number} [overlapRiskFactor=0.4] - Overlap risk factor used for diagnostics / 重なりリスク係数
+ * @property {number} [minOutlineWidth=1] - Compatibility minimum normalized into outlineWidthRange / outlineWidthRangeへ正規化される互換用最小値
+ * @property {number} [maxOutlineWidth=5] - Compatibility maximum normalized into outlineWidthRange / outlineWidthRangeへ正規化される互換用最大値
  * @property {(Array.<number>|null)} [outlineWidthRange=null] - `[min,max]` outline width clamp / 枠線太さの許容範囲 `[最小, 最大]`
  * @property {(Array.<number>|null)} [boxOpacityRange=null] - `[min,max]` box opacity clamp / ボックス不透明度の許容範囲
  * @property {(Array.<number>|null)} [outlineOpacityRange=null] - `[min,max]` outline opacity clamp / 枠線不透明度の許容範囲

@@ -1,3 +1,5 @@
+<!-- Generated from docs/api/core_spatial_ZFXYConverter.js.html by npm run wiki:sync. Edit JSDoc in src/, not this page. -->
+
 # Source: core/spatial/ZFXYConverter.js
 
 **日本語** | [English](#english)
@@ -12,37 +14,37 @@ import { COORDINATE_CONSTANTS } from '../../utils/constants.js';
 /**
  * ZFXYConverter - Built-in ZFXY (3D tile coordinates) converter
  * 内蔵ZFXY（3次元タイル座標）コンバーター
- * 
+ *
  * Provides Web Mercator-based ZFXY conversion without external dependencies.
  * This is a fallback when ouranos-gex-lib-for-javascript is not available.
- * 
+ *
  * Features:
  * - Web Mercator projection for X/Y tile calculation
  * - Fixed altitude binning for F (vertical) coordinate
  * - 8-vertex bounding box generation
  * - Coordinate normalization and clamping
- * 
+ *
  * 外部依存なしでWeb MercatorベースのZFXY変換を提供。
  * ouranos-gex-lib-for-javascriptが利用できない場合のフォールバック。
- * 
+ *
  * 機能：
  * - X/Yタイル計算にWeb Mercator投影を使用
  * - F（垂直）座標の固定高度ビニング
  * - 8頂点バウンディングボックス生成
  * - 座標の正規化とクランプ
- * 
+ *
  * @class
  * @version 0.1.17
  * @since 0.1.17
- * 
+ *
  * @example
  * // Basic usage
  * const result = ZFXYConverter.convert(139.7, 35.69, 50, 25);
- * 
+ *
  * console.log(result.zfxy);     // {z: 25, f: 5, x: 28765, y: 12850}
  * console.log(result.zfxyStr);  // "/25/5/28765/12850"
  * console.log(result.vertices.length); // 8
- * 
+ *
  * @example
  * // Coordinates are automatically normalized
  * const normalized = ZFXYConverter.convert(200, 90, -50, 25);
@@ -54,7 +56,7 @@ export class ZFXYConverter {
   /**
    * Convert lng/lat/alt to ZFXY coordinates and bounding box
    * lng/lat/altをZFXY座標とバウンディングボックスに変換
-   * 
+   *
    * @param {number} lng - Longitude (degrees, -180 to 180)
    * @param {number} lat - Latitude (degrees, -85.0511 to 85.0511)
    * @param {number} alt - Altitude (meters)
@@ -91,7 +93,7 @@ export class ZFXYConverter {
   /**
    * Normalize longitude to [-180, 180]
    * 経度を[-180, 180]に正規化
-   * 
+   *
    * @param {number} lng - Longitude (degrees)
    * @returns {number} Normalized longitude
    * @private
@@ -99,18 +101,18 @@ export class ZFXYConverter {
   static _normalizeLongitude(lng) {
     // Handle ±180 equivalence: 180 -> -180
     if (lng === 180) return -180;
-    
+
     // Wrap to [-180, 180]
     while (lng > 180) lng -= 360;
     while (lng < -180) lng += 360;
-    
+
     return lng;
   }
 
   /**
    * Clamp latitude to Web Mercator limits
    * 緯度をWeb Mercator制限にクランプ
-   * 
+   *
    * @param {number} lat - Latitude (degrees)
    * @returns {number} Clamped latitude
    * @private
@@ -123,7 +125,7 @@ export class ZFXYConverter {
   /**
    * Get altitude per bin for given zoom level
    * 指定されたズームレベルの高度ビンを取得
-   * 
+   *
    * @param {number} zoom - Zoom level
    * @returns {number} Altitude per bin in meters
    * @private
@@ -147,7 +149,7 @@ export class ZFXYConverter {
   /**
    * Calculate 8 vertices of the voxel bounding box
    * ボクセルバウンディングボックスの8頂点を計算
-   * 
+   *
    * @param {number} lng - Center longitude
    * @param {number} lat - Center latitude
    * @param {number} alt - Center altitude
@@ -161,20 +163,20 @@ export class ZFXYConverter {
    */
   static _calculateVertices(lng, lat, alt, zoom, x, y, f, altitudePerBin) {
     const n = Math.pow(2, zoom);
-    
+
     // Calculate tile bounds in lng/lat
     const minLng = x / n * 360 - 180;
     const maxLng = (x + 1) / n * 360 - 180;
-    
+
     const minLatRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 1) / n)));
     const maxLatRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n)));
     const minLat = minLatRad * 180 / Math.PI;
     const maxLat = maxLatRad * 180 / Math.PI;
-    
+
     // Calculate altitude bounds
     const minAlt = f * altitudePerBin;
     const maxAlt = (f + 1) * altitudePerBin;
-    
+
     // 8 vertices: bottom 4 + top 4
     const vertices = [
       // Bottom face (minAlt)
@@ -188,14 +190,14 @@ export class ZFXYConverter {
       { lng: maxLng, lat: maxLat, alt: maxAlt },  // 6: NE top
       { lng: minLng, lat: maxLat, alt: maxAlt }   // 7: NW top
     ];
-    
+
     return vertices;
   }
 
   /**
    * Validate ZFXY coordinates
    * ZFXY座標を検証
-   * 
+   *
    * @param {Object} zfxy - ZFXY coordinates
    * @param {number} zfxy.z - Zoom level
    * @param {number} zfxy.f - Altitude index
@@ -205,47 +207,47 @@ export class ZFXYConverter {
    */
   static validateZFXY(zfxy) {
     if (!zfxy || typeof zfxy !== 'object') return false;
-    
+
     const { z, f, x, y } = zfxy;
-    
+
     // Check types
-    if (!Number.isInteger(z) || !Number.isInteger(f) || 
+    if (!Number.isInteger(z) || !Number.isInteger(f) ||
         !Number.isInteger(x) || !Number.isInteger(y)) {
       return false;
     }
-    
+
     // Check ranges
     if (z < 0 || z > 35) return false;
-    
+
     const n = Math.pow(2, z);
     if (x < 0 || x >= n) return false;
     if (y < 0 || y >= n) return false;
-    
+
     // F can be negative (below sea level) or very large
     // No strict bounds on F in this implementation
-    
+
     return true;
   }
 
   /**
    * Parse zfxyStr to ZFXY object
    * zfxyStr文字列をZFXYオブジェクトにパース
-   * 
+   *
    * @param {string} zfxyStr - ZFXY string in format "/z/f/x/y"
    * @returns {{z, f, x, y}|null} Parsed ZFXY or null if invalid
    */
   static parseZFXYStr(zfxyStr) {
     if (typeof zfxyStr !== 'string') return null;
-    
+
     const parts = zfxyStr.split('/').filter(p => p.length > 0);
     if (parts.length !== 4) return null;
-    
+
     const [z, f, x, y] = parts.map(p => parseInt(p, 10));
-    
+
     if (Number.isNaN(z) || Number.isNaN(f) || Number.isNaN(x) || Number.isNaN(y)) {
       return null;
     }
-    
+
     const zfxy = { z, f, x, y };
     return ZFXYConverter.validateZFXY(zfxy) ? zfxy : null;
   }
@@ -263,37 +265,37 @@ import { COORDINATE_CONSTANTS } from '../../utils/constants.js';
 /**
  * ZFXYConverter - Built-in ZFXY (3D tile coordinates) converter
  * 内蔵ZFXY（3次元タイル座標）コンバーター
- * 
+ *
  * Provides Web Mercator-based ZFXY conversion without external dependencies.
  * This is a fallback when ouranos-gex-lib-for-javascript is not available.
- * 
+ *
  * Features:
  * - Web Mercator projection for X/Y tile calculation
  * - Fixed altitude binning for F (vertical) coordinate
  * - 8-vertex bounding box generation
  * - Coordinate normalization and clamping
- * 
+ *
  * 外部依存なしでWeb MercatorベースのZFXY変換を提供。
  * ouranos-gex-lib-for-javascriptが利用できない場合のフォールバック。
- * 
+ *
  * 機能：
  * - X/Yタイル計算にWeb Mercator投影を使用
  * - F（垂直）座標の固定高度ビニング
  * - 8頂点バウンディングボックス生成
  * - 座標の正規化とクランプ
- * 
+ *
  * @class
  * @version 0.1.17
  * @since 0.1.17
- * 
+ *
  * @example
  * // Basic usage
  * const result = ZFXYConverter.convert(139.7, 35.69, 50, 25);
- * 
+ *
  * console.log(result.zfxy);     // {z: 25, f: 5, x: 28765, y: 12850}
  * console.log(result.zfxyStr);  // "/25/5/28765/12850"
  * console.log(result.vertices.length); // 8
- * 
+ *
  * @example
  * // Coordinates are automatically normalized
  * const normalized = ZFXYConverter.convert(200, 90, -50, 25);
@@ -305,7 +307,7 @@ export class ZFXYConverter {
   /**
    * Convert lng/lat/alt to ZFXY coordinates and bounding box
    * lng/lat/altをZFXY座標とバウンディングボックスに変換
-   * 
+   *
    * @param {number} lng - Longitude (degrees, -180 to 180)
    * @param {number} lat - Latitude (degrees, -85.0511 to 85.0511)
    * @param {number} alt - Altitude (meters)
@@ -342,7 +344,7 @@ export class ZFXYConverter {
   /**
    * Normalize longitude to [-180, 180]
    * 経度を[-180, 180]に正規化
-   * 
+   *
    * @param {number} lng - Longitude (degrees)
    * @returns {number} Normalized longitude
    * @private
@@ -350,18 +352,18 @@ export class ZFXYConverter {
   static _normalizeLongitude(lng) {
     // Handle ±180 equivalence: 180 -> -180
     if (lng === 180) return -180;
-    
+
     // Wrap to [-180, 180]
     while (lng > 180) lng -= 360;
     while (lng < -180) lng += 360;
-    
+
     return lng;
   }
 
   /**
    * Clamp latitude to Web Mercator limits
    * 緯度をWeb Mercator制限にクランプ
-   * 
+   *
    * @param {number} lat - Latitude (degrees)
    * @returns {number} Clamped latitude
    * @private
@@ -374,7 +376,7 @@ export class ZFXYConverter {
   /**
    * Get altitude per bin for given zoom level
    * 指定されたズームレベルの高度ビンを取得
-   * 
+   *
    * @param {number} zoom - Zoom level
    * @returns {number} Altitude per bin in meters
    * @private
@@ -398,7 +400,7 @@ export class ZFXYConverter {
   /**
    * Calculate 8 vertices of the voxel bounding box
    * ボクセルバウンディングボックスの8頂点を計算
-   * 
+   *
    * @param {number} lng - Center longitude
    * @param {number} lat - Center latitude
    * @param {number} alt - Center altitude
@@ -412,20 +414,20 @@ export class ZFXYConverter {
    */
   static _calculateVertices(lng, lat, alt, zoom, x, y, f, altitudePerBin) {
     const n = Math.pow(2, zoom);
-    
+
     // Calculate tile bounds in lng/lat
     const minLng = x / n * 360 - 180;
     const maxLng = (x + 1) / n * 360 - 180;
-    
+
     const minLatRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 1) / n)));
     const maxLatRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n)));
     const minLat = minLatRad * 180 / Math.PI;
     const maxLat = maxLatRad * 180 / Math.PI;
-    
+
     // Calculate altitude bounds
     const minAlt = f * altitudePerBin;
     const maxAlt = (f + 1) * altitudePerBin;
-    
+
     // 8 vertices: bottom 4 + top 4
     const vertices = [
       // Bottom face (minAlt)
@@ -439,14 +441,14 @@ export class ZFXYConverter {
       { lng: maxLng, lat: maxLat, alt: maxAlt },  // 6: NE top
       { lng: minLng, lat: maxLat, alt: maxAlt }   // 7: NW top
     ];
-    
+
     return vertices;
   }
 
   /**
    * Validate ZFXY coordinates
    * ZFXY座標を検証
-   * 
+   *
    * @param {Object} zfxy - ZFXY coordinates
    * @param {number} zfxy.z - Zoom level
    * @param {number} zfxy.f - Altitude index
@@ -456,47 +458,47 @@ export class ZFXYConverter {
    */
   static validateZFXY(zfxy) {
     if (!zfxy || typeof zfxy !== 'object') return false;
-    
+
     const { z, f, x, y } = zfxy;
-    
+
     // Check types
-    if (!Number.isInteger(z) || !Number.isInteger(f) || 
+    if (!Number.isInteger(z) || !Number.isInteger(f) ||
         !Number.isInteger(x) || !Number.isInteger(y)) {
       return false;
     }
-    
+
     // Check ranges
     if (z < 0 || z > 35) return false;
-    
+
     const n = Math.pow(2, z);
     if (x < 0 || x >= n) return false;
     if (y < 0 || y >= n) return false;
-    
+
     // F can be negative (below sea level) or very large
     // No strict bounds on F in this implementation
-    
+
     return true;
   }
 
   /**
    * Parse zfxyStr to ZFXY object
    * zfxyStr文字列をZFXYオブジェクトにパース
-   * 
+   *
    * @param {string} zfxyStr - ZFXY string in format "/z/f/x/y"
    * @returns {{z, f, x, y}|null} Parsed ZFXY or null if invalid
    */
   static parseZFXYStr(zfxyStr) {
     if (typeof zfxyStr !== 'string') return null;
-    
+
     const parts = zfxyStr.split('/').filter(p => p.length > 0);
     if (parts.length !== 4) return null;
-    
+
     const [z, f, x, y] = parts.map(p => parseInt(p, 10));
-    
+
     if (Number.isNaN(z) || Number.isNaN(f) || Number.isNaN(x) || Number.isNaN(y)) {
       return null;
     }
-    
+
     const zfxy = { z, f, x, y };
     return ZFXYConverter.validateZFXY(zfxy) ? zfxy : null;
   }
