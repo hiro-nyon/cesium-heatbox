@@ -1,0 +1,26 @@
+flowchart LR
+    EXIST["Existing records\nkey to Entity set"]
+    DESIRED["Desired frame\nplanned voxel keys"]
+    DIFF["GeometryRenderer frame protocol"]
+
+    EXIST --> DIFF
+    DESIRED --> DIFF
+
+    DIFF --> BEGIN["beginFrame"]
+    BEGIN --> SYNC["syncVoxel for each desired key"]
+    SYNC --> Q{"Record exists?"}
+    Q -->|No| ADD["ADD box Entity"]
+    Q -->|Yes| UPDATE["UPDATE box Entity in place"]
+    ADD --> END["endFrame"]
+    UPDATE --> END
+    END --> REMOVE["REMOVE records not touched"]
+    REMOVE --> NEXT["Next keyed state"]
+
+    NOTE["Inset and polyline auxiliaries\nmay still be recreated when active"] -. qualification .-> SYNC
+
+    classDef state fill:#f8fafc,stroke:#64748b,color:#0f172a
+    classDef action fill:#ecfdf5,stroke:#059669,color:#0f172a
+    classDef qualify fill:#fff7ed,stroke:#ea580c,color:#0f172a
+    class EXIST,DESIRED,NEXT state
+    class DIFF,BEGIN,SYNC,Q,ADD,UPDATE,END,REMOVE action
+    class NOTE qualify

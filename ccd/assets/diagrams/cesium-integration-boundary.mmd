@@ -1,0 +1,40 @@
+flowchart LR
+    subgraph C["CesiumJS supplied by host application"]
+        V["Viewer"]
+        EC["EntityCollection"]
+        CA["Camera and camera.changed"]
+        SC["Scene: postRender and pick"]
+        CK["Clock and onTick"]
+        TY["JulianDate, Cartesian3, Cartographic, Color"]
+        UI["selectedEntity and InfoBox"]
+    end
+
+    subgraph H["Cesium Heatbox"]
+        HB["Heatbox lifecycle facade"]
+        DP["Coordinate, voxel, aggregation, classification"]
+        RP["RenderPlanner"]
+        GR["GeometryRenderer"]
+        TC["TimeController and TimeSlicer"]
+        PK["Picking integration"]
+        SI["Spatial ID adapter and fallback"]
+    end
+
+    V --> HB
+    TY --> DP
+    DP --> SI
+    CA --> RP
+    CK --> TC
+    CA --> TC
+    SC --> HB
+    SC --> PK
+    PK --> UI
+    HB --> DP
+    HB --> TC
+    DP --> RP
+    RP --> GR
+    GR --> EC
+
+    classDef cesium fill:#e8f1ff,stroke:#2563eb,color:#0f172a
+    classDef heatbox fill:#ecfdf5,stroke:#059669,color:#0f172a
+    class V,EC,CA,SC,CK,TY,UI cesium
+    class HB,DP,RP,GR,TC,PK,SI heatbox

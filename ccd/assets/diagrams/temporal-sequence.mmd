@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant CK as Cesium Clock
+    participant TC as TimeController
+    participant TS as TimeSlicer
+    participant WK as Optional Worker
+    participant HB as Heatbox
+    participant RP as RenderPlanner
+    participant GR as GeometryRenderer
+    participant EC as viewer.entities
+
+    CK->>TC: onTick(currentTime)
+    TC->>TC: wall-clock throttle
+    alt in-memory synchronous path
+        TC->>TS: getEntry(currentTime)
+        TS-->>TC: time slice or null
+    else lazy or worker-enabled path
+        TC->>TC: allocate request id
+        TC->>TS: getEntryAsync(currentTime)
+        opt lazy data is needed
+            TS->>TS: request and merge entries
+        end
+        opt gap interpolation with worker enabled
+            TS->>WK: interpolate plain numeric data
+            WK-->>TS: result or main-thread fallback
+        end
+        TS-->>TC: time slice or null
+        TC->>TC: reject stale or inactive result
+    end
+    TC->>TC: coalesce updates, latest slice wins
+    TC->>HB: updateValues(slice data)
+    alt current grid remains valid
+        HB->>HB: reuse grid and reclassify
+    else bounds changed or processing failed
+        HB->>HB: setData full rebuild
+    end
+    HB->>RP: plan using current camera state
+    RP-->>HB: prioritized bounded set
+    HB->>GR: beginFrame, syncVoxel, endFrame
+    GR->>EC: add, update, and remove Entities
+
+    Note over TS,WK: Worker preprocessing is interpolation only
+    Note over HB,EC: Cesium rendering stays on the main thread

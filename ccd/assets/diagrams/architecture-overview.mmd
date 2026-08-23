@@ -1,0 +1,20 @@
+flowchart LR
+    IN["Cesium Entity input"] --> RES["Resolve position and properties"]
+    RES --> GEO["Cartesian3 to Cartographic"]
+    GEO --> MODE{"Grid mode"}
+    MODE -->|Regular| GRID["3D regular-grid assignment"]
+    MODE -->|Spatial ID| SID["Spatial ID adapter and fallback"]
+    GRID --> AGG["Density and layer aggregation"]
+    SID --> AGG
+    AGG --> CLS["Statistics and classification"]
+    CLS --> SEL["Candidate selection"]
+    SEL --> PLAN["RenderPlanner"]
+    CAM["Cesium Camera state"] -. read .-> PLAN
+    PLAN --> RENDER["VoxelRenderer visual parameters"]
+    RENDER --> SYNC["GeometryRenderer keyed synchronization"]
+    SYNC --> OUT["viewer.entities: boxes and polylines"]
+
+    classDef cesium fill:#e8f1ff,stroke:#2563eb,color:#0f172a
+    classDef heatbox fill:#ecfdf5,stroke:#059669,color:#0f172a
+    class IN,CAM,OUT cesium
+    class RES,GEO,MODE,GRID,SID,AGG,CLS,SEL,PLAN,RENDER,SYNC heatbox
