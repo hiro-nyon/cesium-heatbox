@@ -18,21 +18,6 @@ This directory is the canonical source for maintained documentation. Files under
 - [Roadmap（ロードマップ）](../ROADMAP.md)
 - [Changelog（変更履歴）](../CHANGELOG.md)
 
-## Architecture and Design Decisions（アーキテクチャと設計判断）
-
-Architecture is documented in the ADRs, not here. The ADRs are the single source of truth; this section is navigation only.
-
-アーキテクチャの記述はADR側が正典です。本節はリンクのみで、内容を複製しません。
-
-- [Current Runtime Architecture（現行ランタイムアーキテクチャ）](adr/ADR-0019-v1.3.7-current-runtime-architecture.md): ADR-0019 — subsystem responsibilities, CesiumJS integration boundaries, and known limitations. **Start here.**
-- [Rendering Architecture（描画アーキテクチャ）](adr/ADR-0020-v1.3.0-incremental-entity-rendering.md): ADR-0020 — incremental Entity lifecycle and camera-aware render planning
-- [Temporal Architecture（時系列アーキテクチャ）](adr/ADR-0021-v1.3.2-asynchronous-temporal-pipeline.md): ADR-0021 — asynchronous temporal pipeline and lightweight updates
-- [ADR Index（ADR索引）](adr/README.md): all decision records with status and implementation state
-
-ADR-0019/0020/0021 are fully bilingual. [Specification（仕様書）](specification.md) covers the original design context and is a historical companion to these, not a substitute for ADR-0019.
-
-ADR-0019/0020/0021 は全文日英併記です。[仕様書](specification.md) は初期設計の文脈を扱う歴史的資料であり、ADR-0019 の代替ではありません。
-
 ## Develop and Contribute（開発・貢献する）
 
 - [Development Environment Setup（開発環境セットアップ）](development-setup.md)

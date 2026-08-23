@@ -320,13 +320,6 @@ See [API Reference](API) for complete options and method documentation.
 - [GitHub Wiki](https://github.com/hiro-nyon/cesium-heatbox/wiki) — rendering strategies, performance, Spatial ID, pitfalls, and glossary
 - [Roadmap](https://github.com/hiro-nyon/cesium-heatbox/blob/main/ROADMAP.md) and [Changelog](Release-Notes)
 
-**Understand the architecture**
-
-- [Current Runtime Architecture](https://github.com/hiro-nyon/cesium-heatbox/blob/main/docs/adr/ADR-0019-v1.3.7-current-runtime-architecture.md) — ADR-0019: subsystem responsibilities, CesiumJS integration boundaries, and known limitations. Start here.
-- [Rendering Architecture](https://github.com/hiro-nyon/cesium-heatbox/blob/main/docs/adr/ADR-0020-v1.3.0-incremental-entity-rendering.md) — ADR-0020: incremental Entity lifecycle and camera-aware render planning
-- [Temporal Architecture](https://github.com/hiro-nyon/cesium-heatbox/blob/main/docs/adr/ADR-0021-v1.3.2-asynchronous-temporal-pipeline.md) — ADR-0021: asynchronous temporal pipeline and lightweight updates
-- [ADR Index](https://github.com/hiro-nyon/cesium-heatbox/blob/main/docs/adr/README.md) — all architecture decision records, with status and implementation state
-
 **Contribute and develop**
 
 - [Development Environment Setup](Development-Setup)

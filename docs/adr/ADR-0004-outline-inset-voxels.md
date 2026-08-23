@@ -3,10 +3,6 @@
 ## Status
 Accepted (implemented in v0.1.6.1)
 
-**Implementation State**: Implemented — `outlineInset` and `outlineInsetMode` are current public options
-(`src/utils/constants.js`), realised by `GeometryRenderer.createInsetOutline`. Note that inset outline
-entities are recreated on each render pass rather than updated in place; see ADR-0020.
-
 ## Context
 - v0.1.6 では枠線重なり対策として `voxelGap`（寸法縮小）と `outlineOpacity`（透明度）を導入し、`outlineWidthResolver` で太さを動的制御できるようにした。
 - ただし、視認性改善の要望として「枠線をボックスの外縁ではなく、内側にオフセット（インセット）したい」というニーズがある。

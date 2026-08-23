@@ -5,8 +5,6 @@ Accepted — 2025-09-07
 
 Supersedes: ADR-0008 (実装上の問題により再設計)
 
-**Implementation State**: Partially implemented / Evolved — see *Implementation Outcome* at the end of this document.
-
 ## Context
 
 ### 現状の問題
@@ -56,8 +54,6 @@ Supersedes: ADR-0008 (実装上の問題により再設計)
 
 ### 2. 新しいクラス構造
 
-> This diagram represents the architecture proposed at the time of this ADR. See ADR-0019 for the current runtime architecture.
-
 ```
 src/core/
 ├── color/
@@ -106,8 +102,6 @@ src/core/
 
 ### 5. 依存関係と境界
 本設計における許可された依存方向と境界を明示する。
-
-> This diagram represents the dependency boundaries proposed at the time of this ADR. See ADR-0019 for the current runtime architecture, which adds `RenderPlanner` to this layer.
 
 ```
 VoxelRenderer (orchestrator)
@@ -392,41 +386,3 @@ main (stable v0.1.9)
 - [Single Responsibility Principle](https://en.wikipedia.org/wiki/Single-responsibility_principle)
 - [God Object Anti-pattern](https://en.wikipedia.org/wiki/God_object)
 - [Refactoring: Improving the Design of Existing Code](https://martinfowler.com/books/refactoring.html)
-
----
-
-## Implementation Outcome
-
-> Added 2026-08-23. Verified against `src/` at commit `32bdfcd8ce4e9e983f42deea222a9e1630e7ce5c` (v1.3.7).
-> Everything above this line is the historical record of the decision as taken on 2025-09-07 and has not been rewritten.
-
-### What was achieved as decided
-
-All four specialised classes were created at the intended paths with the intended responsibilities, and they are still in place:
-
-| Planned class | Path | Lines | Cesium-dependent |
-|---|---|---:|---|
-| `ColorCalculator` | `src/core/color/ColorCalculator.js` | 271 | Yes — returns `Cesium.Color` |
-| `VoxelSelector` | `src/core/selection/VoxelSelector.js` | 418 | No — pure, as intended |
-| `AdaptiveController` | `src/core/adaptive/AdaptiveController.js` | 515 | No — pure, as intended |
-| `GeometryRenderer` | `src/core/geometry/GeometryRenderer.js` | 938 | Yes — sole owner of `viewer.entities` mutation |
-
-The dependency rules in section 5 hold. `GeometryRenderer` imports only Cesium, `Logger`, and `escapeHtml`; there are no reverse references from any component back to `VoxelRenderer`, and none between sibling components. `VoxelSelector` and `AdaptiveController` remain free of Cesium imports, which is what allows them to be unit-tested without a viewer.
-
-Backward compatibility was preserved as intended, including the `voxelEntities` accessor, which is now a defined property delegating to `GeometryRenderer.entities`.
-
-### Acceptance criteria not met
-
-- **`VoxelRenderer.js` ≤ 300 lines: not met.** The file is **802 lines**. The orchestrator did shrink from its 1,265-line starting point, and further reduction was attempted in v1.3.0 by extracting `buildDisplayVoxels`, but the 300-line target was never reached. It remains the largest gap between this ADR and the code.
-- The performance and memory criteria (±5% runtime, ±10% heap, ±5% initialisation, call-depth increase ≤ 2) have no recorded measurement artefacts in this repository. They should be read as targets that were set, not as targets that were verified.
-
-### How the decision evolved after this ADR
-
-1. **`GeometryRenderer`'s contract changed.** This ADR specified `renderVoxel(voxel, params) => Entity[]` plus `clear()`. The current contract is a three-phase frame protocol — `beginFrame()` / `syncVoxel(config)` / `endFrame()` — with entities tracked in a `Map` keyed by voxel key, so that unchanged box entities are updated in place instead of being recreated. See **ADR-0020**.
-2. **A fifth component was added.** `RenderPlanner` (`src/core/render/RenderPlanner.js`, 191 lines) sits between selection and geometry, reading `viewer.camera` to prioritise, filter, and budget the voxel set. It is Cesium-dependent, which is a category this ADR's taxonomy did not anticipate: section 5 assumed that only `GeometryRenderer` would touch Cesium. The boundary was extended rather than broken — the planner reads camera state and returns plain data, and still performs no entity mutation. See **ADR-0020**.
-3. **`VoxelSelector`'s return shape is richer** than the specified `=> Entry[]`. It returns a result object carrying the selected voxels alongside the strategy used, the clipped count, and the coverage ratio, so selection statistics can be surfaced through `getStatistics()`.
-4. **A helper was extracted from the orchestrator.** `buildDisplayVoxels` (`src/core/render/buildDisplayVoxels.js`) took over eligible-voxel construction, including synthetic empty voxels, in v1.3.0.
-
-### Current architecture reference
-
-For the architecture as it exists now — including `RenderPlanner`, the temporal subsystem, and the CesiumJS integration boundaries — see **ADR-0019: Current Runtime Architecture and CesiumJS Integration**.
