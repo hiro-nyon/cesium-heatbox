@@ -14,11 +14,11 @@ Three ADRs are fully bilingual — every English passage is followed by its Japa
 | [ADR-0020](ADR-0020-v1.3.0-incremental-entity-rendering.md) | **Rendering architecture** — incremental Entity lifecycle and camera-aware render planning. |
 | [ADR-0021](ADR-0021-v1.3.2-asynchronous-temporal-pipeline.md) | **Temporal architecture** — asynchronous temporal pipeline and lightweight updates. |
 
-ADR-0001 through ADR-0018 are historical records written in Japanese (ADR-0013 onward are partly bilingual). They are **not** retro-fitted to the current implementation. Where the code has since diverged from a decision, the divergence is recorded in an appended `Implementation Outcome` section rather than by rewriting the original decision.
+ADR-0001 through ADR-0018 are historical records written predominantly in Japanese (ADR-0013 onward are partly bilingual). Their decision bodies are **not** retro-fitted to the current implementation. Where status metadata was stale, a dated status note records the retrospective correction; where code has diverged from a decision, the divergence is recorded in an appended `Implementation Outcome` section rather than by rewriting the original decision.
 
-**On dates.** ADR-0020 and ADR-0021 were **written on 2026-08-23** but record decisions taken in April 2026 (v1.3.0–v1.3.4), which were shipped without an ADR at the time. Their headers carry both a `Decision date` and a `Recorded` date, and each states plainly that it is a retrospective reconstruction from Git history and source. The table below is ordered by ADR number, so the date column is not monotonic.
+**On dates.** ADR-0020 and ADR-0021 were **written on 2026-08-23** but record initial decisions and refinements taken in April 2026 (v1.3.0–v1.3.4), which were shipped without an ADR at the time. ADR-0020 also records a later August correctness fix. Their headers distinguish decision/refinement dates from the `Recorded` date, and each states plainly that it is a retrospective reconstruction from Git history and source. The table below is ordered by ADR number, so the date column is not monotonic.
 
-**日付について.** ADR-0020 と ADR-0021 は **2026-08-23 に作成** されたが、記録対象は2026年4月（v1.3.0〜v1.3.4）に実施され当時ADR化されなかった決定である。両ADRのヘッダには `Decision date` と `Recorded` の両方があり、Git history とソースからの後追い再構成であることを本文冒頭で明示している。下表はADR番号順のため、日付列は単調にならない。
+**日付について.** ADR-0020 と ADR-0021 は **2026-08-23 に作成** されたが、主に2026年4月（v1.3.0〜v1.3.4）に実施され当時ADR化されなかった初期決定と改良を記録する。ADR-0020はさらに2026年8月の正しさ修正も記録する。両ADRのheaderはdecision/refinement dateと `Recorded` dateを区別し、Git historyとsourceからの後追い再構成であることを本文冒頭で明示する。下表はADR番号順のため、日付列は単調にならない。
 
 ## ADRとは
 
@@ -82,7 +82,7 @@ Proposed / Accepted / Rejected / Deprecated / Superseded by ADR-YYYY
 | [ADR-0005](ADR-0005-adaptive-outlines-and-emulation-only.md) | 適応的枠線制御とエミュレーション専用表示モード | Accepted | Implemented | 2025-08-26 | — |
 | [ADR-0006](ADR-0006-v0.1.9-adaptive-rendering-and-auto-view.md) | v0.1.9 適応的レンダリング制限とスマート視覚化支援 | Accepted | Implemented | 2025-08-30 | — |
 | [ADR-0007](ADR-0007-v0.1.10-refactoring-modularization.md) | v0.1.10 リファクタリング・モジュール化 | Superseded | Not implemented | 2025-09-04 | Superseded by ADR-0008 |
-| [ADR-0008](ADR-0008-v0.1.10-refactor-and-api-cleanup.md) | v0.1.10 モジュール分割とAPIクリーンアップ（互換性見直し） | Superseded | Not implemented | 2025-09-07 | Supersedes ADR-0007 / Superseded by ADR-0009 |
+| [ADR-0008](ADR-0008-v0.1.10-refactor-and-api-cleanup.md) | v0.1.10 モジュール分割とAPIクリーンアップ（互換性見直し） | Superseded | Implemented in phases, then reverted | 2025-09-07 | Supersedes ADR-0007 / Reverted and superseded by ADR-0009 |
 | [ADR-0009](ADR-0009-voxel-renderer-responsibility-separation.md) | VoxelRenderer責任分離とSingle Responsibility Principle適用 | Accepted | Partially implemented / Evolved | 2025-09-07 | Supersedes ADR-0008 / Extended by ADR-0020 |
 | [ADR-0010](ADR-0010-v0.1.12-api-cleanup-and-observability.md) | v0.1.12 APIクリーンアップ・観測可能性 | Accepted | Implemented | 2025-09-09 | — |
 | [ADR-0011](ADR-0011-v0.1.15-adaptive-visualization-finalization.md) | v0.1.15 適応的表示の核・視認性最適化の仕上げ | Accepted | Implemented | 2025-09-20 | — |
@@ -94,8 +94,8 @@ Proposed / Accepted / Rejected / Deprecated / Superseded by ADR-YYYY
 | [ADR-0017](ADR-0017-v1.1.0-classification-extension.md) | v1.1.0 分類エンジン拡張（opacity/width + quantile/jenks） | Accepted | Implemented | 2025-11-18 | Extends ADR-0016 |
 | [ADR-0018](ADR-0018-v1.2.0-time-dependent-data.md) | v1.2.0 時間依存データ（PoC） | Accepted | Implemented / Evolved | 2025-11-19 | Extended by ADR-0021 |
 | [ADR-0019](ADR-0019-v1.3.7-current-runtime-architecture.md) | **Current Runtime Architecture and CesiumJS Integration** 🌐 | Accepted | Implemented | 2026-08-23 | 全ADRへの入口。置き換えではない |
-| [ADR-0020](ADR-0020-v1.3.0-incremental-entity-rendering.md) | **Incremental Entity Rendering and Camera-Aware Render Planning** 🌐 | Accepted | Implemented | 決定 2026-04-06 / 記録 2026-08-23 | Extends ADR-0009 |
-| [ADR-0021](ADR-0021-v1.3.2-asynchronous-temporal-pipeline.md) | **Asynchronous Temporal Data Pipeline and Lightweight Updates** 🌐 | Accepted | Implemented | 決定 2026-04-06 / 記録 2026-08-23 | Extends ADR-0018（supersede ではない） |
+| [ADR-0020](ADR-0020-v1.3.0-incremental-entity-rendering.md) | **Incremental Entity Rendering and Camera-Aware Render Planning** 🌐 | Accepted | Implemented | 決定 2026-04-06 / 改良 2026-04-07 / 修正 2026-08-11 / 記録 2026-08-23 | Extends ADR-0009 |
+| [ADR-0021](ADR-0021-v1.3.2-asynchronous-temporal-pipeline.md) | **Asynchronous Temporal Data Pipeline and Lightweight Updates** 🌐 | Accepted | Implemented | 決定 2026-04-06 / 改良 2026-04-07 / 記録 2026-08-23 | Extends ADR-0018（supersede ではない） |
 
 🌐 = 全文 日英併記 / fully bilingual
 

@@ -320,9 +320,9 @@ aggregation: {
 
 **アーキテクチャを理解する**
 
-- [現行ランタイムアーキテクチャ](docs/adr/ADR-0019-v1.3.7-current-runtime-architecture.md) — ADR-0019（英語）: サブシステムの責務、CesiumJS統合境界、既知の制約。まずここから
-- [描画アーキテクチャ](docs/adr/ADR-0020-v1.3.0-incremental-entity-rendering.md) — ADR-0020（英語）: 差分Entityライフサイクルとカメラ考慮の描画計画
-- [時系列アーキテクチャ](docs/adr/ADR-0021-v1.3.2-asynchronous-temporal-pipeline.md) — ADR-0021（英語）: 非同期時系列パイプラインと軽量更新
+- [現行ランタイムアーキテクチャ](docs/adr/ADR-0019-v1.3.7-current-runtime-architecture.md) — ADR-0019（日英併記）: サブシステムの責務、CesiumJS統合境界、既知の制約。まずここから
+- [描画アーキテクチャ](docs/adr/ADR-0020-v1.3.0-incremental-entity-rendering.md) — ADR-0020（日英併記）: 差分Entityライフサイクルとカメラ考慮の描画計画
+- [時系列アーキテクチャ](docs/adr/ADR-0021-v1.3.2-asynchronous-temporal-pipeline.md) — ADR-0021（日英併記）: 非同期時系列パイプラインと軽量更新
 - [ADR索引](docs/adr/README.md) — 全ADRの一覧（Status と Implementation State 付き）
 
 **開発・貢献する**

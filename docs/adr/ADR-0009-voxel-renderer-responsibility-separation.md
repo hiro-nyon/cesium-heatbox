@@ -409,7 +409,7 @@ All four specialised classes were created at the intended paths with the intende
 | `ColorCalculator` | `src/core/color/ColorCalculator.js` | 271 | Yes — returns `Cesium.Color` |
 | `VoxelSelector` | `src/core/selection/VoxelSelector.js` | 418 | No — pure, as intended |
 | `AdaptiveController` | `src/core/adaptive/AdaptiveController.js` | 515 | No — pure, as intended |
-| `GeometryRenderer` | `src/core/geometry/GeometryRenderer.js` | 938 | Yes — sole owner of `viewer.entities` mutation |
+| `GeometryRenderer` | `src/core/geometry/GeometryRenderer.js` | 938 | Yes — sole owner of voxel-output `viewer.entities` membership changes (add/remove) |
 
 The dependency rules in section 5 hold. `GeometryRenderer` imports only Cesium, `Logger`, and `escapeHtml`; there are no reverse references from any component back to `VoxelRenderer`, and none between sibling components. `VoxelSelector` and `AdaptiveController` remain free of Cesium imports, which is what allows them to be unit-tested without a viewer.
 
