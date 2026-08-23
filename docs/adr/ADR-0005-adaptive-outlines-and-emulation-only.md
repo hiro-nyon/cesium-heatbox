@@ -1,7 +1,14 @@
 # ADR-0005: 適応的枠線制御とエミュレーション専用表示モード（v0.1.7）
 
 ## Status
-Proposed (for v0.1.7)
+Accepted (for v0.1.7)
+
+**Implementation State**: Implemented — `outlineRenderMode: 'standard' | 'inset' | 'emulation-only'` is a
+current public option (`src/utils/constants.js`), and the emulation strategies live in `GeometryRenderer`.
+
+> **Status note (2026-08-23)**: this ADR remained `Proposed` after the decision had been implemented and
+> shipped. The status has been corrected to `Accepted` and an implementation state added; the decision text
+> below is unchanged. See ADR-0019 for the current runtime architecture.
 
 ## Context
 - v0.1.6 では枠線重なり対策（voxelGap/outlineOpacity/outlineWidthResolver）と二極性配色、TopN強調を実装。
