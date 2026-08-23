@@ -525,6 +525,20 @@ function getVersion() {
   return '0.1.6.1';
 }
 
+/**
+ * Generate the API reference index page.
+ *
+ * Deliberately emits no generation timestamp: the output must be reproducible from
+ * repository content alone. CI verifies the generated Wiki with
+ * `npm run wiki:sync && git diff --exit-code -- wiki`, so any clock-derived value
+ * would make that check fail on every day other than the one the files were committed.
+ *
+ * 生成物に日時スタンプを含めない。出力はリポジトリの内容だけから再現可能でなければ
+ * ならず、CI は `npm run wiki:sync` 後の `git diff --exit-code -- wiki` で検証するため、
+ * 実行時刻由来の値を入れるとコミット日以外の日に必ず失敗する。
+ * @param {string[]} htmlFiles - Generated JSDoc HTML file names
+ * @returns {string} Markdown content for the API reference index
+ */
 function generateApiIndex(htmlFiles) {
   const version = getVersion();
   const classEntries = collectClassEntries(htmlFiles);
@@ -552,7 +566,6 @@ This documentation is auto-generated from JSDoc comments in the source code.
 ### Version Information
 
 - **Current Version**: ${version}
-- **Last Updated**: ${new Date().toISOString().split('T')[0]}
 - **Generated From**: JSDoc → Markdown conversion
 
 ### Quick Links
@@ -580,7 +593,6 @@ This documentation is auto-generated from JSDoc comments in the source code.
 ### バージョン情報
 
 - **現在のバージョン**: ${version}
-- **最終更新**: ${new Date().toISOString().split('T')[0]}
 - **生成元**: JSDoc → Markdown変換
 
 ### クイックリンク
